@@ -1,0 +1,38 @@
+/* ============================================================
+   PLAYMAX — Tailwind CSS 4 Base
+   ============================================================ */
+@import "tailwindcss";
+
+/* ── TAILWIND THEME ALIASES ────────────────────────── */
+/* Maps design-system variables → Tailwind utility classes.
+   Variable names are kept identical to globals.css :root
+   so Tailwind utilities (bg-black, font-display, etc.)
+   resolve to the same values as the custom CSS. */
+@theme inline {
+    --color-black: var(--pm-black);
+    --color-black-2: var(--pm-black-2);
+    --color-black-3: var(--pm-black-3);
+    --color-black-4: var(--pm-black-4);
+    --color-yellow: var(--pm-yellow);
+    --color-yellow-dim: var(--pm-yellow-dim);
+    --color-yellow-pale: var(--pm-yellow-pale);
+    --color-white: var(--pm-white);
+    --color-gray-1: var(--pm-gray-1);
+    --color-gray-2: var(--pm-gray-2);
+    --color-gray-3: var(--pm-gray-3);
+    --color-gray-4: var(--pm-gray-4);
+    --color-gray-5: var(--pm-gray-5);
+    --color-green: var(--pm-green);
+    --color-red: var(--pm-red);
+    --color-blue: var(--pm-blue);
+    --color-wa-green: var(--pm-wa-green);
+    --font-display: var(--pm-font-display);
+    --font-mono: var(--pm-font-mono);
+    --font-body: var(--pm-font-body);
+    --radius-sm: var(--pm-radius-sm);
+    --radius: var(--pm-radius);
+    --radius-md: var(--pm-radius-md);
+    --radius-lg: var(--pm-radius-lg);
+    --radius-xl: var(--pm-radius-xl);
+    --radius-full: var(--pm-radius-full);
+}
