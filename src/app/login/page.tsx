@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/browser";
+import { createClient } from "@/utils/supabase/client";
 
 type AuthView = "login" | "client-login" | "connecting";
 

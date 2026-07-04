@@ -15,7 +15,7 @@ import {
   Calendar,
   LogOut,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/browser";
+import { createClient } from "@/utils/supabase/client";
 
 const navSections = [
   {
