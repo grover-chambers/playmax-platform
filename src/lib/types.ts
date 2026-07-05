@@ -1,5 +1,3 @@
-import React from "react";
-
 export interface Conversation {
   id: string;
   contactName: string;

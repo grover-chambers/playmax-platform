@@ -1,19 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import {
-  LayoutGrid,
-  List,
-  MapPin,
-  SlidersHorizontal,
-} from "lucide-react";
+import { LayoutGrid, List, MapPin, SlidersHorizontal } from "lucide-react";
 import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
 import InventoryCardFull from "@/components/inventory/inventory-card-full";
 import InventoryDetailPanel from "@/components/inventory/inventory-detail-panel";
 import BookingModal from "@/components/inventory/booking-modal";
 import { sampleInventory, sampleBookings, sampleClients } from "@/lib/data";
-import { InventoryItem, Booking } from "@/lib/types";
+import { Booking } from "@/lib/types";
 
 const typeFilters = ["All", "Billboard", "Digital Screen", "Banner Site"];
 const viewModes = ["grid", "list", "map"] as const;
@@ -23,7 +18,9 @@ export default function InventoryPage() {
   const [typeFilter, setTypeFilter] = useState("All");
   const [availableOnly, setAvailableOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
-  const [selectedItem, setSelectedItem] = useState<string>(sampleInventory[0].id);
+  const [selectedItem, setSelectedItem] = useState<string>(
+    sampleInventory[0].id,
+  );
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>(sampleBookings);
 
@@ -41,7 +38,8 @@ export default function InventoryPage() {
     return true;
   });
 
-  const activeItem = sampleInventory.find((i) => i.id === selectedItem) || sampleInventory[0];
+  const activeItem =
+    sampleInventory.find((i) => i.id === selectedItem) || sampleInventory[0];
 
   const handleBookingConfirm = (bookingData: {
     clientId: string;

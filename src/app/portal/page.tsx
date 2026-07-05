@@ -3,11 +3,21 @@
 import React from "react";
 import StatCard from "@/components/ui/stat-card";
 import StatusBadge from "@/components/ui/status-badge";
-import { FolderKanban, FileCheck, Receipt, MessageSquare, ArrowRight, Clock } from "lucide-react";
+import { FolderKanban, ArrowRight, Clock } from "lucide-react";
 
 const activeProjects = [
-  { name: "Westlands Screen Package", status: "In Progress" as const, progress: 65, value: "KES 255K" },
-  { name: "Campaign Expansion", status: "Starting" as const, progress: 10, value: "KES 890K" },
+  {
+    name: "Westlands Screen Package",
+    status: "In Progress" as const,
+    progress: 65,
+    value: "KES 255K",
+  },
+  {
+    name: "Campaign Expansion",
+    status: "Starting" as const,
+    progress: 10,
+    value: "KES 890K",
+  },
 ];
 
 const recentActivity = [
@@ -59,7 +69,9 @@ export default function PortalOverviewPage() {
                       {project.name}
                     </span>
                   </div>
-                  <StatusBadge variant={project.progress > 50 ? "active" : "review"}>
+                  <StatusBadge
+                    variant={project.progress > 50 ? "active" : "review"}
+                  >
                     {project.status}
                   </StatusBadge>
                 </div>
@@ -86,7 +98,9 @@ export default function PortalOverviewPage() {
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-base font-bold">Recent Activity</h2>
+            <h2 className="font-display text-base font-bold">
+              Recent Activity
+            </h2>
           </div>
           <div className="bg-black-3 border border-black-4 rounded-lg divide-y divide-[#1E1E1E]">
             {recentActivity.map((item, i) => (
