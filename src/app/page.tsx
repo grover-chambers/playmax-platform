@@ -191,9 +191,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CLIENT LOGO STRIP (Fix 4) ──────────────────── */}
-      <ClientLogoStrip />
-
       {/* ── INVENTORY SECTION (Fix 3, Fix 5e) ──────────── */}
       <section className="section bg-black-2">
         <div className="container-sm">
@@ -252,6 +249,9 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* ── CLIENT LOGO STRIP (Fix 4) ──────────────────── */}
+      <ClientLogoStrip />
 
       {/* ── CONTACT / GET STARTED (Fix 6) ──────────────── */}
       <section className="section bg-black">

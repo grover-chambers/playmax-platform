@@ -23,10 +23,13 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        {/* Google Fonts loaded via <link> — using external approach for reliability across the whole app */}
+        {/* eslint-disable @next/next/no-page-custom-font */}
         <link
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap"
           rel="stylesheet"
         />
+        {/* eslint-enable @next/next/no-page-custom-font */}
       </head>
       <body className="min-h-full flex flex-col bg-black text-white font-body">
         {children}
