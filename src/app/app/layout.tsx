@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -13,11 +13,27 @@ import {
   Receipt,
   Settings,
   Calendar,
+  Shield,
   LogOut,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { getRoleLabel } from "@/lib/roles";
+import type { UserRole } from "@/lib/types";
 
-const navSections = [
+interface NavItem {
+  icon: React.ElementType;
+  label: string;
+  href: string;
+  badge?: string;
+  roles: UserRole[];
+}
+
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+const allNavSections: NavSection[] = [
   {
     label: "Operations",
     items: [
@@ -26,33 +42,90 @@ const navSections = [
         label: "Pipeline",
         href: "/app/pipeline",
         badge: "24",
+        roles: ["super_admin", "crm_admin", "crm_staff"],
       },
-      { icon: Users, label: "Clients", href: "/app/clients" },
-      { icon: FolderKanban, label: "Projects", href: "/app/projects" },
-      { icon: CheckSquare, label: "Tasks", href: "/app/tasks" },
+      {
+        icon: Users,
+        label: "Clients",
+        href: "/app/clients",
+        roles: ["super_admin", "crm_admin"],
+      },
+      {
+        icon: FolderKanban,
+        label: "Projects",
+        href: "/app/projects",
+        roles: ["super_admin", "crm_admin", "crm_staff"],
+      },
+      {
+        icon: CheckSquare,
+        label: "Tasks",
+        href: "/app/tasks",
+        roles: ["super_admin", "crm_admin", "crm_staff"],
+      },
     ],
   },
   {
     label: "Communications",
     items: [
-      { icon: MessageSquare, label: "Inbox", href: "/app/inbox", badge: "7" },
+      {
+        icon: MessageSquare,
+        label: "Inbox",
+        href: "/app/inbox",
+        badge: "7",
+        roles: ["super_admin", "crm_admin", "crm_staff"],
+      },
     ],
   },
   {
     label: "Assets",
     items: [
-      { icon: MapPin, label: "Inventory", href: "/app/inventory" },
-      { icon: Calendar, label: "Bookings", href: "/app/bookings" },
-      { icon: BarChart3, label: "Research", href: "/app/research" },
+      {
+        icon: MapPin,
+        label: "Inventory",
+        href: "/app/inventory",
+        roles: ["super_admin", "crm_admin"],
+      },
+      {
+        icon: Calendar,
+        label: "Bookings",
+        href: "/app/bookings",
+        roles: ["super_admin", "crm_admin", "finance"],
+      },
+      {
+        icon: BarChart3,
+        label: "Research",
+        href: "/app/research",
+        roles: ["super_admin", "crm_admin"],
+      },
     ],
   },
   {
     label: "Finance",
-    items: [{ icon: Receipt, label: "Invoices", href: "/app/invoices" }],
+    items: [
+      {
+        icon: Receipt,
+        label: "Invoices",
+        href: "/app/invoices",
+        roles: ["super_admin", "finance"],
+      },
+    ],
   },
   {
-    label: "System",
-    items: [{ icon: Settings, label: "Settings", href: "/app/settings" }],
+    label: "Administration",
+    items: [
+      {
+        icon: Shield,
+        label: "Staff",
+        href: "/app/admin/staff",
+        roles: ["super_admin"],
+      },
+      {
+        icon: Settings,
+        label: "Settings",
+        href: "/app/settings",
+        roles: ["super_admin", "cms_admin"],
+      },
+    ],
   },
 ];
 
@@ -69,15 +142,17 @@ export default function PlatformLayout({
   const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
-    const loadUser = async () => {
+    const init = async () => {
       const supabase = createClient();
       const {
         data: { user: currentUser },
       } = await supabase.auth.getUser();
-      setUser(currentUser);
-      setLoadingUser(false);
+      startTransition(() => {
+        setUser(currentUser);
+        setLoadingUser(false);
+      });
     };
-    loadUser();
+    init();
   }, []);
 
   const handleSignOut = async () => {
@@ -85,6 +160,20 @@ export default function PlatformLayout({
     await supabase.auth.signOut();
     router.push("/login");
   };
+
+  const role = (user?.user_metadata?.role as UserRole) || null;
+
+  // Filter nav sections by role
+  const navSections = allNavSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (!role) return false;
+        if (role === "super_admin") return true;
+        return item.roles.includes(role);
+      }),
+    }))
+    .filter((section) => section.items.length > 0);
 
   const getInitials = () => {
     if (!user) return "?";
@@ -102,7 +191,7 @@ export default function PlatformLayout({
 
   const displayName =
     user?.user_metadata?.name || user?.email || "Not signed in";
-  const displayRole = user?.user_metadata?.role || "User";
+  const displayRole = role ? getRoleLabel(role) : "User";
 
   return (
     <div className="platform-shell !min-h-screen !h-screen overflow-hidden">
