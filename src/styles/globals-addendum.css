@@ -1,0 +1,229 @@
+/* ============================================================
+   PLAYMAX AGENCY — VISUAL ENHANCEMENTS
+   pm-* prefixed classes for the marketing website
+   ============================================================ */
+
+/* ── Fix 1: Hero depth ─────────────────────────────── */
+.pm-hero {
+    position: relative;
+    overflow: hidden;
+}
+.pm-hero::before {
+    content: "";
+    position: absolute;
+    top: -20%;
+    right: -10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(
+        circle,
+        rgba(244, 195, 0, 0.12) 0%,
+        transparent 65%
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+.pm-hero::after {
+    content: "PLAYMAX";
+    position: absolute;
+    right: -40px;
+    bottom: -20px;
+    font-family: var(--font-display);
+    font-size: 160px;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    color: rgba(244, 195, 0, 0.04);
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    line-height: 1;
+}
+
+/* ── Fix 1c: Stat card yellow left-border ──────────── */
+.pm-stat-card {
+    background: var(--pm-black-3);
+    border: 1px solid var(--pm-black-4);
+    border-left: 2px solid var(--pm-yellow);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.75rem;
+}
+
+/* ── Fix 2d: Service card hover lift ────────────────── */
+.pm-service-card {
+    background: var(--pm-black-2);
+    padding: 2.25rem 2rem;
+    border: 1px solid #1e1e1e;
+    transition:
+        transform 200ms ease,
+        border-color 150ms ease;
+    display: flex;
+    flex-direction: column;
+}
+.pm-service-card:hover {
+    border-color: var(--pm-yellow);
+    transform: translateY(-4px);
+}
+
+.pm-service-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--pm-yellow);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    flex-shrink: 0;
+}
+
+.pm-card-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--pm-white);
+}
+
+.pm-body-sm {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    color: var(--pm-gray-4);
+    line-height: 1.6;
+}
+
+/* ── Fix 3: Inventory card image ────────────────────── */
+.pm-inventory-card-img {
+    position: relative;
+    overflow: hidden;
+    background: #141414;
+    height: 160px;
+}
+
+.pm-inventory-card-body {
+    padding: 1rem 1.125rem;
+}
+.pm-inventory-card-body .pm-inv-type {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--pm-yellow);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.pm-inventory-card-body .pm-inv-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--pm-white);
+    margin-bottom: 2px;
+}
+.pm-inventory-card-body .pm-inv-loc {
+    font-size: 11px;
+    color: var(--pm-gray-4);
+}
+.pm-inventory-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.125rem;
+    border-top: 1px solid var(--pm-black-4);
+}
+.pm-inventory-card-footer .pm-inv-price {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pm-yellow);
+}
+.pm-inventory-card-footer .pm-inv-price-unit {
+    font-size: 10px;
+    color: var(--pm-gray-4);
+    font-weight: 400;
+}
+
+.pm-badge {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+}
+.pm-badge-available {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--pm-green);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.pm-badge-booked {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--pm-red);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ── Fix 4: Client logo strip ────────────────────────── */
+
+/* ── Fix 5: Typography ───────────────────────────────── */
+.pm-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 6vw, 4.5rem);
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    line-height: 0.97;
+    color: var(--pm-white);
+}
+
+.pm-section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    color: var(--pm-white);
+}
+
+.pm-accent {
+    color: var(--pm-yellow);
+    font-style: normal;
+}
+
+/* ── Button variant for enhanced footer ───────────────── */
+.pm-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 14px 28px;
+    background: var(--pm-yellow);
+    color: var(--pm-black);
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius);
+    transition:
+        background var(--transition),
+        transform var(--transition);
+    white-space: nowrap;
+    cursor: pointer;
+    text-decoration: none;
+}
+.pm-btn-primary:hover {
+    background: #ffd520;
+    transform: translateY(-1px);
+}
+
+/* ── Inventory card container ────────────────────────── */
+.pm-inventory-card {
+    background: var(--pm-black-3);
+    border: 1px solid var(--pm-black-4);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition:
+        transform var(--transition),
+        border-color var(--transition);
+}
+.pm-inventory-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--pm-yellow);
+}

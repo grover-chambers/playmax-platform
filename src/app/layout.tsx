@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./tailwind.css";
 import "./globals.css";
+import "../styles/globals-addendum.css";
 
 export const metadata: Metadata = {
   title: "PlayMax Agency — Market Research, Brand Strategy & Media Activation",
