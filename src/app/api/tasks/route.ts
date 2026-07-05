@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 export async function GET() {
   try {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("tasks")
       .select("*, projects(name)")
@@ -14,7 +15,10 @@ export async function GET() {
 
     return NextResponse.json({ data });
   } catch {
-    return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch tasks" },
+      { status: 500 },
+    );
   }
 }
 
@@ -26,10 +30,11 @@ export async function POST(request: Request) {
     if (!name || !project_id) {
       return NextResponse.json(
         { error: "Name and project are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
+    const supabase = getSupabase();
     const { error } = await supabase.from("tasks").insert({
       name,
       project_id,
@@ -55,7 +60,10 @@ export async function PATCH(request: Request) {
     const { id, status, assignee_id, due_date, priority, name } = body;
 
     if (!id) {
-      return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Task ID is required" },
+        { status: 400 },
+      );
     }
 
     const updateData: Record<string, string> = {};
@@ -66,9 +74,13 @@ export async function PATCH(request: Request) {
     if (name) updateData.name = name;
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No fields to update" },
+        { status: 400 },
+      );
     }
 
+    const supabase = getSupabase();
     const { error } = await supabase
       .from("tasks")
       .update(updateData)

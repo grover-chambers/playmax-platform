@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 export async function GET() {
   try {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("projects")
       .select("*, clients(company)")
@@ -14,7 +15,10 @@ export async function GET() {
 
     return NextResponse.json({ data });
   } catch {
-    return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch projects" },
+      { status: 500 },
+    );
   }
 }
 
@@ -26,10 +30,11 @@ export async function POST(request: Request) {
     if (!name || !client_id || !type) {
       return NextResponse.json(
         { error: "Name, client, and type are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
+    const supabase = getSupabase();
     const { error } = await supabase.from("projects").insert({
       name,
       client_id,
