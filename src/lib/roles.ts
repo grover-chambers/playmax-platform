@@ -10,6 +10,8 @@ type AccessLevel = "all" | UserRole[];
 const routePermissions: Record<string, AccessLevel> = {
   // Staff app — only staff roles
   "/app": ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance"],
+  "/app/my-day": ["crm_staff"],
+  "/app/content": ["cms_admin"],
   "/app/pipeline": ["super_admin", "crm_admin", "crm_staff"],
   "/app/clients": ["super_admin", "crm_admin"],
   "/app/projects": ["super_admin", "crm_admin", "crm_staff"],
@@ -45,7 +47,10 @@ function getBasePath(pathname: string): string {
 /**
  * Check if a user role is allowed to access a given path.
  */
-export function canAccess(role: UserRole | undefined | null, pathname: string): boolean {
+export function canAccess(
+  role: UserRole | undefined | null,
+  pathname: string,
+): boolean {
   if (!role) return false;
 
   // Super admin can access everything

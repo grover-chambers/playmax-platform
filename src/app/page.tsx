@@ -94,18 +94,17 @@ export default function HomePage() {
       {/* ── HERO (Fix 1, Fix 5) ─────────────────────────── */}
       <section className="pm-hero hero">
         <div className="hero-content relative z-10">
-          <div className="eyebrow hero-eyebrow">
+          <div className="pm-eyebrow mb-5">
             Market Research · Brand Activation · Media Rentals
           </div>
-          {/* Fix 5c: manual line breaks */}
-          <h1 className="pm-hero-title mb-7">
+          <h1 className="pm-hero-title mb-8">
             We find the
             <br />
             market. You
             <br />
             <em className="pm-accent">own it.</em>
           </h1>
-          <p className="hero-sub">
+          <p className="pm-hero-sub mb-8">
             PlayMax Agency delivers end-to-end market intelligence, brand
             strategy, and physical media activation for manufacturers,
             suppliers, and market entrants.
@@ -150,15 +149,14 @@ export default function HomePage() {
       {/* ── SERVICES SECTION (Fix 2, Fix 5d) ───────────── */}
       <section className="section bg-black">
         <div className="container-sm">
-          <div className="mb-12">
-            <div className="eyebrow mb-3">What We Do</div>
-            {/* Fix 5d: manual line break + pm-section-title */}
-            <h2 className="pm-section-title mb-4">
+          <div className="mb-14">
+            <div className="pm-eyebrow mb-4">What We Do</div>
+            <h2 className="pm-section-title mb-6">
               Full-spectrum market
               <br />
               intelligence &amp; activation
             </h2>
-            <p className="body-copy-sm max-w-[600px]">
+            <p className="pm-hero-sub max-w-[600px]">
               From the first research question to your brand appearing on
               Nairobi&apos;s busiest streets — we handle every step.
             </p>
@@ -194,14 +192,13 @@ export default function HomePage() {
       {/* ── INVENTORY SECTION (Fix 3, Fix 5e) ──────────── */}
       <section className="section bg-black-2">
         <div className="container-sm">
-          <div className="mb-12">
-            <div className="eyebrow mb-3">Available Inventory</div>
-            {/* Fix 5e: controlled line break + pm-section-title */}
-            <h2 className="pm-section-title mb-2">
+          <div className="mb-14">
+            <div className="pm-eyebrow mb-4">Available Inventory</div>
+            <h2 className="pm-section-title mb-4">
               Media sites available{" "}
               <span className="pm-accent">this month</span>
             </h2>
-            <div className="text-[14px] text-gray-5 mt-2">
+            <div className="text-[16px] text-gray-5 mt-2">
               6 of 48 sites available · Updated daily
             </div>
           </div>
@@ -258,13 +255,13 @@ export default function HomePage() {
         <div className="container-sm">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_460px] gap-16 md:gap-24">
             <div className="flex flex-col gap-6 justify-center">
-              <div className="eyebrow">Get Started</div>
+              <div className="pm-eyebrow">Get Started</div>
               <h2 className="pm-section-title">
                 Ready to find
                 <br />
                 your <span className="pm-accent">market?</span>
               </h2>
-              <p className="body-copy">
+              <p className="pm-hero-sub">
                 Tell us what you&apos;re trying to achieve. We&apos;ll respond
                 within one business day with a project brief and a quote.
               </p>

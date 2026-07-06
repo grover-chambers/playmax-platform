@@ -35,6 +35,30 @@ interface NavSection {
 
 const allNavSections: NavSection[] = [
   {
+    label: "Overview",
+    items: [
+      {
+        icon: BarChart3,
+        label: "Dashboard",
+        href: "/app",
+        roles: ["super_admin"],
+      },
+      {
+        icon: CheckSquare,
+        label: "My Day",
+        href: "/app/my-day",
+        badge: "3",
+        roles: ["crm_staff"],
+      },
+      {
+        icon: MessageSquare,
+        label: "Content Desk",
+        href: "/app/content",
+        roles: ["cms_admin"],
+      },
+    ],
+  },
+  {
     label: "Operations",
     items: [
       {
