@@ -8,12 +8,12 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 const DEMO_PASSWORD = "Demo123!";
 
 const DEMO_ACCOUNTS: Record<string, { email: string; role: string }> = {
-  "super_admin": { email: "demo.superadmin@playmax.com", role: "super_admin" },
-  "crm_admin":   { email: "demo.crmadmin@playmax.com",   role: "crm_admin" },
-  "crm_staff":   { email: "demo.crmstaff@playmax.com",   role: "crm_staff" },
-  "cms_admin":   { email: "demo.cmsadmin@playmax.com",   role: "cms_admin" },
-  "finance":     { email: "demo.finance@playmax.com",     role: "finance" },
-  "client":      { email: "demo.client@playmax.com",      role: "client" },
+  super_admin: { email: "demo.superadmin@playmax.com", role: "super_admin" },
+  crm_admin: { email: "demo.crmadmin@playmax.com", role: "crm_admin" },
+  crm_staff: { email: "demo.crmstaff@playmax.com", role: "crm_staff" },
+  cms_admin: { email: "demo.cmsadmin@playmax.com", role: "cms_admin" },
+  finance: { email: "demo.finance@playmax.com", role: "finance" },
+  client: { email: "demo.client@playmax.com", role: "client" },
 };
 
 export async function POST(request: NextRequest) {
@@ -41,10 +41,11 @@ export async function POST(request: NextRequest) {
     });
 
     // 1. Try sign in first
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: account.email,
-      password: DEMO_PASSWORD,
-    });
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email: account.email,
+        password: DEMO_PASSWORD,
+      });
 
     if (signInData?.session) {
       return NextResponse.json({
@@ -55,20 +56,24 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Sign-in failed — try sign up (creates the user if they don't exist)
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: account.email,
-      password: DEMO_PASSWORD,
-      options: {
-        data: {
-          name: account.role.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-          role: account.role,
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
+      {
+        email: account.email,
+        password: DEMO_PASSWORD,
+        options: {
+          data: {
+            name: account.role
+              .replace("_", " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase()),
+            role: account.role,
+          },
         },
       },
-    });
+    );
 
     if (signUpData?.user && !signUpError) {
       // User was created — now sign them in
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+      const { data: loginData } = await supabase.auth.signInWithPassword({
         email: account.email,
         password: DEMO_PASSWORD,
       });
@@ -77,7 +82,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           session: loginData.session,
           role: account.role,
-          redirect: role === "client" ? "/portal" : getRedirectPath(account.role),
+          redirect:
+            role === "client" ? "/portal" : getRedirectPath(account.role),
         });
       }
 
@@ -90,10 +96,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Both failed
-    return NextResponse.json({
-      error: signUpError?.message || signInError?.message || "Login failed",
-    }, { status: 401 });
-  } catch (err) {
+    return NextResponse.json(
+      {
+        error: signUpError?.message || signInError?.message || "Login failed",
+      },
+      { status: 401 },
+    );
+  } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

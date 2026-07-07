@@ -22,7 +22,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [view, setView] = useState<"client" | "staff" | "connecting">("client");
+  const [view, setView] = useState<"client" | "staff">("client");
 
   const supabase = createClient();
 
@@ -46,6 +46,27 @@ function LoginForm() {
     await redirectStaffUser();
   };
 
+  /* ── Client email/password sign-in ─────────────────── */
+  const handleClientLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const { error: authErr } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authErr) {
+      setError(authErr.message);
+      setLoading(false);
+      return;
+    }
+
+    // Client redirects to portal
+    router.push("/portal");
+  };
+
   /* ── Google OAuth (staff) ──────────────────────────── */
   const handleGoogleLogin = async () => {
     setError("");
@@ -62,30 +83,6 @@ function LoginForm() {
       setError(authErr.message);
       setLoading(false);
     }
-  };
-
-  /* ── Client portal access via magic link ─────────── */
-  const handleClientLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    const { error: authErr } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false,
-        emailRedirectTo: `${location.origin}/auth/callback?next=/portal`,
-      },
-    });
-
-    setLoading(false);
-
-    if (authErr) {
-      setError(authErr.message);
-      return;
-    }
-
-    setView("connecting");
   };
 
   /* ── Redirect staff user after auth ──────────────── */
@@ -106,11 +103,16 @@ function LoginForm() {
       return;
     }
 
-    if (role === "client") {
-      router.push("/portal");
-    } else {
-      router.push("/app/pipeline");
-    }
+    // Role-specific redirects
+    const redirects: Record<string, string> = {
+      super_admin: "/app",
+      crm_admin: "/app/pipeline",
+      crm_staff: "/app/my-day",
+      cms_admin: "/app/content",
+      finance: "/app/invoices",
+      client: "/portal",
+    };
+    router.push(redirects[role] || "/app/pipeline");
   }
 
   /* ── Go back to client view from staff view ──────── */
@@ -177,12 +179,23 @@ function LoginForm() {
                     autoFocus
                   />
                 </div>
+                <div>
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="form-input"
+                    required
+                    minLength={6}
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={loading}
                   className="form-submit disabled:opacity-60"
                 >
-                  {loading ? "Sending magic link..." : "Send Magic Link"}
+                  {loading ? "Signing in..." : "Sign In"}
                 </button>
               </form>
 
@@ -199,49 +212,24 @@ function LoginForm() {
               </p>
             </div>
 
-            {/* Staff login trigger */}
+            {/* Demo client button */}
             <div className="text-center mt-6">
               <button
                 type="button"
                 disabled={loading}
-                onClick={async () => {
-                  setLoading(true);
+                onClick={() => {
+                  setEmail("demo.client@playmax.com");
+                  setPassword("Demo123!");
                   setError("");
-                  try {
-                    const res = await fetch("/api/auth/demo-login", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ role: "client" }),
-                    });
-                    const data = await res.json();
-                    if (data.session) {
-                      const { createClient } =
-                        await import("@/utils/supabase/client");
-                      const supabase = createClient();
-                      await supabase.auth.setSession({
-                        access_token: data.session.access_token,
-                        refresh_token: data.session.refresh_token,
-                      });
-                      window.location.href = data.redirect;
-                    } else if (data.requiresConfirmation) {
-                      setError("Account created! Check your email to confirm.");
-                      setLoading(false);
-                    } else {
-                      setError(data.error || "Login failed");
-                      setLoading(false);
-                    }
-                  } catch {
-                    setError("Connection error");
-                    setLoading(false);
-                  }
                 }}
-                className="text-[11px] font-mono font-medium px-4 py-2 rounded-full border border-[#2A2A2A] bg-transparent text-gray-5 hover:text-yellow hover:border-yellow/40 transition-all cursor-pointer disabled:opacity-50 mb-3"
+                className="text-[11px] font-mono font-medium px-4 py-2 rounded-full border border-[#2A2A2A] bg-transparent text-gray-5 hover:text-yellow hover:border-yellow/40 transition-all cursor-pointer disabled:opacity-50"
               >
                 Demo: Client Portal
               </button>
             </div>
 
-            <div className="text-center">
+            {/* Staff login trigger */}
+            <div className="text-center mt-8">
               <button
                 onClick={() => {
                   setView("staff");
@@ -387,7 +375,7 @@ function LoginForm() {
                           setError(data.error || "Login failed");
                           setLoading(false);
                         }
-                      } catch (err) {
+                      } catch {
                         setError("Connection error");
                         setLoading(false);
                       }
@@ -441,39 +429,6 @@ function LoginForm() {
                 ← Back to client portal
               </button>
             </p>
-          </div>
-        )}
-
-        {/* ── LINK SENT STATE ──────────────────────────── */}
-        {view === "connecting" && (
-          <div className="card !bg-black-2 p-8 text-center">
-            <div className="w-14 h-14 rounded-full bg-green/10 flex items-center justify-center mx-auto mb-5">
-              <svg
-                className="w-7 h-7 text-green"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h3 className="font-display text-[16px] font-bold mb-2">
-              Magic link sent!
-            </h3>
-            <p className="text-[12px] text-gray-5 mb-6 max-w-[280px] mx-auto leading-relaxed">
-              Check your email for the sign-in link. It expires in 10 minutes.
-            </p>
-            <button
-              onClick={() => setView("client")}
-              className="text-yellow text-[12px] hover:underline bg-transparent border-none cursor-pointer font-medium"
-            >
-              Send again
-            </button>
           </div>
         )}
 
