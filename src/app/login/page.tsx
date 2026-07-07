@@ -200,7 +200,48 @@ function LoginForm() {
             </div>
 
             {/* Staff login trigger */}
-            <div className="text-center mt-8">
+            <div className="text-center mt-6">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={async () => {
+                  setLoading(true);
+                  setError("");
+                  try {
+                    const res = await fetch("/api/auth/demo-login", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ role: "client" }),
+                    });
+                    const data = await res.json();
+                    if (data.session) {
+                      const { createClient } =
+                        await import("@/utils/supabase/client");
+                      const supabase = createClient();
+                      await supabase.auth.setSession({
+                        access_token: data.session.access_token,
+                        refresh_token: data.session.refresh_token,
+                      });
+                      window.location.href = data.redirect;
+                    } else if (data.requiresConfirmation) {
+                      setError("Account created! Check your email to confirm.");
+                      setLoading(false);
+                    } else {
+                      setError(data.error || "Login failed");
+                      setLoading(false);
+                    }
+                  } catch {
+                    setError("Connection error");
+                    setLoading(false);
+                  }
+                }}
+                className="text-[11px] font-mono font-medium px-4 py-2 rounded-full border border-[#2A2A2A] bg-transparent text-gray-5 hover:text-yellow hover:border-yellow/40 transition-all cursor-pointer disabled:opacity-50 mb-3"
+              >
+                Demo: Client Portal
+              </button>
+            </div>
+
+            <div className="text-center">
               <button
                 onClick={() => {
                   setView("staff");
@@ -299,6 +340,65 @@ function LoginForm() {
                 {loading ? "Signing in..." : "Sign In"}
               </button>
             </form>
+
+            {/* ── DEMO ACCOUNTS ─────────────────────── */}
+            <div className="mt-5 pt-4 border-t border-[#1A1A1A]">
+              <p className="text-[9px] font-mono text-gray-5 tracking-widest uppercase text-center mb-3">
+                Demo accounts
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {[
+                  { role: "super_admin", label: "Super Admin" },
+                  { role: "crm_admin", label: "CRM Admin" },
+                  { role: "crm_staff", label: "CRM Staff" },
+                  { role: "cms_admin", label: "CMS Admin" },
+                  { role: "finance", label: "Finance" },
+                ].map((d) => (
+                  <button
+                    key={d.role}
+                    type="button"
+                    disabled={loading}
+                    onClick={async () => {
+                      setLoading(true);
+                      setError("");
+                      try {
+                        const res = await fetch("/api/auth/demo-login", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ role: d.role }),
+                        });
+                        const data = await res.json();
+                        if (data.session) {
+                          // Set the session via Supabase browser client
+                          const { createClient } =
+                            await import("@/utils/supabase/client");
+                          const supabase = createClient();
+                          await supabase.auth.setSession({
+                            access_token: data.session.access_token,
+                            refresh_token: data.session.refresh_token,
+                          });
+                          window.location.href = data.redirect;
+                        } else if (data.requiresConfirmation) {
+                          setError(
+                            "Account created! Check your email to confirm, then sign in.",
+                          );
+                          setLoading(false);
+                        } else {
+                          setError(data.error || "Login failed");
+                          setLoading(false);
+                        }
+                      } catch (err) {
+                        setError("Connection error");
+                        setLoading(false);
+                      }
+                    }}
+                    className="text-[10px] font-mono font-medium px-3 py-1.5 rounded-full border border-[#2A2A2A] bg-transparent text-gray-5 hover:text-yellow hover:border-yellow/40 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="flex items-center gap-3 my-5">
               <div className="divider flex-1" />

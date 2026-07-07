@@ -158,10 +158,30 @@ export function SiteFooter() {
         >
           PLAY<span style={{ color: "var(--pm-yellow)" }}>MAX</span>
         </div>
-        <p style={{ fontSize: "12px", color: "var(--pm-gray-5)" }}>
-          © 2026 PlayMax Agency. Built by{" "}
-          <span style={{ color: "var(--pm-yellow)" }}>Squareroot INC</span>.
-        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <p style={{ fontSize: "12px", color: "var(--pm-gray-5)" }}>
+            © 2026 PlayMax Agency. Built by{" "}
+            <span style={{ color: "var(--pm-yellow)" }}>Squareroot INC</span>.
+          </p>
+          <a
+            href="/login"
+            style={{
+              fontSize: "11px",
+              color: "var(--pm-gray-5)",
+              textDecoration: "none",
+              transition: "color 150ms ease",
+              fontFamily: "var(--font-body)",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--pm-gray-3)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--pm-gray-5)")
+            }
+          >
+            Login
+          </a>
+        </div>
       </div>
     </footer>
   );
