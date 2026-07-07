@@ -252,14 +252,14 @@ export default function PlatformLayout({
 
   return (
     <div
-      className="platform-shell"
+      className="platform-shell !min-h-screen !h-screen overflow-hidden"
       style={{
         gridTemplateColumns: `${sidebarCollapsed ? "64px" : "var(--sidebar-w)"} 1fr`,
         transition: "grid-template-columns 0.2s ease",
       }}
     >
       <aside
-        className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}
+        className={`sidebar !h-screen ${sidebarCollapsed ? "collapsed" : ""}`}
         style={{
           width: sidebarCollapsed ? "64px" : "var(--sidebar-w)",
           transition: "width 0.2s ease",
