@@ -1210,3 +1210,43 @@
     color: var(--pm-black);
     flex-shrink: 0;
 }
+
+/* ════════════════════════════════════════════════════════════
+   APP DASHBOARD — collapsible sidebar overrides
+   ════════════════════════════════════════════════════════════ */
+
+/* Collapsed sidebar hides section labels */
+.sidebar.collapsed .sidebar-section {
+    display: none;
+}
+
+/* Collapsed sidebar items centered with just icon */
+.sidebar.collapsed .sidebar-item {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.sidebar.collapsed .sidebar-item span {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-badge {
+    display: none;
+}
+
+/* User section in collapsed state */
+.sidebar.collapsed .sidebar-user {
+    flex-direction: column;
+    padding: 14px 0;
+    gap: 8px;
+}
+
+.sidebar.collapsed .sidebar-user .user-name,
+.sidebar.collapsed .sidebar-user .user-role {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-logo {
+    text-align: center;
+    padding: 18px 0 20px;
+}
