@@ -43,7 +43,35 @@ function LoginForm() {
       return;
     }
 
-    await redirectStaffUser();
+    // Fetch user to get their role metadata
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const role = user?.user_metadata?.role;
+
+    if (!role) {
+      setError(
+        "Your account is missing a staff role configuration. Contact your administrator.",
+      );
+      setLoading(false);
+      await supabase.auth.signOut();
+      return;
+    }
+
+    if (nextPath && !nextPath.startsWith("/login")) {
+      router.push(nextPath);
+      return;
+    }
+
+    const redirects: Record<string, string> = {
+      super_admin: "/app",
+      crm_admin: "/app/pipeline",
+      crm_staff: "/app/my-day",
+      cms_admin: "/app/content",
+      finance: "/app/invoices",
+      client: "/portal",
+    };
+    router.push(redirects[role] || "/app/pipeline");
   };
 
   /* ── Client email/password sign-in ─────────────────── */
@@ -84,36 +112,6 @@ function LoginForm() {
       setLoading(false);
     }
   };
-
-  /* ── Redirect staff user after auth ──────────────── */
-  async function redirectStaffUser() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    const role = user.user_metadata?.role;
-
-    if (nextPath && !nextPath.startsWith("/login")) {
-      router.push(nextPath);
-      return;
-    }
-
-    // Role-specific redirects
-    const redirects: Record<string, string> = {
-      super_admin: "/app",
-      crm_admin: "/app/pipeline",
-      crm_staff: "/app/my-day",
-      cms_admin: "/app/content",
-      finance: "/app/invoices",
-      client: "/portal",
-    };
-    router.push(redirects[role] || "/app/pipeline");
-  }
 
   /* ── Go back to client view from staff view ──────── */
   const switchToClient = () => {
@@ -365,6 +363,18 @@ function LoginForm() {
                             access_token: data.session.access_token,
                             refresh_token: data.session.refresh_token,
                           });
+                          // Ensure the user has the correct role metadata
+                          const {
+                            data: { user },
+                          } = await supabase.auth.getUser();
+                          if (user?.user_metadata?.role !== d.role) {
+                            await supabase.auth.updateUser({
+                              data: {
+                                role: d.role,
+                                name: d.label,
+                              },
+                            });
+                          }
                           window.location.href = data.redirect;
                         } else if (data.requiresConfirmation) {
                           setError(

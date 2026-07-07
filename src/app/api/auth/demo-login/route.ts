@@ -4,16 +4,44 @@ import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const DEMO_PASSWORD = "Demo123!";
 
-const DEMO_ACCOUNTS: Record<string, { email: string; role: string }> = {
-  super_admin: { email: "demo.superadmin@playmax.com", role: "super_admin" },
-  crm_admin: { email: "demo.crmadmin@playmax.com", role: "crm_admin" },
-  crm_staff: { email: "demo.crmstaff@playmax.com", role: "crm_staff" },
-  cms_admin: { email: "demo.cmsadmin@playmax.com", role: "cms_admin" },
-  finance: { email: "demo.finance@playmax.com", role: "finance" },
-  client: { email: "demo.client@playmax.com", role: "client" },
+const DEMO_ACCOUNTS: Record<
+  string,
+  { email: string; role: string; name: string }
+> = {
+  super_admin: {
+    email: "demo.superadmin@playmax.com",
+    role: "super_admin",
+    name: "Brayan",
+  },
+  crm_admin: {
+    email: "demo.crmadmin@playmax.com",
+    role: "crm_admin",
+    name: "David Mutua",
+  },
+  crm_staff: {
+    email: "demo.crmstaff@playmax.com",
+    role: "crm_staff",
+    name: "Amina Mwangi",
+  },
+  cms_admin: {
+    email: "demo.cmsadmin@playmax.com",
+    role: "cms_admin",
+    name: "Florence Njeri",
+  },
+  finance: {
+    email: "demo.finance@playmax.com",
+    role: "finance",
+    name: "Faith Opiyo",
+  },
+  client: {
+    email: "demo.client@playmax.com",
+    role: "client",
+    name: "Brian Kamau",
+  },
 };
 
 export async function POST(request: NextRequest) {
@@ -26,7 +54,43 @@ export async function POST(request: NextRequest) {
 
     const cookieStore = await cookies();
 
-    // Create a Supabase client (uses anon key — same as browser)
+    // ── If service role key is available, ensure the user exists with proper metadata ──
+    if (serviceRoleKey) {
+      const adminClient = createServerClient(supabaseUrl, serviceRoleKey, {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll() {}, // admin client doesn't need to write cookies
+        },
+      });
+
+      // Check if user exists
+      const { data: existingUsers } = await adminClient.auth.admin.listUsers();
+      const existingUser = existingUsers?.users.find(
+        (u) => u.email === account.email,
+      );
+
+      if (existingUser) {
+        // User exists — update metadata if role is missing or wrong
+        const currentRole = existingUser.user_metadata?.role;
+        if (currentRole !== account.role) {
+          await adminClient.auth.admin.updateUserById(existingUser.id, {
+            user_metadata: { name: account.name, role: account.role },
+          });
+        }
+      } else {
+        // User doesn't exist — create with metadata + email confirmed
+        await adminClient.auth.admin.createUser({
+          email: account.email,
+          password: DEMO_PASSWORD,
+          email_confirm: true,
+          user_metadata: { name: account.name, role: account.role },
+        });
+      }
+    }
+
+    // ── Now sign in with the anon client (cookies get written properly) ──
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
@@ -40,7 +104,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 1. Try sign in first
     const { data: signInData, error: signInError } =
       await supabase.auth.signInWithPassword({
         email: account.email,
@@ -51,55 +114,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         session: signInData.session,
         role: account.role,
-        redirect: role === "client" ? "/portal" : getRedirectPath(account.role),
+        redirect: getRedirectPath(account.role),
       });
     }
 
-    // 2. Sign-in failed — try sign up (creates the user if they don't exist)
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
-      {
+    // ── Fallback: try sign-up (for when service role key is not available) ──
+    if (!serviceRoleKey) {
+      const { data: signUpData } = await supabase.auth.signUp({
         email: account.email,
         password: DEMO_PASSWORD,
         options: {
-          data: {
-            name: account.role
-              .replace("_", " ")
-              .replace(/\b\w/g, (c) => c.toUpperCase()),
-            role: account.role,
-          },
+          data: { name: account.name, role: account.role },
         },
-      },
-    );
-
-    if (signUpData?.user && !signUpError) {
-      // User was created — now sign them in
-      const { data: loginData } = await supabase.auth.signInWithPassword({
-        email: account.email,
-        password: DEMO_PASSWORD,
       });
 
-      if (loginData?.session) {
+      if (signUpData?.user) {
+        const { data: loginData } = await supabase.auth.signInWithPassword({
+          email: account.email,
+          password: DEMO_PASSWORD,
+        });
+
+        if (loginData?.session) {
+          return NextResponse.json({
+            session: loginData.session,
+            role: account.role,
+            redirect: getRedirectPath(account.role),
+          });
+        }
+
         return NextResponse.json({
-          session: loginData.session,
-          role: account.role,
-          redirect:
-            role === "client" ? "/portal" : getRedirectPath(account.role),
+          requiresConfirmation: true,
+          email: account.email,
+          message:
+            "Account created! Check your email to confirm, then try again.",
         });
       }
-
-      // Sign-up succeeded but auto-sign-in failed — likely email confirmation required
-      return NextResponse.json({
-        requiresConfirmation: true,
-        email: account.email,
-        message: "Account created! Check your email to confirm, then sign in.",
-      });
     }
 
-    // 3. Both failed
     return NextResponse.json(
-      {
-        error: signUpError?.message || signInError?.message || "Login failed",
-      },
+      { error: signInError?.message || "Login failed" },
       { status: 401 },
     );
   } catch {
