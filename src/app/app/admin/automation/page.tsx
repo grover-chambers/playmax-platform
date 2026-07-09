@@ -239,7 +239,7 @@ export default function AutomationPage() {
       </div>
 
       {/* ── New Rule Modal ── */}
-      <Modal open={showNewRule} onClose={() => setShowNewRule(false)}>
+      <Modal open={showNewRule} onClose={() => setShowNewRule(false)} title="New Automation Rule">
         <div className="w-full max-w-lg mx-auto">
           <div className="bg-black-2 border border-[#1e1e1e] rounded-lg">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e1e]">
@@ -310,7 +310,7 @@ export default function AutomationPage() {
       </Modal>
 
       {/* ── Run Log Modal ── */}
-      <Modal open={showLog} onClose={() => setShowLog(false)}>
+      <Modal open={showLog} onClose={() => setShowLog(false)} title="Trigger Log">
         <div className="w-full max-w-lg mx-auto">
           <div className="bg-black-2 border border-[#1e1e1e] rounded-lg">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e1e]">

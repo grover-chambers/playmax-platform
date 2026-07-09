@@ -5,9 +5,9 @@ export async function GET() {
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase
-      .from("bookings")
-      .select("*, inventory_items(name), clients(company)")
-      .order("created_at", { ascending: false });
+      .from("engagements")
+      .select("*, clients(company), projects(name)")
+      .order("date", { ascending: false });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -16,7 +16,7 @@ export async function GET() {
     return NextResponse.json({ data });
   } catch {
     return NextResponse.json(
-      { error: "Failed to fetch bookings" },
+      { error: "Failed to fetch engagements" },
       { status: 500 },
     );
   }
@@ -26,43 +26,45 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const {
-      inventory_item_id,
       client_id,
+      engagement_type,
+      date,
+      staff_involved,
+      billable = false,
+      billing_rate,
+      flat_fee,
+      summary,
       project_id,
-      start_date,
-      end_date,
-      price_agreed,
-      status = "tentative",
-      notes,
     } = body;
 
-    if (!inventory_item_id || !client_id || !start_date || !end_date || !price_agreed) {
+    if (!client_id || !engagement_type || !date) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Client, engagement type, and date are required" },
+        { status: 400 },
+      );
+    }
+
+    if (billable && !billing_rate && !flat_fee) {
+      return NextResponse.json(
+        { error: "Hourly rate or flat fee required when billable" },
         { status: 400 },
       );
     }
 
     const supabase = getSupabase();
-    const { error } = await supabase.from("bookings").insert({
-      inventory_item_id,
+    const { error } = await supabase.from("engagements").insert({
       client_id,
-      project_id,
-      start_date,
-      end_date,
-      price_agreed,
-      status,
-      notes,
+      engagement_type,
+      date,
+      staff_involved: staff_involved || [],
+      billable,
+      billing_rate: billable ? billing_rate : null,
+      flat_fee: billable ? flat_fee : null,
+      summary,
+      project_id: project_id || null,
     });
 
     if (error) {
-      // Check for exclusion constraint violation (double booking)
-      if (error.code === "23P01") {
-        return NextResponse.json(
-          { error: "Conflict: This inventory item is already booked for the selected dates" },
-          { status: 409 }
-        );
-      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
