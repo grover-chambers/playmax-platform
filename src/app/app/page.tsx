@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Download,
   Plus,
@@ -13,17 +14,22 @@ import {
   Sun,
   Clock,
   Zap,
-} from 'lucide-react';
-import Button from '@/components/ui/button';
+} from "lucide-react";
+import Button from "@/components/ui/button";
+import NewLeadModal from "@/components/modals/new-lead-modal";
 
 export default function SuperAdminDashboard() {
+  const router = useRouter();
+  const [showNewLead, setShowNewLead] = useState(false);
+
   return (
     <>
+      <NewLeadModal open={showNewLead} onClose={() => setShowNewLead(false)} />
       {/* ── Welcome strip ──────────────────────────────────── */}
       <div className="pm-dash-welcome">
         <div>
           <h2>
-            Good morning, Brayan.{' '}
+            Good morning, Brayan.{" "}
             <Sun className="inline-block w-5 h-5 text-yellow align-text-bottom" />
           </h2>
           <p>Here&apos;s your command centre overview for today.</p>
@@ -33,7 +39,11 @@ export default function SuperAdminDashboard() {
             <Download className="w-3.5 h-3.5" />
             Export report
           </Button>
-          <Button variant="primary" size="sm">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowNewLead(true)}
+          >
             <Plus className="w-3.5 h-3.5" />
             New lead
           </Button>
@@ -44,23 +54,38 @@ export default function SuperAdminDashboard() {
       <div className="p-6">
         {/* ── Quick actions strip ────────────────────────── */}
         <div className="pm-dash-qa-strip">
-          <button className="pm-dash-qa-btn">
+          <button
+            className="pm-dash-qa-btn"
+            onClick={() => router.push("/app/admin/staff")}
+          >
             <UserPlus className="w-3.5 h-3.5" />
             Add staff
           </button>
-          <button className="pm-dash-qa-btn">
+          <button
+            className="pm-dash-qa-btn"
+            onClick={() => router.push("/app/projects")}
+          >
             <FolderPlus className="w-3.5 h-3.5" />
             New project
           </button>
-          <button className="pm-dash-qa-btn">
+          <button
+            className="pm-dash-qa-btn"
+            onClick={() => router.push("/app/invoices")}
+          >
             <FileText className="w-3.5 h-3.5" />
             New invoice
           </button>
-          <button className="pm-dash-qa-btn">
+          <button
+            className="pm-dash-qa-btn"
+            onClick={() => setShowNewLead(true)}
+          >
             <UserCheck className="w-3.5 h-3.5" />
             Assign lead
           </button>
-          <button className="pm-dash-qa-btn">
+          <button
+            className="pm-dash-qa-btn"
+            onClick={() => router.push("/app/pipeline")}
+          >
             <BarChart3 className="w-3.5 h-3.5" />
             Full analytics
           </button>
@@ -73,8 +98,7 @@ export default function SuperAdminDashboard() {
             <div className="pm-dash-kn">KES 4.2M</div>
             <div className="pm-dash-kl">Pipeline value</div>
             <div className="pm-dash-ksub">
-              <TrendingUp className="inline-block w-3 h-3 trend-up align-text-bottom" />
-              {' '}
+              <TrendingUp className="inline-block w-3 h-3 trend-up align-text-bottom" />{" "}
               <span className="trend-up">↑ 18%</span> vs last month
             </div>
           </div>
@@ -84,8 +108,8 @@ export default function SuperAdminDashboard() {
             <div className="pm-dash-kn">11</div>
             <div className="pm-dash-kl">Active projects</div>
             <div className="pm-dash-ksub">
-              <Clock className="inline-block w-3 h-3 text-yellow align-text-bottom" />
-              {' '}3 milestone reviews pending
+              <Clock className="inline-block w-3 h-3 text-yellow align-text-bottom" />{" "}
+              3 milestone reviews pending
             </div>
           </div>
 
@@ -94,7 +118,8 @@ export default function SuperAdminDashboard() {
             <div className="pm-dash-kn blu">KES 780K</div>
             <div className="pm-dash-kl">Collected this month</div>
             <div className="pm-dash-ksub">
-              Target: KES 1.2M <span className="text-[var(--pm-blue)]">· 65%</span>
+              Target: KES 1.2M{" "}
+              <span className="text-[var(--pm-blue)]">· 65%</span>
             </div>
           </div>
 
@@ -125,7 +150,7 @@ export default function SuperAdminDashboard() {
                   <div className="pm-dash-pipe-bar-track">
                     <div
                       className="pm-dash-pipe-bar-fill"
-                      style={{ width: '60%', background: 'var(--pm-blue)' }}
+                      style={{ width: "60%", background: "var(--pm-blue)" }}
                     />
                   </div>
                   <span className="pm-dash-pipe-count">12</span>
@@ -137,7 +162,7 @@ export default function SuperAdminDashboard() {
                   <div className="pm-dash-pipe-bar-track">
                     <div
                       className="pm-dash-pipe-bar-fill"
-                      style={{ width: '75%', background: 'var(--pm-yellow)' }}
+                      style={{ width: "75%", background: "var(--pm-yellow)" }}
                     />
                   </div>
                   <span className="pm-dash-pipe-count">9</span>
@@ -149,7 +174,7 @@ export default function SuperAdminDashboard() {
                   <div className="pm-dash-pipe-bar-track">
                     <div
                       className="pm-dash-pipe-bar-fill"
-                      style={{ width: '50%', background: 'var(--pm-yellow)' }}
+                      style={{ width: "50%", background: "var(--pm-yellow)" }}
                     />
                   </div>
                   <span className="pm-dash-pipe-count">6</span>
@@ -161,7 +186,7 @@ export default function SuperAdminDashboard() {
                   <div className="pm-dash-pipe-bar-track">
                     <div
                       className="pm-dash-pipe-bar-fill"
-                      style={{ width: '30%', background: 'var(--pm-red)' }}
+                      style={{ width: "30%", background: "var(--pm-red)" }}
                     />
                   </div>
                   <span className="pm-dash-pipe-count">4</span>
@@ -173,7 +198,7 @@ export default function SuperAdminDashboard() {
                   <div className="pm-dash-pipe-bar-track">
                     <div
                       className="pm-dash-pipe-bar-fill"
-                      style={{ width: '25%', background: 'var(--pm-green)' }}
+                      style={{ width: "25%", background: "var(--pm-green)" }}
                     />
                   </div>
                   <span className="pm-dash-pipe-count">3</span>
@@ -186,14 +211,19 @@ export default function SuperAdminDashboard() {
             <div className="pm-dash-card">
               <div className="pm-dash-card-h">
                 <span className="pm-dash-card-t">Team workload</span>
-                <button className="btn-sm">Manage staff</button>
+                <button
+                  className="btn-sm"
+                  onClick={() => router.push("/app/admin/staff")}
+                >
+                  Manage staff
+                </button>
               </div>
               <div className="pm-dash-card-b">
                 {/* Alex M. */}
                 <div className="pm-dash-staff-row">
                   <div
                     className="user-avatar"
-                    style={{ background: '#1a3a2a', color: 'var(--pm-green)' }}
+                    style={{ background: "#1a3a2a", color: "var(--pm-green)" }}
                   >
                     AM
                   </div>
@@ -220,7 +250,7 @@ export default function SuperAdminDashboard() {
                 <div className="pm-dash-staff-row">
                   <div
                     className="user-avatar"
-                    style={{ background: '#1a2a3a', color: 'var(--pm-blue)' }}
+                    style={{ background: "#1a2a3a", color: "var(--pm-blue)" }}
                   >
                     JW
                   </div>
@@ -247,7 +277,7 @@ export default function SuperAdminDashboard() {
                 <div className="pm-dash-staff-row">
                   <div
                     className="user-avatar"
-                    style={{ background: '#3a3a1a', color: 'var(--pm-yellow)' }}
+                    style={{ background: "#3a3a1a", color: "var(--pm-yellow)" }}
                   >
                     RN
                   </div>
@@ -274,7 +304,7 @@ export default function SuperAdminDashboard() {
                 <div className="pm-dash-staff-row">
                   <div
                     className="user-avatar"
-                    style={{ background: '#3a1a1a', color: 'var(--pm-red)' }}
+                    style={{ background: "#3a1a1a", color: "var(--pm-red)" }}
                   >
                     KP
                   </div>
@@ -315,7 +345,7 @@ export default function SuperAdminDashboard() {
                     <div className="pm-dash-feed-dot g" />
                     <div className="flex-1 min-w-0">
                       <div className="pm-dash-feed-text">
-                        <span className="pm-dash-feed-actor">Sarah K.</span>{' '}
+                        <span className="pm-dash-feed-actor">Sarah K.</span>{" "}
                         qualified a new lead — 15kW solar install
                       </div>
                       <div className="pm-dash-feed-time">2 min ago</div>
@@ -327,9 +357,9 @@ export default function SuperAdminDashboard() {
                     <div className="pm-dash-feed-dot g" />
                     <div className="flex-1 min-w-0">
                       <div className="pm-dash-feed-text">
-                        Invoice{' '}
-                        <span className="pm-dash-feed-actor">#1042</span>{' '}
-                        marked as paid — KES 180,000
+                        Invoice{" "}
+                        <span className="pm-dash-feed-actor">#1042</span> marked
+                        as paid — KES 180,000
                       </div>
                       <div className="pm-dash-feed-time">14 min ago</div>
                     </div>
@@ -340,8 +370,10 @@ export default function SuperAdminDashboard() {
                     <div className="pm-dash-feed-dot y" />
                     <div className="flex-1 min-w-0">
                       <div className="pm-dash-feed-text">
-                        Project{' '}
-                        <span className="pm-dash-feed-actor">Hillcrest Estate</span>{' '}
+                        Project{" "}
+                        <span className="pm-dash-feed-actor">
+                          Hillcrest Estate
+                        </span>{" "}
                         reached milestone 3/5
                       </div>
                       <div className="pm-dash-feed-time">32 min ago</div>
@@ -353,7 +385,7 @@ export default function SuperAdminDashboard() {
                     <div className="pm-dash-feed-dot b" />
                     <div className="flex-1 min-w-0">
                       <div className="pm-dash-feed-text">
-                        New staff login detected —{' '}
+                        New staff login detected —{" "}
                         <span className="pm-dash-feed-actor">Jamie L.</span>
                       </div>
                       <div className="pm-dash-feed-time">1 hr ago</div>
@@ -365,8 +397,7 @@ export default function SuperAdminDashboard() {
                     <div className="pm-dash-feed-dot y" />
                     <div className="flex-1 min-w-0">
                       <div className="pm-dash-feed-text">
-                        Lead{' '}
-                        <span className="pm-dash-feed-actor">#L-023</span>{' '}
+                        Lead <span className="pm-dash-feed-actor">#L-023</span>{" "}
                         assigned to James W.
                       </div>
                       <div className="pm-dash-feed-time">2 hr ago</div>
@@ -378,8 +409,8 @@ export default function SuperAdminDashboard() {
                     <div className="pm-dash-feed-dot g" />
                     <div className="flex-1 min-w-0">
                       <div className="pm-dash-feed-text">
-                        Payment received —{' '}
-                        <span className="pm-dash-feed-actor">KES 95,000</span>{' '}
+                        Payment received —{" "}
+                        <span className="pm-dash-feed-actor">KES 95,000</span>{" "}
                         from Green Valley Ltd
                       </div>
                       <div className="pm-dash-feed-time">3 hr ago</div>
@@ -391,10 +422,10 @@ export default function SuperAdminDashboard() {
                     <div className="pm-dash-feed-dot r" />
                     <div className="flex-1 min-w-0">
                       <div className="pm-dash-feed-text">
-                        Task{' '}
+                        Task{" "}
                         <span className="pm-dash-feed-actor">
                           &ldquo;Draft site report&rdquo;
-                        </span>{' '}
+                        </span>{" "}
                         overdue by 2 days
                       </div>
                       <div className="pm-dash-feed-time">5 hr ago</div>
@@ -416,7 +447,7 @@ export default function SuperAdminDashboard() {
                   <div className="pm-dash-mini-kpi flex-1">
                     <div
                       className="pm-dash-mini-kpi-val"
-                      style={{ color: 'var(--pm-red)' }}
+                      style={{ color: "var(--pm-red)" }}
                     >
                       KES 1.2M
                     </div>
@@ -425,7 +456,7 @@ export default function SuperAdminDashboard() {
                   <div className="pm-dash-mini-kpi flex-1">
                     <div
                       className="pm-dash-mini-kpi-val"
-                      style={{ color: 'var(--pm-green)' }}
+                      style={{ color: "var(--pm-green)" }}
                     >
                       KES 780K
                     </div>
@@ -434,7 +465,7 @@ export default function SuperAdminDashboard() {
                   <div className="pm-dash-mini-kpi flex-1">
                     <div
                       className="pm-dash-mini-kpi-val"
-                      style={{ color: 'var(--pm-red)' }}
+                      style={{ color: "var(--pm-red)" }}
                     >
                       3
                     </div>
@@ -446,7 +477,7 @@ export default function SuperAdminDashboard() {
                 <div className="pm-dash-li">
                   <div
                     className="pm-dash-li-dot"
-                    style={{ background: 'var(--pm-red)' }}
+                    style={{ background: "var(--pm-red)" }}
                   />
                   <div className="pm-dash-li-body">
                     <div className="pm-dash-li-title">
@@ -461,7 +492,7 @@ export default function SuperAdminDashboard() {
                 <div className="pm-dash-li">
                   <div
                     className="pm-dash-li-dot"
-                    style={{ background: 'var(--pm-blue)' }}
+                    style={{ background: "var(--pm-blue)" }}
                   />
                   <div className="pm-dash-li-body">
                     <div className="pm-dash-li-title">
@@ -476,7 +507,7 @@ export default function SuperAdminDashboard() {
                 <div className="pm-dash-li">
                   <div
                     className="pm-dash-li-dot"
-                    style={{ background: 'var(--pm-green)' }}
+                    style={{ background: "var(--pm-green)" }}
                   />
                   <div className="pm-dash-li-body">
                     <div className="pm-dash-li-title">

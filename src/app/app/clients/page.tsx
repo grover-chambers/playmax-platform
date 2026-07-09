@@ -9,6 +9,7 @@ import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
 import Avatar from "@/components/ui/avatar";
 import StatusBadge from "@/components/ui/status-badge";
+import NewClientModal from "@/components/modals/new-client-modal";
 
 interface Client {
   id: string;
@@ -140,9 +141,11 @@ const industryFilters = ["All", "FMCG", "Telecom", "Retail", "F&B", "AgriTech"];
 export default function ClientsPage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [view, setView] = useState<"grid" | "list">("list");
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <div>
+      <NewClientModal open={modalOpen} onClose={() => setModalOpen(false)} />
       <PageHeader
         title="Clients"
         subtitle="10 accounts · KES 12.2M total value"
@@ -151,7 +154,11 @@ export default function ClientsPage() {
             <Button variant="secondary" size="sm">
               <Filter size={12} className="mr-1" /> Filter
             </Button>
-            <Button variant="primary" size="sm">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setModalOpen(true)}
+            >
               <Plus size={12} className="mr-1" /> Add Client
             </Button>
           </>

@@ -32,15 +32,15 @@ export default function AboutPage() {
     <>
       <SiteHeader />
 
-      <section className="bg-black">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container pt-28 md:pt-36 pb-12 md:pb-16">
-          <div className="eyebrow mb-3 md:mb-4">About PlayMax</div>
-          <h1 className="text-hero mb-6 md:mb-8">
+          <div className="pm-eyebrow mb-3 md:mb-4">About PlayMax</div>
+          <h1 className="pm-hero-title mb-6 md:mb-8">
             We find the market.
             <br />
-            <span className="accent">You own it.</span>
+            <span className="pm-accent">You own it.</span>
           </h1>
-          <p className="body-copy max-w-[620px]">
+          <p className="pm-hero-sub max-w-[620px]">
             PlayMax Agency is a Nairobi-based market intelligence and brand
             activation firm. We help manufacturers, suppliers, and market
             entrants understand, enter, and dominate Kenyan and East African
@@ -49,14 +49,14 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="bg-black-2">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20">
             <div>
-              <h2 className="text-section mb-8 md:mb-12">
+              <h2 className="pm-section-title mb-8 md:mb-12">
                 Born from a gap in the market
               </h2>
-              <div className="flex flex-col gap-5 md:gap-6 body-copy">
+              <div className="flex flex-col gap-5 md:gap-6 pm-body-sm">
                 <p>
                   PlayMax started because we kept seeing the same problem:
                   brands spending big on campaigns without first understanding
@@ -80,17 +80,17 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="flex flex-col gap-4 md:gap-5 justify-center">
-              <div className="stat-card">
-                <div className="stat-num">120+</div>
+              <div className="pm-stat-card">
+                <div className="pm-stat-highlight">120+</div>
                 <div className="stat-label">Research engagements completed</div>
               </div>
-              <div className="stat-row">
-                <div className="stat-card">
-                  <div className="stat-num">48</div>
+              <div className="flex gap-4">
+                <div className="pm-stat-card">
+                  <div className="pm-stat-highlight">48</div>
                   <div className="stat-label">Media sites managed</div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-num">6</div>
+                <div className="pm-stat-card">
+                  <div className="pm-stat-highlight">6</div>
                   <div className="stat-label">Active markets tracked</div>
                 </div>
               </div>
@@ -99,10 +99,10 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="bg-black">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
-          <div className="eyebrow mb-3 md:mb-4">What drives us</div>
-          <h2 className="text-section mb-8 md:mb-12">Our values</h2>
+          <div className="pm-eyebrow mb-3 md:mb-4">What drives us</div>
+          <h2 className="pm-section-title mb-8 md:mb-12">Our values</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
             {values.map((v) => (
               <div
@@ -112,22 +112,22 @@ export default function AboutPage() {
                 <div className="text-[16px] md:text-[18px] font-semibold text-yellow mb-3 md:mb-4">
                   {v.title}
                 </div>
-                <div className="body-copy-sm">{v.desc}</div>
+                <div className="pm-body-sm">{v.desc}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-black-2">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
-          <div className="eyebrow mb-3 md:mb-4">The Team</div>
-          <h2 className="text-section mb-8 md:mb-12">
+          <div className="pm-eyebrow mb-3 md:mb-4">The Team</div>
+          <h2 className="pm-section-title mb-8 md:mb-12">
             People who make it happen
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
             {team.map((member) => (
-              <div key={member.name} className="stat-card text-center">
+              <div key={member.name} className="pm-stat-card text-center">
                 <div className="user-avatar !w-16 !h-16 !text-[16px] md:!text-[18px] mx-auto mb-4 md:mb-5">
                   {member.initials}
                 </div>
@@ -141,14 +141,19 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="bg-black">
+      <section className="bg-transparent" style={{ color: "var(--pm-black)" }}>
         <div className="site-container section">
           <div className="max-w-[500px] mx-auto text-center">
-            <div className="eyebrow mb-3 md:mb-4">Work With Us</div>
-            <h2 className="text-section mb-4 md:mb-6">
+            <div
+              className="pm-eyebrow mb-3 md:mb-4"
+              style={{ color: "var(--pm-amber)" }}
+            >
+              Work With Us
+            </div>
+            <h2 className="pm-section-title mb-4 md:mb-6">
               Ready to find your market?
             </h2>
-            <p className="body-copy-sm mb-8 md:mb-10">
+            <p className="pm-hero-sub mb-8 md:mb-10">
               Send us a brief and we&apos;ll respond within one business day.
             </p>
             <LeadForm source="about-page" />

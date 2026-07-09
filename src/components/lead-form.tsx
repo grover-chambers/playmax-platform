@@ -43,7 +43,7 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
 
   if (submitted) {
     return (
-      <div className="card !bg-black-2 !border-black-4 p-10 flex flex-col items-center justify-center text-center gap-4">
+      <div className="bg-black-2 border border-[#2a2a2a] rounded-lg p-10 flex flex-col items-center justify-center text-center gap-4">
         <CheckCircle className="w-12 h-12 text-green" />
         <div className="font-display text-[22px] font-bold">
           Brief received!
@@ -56,69 +56,70 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="card !bg-black-2 !border-black-4 p-10 max-md:p-6"
-    >
+    <form onSubmit={handleSubmit} className="flex flex-col gap-7">
       <div className="font-display text-[22px] font-bold mb-1.5">
         Send us a brief
       </div>
-      <div className="body-copy-sm mb-7">
-        We&apos;ll get back to you within one business day.
-      </div>
+      <p className="body-copy-sm !text-gray-5">
+        We&apos;ll respond within one business day with a project brief and a
+        quote.
+      </p>
 
-      <div className="grid grid-cols-2 gap-4 mb-4 max-md:grid-cols-1">
-        <div>
+      {/* Name + Company row */}
+      <div className="grid grid-cols-2 gap-7 max-md:grid-cols-1">
+        <div className="flex flex-col gap-2">
           <label className="form-label">Your name</label>
           <input
             name="name"
             required
-            className="form-input"
+            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-1 outline-none transition-colors duration-250 placeholder:text-gray-400 !rounded-none !border-t-0 !border-l-0 !border-r-0"
             placeholder="Jane Mwangi"
           />
         </div>
-        <div>
+        <div className="flex flex-col gap-2">
           <label className="form-label">Company</label>
           <input
             name="company"
             required
-            className="form-input"
+            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-1 outline-none transition-colors duration-250 placeholder:text-gray-400 !rounded-none !border-t-0 !border-l-0 !border-r-0"
             placeholder="Acme Ltd"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4 max-md:grid-cols-1">
-        <div>
+      {/* Email + Phone row */}
+      <div className="grid grid-cols-2 gap-7 max-md:grid-cols-1">
+        <div className="flex flex-col gap-2">
           <label className="form-label">Email</label>
           <input
             name="email"
             type="email"
             required
-            className="form-input"
+            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-1 outline-none transition-colors duration-250 placeholder:text-gray-400 !rounded-none !border-t-0 !border-l-0 !border-r-0"
             placeholder="jane@company.co.ke"
           />
         </div>
-        <div>
+        <div className="flex flex-col gap-2">
           <label className="form-label">
-            Phone <span className="text-gray-5 font-normal">(optional)</span>
+            Phone <span className="text-gray-500 font-normal">(optional)</span>
           </label>
           <input
             name="phone"
             type="tel"
-            className="form-input"
+            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-1 outline-none transition-colors duration-250 placeholder:text-gray-400 !rounded-none !border-t-0 !border-l-0 !border-r-0"
             placeholder="+254 700 000 000"
           />
         </div>
       </div>
 
-      <div className="mb-4">
+      {/* Service interest */}
+      <div className="flex flex-col gap-2">
         <label className="form-label">I&apos;m interested in</label>
         <select
           name="service_interest"
           required
           defaultValue=""
-          className="form-select"
+          className="form-select border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-1 outline-none transition-colors duration-250 !rounded-none !border-t-0 !border-l-0 !border-r-0"
         >
           <option value="" disabled>
             Select a service
@@ -137,23 +138,27 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
         </select>
       </div>
 
-      <div className="mb-4">
+      {/* Description */}
+      <div className="flex flex-col gap-2">
         <label className="form-label">Brief description</label>
         <textarea
           name="description"
           rows={4}
-          className="form-textarea"
+          className="form-textarea border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-1 outline-none transition-colors duration-250 placeholder:text-gray-400 resize-none !rounded-none !border-t-0 !border-l-0 !border-r-0"
           placeholder="What market are you trying to reach, and what's the goal?"
         />
       </div>
 
+      {/* Submit — extra mt-6 for breathing room */}
       <button
         type="submit"
         disabled={loading}
-        className="form-submit flex items-center justify-center gap-2 disabled:opacity-60"
+        className="mt-6 self-start bg-pm-black text-pm-yellow font-semibold px-8 py-4 text-sm transition-all duration-250 hover:bg-pm-yellow hover:text-pm-black hover:scale-[1.02] disabled:opacity-60"
       >
-        <Send className="w-4 h-4" />
-        {loading ? "Sending..." : "Send Brief →"}
+        <span className="flex items-center gap-2">
+          <Send className="w-4 h-4" />
+          {loading ? "Sending..." : "Send Message"}
+        </span>
       </button>
     </form>
   );

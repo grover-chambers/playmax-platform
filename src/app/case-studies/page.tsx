@@ -51,36 +51,33 @@ export default function CaseStudiesPage() {
     <>
       <SiteHeader />
 
-      <section className="bg-black">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container pt-28 md:pt-36 pb-12 md:pb-16">
-          <div className="eyebrow mb-3 md:mb-4">Case Studies</div>
-          <h1 className="text-hero mb-6 md:mb-8">
-            Results that <span className="accent">speak</span>
+          <div className="pm-eyebrow mb-3 md:mb-4">Case Studies</div>
+          <h1 className="pm-hero-title mb-6 md:mb-8">
+            Results that <span className="pm-accent">speak</span>
           </h1>
-          <p className="body-copy max-w-[560px]">
+          <p className="pm-hero-sub max-w-[560px]">
             Real projects, real outcomes. Here&apos;s how we&apos;ve helped
             brands find their market and own it.
           </p>
         </div>
       </section>
 
-      <section className="bg-black-2">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
             {caseStudies.map((cs) => (
-              <div
-                key={cs.title}
-                className="card !bg-black-3 !border-black-4 p-8 md:p-10 card-hover-yellow group"
-              >
-                <div className="eyebrow mb-2 md:mb-3">{cs.service}</div>
-                <div className="body-copy-sm mb-3">{cs.client}</div>
-                <h3 className="font-display text-[16px] md:text-[18px] font-semibold mb-4 leading-snug group-hover:text-yellow transition-colors">
+              <div key={cs.title} className="pm-dash-card p-8 md:p-10">
+                <div className="pm-eyebrow mb-2 md:mb-3">{cs.service}</div>
+                <div className="pm-body-sm mb-3">{cs.client}</div>
+                <h3 className="pm-dash-card-t mb-4 leading-snug group-hover:text-yellow transition-colors">
                   {cs.title}
                 </h3>
                 <div className="text-[13px] text-gray-5 mb-3 md:mb-4">
                   {cs.market}
                 </div>
-                <div className="badge badge-active !text-[12px] !font-medium !px-3 !py-2">
+                <div className="pm-dash-bdg pm-dash-bdg-g !text-[12px] !font-medium !px-3 !py-2">
                   {cs.result}
                 </div>
                 <div className="mt-4 md:mt-5 flex items-center gap-1 text-[11px] text-gray-4 group-hover:text-yellow transition-colors">
@@ -91,17 +88,17 @@ export default function CaseStudiesPage() {
           </div>
 
           <div className="mt-16 md:mt-20">
-            <div className="card !bg-black-3 max-w-[540px] mx-auto text-center p-10">
+            <div className="pm-dash-card max-w-[540px] mx-auto text-center p-10">
               <div className="text-[16px] md:text-[18px] font-semibold mb-2">
                 More case studies coming soon
               </div>
-              <p className="body-copy-sm mb-6">
+              <p className="pm-body-sm mb-6">
                 We&apos;re preparing detailed write-ups for our most impactful
                 projects. Check back soon or subscribe to get notified.
               </p>
               <a
                 href="/contact"
-                className="btn-primary !text-[13px] !px-6 !py-2.5 no-underline"
+                className="pm-btn-primary !text-[13px] !px-6 !py-2.5 no-underline"
               >
                 Request a Case Study
               </a>

@@ -1,5 +1,7 @@
 "use client";
 
+import { RevealSection } from "@/components/ui/RevealSection";
+
 const FOOTER_COLS = [
   {
     title: "Services",
@@ -33,12 +35,13 @@ export function SiteFooter() {
   return (
     <footer
       style={{
-        background: "var(--pm-black)",
+        background: "transparent",
         borderTop: "1px solid #1A1A1A",
       }}
     >
-      {/* Tagline strip */}
-      <div
+      {/* Tagline strip with scroll-reveal */}
+      <RevealSection
+        as="div"
         className="site-container"
         style={{
           paddingTop: "80px",
@@ -53,7 +56,7 @@ export function SiteFooter() {
             fontWeight: 700,
             letterSpacing: "-0.04em",
             lineHeight: 1.1,
-            color: "var(--pm-yellow)",
+            color: "var(--pm-black)",
             marginBottom: "8px",
           }}
         >
@@ -66,7 +69,7 @@ export function SiteFooter() {
             fontWeight: 700,
             letterSpacing: "-0.04em",
             lineHeight: 1.1,
-            color: "var(--pm-white)",
+            color: "var(--pm-black)",
             marginBottom: "40px",
           }}
         >
@@ -74,12 +77,12 @@ export function SiteFooter() {
         </h2>
         <a
           href="/contact"
-          className="pm-btn-primary !no-underline"
+          className="pm-btn-primary no-underline"
           style={{ display: "inline-flex" }}
         >
           Start a project →
         </a>
-      </div>
+      </RevealSection>
 
       {/* 4-col link grid */}
       <div
@@ -102,7 +105,7 @@ export function SiteFooter() {
                 fontWeight: 700,
                 letterSpacing: "0.15em",
                 textTransform: "uppercase",
-                color: "var(--pm-yellow)",
+                color: "var(--pm-amber)",
                 marginBottom: "16px",
               }}
             >
@@ -115,17 +118,17 @@ export function SiteFooter() {
                 style={{
                   display: "block",
                   fontSize: "13px",
-                  color: "var(--pm-gray-4)",
+                  color: "var(--pm-black)",
                   marginBottom: "10px",
                   textDecoration: "none",
                   transition: "color 150ms ease",
                   cursor: "pointer",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = "var(--pm-white)")
+                  (e.currentTarget.style.color = "var(--pm-yellow)")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "var(--pm-gray-4)")
+                  (e.currentTarget.style.color = "var(--pm-black)")
                 }
               >
                 {link}
@@ -159,7 +162,7 @@ export function SiteFooter() {
           PLAY<span style={{ color: "var(--pm-yellow)" }}>MAX</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <p style={{ fontSize: "12px", color: "var(--pm-gray-5)" }}>
+          <p style={{ fontSize: "12px", color: "var(--pm-black)" }}>
             © 2026 PlayMax Agency. Built by{" "}
             <span style={{ color: "var(--pm-yellow)" }}>Squareroot INC</span>.
           </p>
@@ -167,16 +170,16 @@ export function SiteFooter() {
             href="/login"
             style={{
               fontSize: "11px",
-              color: "var(--pm-gray-5)",
+              color: "var(--pm-black)",
               textDecoration: "none",
               transition: "color 150ms ease",
               fontFamily: "var(--font-body)",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "var(--pm-gray-3)")
+              (e.currentTarget.style.color = "var(--pm-yellow)")
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "var(--pm-gray-5)")
+              (e.currentTarget.style.color = "var(--pm-black)")
             }
           >
             Login

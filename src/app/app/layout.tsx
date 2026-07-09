@@ -29,13 +29,12 @@ import { createClient } from "@/utils/supabase/client";
 import { getRoleLabel } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
 
-/* ── Nav structure matching the table ─────────────── */
+/* ── Clean nav structure — super_admin sees everything, others get role-scoped ── */
 interface NavItem {
   icon: React.ElementType;
   label: string;
   href: string;
   badge?: string;
-  /** Which roles see this item. "super_admin" only by default. */
   roles: UserRole[];
 }
 
@@ -62,7 +61,7 @@ const allNavSections: NavSection[] = [
       },
       {
         icon: GitBranch,
-        label: "Leads / Pipeline",
+        label: "Pipeline",
         href: "/app/pipeline",
         badge: "24",
         roles: ["super_admin", "crm_admin", "crm_staff"],
@@ -110,37 +109,27 @@ const allNavSections: NavSection[] = [
         roles: ["super_admin", "crm_admin"],
       },
       {
+        icon: Globe,
+        label: "Website CMS",
+        href: "/app/content",
+        roles: ["super_admin", "cms_admin"],
+      },
+      {
+        icon: FileText,
+        label: "Reports",
+        href: "/app/reports",
+        roles: ["super_admin", "crm_admin", "crm_staff"],
+      },
+      {
         icon: Eye,
-        label: "Client Portal Preview",
+        label: "Preview Client",
         href: "/app/preview-client",
         roles: ["super_admin"],
       },
     ],
   },
   {
-    label: "Content",
-    items: [
-      {
-        icon: Globe,
-        label: "CMS — Website",
-        href: "/app/content",
-        roles: ["super_admin", "cms_admin"],
-      },
-    ],
-  },
-  {
-    label: "Reports",
-    items: [
-      {
-        icon: FileText,
-        label: "Reports & Analytics",
-        href: "/app/reports",
-        roles: ["super_admin", "crm_admin", "crm_staff"],
-      },
-    ],
-  },
-  {
-    label: "Administration",
+    label: "Admin",
     items: [
       {
         icon: Shield,
@@ -150,13 +139,13 @@ const allNavSections: NavSection[] = [
       },
       {
         icon: CreditCard,
-        label: "Billing & SaaS License",
+        label: "Billing & License",
         href: "/app/admin/billing",
         roles: ["super_admin"],
       },
       {
         icon: Zap,
-        label: "Automation Rules",
+        label: "Automation",
         href: "/app/admin/automation",
         roles: ["super_admin"],
       },
@@ -168,7 +157,7 @@ const allNavSections: NavSection[] = [
       },
       {
         icon: Settings,
-        label: "System Settings",
+        label: "Settings",
         href: "/app/settings",
         roles: ["super_admin"],
       },
@@ -252,30 +241,13 @@ export default function PlatformLayout({
 
   return (
     <div
-      className="platform-shell !min-h-screen !h-screen overflow-hidden"
-      style={{
-        gridTemplateColumns: `${sidebarCollapsed ? "64px" : "var(--sidebar-w)"} 1fr`,
-        transition: "grid-template-columns 0.2s ease",
-      }}
+      className={`platform-shell !min-h-screen ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
     >
       <aside
         className={`sidebar !h-screen ${sidebarCollapsed ? "collapsed" : ""}`}
-        style={{
-          width: sidebarCollapsed ? "64px" : "var(--sidebar-w)",
-          transition: "width 0.2s ease",
-          overflow: "hidden",
-        }}
       >
         {/* Logo */}
-        <div
-          className="sidebar-logo"
-          style={{
-            padding: sidebarCollapsed ? "18px 0 20px" : "8px 20px 24px",
-            textAlign: sidebarCollapsed ? "center" : "left",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-          }}
-        >
+        <div className="sidebar-logo">
           {sidebarCollapsed ? (
             <span className="text-yellow font-display text-xl">PM</span>
           ) : (
@@ -289,9 +261,7 @@ export default function PlatformLayout({
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-0">
           {navSections.map((section) => (
             <div key={section.label}>
-              {!sidebarCollapsed && (
-                <div className="sidebar-section">{section.label}</div>
-              )}
+              <div className="sidebar-section">{section.label}</div>
               {section.items.map((item) => {
                 const active = isActive(item.href);
                 const Icon = item.icon;
@@ -300,27 +270,12 @@ export default function PlatformLayout({
                     key={item.label}
                     href={item.href}
                     className={`sidebar-item ${active ? "active" : ""}`}
-                    style={{
-                      padding: sidebarCollapsed ? "12px 0" : "9px 20px",
-                      justifyContent: sidebarCollapsed
-                        ? "center"
-                        : "flex-start",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                    }}
                     title={sidebarCollapsed ? item.label : undefined}
                   >
-                    <Icon
-                      className="sidebar-item-icon"
-                      style={{ flexShrink: 0 }}
-                    />
-                    {!sidebarCollapsed && (
-                      <>
-                        <span className="flex-1 truncate">{item.label}</span>
-                        {item.badge && (
-                          <span className="sidebar-badge">{item.badge}</span>
-                        )}
-                      </>
+                    <Icon className="sidebar-item-icon" />
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {item.badge && (
+                      <span className="sidebar-badge">{item.badge}</span>
                     )}
                   </Link>
                 );
@@ -330,55 +285,26 @@ export default function PlatformLayout({
         </nav>
 
         {/* User section */}
-        <div
-          className="sidebar-user"
-          style={{
-            padding: sidebarCollapsed ? "14px 0" : "16px 20px",
-            flexDirection: sidebarCollapsed ? "column" : "row",
-            alignItems: sidebarCollapsed ? "center" : "center",
-            gap: sidebarCollapsed ? "8px" : "10px",
-          }}
-        >
+        <div className="sidebar-user">
           {loadingUser ? (
-            <div
-              className="user-avatar"
-              style={{ margin: sidebarCollapsed ? "0 auto" : "0" }}
-            >
-              ?
-            </div>
+            <div className="user-avatar">?</div>
           ) : user ? (
             <>
-              <div
-                className="user-avatar"
-                style={{ margin: sidebarCollapsed ? "0 auto" : "0" }}
-              >
-                {getInitials()}
+              <div className="user-avatar">{getInitials()}</div>
+              <div className="flex-1 min-w-0">
+                <div className="user-name truncate">{displayName}</div>
+                <div className="user-role truncate">{displayRole}</div>
               </div>
-              {!sidebarCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <div className="user-name truncate">{displayName}</div>
-                  <div className="user-role truncate">{displayRole}</div>
-                </div>
-              )}
               <button
                 onClick={handleSignOut}
                 className="btn-sm p-1.5! border-none! hover:bg-red/20! hover:text-red! transition-colors"
                 title="Sign out"
-                style={{
-                  margin: sidebarCollapsed ? "0 auto" : "0",
-                }}
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </>
           ) : (
-            <Link
-              href="/login"
-              className="btn-sm py-1! px-3! text-xs"
-              style={{
-                margin: sidebarCollapsed ? "0 auto" : "0",
-              }}
-            >
+            <Link href="/login" className="btn-sm py-1! px-3! text-xs">
               Sign in
             </Link>
           )}
@@ -388,27 +314,10 @@ export default function PlatformLayout({
       {/* Toggle button */}
       <button
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        className="sidebar-toggle-btn"
         style={{
-          position: "fixed",
           left: sidebarCollapsed ? "64px" : "var(--sidebar-w)",
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 40,
-          width: "20px",
-          height: "36px",
-          background: "var(--pm-black-3)",
-          border: "1px solid #2a2a2a",
-          borderLeft: "none",
-          borderRadius: "0 var(--radius) var(--radius) 0",
-          color: "var(--pm-gray-5)",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "left 0.2s ease, color 0.12s",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--pm-yellow)")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--pm-gray-5)")}
         aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {sidebarCollapsed ? (
@@ -418,7 +327,7 @@ export default function PlatformLayout({
         )}
       </button>
 
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto min-h-screen">{children}</main>
     </div>
   );
 }

@@ -8,7 +8,7 @@ import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
 import KanbanColumn from "@/components/crm/kanban-column";
 import LeadCard from "@/components/crm/lead-card";
-import AddLeadModal from "@/components/crm/add-lead-modal";
+import NewLeadModal from "@/components/modals/new-lead-modal";
 
 const sourceFilters = [
   "All Sources",
@@ -347,7 +347,7 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
+      <NewLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
     </div>
   );
 }

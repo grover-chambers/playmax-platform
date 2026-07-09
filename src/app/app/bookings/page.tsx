@@ -2,14 +2,26 @@
 
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
+import { Plus } from "lucide-react";
 import FilterPill from "@/components/ui/filter-pill";
 import StatusBadge from "@/components/ui/status-badge";
+import Button from "@/components/ui/button";
+import NewBookingModal from "@/components/modals/new-booking-modal";
 import { sampleBookings } from "@/lib/data";
 import { Booking } from "@/lib/types";
 
-const statusFilters = ["All", "confirmed", "pending", "completed", "cancelled"] as const;
+const statusFilters = [
+  "All",
+  "confirmed",
+  "pending",
+  "completed",
+  "cancelled",
+] as const;
 
-const statusVariantMap: Record<string, "active" | "review" | "draft" | "confirmed"> = {
+const statusVariantMap: Record<
+  string,
+  "active" | "review" | "draft" | "confirmed"
+> = {
   confirmed: "confirmed",
   pending: "review",
   completed: "active",
@@ -19,6 +31,7 @@ const statusVariantMap: Record<string, "active" | "review" | "draft" | "confirme
 export default function BookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [bookings] = useState<Booking[]>(sampleBookings);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const filtered = bookings.filter((b) => {
     if (statusFilter !== "All" && b.status !== statusFilter) return false;
@@ -34,16 +47,25 @@ export default function BookingsPage() {
             {filtered.length} booking{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <div className="flex gap-1.5">
-          {statusFilters.map((f) => (
-            <FilterPill
-              key={f}
-              active={statusFilter === f}
-              onClick={() => setStatusFilter(f)}
-            >
-              {f === "All" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-            </FilterPill>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            {statusFilters.map((f) => (
+              <FilterPill
+                key={f}
+                active={statusFilter === f}
+                onClick={() => setStatusFilter(f)}
+              >
+                {f === "All" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+              </FilterPill>
+            ))}
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setModalOpen(true)}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> New Booking
+          </Button>
         </div>
       </div>
 
@@ -59,7 +81,7 @@ export default function BookingsPage() {
                   >
                     {h}
                   </th>
-                )
+                ),
               )}
             </tr>
           </thead>
@@ -99,6 +121,8 @@ export default function BookingsPage() {
           </div>
         )}
       </div>
+
+      <NewBookingModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }

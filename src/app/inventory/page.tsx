@@ -129,13 +129,13 @@ export default function InventoryPage() {
     <>
       <SiteHeader />
 
-      <section className="bg-black">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container pt-28 md:pt-36 pb-12 md:pb-16">
-          <div className="eyebrow mb-3 md:mb-4">Media Rentals</div>
-          <h1 className="text-hero mb-6 md:mb-8">
-            Available <span className="accent">inventory</span>
+          <div className="pm-eyebrow mb-3 md:mb-4">Media Rentals</div>
+          <h1 className="pm-hero-title mb-6 md:mb-8">
+            Available <span className="pm-accent">inventory</span>
           </h1>
-          <p className="body-copy max-w-[560px]">
+          <p className="pm-hero-sub max-w-[560px]">
             Browse billboards, digital screens, and banner sites across Nairobi.
             Filter by type and availability to find the right fit for your
             campaign.
@@ -177,7 +177,7 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      <section className="bg-black-2">
+      <section className="bg-black-2" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
           <div className="text-[12px] text-gray-5 mb-6 md:mb-8">
             Showing {filtered.length} of {allInventory.length} sites

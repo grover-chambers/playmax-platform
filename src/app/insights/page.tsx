@@ -57,41 +57,38 @@ export default function InsightsPage() {
     <>
       <SiteHeader />
 
-      <section className="bg-black">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container pt-28 md:pt-36 pb-12 md:pb-16">
-          <div className="eyebrow mb-3 md:mb-4">Insights</div>
-          <h1 className="text-hero mb-6 md:mb-8">
-            Thinking on the <span className="accent">market</span>
+          <div className="pm-eyebrow mb-3 md:mb-4">Insights</div>
+          <h1 className="pm-hero-title mb-6 md:mb-8">
+            Thinking on the <span className="pm-accent">market</span>
           </h1>
-          <p className="body-copy max-w-[560px]">
+          <p className="pm-hero-sub max-w-[560px]">
             Research, analysis, and opinion on market intelligence, brand
             strategy, and media in East Africa.
           </p>
         </div>
       </section>
 
-      <section className="bg-black-2">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
             {posts.map((post) => (
-              <div
-                key={post.title}
-                className="card !bg-black-3 !border-black-4 overflow-hidden card-hover-yellow group"
-              >
+              <div key={post.title} className="pm-dash-card overflow-hidden">
                 <div className="h-[160px] bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center relative">
                   <ArrowUpRight className="w-8 h-8 text-gray-5 group-hover:text-yellow transition-colors" />
                 </div>
                 <div className="p-6 md:p-8">
                   <div className="flex items-center justify-between gap-3 mb-3">
-                    <span className="eyebrow">{post.category}</span>
+                    <span className="pm-eyebrow">{post.category}</span>
                     <span className="flex items-center gap-1 text-[10px] text-gray-5">
                       <Clock className="w-3 h-3" /> {post.readTime}
                     </span>
                   </div>
-                  <h3 className="font-display text-[16px] md:text-[18px] font-semibold mb-3 leading-snug group-hover:text-yellow transition-colors">
+                  <h3 className="pm-dash-card-t mb-3 leading-snug group-hover:text-yellow transition-colors">
                     {post.title}
                   </h3>
-                  <p className="body-copy-sm mb-4">{post.excerpt}</p>
+                  <p className="pm-body-sm mb-4">{post.excerpt}</p>
                   <div className="text-[12px] text-gray-5 font-mono">
                     {new Date(post.date).toLocaleDateString("en-GB", {
                       day: "numeric",
@@ -105,16 +102,16 @@ export default function InsightsPage() {
           </div>
 
           <div className="mt-16 md:mt-20">
-            <div className="card !bg-black-3 max-w-[540px] mx-auto text-center p-10">
+            <div className="pm-dash-card max-w-[540px] mx-auto text-center p-10">
               <div className="text-[16px] md:text-[18px] font-semibold mb-2">
                 Subscribe to insights
               </div>
-              <p className="body-copy-sm mb-6">
+              <p className="pm-body-sm mb-6">
                 Get our latest research and analysis delivered to your inbox.
               </p>
               <a
                 href="/contact"
-                className="btn-primary !text-[13px] !px-6 !py-2.5 no-underline"
+                className="pm-btn-primary !text-[13px] !px-6 !py-2.5 no-underline"
               >
                 Get Notified
               </a>

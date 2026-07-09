@@ -31,8 +31,8 @@ export default function RootLayout({
         />
         {/* eslint-enable @next/next/no-page-custom-font */}
       </head>
-      <body className="min-h-full flex flex-col bg-black text-white font-body">
-        {children}
+      <body className="min-h-full flex flex-col font-body">
+        <div className="pm-page-gradient">{children}</div>
       </body>
     </html>
   );

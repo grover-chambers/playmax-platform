@@ -10,6 +10,7 @@ import FilterPill from "@/components/ui/filter-pill";
 import StatusBadge from "@/components/ui/status-badge";
 import Card from "@/components/ui/card";
 import ProgressBar from "@/components/ui/progress-bar";
+import NewProjectModal from "@/components/modals/new-project-modal";
 
 interface Project {
   id: string;
@@ -142,6 +143,7 @@ const typeColors: Record<string, string> = {
 export default function ProjectsPage() {
   const [activeType, setActiveType] = useState("All");
   const [activeStatus, setActiveStatus] = useState("All Statuses");
+  const [modalOpen, setModalOpen] = useState(false);
 
   const filtered = projects.filter((p) => {
     if (activeType !== "All" && p.type !== activeType) return false;
@@ -163,7 +165,11 @@ export default function ProjectsPage() {
             <Button variant="secondary" size="sm">
               <Filter size={12} className="mr-1" /> Filter
             </Button>
-            <Button variant="primary" size="sm">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setModalOpen(true)}
+            >
               <Plus size={12} className="mr-1" /> New Project
             </Button>
           </>
@@ -230,6 +236,8 @@ export default function ProjectsPage() {
           </Link>
         ))}
       </div>
+
+      <NewProjectModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }

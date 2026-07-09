@@ -21,11 +21,18 @@ const routePermissions: Record<string, AccessLevel> = {
   "/app/bookings": ["super_admin", "crm_admin", "finance"],
   "/app/research": ["super_admin", "crm_admin"],
   "/app/invoices": ["super_admin", "finance"],
-  "/app/settings": ["super_admin", "cms_admin"],
+  // Super admin pages
+  "/app/settings": ["super_admin"],
+  "/app/reports": ["super_admin", "crm_admin", "crm_staff"],
+  "/app/preview-client": ["super_admin"],
 
   // Admin pages
   "/app/admin": ["super_admin"],
   "/app/admin/staff": ["super_admin"],
+  "/app/admin/billing": ["super_admin"],
+  "/app/admin/automation": ["super_admin"],
+  "/app/admin/whatsapp": ["super_admin"],
+  "/app/admin/audit": ["super_admin"],
 };
 
 /** Get the base path for permission checking */

@@ -96,68 +96,80 @@ export default function ServicesPage() {
     <>
       <SiteHeader />
 
-      <section className="bg-black">
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container pt-28 md:pt-36 pb-12 md:pb-16">
-          <div className="eyebrow mb-3 md:mb-4">Our Services</div>
-          <h1 className="text-hero mb-6 md:mb-8">
+          <div className="pm-eyebrow mb-3 md:mb-4">Our Services</div>
+          <h1 className="pm-hero-title mb-6 md:mb-8">
             Full-spectrum market
             <br />
-            <span className="accent">intelligence & activation</span>
+            <span className="pm-accent">intelligence & activation</span>
           </h1>
-          <p className="body-copy max-w-[560px]">
+          <p className="pm-hero-sub max-w-[560px]">
             From the first research question to your brand appearing on
             Nairobi&apos;s busiest streets — we handle every step.
           </p>
         </div>
       </section>
 
-      {services.map((svc, i) => (
-        <section
-          key={svc.name}
-          className={i % 2 === 0 ? "bg-black" : "bg-black-2"}
-        >
-          <div className="site-container section">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20">
-              <div>
-                <div className="service-icon !mb-6 md:!mb-8">
-                  <svc.icon className="w-6 h-6 text-black" />
+      {services.map((svc, i) => {
+        // Alternate text colors based on gradient position
+        const isLightSection = i >= 3; // services 4, 5, 6 are in lighter gradient area
+        return (
+          <section
+            key={svc.name}
+            className="bg-transparent"
+            style={{
+              color: isLightSection ? "var(--pm-black)" : "var(--pm-white)",
+            }}
+          >
+            <div className="site-container section">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20">
+                <div>
+                  <div className="pm-service-icon !mb-6 md:!mb-8">
+                    <svc.icon className="w-6 h-6 text-black" />
+                  </div>
+                  <div className="pm-eyebrow mb-3 md:mb-4">{svc.tagline}</div>
+                  <h2 className="pm-section-title mb-4 md:mb-6">{svc.name}</h2>
+                  <p className="pm-body-sm">{svc.desc}</p>
                 </div>
-                <div className="eyebrow mb-3 md:mb-4">{svc.tagline}</div>
-                <h2 className="text-section mb-4 md:mb-6">{svc.name}</h2>
-                <p className="body-copy">{svc.desc}</p>
-              </div>
-              <div>
-                <div className="eyebrow !text-dimmer mb-4 md:mb-6">
-                  What&apos;s included
+                <div>
+                  <div className="pm-eyebrow !text-dimmer mb-4 md:mb-6">
+                    What&apos;s included
+                  </div>
+                  <ul className="flex flex-col gap-3 md:gap-4">
+                    {svc.details.map((d) => (
+                      <li key={d} className="flex items-start gap-3 pm-body-sm">
+                        <span className="mt-2 w-1.5 h-1.5 bg-yellow rounded-full flex-shrink-0" />
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+                  <a
+                    href="/contact"
+                    className="inline-flex items-center gap-2 mt-8 md:mt-10 font-display text-[13px] font-semibold text-yellow pm-link-underline"
+                  >
+                    Enquire about {svc.name} <ArrowRight className="w-4 h-4" />
+                  </a>
                 </div>
-                <ul className="flex flex-col gap-3 md:gap-4">
-                  {svc.details.map((d) => (
-                    <li key={d} className="flex items-start gap-3 body-copy">
-                      <span className="mt-2 w-1.5 h-1.5 bg-yellow rounded-full flex-shrink-0" />
-                      {d}
-                    </li>
-                  ))}
-                </ul>
-                <a
-                  href="/contact"
-                  className="inline-flex items-center gap-2 mt-8 md:mt-10 font-display text-[13px] font-semibold text-yellow hover:underline"
-                >
-                  Enquire about {svc.name} <ArrowRight className="w-4 h-4" />
-                </a>
               </div>
             </div>
-          </div>
-        </section>
-      ))}
+          </section>
+        );
+      })}
 
-      <section className="bg-black">
+      <section className="bg-transparent" style={{ color: "var(--pm-black)" }}>
         <div className="site-container section">
           <div className="max-w-[500px] mx-auto text-center">
-            <div className="eyebrow mb-3 md:mb-4">Get Started</div>
-            <h2 className="text-section mb-4 md:mb-6">
+            <div
+              className="pm-eyebrow mb-3 md:mb-4"
+              style={{ color: "var(--pm-amber)" }}
+            >
+              Get Started
+            </div>
+            <h2 className="pm-section-title mb-4 md:mb-6">
               Not sure which service?
             </h2>
-            <p className="body-copy-sm mb-8 md:mb-10">
+            <p className="pm-hero-sub mb-8 md:mb-10">
               Tell us your goal and we&apos;ll recommend the right approach.
             </p>
             <LeadForm source="services-page" />
