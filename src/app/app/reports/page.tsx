@@ -4,12 +4,10 @@ import { useState } from "react";
 import {
   Download,
   Filter,
-  BarChart3,
   TrendingUp,
   DollarSign,
   Target,
   Users,
-  Calendar,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";

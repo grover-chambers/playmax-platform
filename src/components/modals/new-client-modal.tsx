@@ -90,12 +90,12 @@ export default function NewClientModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: form.companyName,
           company: form.companyName,
           industry: form.industry === "Other" ? form.industryOther : form.industry,
           phone: form.phone,
           email: form.email,
-          location: form.billingAddress,
-          account_owner: form.accountOwner,
+          assigned_to: form.accountOwner,
         }),
       });
 

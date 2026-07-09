@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Filter } from "lucide-react";
+import { Filter } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/layout";
+import { InventoryMap } from "@/components/InventoryMap";
+import { MiniMap } from "@/components/ui/MiniMap";
 
 interface InventoryItem {
   id: string;
@@ -13,6 +15,7 @@ interface InventoryItem {
   specs: string;
   price: number;
   status: "available" | "booked";
+  coords: [number, number];
 }
 
 const allInventory: InventoryItem[] = [
@@ -25,6 +28,7 @@ const allInventory: InventoryItem[] = [
     specs: "6×3m · 1080p LED",
     price: 85000,
     status: "available",
+    coords: [-1.2671, 36.8143],
   },
   {
     id: "2",
@@ -35,6 +39,7 @@ const allInventory: InventoryItem[] = [
     specs: "6×3m · 1080p LED",
     price: 85000,
     status: "available",
+    coords: [-1.2675, 36.814],
   },
   {
     id: "3",
@@ -45,6 +50,7 @@ const allInventory: InventoryItem[] = [
     specs: "12×4m · Static",
     price: 120000,
     status: "available",
+    coords: [-1.3278, 36.8575],
   },
   {
     id: "4",
@@ -55,6 +61,7 @@ const allInventory: InventoryItem[] = [
     specs: "8×3m · Backlit",
     price: 95000,
     status: "booked",
+    coords: [-1.301, 36.82],
   },
   {
     id: "5",
@@ -65,6 +72,7 @@ const allInventory: InventoryItem[] = [
     specs: "4×2.5m · 4K LED",
     price: 65000,
     status: "available",
+    coords: [-1.2253, 36.8958],
   },
   {
     id: "6",
@@ -75,6 +83,7 @@ const allInventory: InventoryItem[] = [
     specs: "10×4m · Static",
     price: 110000,
     status: "booked",
+    coords: [-1.309, 36.826],
   },
   {
     id: "7",
@@ -85,6 +94,7 @@ const allInventory: InventoryItem[] = [
     specs: "3×1.5m · Flex print",
     price: 35000,
     status: "available",
+    coords: [-1.286, 36.823],
   },
   {
     id: "8",
@@ -95,6 +105,7 @@ const allInventory: InventoryItem[] = [
     specs: "6×3m · Backlit",
     price: 75000,
     status: "available",
+    coords: [-1.2895, 36.782],
   },
   {
     id: "9",
@@ -105,6 +116,7 @@ const allInventory: InventoryItem[] = [
     specs: "8×3m · Static",
     price: 70000,
     status: "available",
+    coords: [-1.2548, 36.7165],
   },
 ];
 
@@ -136,7 +148,7 @@ export default function InventoryPage() {
             Available <span className="pm-accent">inventory</span>
           </h1>
           <p className="pm-hero-sub max-w-[560px]">
-            Browse billboards, digital screens, and banner sites across Nairobi.
+            Browse billboards, digital screens, and banner sites across Kenya.
             Filter by type and availability to find the right fit for your
             campaign.
           </p>
@@ -177,18 +189,34 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      <section className="bg-black-2" style={{ color: "var(--pm-white)" }}>
+      {/* ── MAP ──────────────────────────────── */}
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
+        <div className="site-container section pb-0">
+          <div className="pm-eyebrow mb-4">Site Locations</div>
+          <h2 className="pm-section-title mb-6">
+            Find your <span className="pm-accent">spot</span>
+          </h2>
+          <p className="pm-hero-sub max-w-[560px] mb-8">
+            Explore our media sites across Nairobi. Yellow pins are available, grey are booked.
+          </p>
+          <InventoryMap />
+        </div>
+      </section>
+
+      <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
-          <div className="text-[12px] text-gray-5 mb-6 md:mb-8">
-            Showing {filtered.length} of {allInventory.length} sites
+          <div className="flex items-center justify-between mb-6 md:mb-8">
+            <div className="text-[12px] text-gray-5">
+              Showing {filtered.length} of {allInventory.length} sites
+            </div>
           </div>
           <div className="inventory-grid">
             {filtered.map((item) => {
               const isAvailable = item.status === "available";
               return (
                 <div key={item.id} className="inventory-card">
-                  <div className="inventory-card-img !h-[180px]">
-                    <MapPin className="w-12 h-12 text-gray-5" />
+                  <div className="inventory-card-img !h-[180px]" style={{ overflow: "hidden" }}>
+                    <MiniMap coords={item.coords} status={item.status} />
                     <span
                       className={`inventory-card-badge badge ${isAvailable ? "badge-available" : "badge-booked"}`}
                     >

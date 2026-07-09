@@ -192,6 +192,21 @@ CREATE TABLE IF NOT EXISTS public.templates (
   updated_at timestamptz DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.engagements (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid REFERENCES public.clients(id) NOT NULL,
+  engagement_type text NOT NULL,
+  date date NOT NULL,
+  staff_involved text[] DEFAULT '{}',
+  billable boolean DEFAULT false,
+  billing_rate numeric(12,2),
+  flat_fee numeric(12,2),
+  summary text,
+  project_id uuid REFERENCES public.projects(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS public.activity_log (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id uuid REFERENCES public.clients(id),
@@ -216,73 +231,92 @@ ALTER TABLE public.deliverables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.research_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.automations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.engagements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Authenticated users can read clients" ON public.clients FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert clients" ON public.clients FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update clients" ON public.clients FOR UPDATE TO authenticated USING (auth.uid() = assigned_to) WITH CHECK (auth.uid() = assigned_to);
-CREATE POLICY "Authenticated users can delete clients" ON public.clients FOR DELETE TO authenticated USING (auth.uid() = assigned_to);
+-- Helper: extract user role from JWT metadata
+CREATE OR REPLACE FUNCTION public.user_role() RETURNS text AS $$
+  SELECT COALESCE(auth.jwt() -> 'user_metadata' ->> 'role', 'client');
+$$ LANGUAGE sql STABLE;
 
+-- Helper: check if user has an admin-level role
+CREATE OR REPLACE FUNCTION public.is_admin() RETURNS boolean AS $$
+  SELECT public.user_role() = ANY(ARRAY['super_admin', 'crm_admin', 'cms_admin']);
+$$ LANGUAGE sql STABLE;
+
+-- ── Clients ──────────────────────────────────────────
+CREATE POLICY "admin can read all clients" ON public.clients FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin can insert clients" ON public.clients FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+CREATE POLICY "admin can update clients" ON public.clients FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin can delete clients" ON public.clients FOR DELETE TO authenticated USING (public.is_admin());
+
+-- ── Leads ────────────────────────────────────────────
 CREATE POLICY "Anyone can insert leads" ON public.leads FOR INSERT WITH CHECK (true);
-CREATE POLICY "Authenticated users can read leads" ON public.leads FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can update leads" ON public.leads FOR UPDATE TO authenticated USING (auth.uid() = assigned_to) WITH CHECK (auth.uid() = assigned_to);
-CREATE POLICY "Authenticated users can delete leads" ON public.leads FOR DELETE TO authenticated USING (auth.uid() = assigned_to);
+CREATE POLICY "admin or assigned can read leads" ON public.leads FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin or assigned can update leads" ON public.leads FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin can delete leads" ON public.leads FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read projects" ON public.projects FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert projects" ON public.projects FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update projects" ON public.projects FOR UPDATE TO authenticated USING (auth.uid() = assigned_to) WITH CHECK (auth.uid() = assigned_to);
-CREATE POLICY "Authenticated users can delete projects" ON public.projects FOR DELETE TO authenticated USING (auth.uid() = assigned_to);
+-- ── Projects ─────────────────────────────────────────
+CREATE POLICY "admin or assigned can read projects" ON public.projects FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin can insert projects" ON public.projects FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+CREATE POLICY "admin or assigned can update projects" ON public.projects FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin can delete projects" ON public.projects FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read tasks" ON public.tasks FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert tasks" ON public.tasks FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update tasks" ON public.tasks FOR UPDATE TO authenticated USING (auth.uid() = assigned_to) WITH CHECK (auth.uid() = assigned_to);
-CREATE POLICY "Authenticated users can delete tasks" ON public.tasks FOR DELETE TO authenticated USING (auth.uid() = assigned_to);
+-- ── Tasks ────────────────────────────────────────────
+CREATE POLICY "admin or assigned can read tasks" ON public.tasks FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin can insert tasks" ON public.tasks FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+CREATE POLICY "admin or assigned can update tasks" ON public.tasks FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin can delete tasks" ON public.tasks FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read inventory" ON public.inventory FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert inventory" ON public.inventory FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update inventory" ON public.inventory FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Authenticated users can delete inventory" ON public.inventory FOR DELETE TO authenticated USING (true);
+-- ── Inventory ────────────────────────────────────────
+CREATE POLICY "authenticated can read inventory" ON public.inventory FOR SELECT TO authenticated USING (true);
+CREATE POLICY "admin can insert inventory" ON public.inventory FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+CREATE POLICY "admin can update inventory" ON public.inventory FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "admin can delete inventory" ON public.inventory FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read bookings" ON public.bookings FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert bookings" ON public.bookings FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update bookings" ON public.bookings FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Authenticated users can delete bookings" ON public.bookings FOR DELETE TO authenticated USING (true);
+-- ── Bookings ─────────────────────────────────────────
+CREATE POLICY "authenticated can read bookings" ON public.bookings FOR SELECT TO authenticated USING (true);
+CREATE POLICY "authenticated can insert bookings" ON public.bookings FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "authenticated can update bookings" ON public.bookings FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "admin can delete bookings" ON public.bookings FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read invoices" ON public.invoices FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert invoices" ON public.invoices FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update invoices" ON public.invoices FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Authenticated users can delete invoices" ON public.invoices FOR DELETE TO authenticated USING (true);
+-- ── Invoices ─────────────────────────────────────────
+CREATE POLICY "finance or admin can read invoices" ON public.invoices FOR SELECT TO authenticated USING (public.is_admin() OR public.user_role() = 'finance');
+CREATE POLICY "finance or admin can insert invoices" ON public.invoices FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR public.user_role() = 'finance');
+CREATE POLICY "finance or admin can update invoices" ON public.invoices FOR UPDATE TO authenticated USING (public.is_admin() OR public.user_role() = 'finance') WITH CHECK (public.is_admin() OR public.user_role() = 'finance');
+CREATE POLICY "admin can delete invoices" ON public.invoices FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read conversations" ON public.conversations FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert conversations" ON public.conversations FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update conversations" ON public.conversations FOR UPDATE TO authenticated USING (auth.uid() = assigned_to) WITH CHECK (auth.uid() = assigned_to);
-CREATE POLICY "Authenticated users can delete conversations" ON public.conversations FOR DELETE TO authenticated USING (auth.uid() = assigned_to);
+-- ── Conversations ────────────────────────────────────
+CREATE POLICY "admin or assigned can read conversations" ON public.conversations FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin or assigned can insert conversations" ON public.conversations FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin or assigned can update conversations" ON public.conversations FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+CREATE POLICY "admin can delete conversations" ON public.conversations FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read messages" ON public.messages FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert messages" ON public.messages FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can delete messages" ON public.messages FOR DELETE TO authenticated USING (true);
+-- ── Messages ─────────────────────────────────────────
+CREATE POLICY "authenticated can read messages" ON public.messages FOR SELECT TO authenticated USING (true);
+CREATE POLICY "authenticated can insert messages" ON public.messages FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "admin can delete messages" ON public.messages FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read deliverables" ON public.deliverables FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert deliverables" ON public.deliverables FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can delete deliverables" ON public.deliverables FOR DELETE TO authenticated USING (auth.uid() = uploaded_by);
+-- ── Deliverables ─────────────────────────────────────
+CREATE POLICY "admin or uploader can read deliverables" ON public.deliverables FOR SELECT TO authenticated USING (public.is_admin() OR uploaded_by = auth.uid());
+CREATE POLICY "admin or uploader can insert deliverables" ON public.deliverables FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR uploaded_by = auth.uid());
+CREATE POLICY "admin or uploader can delete deliverables" ON public.deliverables FOR DELETE TO authenticated USING (public.is_admin() OR uploaded_by = auth.uid());
 
-CREATE POLICY "Authenticated users can read research_projects" ON public.research_projects FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert research_projects" ON public.research_projects FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update research_projects" ON public.research_projects FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Authenticated users can delete research_projects" ON public.research_projects FOR DELETE TO authenticated USING (true);
+-- ── Research Projects ────────────────────────────────
+CREATE POLICY "admin or assigned can read research_projects" ON public.research_projects FOR SELECT TO authenticated USING (public.is_admin() OR auth.uid() IN (SELECT assigned_to FROM public.projects WHERE id = research_projects.project_id));
+CREATE POLICY "admin can insert research_projects" ON public.research_projects FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+CREATE POLICY "admin can update research_projects" ON public.research_projects FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "admin can delete research_projects" ON public.research_projects FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read automations" ON public.automations FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert automations" ON public.automations FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update automations" ON public.automations FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Authenticated users can delete automations" ON public.automations FOR DELETE TO authenticated USING (true);
+-- ── Engagements ──────────────────────────────────────
+CREATE POLICY "admin or involved can read engagements" ON public.engagements FOR SELECT TO authenticated USING (public.is_admin() OR auth.uid() = ANY(staff_involved));
+CREATE POLICY "admin can insert engagements" ON public.engagements FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+CREATE POLICY "admin can update engagements" ON public.engagements FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "admin can delete engagements" ON public.engagements FOR DELETE TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Authenticated users can read templates" ON public.templates FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert templates" ON public.templates FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update templates" ON public.templates FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Authenticated users can delete templates" ON public.templates FOR DELETE TO authenticated USING (true);
-
-CREATE POLICY "Authenticated users can read activity_log" ON public.activity_log FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert activity_log" ON public.activity_log FOR INSERT TO authenticated WITH CHECK (true);
+-- ── Activity Log ─────────────────────────────────────
+CREATE POLICY "authenticated can read activity_log" ON public.activity_log FOR SELECT TO authenticated USING (true);
+CREATE POLICY "authenticated can insert activity_log" ON public.activity_log FOR INSERT TO authenticated WITH CHECK (true);
 
 CREATE INDEX idx_clients_status ON public.clients (status);
 CREATE INDEX idx_clients_assigned_to ON public.clients (assigned_to);
@@ -347,6 +381,11 @@ CREATE INDEX idx_automations_enabled ON public.automations (enabled);
 
 CREATE INDEX idx_templates_type ON public.templates (type);
 
+CREATE INDEX idx_engagements_client_id ON public.engagements (client_id);
+CREATE INDEX idx_engagements_project_id ON public.engagements (project_id);
+CREATE INDEX idx_engagements_date ON public.engagements (date);
+CREATE INDEX idx_engagements_engagement_type ON public.engagements (engagement_type);
+
 CREATE INDEX idx_activity_log_client_id ON public.activity_log (client_id);
 CREATE INDEX idx_activity_log_project_id ON public.activity_log (project_id);
 CREATE INDEX idx_activity_log_user_id ON public.activity_log (user_id);
@@ -360,6 +399,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.inventory FOR EACH ROW EXE
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.bookings FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.engagements FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.research_projects FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.automations FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.templates FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();

@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 interface SiteHeaderProps {
@@ -13,14 +15,36 @@ const navLinks = [
   { label: "About", href: "/about" },
 ];
 
+const LOGO_LETTERS = "PLAYMAX".split("");
+
 function SiteHeader({ className = "" }: SiteHeaderProps) {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className={`site-header ${className}`}>
+    <header
+      className={`site-header ${scrolled ? "site-header-shrink" : ""} ${className}`}
+    >
       <Link
         href="/"
-        className="site-logo text-white hover:text-yellow transition-colors duration-200"
+        className="site-logo"
+        style={{ display: "flex", gap: "1px" }}
       >
-        PLAY<span className="site-logo-accent">MAX</span>
+        {LOGO_LETTERS.map((char, i) => (
+          <span
+            key={i}
+            className={i < 4 ? "pm-bounce-letter" : "pm-bounce-max"}
+            style={{ animationDelay: `${i * 0.12}s` }}
+          >
+            {char}
+          </span>
+        ))}
       </Link>
 
       <nav className="site-nav max-md:hidden">

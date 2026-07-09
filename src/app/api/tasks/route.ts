@@ -1,13 +1,25 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 
 export async function GET() {
   try {
-    const supabase = getSupabase();
-    const { data, error } = await supabase
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let query = supabase
       .from("tasks")
       .select("*, projects(name)")
       .order("due_date", { ascending: true });
+
+    if (currentUser.role === "crm_staff") {
+      query = query.eq("assigned_to", currentUser.id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -24,21 +36,31 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, project_id, assignee_id, due_date, status, priority } = body;
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
 
-    if (!name || !project_id) {
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!isAdmin(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { title, project_id, assigned_to, due_date, status, priority } = body;
+
+    if (!title) {
       return NextResponse.json(
-        { error: "Name and project are required" },
+        { error: "Title is required" },
         { status: 400 },
       );
     }
 
-    const supabase = getSupabase();
     const { error } = await supabase.from("tasks").insert({
-      name,
-      project_id,
-      assignee_id,
+      title,
+      project_id: project_id || null,
+      assigned_to: assigned_to || currentUser.id,
       due_date,
       status: status || "todo",
       priority: priority || "medium",
@@ -56,8 +78,15 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { id, status, assignee_id, due_date, priority, name } = body;
+    const { id, status, assigned_to, due_date, priority, title } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -68,10 +97,10 @@ export async function PATCH(request: Request) {
 
     const updateData: Record<string, string> = {};
     if (status) updateData.status = status;
-    if (assignee_id) updateData.assignee_id = assignee_id;
+    if (assigned_to && isAdmin(currentUser.role)) updateData.assigned_to = assigned_to;
     if (due_date) updateData.due_date = due_date;
     if (priority) updateData.priority = priority;
-    if (name) updateData.name = name;
+    if (title) updateData.title = title;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
@@ -80,11 +109,13 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const supabase = getSupabase();
-    const { error } = await supabase
-      .from("tasks")
-      .update(updateData)
-      .eq("id", id);
+    let query = supabase.from("tasks").update(updateData);
+
+    if (currentUser.role === "crm_staff") {
+      query = query.eq("assigned_to", currentUser.id);
+    }
+
+    const { error } = await query.eq("id", id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

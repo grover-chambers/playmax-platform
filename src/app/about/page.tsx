@@ -23,7 +23,7 @@ const values = [
   },
   {
     title: "Local expertise",
-    desc: "We know Nairobi's streets, Kenya's markets, and East Africa's consumers — because we're from here.",
+    desc: "We know Kenya's streets, its markets, and East Africa's consumers — because we're from here.",
   },
 ];
 
@@ -41,7 +41,7 @@ export default function AboutPage() {
             <span className="pm-accent">You own it.</span>
           </h1>
           <p className="pm-hero-sub max-w-[620px]">
-            PlayMax Agency is a Nairobi-based market intelligence and brand
+            PlayMax Agency is a Kenyan market intelligence and brand
             activation firm. We help manufacturers, suppliers, and market
             entrants understand, enter, and dominate Kenyan and East African
             markets.

@@ -6,12 +6,7 @@ import {
   Zap,
   ToggleLeft,
   ToggleRight,
-  Play,
   History,
-  Clock,
-  MessageSquare,
-  UserCheck,
-  AlertTriangle,
 } from "lucide-react";
 import Button from "@/components/ui/button";
 import Modal from "@/components/ui/modal";

@@ -1505,3 +1505,410 @@ h6 {
     font-size: 13px;
     font-weight: 600;
 }
+
+/* ═══════════════════════════════════════════════════════
+   PM-* COMPONENT CLASSES (used by page.tsx & others)
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Scroll Reveal ──────────────────────────── */
+@keyframes fade-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.pm-hidden {
+    opacity: 0;
+    transform: translateY(24px);
+}
+.pm-visible {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        opacity 500ms ease-out,
+        transform 500ms ease-out;
+}
+
+/* ── Typography ─────────────────────────────── */
+.pm-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+}
+.pm-hero-title .pm-accent {
+    font-size: clamp(3.2rem, 8vw, 6.5rem);
+    display: inline-block;
+}
+.pm-hero-sub {
+    font-size: var(--text-lg);
+    color: var(--pm-gray-3);
+    line-height: 1.7;
+    max-width: 480px;
+}
+.pm-section-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 4vw, var(--text-4xl));
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+}
+.pm-section-title .pm-accent {
+    display: inline-block;
+    font-size: clamp(2rem, 4.8vw, var(--text-5xl));
+}
+.pm-eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--pm-yellow);
+}
+.pm-accent {
+    color: var(--pm-yellow);
+}
+.pm-body-sm {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    color: var(--pm-gray-4);
+    line-height: 1.65;
+}
+.pm-card-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--pm-white);
+}
+.pm-dash-card-t {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--pm-white);
+    line-height: 1.3;
+}
+
+/* ── Dash / Insight Cards ───────────────────── */
+.pm-dash-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(4px);
+    transition: border-color var(--transition);
+}
+.pm-dash-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Service Cards (carousel) ───────────────── */
+.pm-service-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-lg);
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(4px);
+    transition: border-color var(--transition);
+}
+.pm-service-card:hover {
+    border-color: var(--pm-yellow);
+}
+.pm-service-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--pm-yellow);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+/* ── Button Primary ─────────────────────────── */
+.pm-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 14px 28px;
+    background: var(--pm-yellow);
+    color: var(--pm-black);
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius);
+    transition:
+        background var(--transition),
+        transform var(--transition);
+    white-space: nowrap;
+    cursor: pointer;
+}
+.pm-btn-primary:hover {
+    background: #ffd520;
+    transform: translateY(-1px);
+}
+
+/* ── Link underline ─────────────────────────── */
+.pm-link-underline {
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--transition);
+}
+.pm-link-underline:hover {
+    border-bottom-color: currentColor;
+}
+
+/* ── Inventory Cards ────────────────────────── */
+.pm-inventory-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition:
+        transform var(--transition),
+        border-color var(--transition);
+}
+.pm-inventory-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--pm-yellow);
+}
+.pm-inventory-card-body {
+    padding: 16px 18px;
+}
+.pm-inventory-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    border-top: 1px solid var(--pm-black-4);
+}
+.pm-inv-type {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--pm-yellow);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.pm-inv-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.pm-inv-loc {
+    font-size: 11px;
+    color: var(--pm-gray-4);
+}
+.pm-inv-price {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pm-yellow);
+}
+.pm-inv-price-unit {
+    font-size: 10px;
+    color: var(--pm-gray-4);
+    font-weight: 400;
+}
+.pm-inv-price-scale {
+    /* reserved for scaling variant */
+}
+.pm-card-hover {
+    transition:
+        transform var(--transition),
+        border-color var(--transition);
+}
+.pm-card-hover:hover {
+    transform: translateY(-2px);
+}
+.pm-inventory-card-img {
+    height: 140px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    position: relative;
+}
+
+/* ── Pulse for available items ──────────────── */
+@keyframes pm-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+.pm-pulse-available {
+    animation: pm-pulse 2s ease-in-out infinite;
+}
+
+/* ── Dot textures ───────────────────────────── */
+.pm-dots-yellow-on-black {
+    background-image: radial-gradient(circle, rgba(244, 195, 0, 0.15) 1px, transparent 1px);
+    background-size: 18px 18px;
+}
+.pm-dots-fade-corner {
+    mask-image: radial-gradient(
+        ellipse 70% 60% at 100% 100%,
+        black 0%,
+        transparent 100%
+    );
+    -webkit-mask-image: radial-gradient(
+        ellipse 70% 60% at 100% 100%,
+        black 0%,
+        transparent 100%
+    );
+}
+.pm-dots-dense-cta {
+    background-image: radial-gradient(circle, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+    background-size: 12px 12px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   HEADER SHRINK (toggled by JS on scroll)
+   ═══════════════════════════════════════════════════════ */
+.site-header-shrink {
+    height: 56px !important;
+    background: rgba(10, 10, 10, 0.92) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+.site-header-shrink .site-logo {
+    font-size: 18px !important;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOGO BOUNCE ANIMATION
+   ═══════════════════════════════════════════════════════ */
+@keyframes pm-bounce-letter {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    35% {
+        transform: translateY(-8px);
+    }
+    55% {
+        transform: translateY(-3px);
+    }
+}
+.pm-bounce-letter {
+    display: inline-block;
+    animation: pm-bounce-letter 2.4s ease-in-out infinite;
+}
+.pm-bounce-max {
+    display: inline-block;
+    animation: pm-bounce-letter 2.4s ease-in-out infinite;
+    color: var(--pm-yellow);
+}
+
+/* ═══════════════════════════════════════════════════════
+   SERVICES STRIP MARQUEE
+   ═══════════════════════════════════════════════════════ */
+@keyframes pm-marquee-scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+.services-strip-pm-marquee {
+    overflow: hidden;
+    background: #0d0d0d;
+    border-top: 1px solid #1a1a1a;
+    border-bottom: 1px solid #1a1a1a;
+    padding: 18px 0;
+}
+.services-strip-inner {
+    display: flex;
+    gap: 40px;
+    animation: pm-marquee-scroll 30s linear infinite;
+    width: fit-content;
+    padding-left: 60px;
+}
+.services-strip-inner:hover {
+    animation-play-state: paused;
+}
+.services-strip-inner .service-pill {
+    padding-right: 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCROLL-TO-TOP BUTTON
+   ═══════════════════════════════════════════════════════ */
+.pm-scroll-top {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 200;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--pm-black-3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+    transition:
+        opacity 300ms ease,
+        transform 300ms ease,
+        background var(--transition);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+.pm-scroll-top.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+.pm-scroll-top:hover {
+    background: var(--pm-black-4);
+}
+.pm-scroll-top svg {
+    transform: rotate(-90deg);
+}
+.pm-scroll-top .pm-scroll-top-bg {
+    fill: none;
+    stroke: var(--pm-black-4);
+    stroke-width: 3;
+}
+.pm-scroll-top .pm-scroll-top-progress {
+    fill: none;
+    stroke: var(--pm-yellow);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 100ms ease;
+}
+.pm-scroll-top .pm-scroll-top-icon {
+    position: absolute;
+    color: var(--pm-yellow);
+    width: 18px;
+    height: 18px;
+}
+
+/* ── Marquee responsive ─────────────────────── */
+@media (max-width: 1024px) {
+    .services-strip-inner {
+        padding-left: 32px;
+    }
+}
+@media (max-width: 640px) {
+    .services-strip-inner {
+        padding-left: 20px;
+    }
+}

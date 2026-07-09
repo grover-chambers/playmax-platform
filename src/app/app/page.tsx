@@ -14,17 +14,23 @@ import {
   Sun,
   Clock,
   Zap,
+  Calendar,
 } from "lucide-react";
 import Button from "@/components/ui/button";
 import NewLeadModal from "@/components/modals/new-lead-modal";
+import NewEngagementModal from "@/components/modals/new-engagement-modal";
+import { useDashboardStats } from "@/hooks/useDashboardData";
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
   const [showNewLead, setShowNewLead] = useState(false);
+  const [showNewEngagement, setShowNewEngagement] = useState(false);
+  const { stats, loading } = useDashboardStats();
 
   return (
     <>
       <NewLeadModal open={showNewLead} onClose={() => setShowNewLead(false)} />
+      <NewEngagementModal open={showNewEngagement} onClose={() => setShowNewEngagement(false)} />
       {/* ── Welcome strip ──────────────────────────────────── */}
       <div className="pm-dash-welcome">
         <div>
@@ -77,6 +83,13 @@ export default function SuperAdminDashboard() {
           </button>
           <button
             className="pm-dash-qa-btn"
+            onClick={() => setShowNewEngagement(true)}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            Log engagement
+          </button>
+          <button
+            className="pm-dash-qa-btn"
             onClick={() => setShowNewLead(true)}
           >
             <UserCheck className="w-3.5 h-3.5" />
@@ -95,40 +108,40 @@ export default function SuperAdminDashboard() {
         <div className="pm-dash-krow pm-dash-krow-4">
           {/* Card 1 — Pipeline value */}
           <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">KES 4.2M</div>
+            <div className="pm-dash-kn">{loading ? "..." : `KES ${(stats.pipelineValue / 1000000).toFixed(1)}M`}</div>
             <div className="pm-dash-kl">Pipeline value</div>
             <div className="pm-dash-ksub">
               <TrendingUp className="inline-block w-3 h-3 trend-up align-text-bottom" />{" "}
-              <span className="trend-up">↑ 18%</span> vs last month
+              <span className="trend-up">{stats.totalLeads} total leads</span>
             </div>
           </div>
 
           {/* Card 2 — Active projects */}
           <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">11</div>
+            <div className="pm-dash-kn">{loading ? "..." : stats.activeProjects}</div>
             <div className="pm-dash-kl">Active projects</div>
             <div className="pm-dash-ksub">
               <Clock className="inline-block w-3 h-3 text-yellow align-text-bottom" />{" "}
-              3 milestone reviews pending
+              {stats.staleLeads} stale leads need follow-up
             </div>
           </div>
 
           {/* Card 3 — Collected this month (blue) */}
           <div className="pm-dash-kcard blu">
-            <div className="pm-dash-kn blu">KES 780K</div>
+            <div className="pm-dash-kn blu">{loading ? "..." : `KES ${(stats.collectedThisMonth / 1000).toFixed(0)}K`}</div>
             <div className="pm-dash-kl">Collected this month</div>
             <div className="pm-dash-ksub">
               Target: KES 1.2M{" "}
-              <span className="text-[var(--pm-blue)]">· 65%</span>
+              <span className="text-[var(--pm-blue)]">· {Math.round((stats.collectedThisMonth / 1200000) * 100)}%</span>
             </div>
           </div>
 
           {/* Card 4 — New leads today (red) */}
           <div className="pm-dash-kcard red">
-            <div className="pm-dash-kn red">6</div>
+            <div className="pm-dash-kn red">{loading ? "..." : stats.newLeadsToday}</div>
             <div className="pm-dash-kl">New leads today</div>
             <div className="pm-dash-ksub">
-              3 website · 2 WhatsApp · 1 referral
+              {stats.totalLeads} total leads in pipeline
             </div>
           </div>
         </div>

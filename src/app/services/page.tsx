@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/layout";
 import { LeadForm } from "@/components/lead-form";
+import { InventoryMapWrapper } from "@/components/InventoryMapWrapper";
 
 const services = [
   {
@@ -41,7 +42,7 @@ const services = [
     icon: MapPin,
     name: "Outdoor Media",
     tagline: "Own the streets",
-    desc: "Billboards, digital screens, and banner sites across Nairobi and environs — available to rent by the week or month. Every site is vetted for visibility, traffic, and audience relevance.",
+    desc: "Billboards, digital screens, and banner sites across Kenya — available to rent by the week or month. Every site is vetted for visibility, traffic, and audience relevance.",
     details: [
       "Static billboards (all sizes)",
       "Digital LED screens (1080p/4K)",
@@ -114,6 +115,7 @@ export default function ServicesPage() {
       {services.map((svc, i) => {
         // Alternate text colors based on gradient position
         const isLightSection = i >= 3; // services 4, 5, 6 are in lighter gradient area
+        const isOutdoorMedia = svc.name === "Outdoor Media";
         return (
           <section
             key={svc.name}
@@ -152,6 +154,15 @@ export default function ServicesPage() {
                   </a>
                 </div>
               </div>
+              {isOutdoorMedia && (
+                <div className="mt-12 md:mt-16">
+                  <div className="pm-eyebrow mb-4">Site Locations</div>
+                  <h3 className="pm-section-title mb-6">
+                    Browse our <span className="pm-accent">inventory</span>
+                  </h3>
+                  <InventoryMapWrapper />
+                </div>
+              )}
             </div>
           </section>
         );

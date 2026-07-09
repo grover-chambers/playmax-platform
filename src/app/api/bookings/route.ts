@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 
 export async function GET() {
   try {
-    const supabase = getSupabase();
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { data, error } = await supabase
       .from("bookings")
-      .select("*, inventory_items(name), clients(company)")
+      .select("*, inventory(name), clients(company)")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -24,45 +30,58 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
-      inventory_item_id,
+      inventory_id,
       client_id,
       project_id,
       start_date,
       end_date,
-      price_agreed,
-      status = "tentative",
+      total_price,
+      status = "pending",
       notes,
     } = body;
 
-    if (!inventory_item_id || !client_id || !start_date || !end_date || !price_agreed) {
+    if (!inventory_id || !client_id || !start_date || !end_date || !total_price) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
       );
     }
 
-    const supabase = getSupabase();
+    const { data: existing } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("inventory_id", inventory_id)
+      .eq("status", "confirmed")
+      .or(`start_date.lte.${end_date},end_date.gte.${start_date}`);
+
+    if (existing && existing.length > 0) {
+      return NextResponse.json(
+        { error: "Conflict: This inventory item is already booked for the selected dates" },
+        { status: 409 },
+      );
+    }
+
     const { error } = await supabase.from("bookings").insert({
-      inventory_item_id,
+      inventory_id,
       client_id,
       project_id,
       start_date,
       end_date,
-      price_agreed,
+      total_price,
       status,
       notes,
     });
 
     if (error) {
-      // Check for exclusion constraint violation (double booking)
-      if (error.code === "23P01") {
-        return NextResponse.json(
-          { error: "Conflict: This inventory item is already booked for the selected dates" },
-          { status: 409 }
-        );
-      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

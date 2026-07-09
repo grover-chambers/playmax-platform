@@ -23,6 +23,8 @@ import { ProcessSteps } from "@/components/ui/ProcessSteps";
 import { HeroClient } from "@/components/HeroClient";
 import { RevealSection } from "@/components/ui/RevealSection";
 import { Carousel } from "@/components/ui/Carousel";
+import { InventoryBar } from "@/components/InventoryBar";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { SERVICES } from "@/lib/services-data";
 
 const servicePills = [
@@ -44,6 +46,7 @@ const inventoryItems = [
     specs: "6×3m · 1080p LED",
     price: 85000,
     status: "available" as const,
+    coords: [-1.2671, 36.8143] as [number, number],
   },
   {
     type: "Billboard",
@@ -52,6 +55,7 @@ const inventoryItems = [
     specs: "12×4m · Static",
     price: 120000,
     status: "available" as const,
+    coords: [-1.3278, 36.8575] as [number, number],
   },
   {
     type: "Billboard",
@@ -60,6 +64,7 @@ const inventoryItems = [
     specs: "8×3m · Backlit",
     price: 95000,
     status: "booked" as const,
+    coords: [-1.301, 36.82] as [number, number],
   },
 ];
 
@@ -77,7 +82,7 @@ const aboutHighlights = [
   {
     icon: Lightbulb,
     title: "Local Expertise",
-    desc: "Born and operating in Nairobi. We know the streets, the retailers, the commuters, and the culture.",
+    desc: "Born and operating in Kenya. We know the streets, the retailers, the commuters, and the culture.",
   },
   {
     icon: TrendingUp,
@@ -88,7 +93,7 @@ const aboutHighlights = [
 
 const insightsPreview = [
   {
-    title: "Why Nairobi's billboard market is shifting to digital",
+    title: "Why Kenya's billboard market is shifting to digital",
     category: "Industry Trends",
     date: "2026-06-18",
     readTime: "5 min read",
@@ -121,13 +126,15 @@ export default function HomePage() {
       {/* ═══ HERO ═══════════════════════════════════ */}
       <HeroClient />
 
-      {/* ── SERVICES STRIP ─────────────────────────── */}
-      <div className="services-strip">
-        {servicePills.map((pill) => (
-          <div key={pill} className="service-pill">
-            {pill}
-          </div>
-        ))}
+      {/* ── SERVICES STRIP (auto-scrolling marquee) ── */}
+      <div className="services-strip-pm-marquee">
+        <div className="services-strip-inner">
+          {[...servicePills, ...servicePills].map((pill, i) => (
+            <div key={`${pill}-${i}`} className="service-pill">
+              {pill}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ═══ ABOUT SECTION — dark gradient area (white text) ════ */}
@@ -141,7 +148,7 @@ export default function HomePage() {
               <span className="pm-accent">You own it.</span>
             </h2>
             <p className="pm-hero-sub max-w-150">
-              PlayMax Agency is a Nairobi-based market intelligence and brand
+              PlayMax Agency is a Kenyan market intelligence and brand
               activation firm. We help manufacturers, suppliers, and market
               entrants understand, enter, and dominate Kenyan and East African
               markets.
@@ -152,8 +159,11 @@ export default function HomePage() {
             {aboutHighlights.map((item, i) => (
               <div
                 key={item.title}
-                className="bg-black-3 border border-[#1A1A1A] p-6 md:p-8 hover:border-yellow transition-colors"
+                className="p-6 md:p-8 hover:border-yellow transition-colors"
                 style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  backdropFilter: "blur(4px)",
                   opacity: 0,
                   animation: `fade-slide-up 500ms ease-out ${i * 100}ms forwards`,
                 }}
@@ -180,17 +190,9 @@ export default function HomePage() {
         </div>
       </RevealSection>
 
-      {/* ═══ SERVICES SECTION — dark gradient area (white text) ════ */}
+      {/* ═══ SERVICES SECTION — centered, matches About layout ════ */}
       <RevealSection className="section" style={{ color: "var(--pm-white)" }}>
-        <div
-          className="container-sm"
-          style={{
-            background: "rgba(10,10,10,0.85)",
-            borderRadius: "12px",
-            padding: "48px 32px",
-            margin: "-32px -16px",
-          }}
-        >
+        <div className="container-sm">
           <div className="mb-14">
             <div className="pm-eyebrow mb-4">What We Do</div>
             <h2 className="pm-section-title mb-6">
@@ -200,7 +202,7 @@ export default function HomePage() {
             </h2>
             <p className="pm-hero-sub max-w-150">
               From the first research question to your brand appearing on
-              Nairobi&apos;s busiest streets — we handle every step.
+              Kenya&apos;s busiest streets — we handle every step.
             </p>
           </div>
 
@@ -211,7 +213,7 @@ export default function HomePage() {
             showDots={true}
             className="pb-8"
           >
-            {SERVICES.slice(0, 6).map(({ name, slug, desc, icon }, _i) => {
+            {SERVICES.slice(0, 6).map(({ name, slug, desc, icon }) => {
               const IconComponent =
                 {
                   search: Search,
@@ -260,17 +262,9 @@ export default function HomePage() {
         </div>
       </RevealSection>
 
-      {/* ═══ INVENTORY SECTION — dark gradient area (white text) ═══ */}
+      {/* ═══ INVENTORY SECTION — centered, matches About layout ═══ */}
       <RevealSection className="section" style={{ color: "var(--pm-white)" }}>
-        <div
-          className="container-sm"
-          style={{
-            background: "rgba(10,10,10,0.85)",
-            borderRadius: "12px",
-            padding: "48px 32px",
-            margin: "-32px -16px",
-          }}
-        >
+        <div className="container-sm">
           <div className="mb-14">
             <div className="pm-eyebrow mb-4">Available Inventory</div>
             <h2 className="pm-section-title mb-4">
@@ -278,24 +272,7 @@ export default function HomePage() {
               <span className="pm-accent">this month</span>
             </h2>
 
-            {/* Progress bar: 6 of 48 */}
-            <div className="mt-4 max-w-xs">
-              <div
-                className="flex items-center gap-3 text-sm"
-                style={{ color: "var(--pm-gray-4)" }}
-              >
-                <span>6 of 48 sites available</span>
-                <span style={{ color: "var(--pm-yellow)" }}>
-                  · Updated daily
-                </span>
-              </div>
-              <div className="mt-2 w-full h-1.5 bg-black-4 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-yellow rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: "12.5%" }}>
-                </div>
-              </div>
-            </div>
+            <InventoryBar available={6} total={48} />
           </div>
 
           <Carousel
@@ -305,7 +282,7 @@ export default function HomePage() {
             showDots={true}
             className="pb-8"
           >
-            {inventoryItems.map((item, _i) => (
+            {inventoryItems.map((item) => (
               <div
                 key={item.name}
                 className="pm-inventory-card pm-card-hover h-full"
@@ -314,6 +291,7 @@ export default function HomePage() {
                   name={item.name}
                   location={item.location}
                   status={item.status}
+                  coords={item.coords}
                 />
                 <div className="pm-inventory-card-body">
                   <div className="pm-inv-type">{item.type}</div>
@@ -506,6 +484,8 @@ export default function HomePage() {
 
       {/* ═══ FOOTER ═════════════════════════════════ */}
       <SiteFooter />
+
+      <ScrollToTop />
     </>
   );
 }

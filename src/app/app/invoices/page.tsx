@@ -166,8 +166,6 @@ export default function InvoicesPage() {
     }
     setFormError("");
 
-    const subtotal = calcSubtotal();
-    const tax = calcTax();
     const total = calcTotal();
 
     const newId = `INV-2026-${String(invoices.length + 1).padStart(3, "0")}`;

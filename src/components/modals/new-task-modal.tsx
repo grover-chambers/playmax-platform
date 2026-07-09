@@ -36,7 +36,7 @@ export default function NewTaskModal({
     project: preselectedProject || "",
     assignedTo: "",
     dueDate: "",
-    priority: "normal" as "low" | "normal" | "high",
+    priority: "medium" as "low" | "medium" | "high",
     description: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,9 +75,8 @@ export default function NewTaskModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: form.title,
-          project_id: form.project, // Would need project ID mapping in real app
-          assignee_id: form.assignedTo,
+          title: form.title,
+          assigned_to: form.assignedTo,
           due_date: form.dueDate,
           status: "todo",
           priority: form.priority,
@@ -108,7 +107,7 @@ export default function NewTaskModal({
       project: preselectedProject || "",
       assignedTo: "",
       dueDate: "",
-      priority: "normal",
+      priority: "medium",
       description: "",
     });
     setErrors({});
@@ -118,7 +117,7 @@ export default function NewTaskModal({
 
   const priorities = [
     { value: "low" as const, label: "Low" },
-    { value: "normal" as const, label: "Normal" },
+    { value: "medium" as const, label: "Medium" },
     { value: "high" as const, label: "High" },
   ];
 
@@ -236,7 +235,7 @@ export default function NewTaskModal({
                     form.priority === p.value
                       ? p.value === "high"
                         ? "bg-red/10 text-red border-red/30"
-                        : p.value === "normal"
+                        : p.value === "medium"
                         ? "bg-yellow/10 text-yellow border-yellow/30"
                         : "bg-gray-4/10 text-gray-4 border-[#2a2a2a]"
                       : "text-gray-5 border-[#2a2a2a] hover:text-white"

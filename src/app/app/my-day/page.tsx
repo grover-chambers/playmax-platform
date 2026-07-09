@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   AlertTriangle,
   AlertCircle,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
+import NewTaskModal from "@/components/modals/new-task-modal";
 
 /* ── Data ──────────────────────────────────────────────── */
 
@@ -212,8 +213,11 @@ function TaskCheckbox({ done }: { done: boolean }) {
 /* ── Page ───────────────────────────────────────────────── */
 
 export default function MyDayPage() {
+  const [showNewTask, setShowNewTask] = useState(false);
+
   return (
     <div>
+      <NewTaskModal open={showNewTask} onClose={() => setShowNewTask(false)} />
       <PageHeader
         title="My Day"
         subtitle="3 tasks due · 2 unread messages · 8 active leads"
@@ -267,7 +271,7 @@ export default function MyDayPage() {
                 />
                 Today&apos;s tasks
               </span>
-              <Button variant="primary" size="sm">
+              <Button variant="primary" size="sm" onClick={() => setShowNewTask(true)}>
                 <Plus size={12} className="mr-1" /> New task
               </Button>
             </div>

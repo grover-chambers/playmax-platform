@@ -59,16 +59,20 @@ export function HeroClient() {
           <br />
           market. You
           <br />
-          <em
+          <span
             className={ownItRevealed ? "pm-accent" : ""}
             style={{
+              display: "inline-block",
               fontStyle: "normal",
               color: ownItRevealed ? undefined : "var(--pm-gray-5)",
-              transition: "color 600ms ease 100ms",
+              transform: ownItRevealed ? "scale(1)" : "scale(0.6)",
+              opacity: ownItRevealed ? 1 : 0,
+              transition: "color 600ms ease, transform 800ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 500ms ease",
+              transformOrigin: "left center",
             }}
           >
             own it.
-          </em>
+          </span>
         </h1>
         <p className="pm-hero-sub mb-8">
           PlayMax Agency delivers end-to-end market intelligence, brand

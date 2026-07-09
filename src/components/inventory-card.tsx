@@ -1,4 +1,7 @@
+"use client";
+
 import { MapPin } from "lucide-react";
+import { MiniMap } from "@/components/ui/MiniMap";
 
 interface InventoryCardProps {
   type: string;
@@ -8,6 +11,7 @@ interface InventoryCardProps {
   status: "available" | "booked";
   specs?: string;
   ctaText?: string;
+  coords?: [number, number];
 }
 
 export function InventoryCard({
@@ -18,13 +22,18 @@ export function InventoryCard({
   status,
   specs,
   ctaText,
+  coords,
 }: InventoryCardProps) {
   const isAvailable = status === "available";
 
   return (
     <div className="inventory-card">
-      <div className="inventory-card-img">
-        <MapPin className="w-10 h-10 text-gray-5" />
+      <div className="inventory-card-img" style={{ overflow: "hidden" }}>
+        {coords ? (
+          <MiniMap coords={coords} status={status} />
+        ) : (
+          <MapPin className="w-10 h-10 text-gray-5" />
+        )}
         <span
           className={`inventory-card-badge badge ${isAvailable ? "badge-available" : "badge-booked"}`}
         >

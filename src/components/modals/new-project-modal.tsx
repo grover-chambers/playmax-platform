@@ -125,11 +125,11 @@ export default function NewProjectModal({
     try {
       // Map form to API format
       const typeMap: Record<string, string> = {
-        Research: "research",
-        Branding: "branding",
-        Campaign: "campaign",
-        Event: "event",
-        Rental: "rental",
+        Research: "market_research",
+        Branding: "brand_strategy",
+        Campaign: "campaign_management",
+        Event: "event_activation",
+        Rental: "billboard_campaign",
       };
 
       const response = await fetch("/api/projects", {
@@ -138,11 +138,11 @@ export default function NewProjectModal({
         body: JSON.stringify({
           name: form.projectName,
           client_id: form.client, // This would need to be a real client ID in production
-          type: typeMap[form.type] || "research",
+          type: typeMap[form.type] || "market_research",
           status: "draft",
           value: parseInt(form.budget) || 0,
-          deadline: form.endDate || form.startDate,
-          // owner_id: form.assignedTeam[0], // Would need user mapping
+          end_date: form.endDate || form.startDate,
+          assigned_to: form.assignedTeam[0] || null,
         }),
       });
 

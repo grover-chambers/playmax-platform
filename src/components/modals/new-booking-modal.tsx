@@ -26,9 +26,9 @@ const inventoryOptions = [
   { value: "thika-rd", label: "Thika Rd Banner — KES 8,000/day" },
 ];
 const statusOptions = [
-  { value: "tentative", label: "Tentative" },
+  { value: "pending", label: "Pending" },
   { value: "confirmed", label: "Confirmed" },
-  { value: "paid", label: "Paid" },
+  { value: "completed", label: "Completed" },
 ];
 
 const bookedDates = ["2026-07-10", "2026-07-11", "2026-07-12"];
@@ -44,7 +44,7 @@ export default function NewBookingModal({
     startDate: "",
     endDate: "",
     priceAgreed: "",
-    status: "tentative",
+    status: "pending",
     notes: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -107,11 +107,11 @@ export default function NewBookingModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          inventory_item_id: form.inventoryItem,
+          inventory_id: form.inventoryItem,
           client_id: form.clientProject,
           start_date: form.startDate,
           end_date: form.endDate,
-          price_agreed: parseFloat(form.priceAgreed),
+          total_price: parseFloat(form.priceAgreed),
           status: form.status,
           notes: form.notes,
         }),
@@ -145,7 +145,7 @@ export default function NewBookingModal({
       startDate: "",
       endDate: "",
       priceAgreed: "",
-      status: "tentative",
+      status: "pending",
       notes: "",
     });
     setErrors({});

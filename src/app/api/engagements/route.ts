@@ -1,13 +1,25 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 
 export async function GET() {
   try {
-    const supabase = getSupabase();
-    const { data, error } = await supabase
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let query = supabase
       .from("engagements")
       .select("*, clients(company), projects(name)")
       .order("date", { ascending: false });
+
+    if (currentUser.role === "crm_staff") {
+      query = query.contains("staff_involved", [currentUser.id]);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -24,6 +36,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!isAdmin(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await request.json();
     const {
       client_id,
@@ -51,7 +74,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = getSupabase();
     const { error } = await supabase.from("engagements").insert({
       client_id,
       engagement_type,

@@ -21,21 +21,4 @@
     background: transparent;
 }
 
-/* Service cards and inventory cards stay solid black regardless of gradient position */
-.pm-page-gradient .pm-service-card,
-.pm-page-gradient .pm-inventory-card,
-.pm-page-gradient .service-card,
-.pm-page-gradient .inventory-card {
-    background: var(--pm-black-2);
-}
-
-/* Service grid cards on dark backgrounds need white text */
-.pm-page-gradient .pm-card-title,
-.pm-page-gradient .pm-body-sm {
-    color: var(--pm-white);
-}
-
-/* But on light gradient sections (trusted-by onwards), service cards need dark text for their own labels */
-@media (prefers-color-scheme: light) {
-    /* Not needed - we control via explicit classes */
-}
+/* Cards use transparent / backdrop-blur backgrounds defined in globals.css */

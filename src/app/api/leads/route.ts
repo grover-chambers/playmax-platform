@@ -1,10 +1,42 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+
+export async function GET() {
+  try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let query = supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (currentUser.role === "crm_staff") {
+      query = query.eq("assigned_to", currentUser.id);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to fetch leads" },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-
     const {
       name,
       company,
@@ -23,7 +55,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = getSupabase();
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    );
+
     const { error } = await supabase.from("leads").insert({
       name,
       company,

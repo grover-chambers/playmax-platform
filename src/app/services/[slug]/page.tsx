@@ -10,12 +10,15 @@ import {
   Megaphone,
   ArrowRight,
   Check,
+  Users,
+  Layers,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/layout";
 import { LeadForm } from "@/components/lead-form";
-import { SERVICES, getServiceBySlug, type Service } from "@/lib/services-data";
+import { SERVICES, getServiceBySlug } from "@/lib/services-data";
+import { InventoryMapWrapper } from "@/components/InventoryMapWrapper";
 
-const iconMap = {
+const iconMap: Record<string, typeof Search> = {
   search: Search,
   sparkles: Sparkles,
   "map-pin": MapPin,
@@ -54,22 +57,24 @@ export default async function ServicePage({
     return notFound();
   }
 
-  const IconComponent = iconMap[service.icon as keyof typeof iconMap] || Search;
+  const IconComponent = iconMap[service.icon] || Search;
 
   return (
     <>
       <SiteHeader />
 
+      {/* ═══ HERO ═══════════════════════════════════ */}
       <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container pt-28 md:pt-36 pb-12 md:pb-16">
           <div className="pm-eyebrow mb-3 md:mb-4">{service.name}</div>
           <h1 className="pm-hero-title mb-6 md:mb-8">{service.tagline}</h1>
           <p className="pm-hero-sub max-w-[560px]">
-            {service.deliverables.join(", ")}.
+            {service.desc}
           </p>
         </div>
       </section>
 
+      {/* ═══ OVERVIEW ═══════════════════════════════ */}
       <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20">
@@ -77,24 +82,41 @@ export default async function ServicePage({
               <div className="pm-service-icon !mb-6 md:!mb-8">
                 <IconComponent className="w-6 h-6 text-black" />
               </div>
-              <h2 className="pm-section-title mb-4 md:mb-6">{service.name}</h2>
-              <p className="pm-body-sm">{service.desc}</p>
+              <h2 className="pm-section-title mb-4 md:mb-6">Overview</h2>
+              <p className="pm-body-sm leading-relaxed">{service.longDesc}</p>
             </div>
-            <div>
-              <div className="pm-eyebrow !text-dimmer mb-4 md:mb-6">
-                What&apos;s included
+            <div className="flex flex-col gap-8">
+              <div>
+                <div className="pm-eyebrow !text-dimmer mb-4 md:mb-6">
+                  <Users className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                  Who this is for
+                </div>
+                <ul className="flex flex-col gap-3 md:gap-4">
+                  {service.whoFor.map((w) => (
+                    <li key={w} className="flex items-start gap-3 pm-body-sm">
+                      <Check className="mt-1 w-4 h-4 text-yellow flex-shrink-0" />
+                      {w}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="flex flex-col gap-3 md:gap-4">
-                {service.deliverables.map((d) => (
-                  <li key={d} className="flex items-start gap-3 pm-body-sm">
-                    <Check className="mt-1 w-4 h-4 text-yellow flex-shrink-0" />
-                    {d}
-                  </li>
-                ))}
-              </ul>
+              <div>
+                <div className="pm-eyebrow !text-dimmer mb-4 md:mb-6">
+                  <Layers className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                  What&apos;s included
+                </div>
+                <ul className="flex flex-col gap-3 md:gap-4">
+                  {service.deliverables.map((d) => (
+                    <li key={d} className="flex items-start gap-3 pm-body-sm">
+                      <Check className="mt-1 w-4 h-4 text-yellow flex-shrink-0" />
+                      {d}
+                    </li>
+                  ))}
+                </ul>
+              </div>
               <Link
                 href="/contact"
-                className="inline-flex items-center gap-2 mt-8 md:mt-10 font-display text-[13px] font-semibold text-yellow pm-link-underline"
+                className="inline-flex items-center gap-2 mt-2 font-display text-[13px] font-semibold text-yellow pm-link-underline"
               >
                 Enquire about {service.name} <ArrowRight className="w-4 h-4" />
               </Link>
@@ -103,6 +125,23 @@ export default async function ServicePage({
         </div>
       </section>
 
+      {/* ═══ INVENTORY MAP (outdoor-media only) ═══ */}
+      {service.slug === "outdoor-media" && (
+        <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
+          <div className="site-container section">
+            <div className="pm-eyebrow mb-4">Site Locations</div>
+            <h2 className="pm-section-title mb-6">
+              Browse our <span className="pm-accent">inventory</span>
+            </h2>
+            <p className="pm-hero-sub max-w-[560px] mb-8">
+              Explore our media sites across Kenya. Yellow pins are available, grey are booked.
+            </p>
+            <InventoryMapWrapper />
+          </div>
+        </section>
+      )}
+
+      {/* ═══ PROCESS ════════════════════════════════ */}
       <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
           <div className="pm-eyebrow mb-3 md:mb-4">Our Process</div>
@@ -122,6 +161,7 @@ export default async function ServicePage({
         </div>
       </section>
 
+      {/* ═══ GET STARTED ════════════════════════════ */}
       <section className="bg-transparent" style={{ color: "var(--pm-black)" }}>
         <div className="site-container section">
           <div className="max-w-[500px] mx-auto text-center">

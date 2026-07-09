@@ -1,46 +1,26 @@
+"use client";
+
+import { MiniMap } from "@/components/ui/MiniMap";
+
 interface InventoryCardImageProps {
   name: string;
   location: string;
   status: "available" | "booked";
+  coords: [number, number];
 }
 
 export function InventoryCardImage({
   name,
   location,
   status,
+  coords,
 }: InventoryCardImageProps) {
   return (
-    <div className="pm-inventory-card-img">
-      {/* Diagonal stripe texture */}
-      <svg
-        className="absolute inset-0 w-full h-full opacity-[0.08]"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <defs>
-          <pattern
-            id={`diag-${name.replace(/\s/g, "")}`}
-            width="14"
-            height="14"
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(45)"
-          >
-            <line
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="14"
-              stroke="#F4C300"
-              strokeWidth="1.5"
-            />
-          </pattern>
-        </defs>
-        <rect
-          width="100%"
-          height="100%"
-          fill={`url(#diag-${name.replace(/\s/g, "")})`}
-        />
-      </svg>
+    <div
+      className="pm-inventory-card-img"
+      style={{ overflow: "hidden" }}
+    >
+      <MiniMap coords={coords} status={status} />
 
       {/* Location + name overlay */}
       <div className="absolute inset-0 flex flex-col justify-end p-4 z-10">

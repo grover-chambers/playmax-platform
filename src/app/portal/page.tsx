@@ -1,13 +1,10 @@
 "use client";
 
 import React from "react";
-import StatCard from "@/components/ui/stat-card";
-import StatusBadge from "@/components/ui/status-badge";
 import Button from "@/components/ui/button";
 import {
   Sun,
   AlertTriangle,
-  FolderKanban,
   CheckCircle,
   ArrowRight,
   FileText,
