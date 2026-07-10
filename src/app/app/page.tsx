@@ -18,18 +18,24 @@ import {
 } from "lucide-react";
 import Button from "@/components/ui/button";
 import NewLeadModal from "@/components/modals/new-lead-modal";
+import NewClientModal from "@/components/modals/new-client-modal";
+import NewProjectModal from "@/components/modals/new-project-modal";
 import NewEngagementModal from "@/components/modals/new-engagement-modal";
 import { useDashboardStats } from "@/hooks/useDashboardData";
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
   const [showNewLead, setShowNewLead] = useState(false);
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [showNewProject, setShowNewProject] = useState(false);
   const [showNewEngagement, setShowNewEngagement] = useState(false);
   const { stats, loading } = useDashboardStats();
 
   return (
     <>
       <NewLeadModal open={showNewLead} onClose={() => setShowNewLead(false)} />
+      <NewClientModal open={showNewClient} onClose={() => setShowNewClient(false)} />
+      <NewProjectModal open={showNewProject} onClose={() => setShowNewProject(false)} />
       <NewEngagementModal open={showNewEngagement} onClose={() => setShowNewEngagement(false)} />
       {/* ── Welcome strip ──────────────────────────────────── */}
       <div className="pm-dash-welcome">
@@ -41,17 +47,21 @@ export default function SuperAdminDashboard() {
           <p>Here&apos;s your command centre overview for today.</p>
         </div>
         <div className="flex gap-2.5">
-          <Button variant="secondary" size="sm">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => router.push("/app/reports")}
+          >
             <Download className="w-3.5 h-3.5" />
             Export report
           </Button>
           <Button
             variant="primary"
             size="sm"
-            onClick={() => setShowNewLead(true)}
+            onClick={() => setShowNewClient(true)}
           >
             <Plus className="w-3.5 h-3.5" />
-            New lead
+            New client
           </Button>
         </div>
       </div>
@@ -69,7 +79,7 @@ export default function SuperAdminDashboard() {
           </button>
           <button
             className="pm-dash-qa-btn"
-            onClick={() => router.push("/app/projects")}
+            onClick={() => setShowNewProject(true)}
           >
             <FolderPlus className="w-3.5 h-3.5" />
             New project
@@ -452,7 +462,12 @@ export default function SuperAdminDashboard() {
             <div className="pm-dash-card">
               <div className="pm-dash-card-h">
                 <span className="pm-dash-card-t">Finance snapshot</span>
-                <button className="btn-sm">View invoices</button>
+                <button
+                  className="btn-sm"
+                  onClick={() => router.push("/app/invoices")}
+                >
+                  View invoices
+                </button>
               </div>
               <div className="pm-dash-card-b">
                 {/* Mini KPI row */}

@@ -186,14 +186,28 @@ export default function PlatformLayout({
 
   useEffect(() => {
     const init = async () => {
-      const supabase = createClient();
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-      startTransition(() => {
-        setUser(currentUser);
-        setLoadingUser(false);
-      });
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getUser();
+        const currentUser = data?.user ?? null;
+        startTransition(() => {
+          setUser(currentUser);
+          setLoadingUser(false);
+        });
+      } catch {
+        try {
+          const supabase = createClient();
+          const { data: sessionData } = await supabase.auth.getSession();
+          startTransition(() => {
+            setUser(sessionData?.session?.user ?? null);
+            setLoadingUser(false);
+          });
+        } catch {
+          startTransition(() => {
+            setLoadingUser(false);
+          });
+        }
+      }
     };
     init();
   }, []);
