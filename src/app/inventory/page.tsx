@@ -206,7 +206,7 @@ export default function InventoryPage() {
       <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
           <div className="flex items-center justify-between mb-6 md:mb-8">
-            <div className="text-[12px] text-gray-5">
+            <div className="text-[13px] text-gray-5">
               Showing {filtered.length} of {allInventory.length} sites
             </div>
           </div>
@@ -237,7 +237,7 @@ export default function InventoryPage() {
                       KES {item.price.toLocaleString()}{" "}
                       <span className="inventory-price-unit">/month</span>
                     </div>
-                    <div className="text-[11px] text-gray-4">
+                    <div className="text-[12px] text-gray-4">
                       {isAvailable ? "Inquire →" : "Join waitlist →"}
                     </div>
                   </div>
@@ -247,7 +247,7 @@ export default function InventoryPage() {
           </div>
 
           {filtered.length === 0 && (
-            <div className="text-center py-20 text-gray-5 text-[14px]">
+            <div className="text-center py-20 text-gray-5 text-[15px]">
               No sites match your current filters.
             </div>
           )}

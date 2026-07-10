@@ -20,7 +20,12 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-const healthItems = [
+const healthItems: Array<{
+  label: string;
+  count: number;
+  meta: string;
+  status: "good" | "warn" | "stale";
+}> = [
   {
     label: "Case Studies",
     count: 8,
@@ -29,9 +34,9 @@ const healthItems = [
   },
   {
     label: "Blog / Insights",
-    count: 4,
-    meta: "Live · Last: 42d ago",
-    status: "warn" as const,
+    count: 8,
+    meta: "Live · Updated recently",
+    status: "good" as const,
   },
   {
     label: "Inventory",

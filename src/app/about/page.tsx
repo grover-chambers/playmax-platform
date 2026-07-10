@@ -134,7 +134,7 @@ export default function AboutPage() {
                 <div className="text-[16px] md:text-[18px] font-semibold mb-1">
                   {member.name}
                 </div>
-                <div className="text-[13px] text-gray-5">{member.role}</div>
+                <div className="text-[14px] text-gray-5">{member.role}</div>
               </div>
             ))}
           </div>

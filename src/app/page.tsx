@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Search,
   Sparkles,
@@ -7,12 +8,12 @@ import {
   BarChart2,
   Megaphone,
   ArrowRight,
-  ArrowUpRight,
   Clock,
   Users,
   Lightbulb,
   Target,
   TrendingUp,
+  Calendar,
 } from "lucide-react";
 import { SiteHeader } from "@/components/layout";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -26,6 +27,7 @@ import { Carousel } from "@/components/ui/Carousel";
 import { InventoryBar } from "@/components/InventoryBar";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { SERVICES } from "@/lib/services-data";
+import { getLatestArticles } from "@/lib/articles-data";
 
 const servicePills = [
   "Market Research",
@@ -91,32 +93,7 @@ const aboutHighlights = [
   },
 ];
 
-const insightsPreview = [
-  {
-    title: "Why Kenya's billboard market is shifting to digital",
-    category: "Industry Trends",
-    date: "2026-06-18",
-    readTime: "5 min read",
-    excerpt:
-      "The transition from static to digital OOH is accelerating — here's what it means for advertisers and media owners in Kenya.",
-  },
-  {
-    title: "How to pick the right market research method for your product",
-    category: "Research Methods",
-    date: "2026-06-10",
-    readTime: "8 min read",
-    excerpt:
-      "Not all research is created equal. We break down when to use surveys, focus groups, ethnographic studies, and data analysis.",
-  },
-  {
-    title: "5 brand activation mistakes we see in East Africa",
-    category: "Brand Strategy",
-    date: "2026-05-28",
-    readTime: "6 min read",
-    excerpt:
-      "From ignoring local context to skipping measurement — these common missteps can tank even the best-funded campaigns.",
-  },
-];
+const insightsPreview = getLatestArticles(3);
 
 export default function HomePage() {
   return (
@@ -182,7 +159,7 @@ export default function HomePage() {
           <div className="mt-16 md:mt-20 text-center">
             <Link
               href="/about"
-              className="inline-flex items-center gap-2 font-display text-[13px] font-semibold text-yellow pm-link-underline"
+              className="inline-flex items-center gap-2 font-display text-[14px] font-semibold text-yellow pm-link-underline"
             >
               Learn more about us <ArrowRight className="w-4 h-4" />
             </Link>
@@ -254,7 +231,7 @@ export default function HomePage() {
           <div className="mt-8 text-center">
             <Link
               href="/services"
-              className="inline-flex items-center gap-2 font-display text-[13px] font-medium text-yellow pm-link-underline"
+              className="inline-flex items-center gap-2 font-display text-[14px] font-medium text-yellow pm-link-underline"
             >
               View all services <ArrowRight className="w-4 h-4" />
             </Link>
@@ -315,7 +292,7 @@ export default function HomePage() {
                     <span className="pm-inv-price-unit">/month</span>
                   </div>
                   <div
-                    className={`text-[11px] $
+                    className={`text-[12px] $
                       item.status === "available"
                         ? "text-green pm-pulse-available"
                         : "text-gray-4"
@@ -332,7 +309,7 @@ export default function HomePage() {
           <div className="mt-8 text-center">
             <Link
               href="/inventory"
-              className="inline-flex items-center gap-2 font-display text-[13px] font-medium text-yellow pm-link-underline"
+              className="inline-flex items-center gap-2 font-display text-[14px] font-medium text-yellow pm-link-underline"
             >
               View all inventory <ArrowRight className="w-4 h-4" />
             </Link>
@@ -356,43 +333,78 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
             {insightsPreview.map((post, i) => (
-              <div
-                key={post.title}
-                className="pm-dash-card overflow-hidden"
+              <Link
+                key={post.slug}
+                href={`/insights/${post.slug}`}
+                className="group block"
                 style={{
                   opacity: 0,
                   animation: `fade-slide-up 500ms ease-out ${i * 100}ms forwards`,
                 }}
               >
-                <div className="h-[160px] bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center relative">
-                  <ArrowUpRight className="w-8 h-8 text-gray-5" />
-                </div>
-                <div className="p-6 md:p-8">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <span className="pm-eyebrow">{post.category}</span>
-                    <span className="flex items-center gap-1 text-[10px] text-gray-5">
-                      <Clock className="w-3 h-3" /> {post.readTime}
-                    </span>
+                <div
+                  className="pm-dash-card overflow-hidden h-full flex flex-col"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    backdropFilter: "blur(4px)",
+                  }}
+                >
+                  <div
+                    className="relative overflow-hidden"
+                    style={{ height: "160px" }}
+                  >
+                    <Image
+                      src={post.imageUrl}
+                      alt={post.imageAlt}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      style={{ objectFit: "cover" }}
+                      className="transition-transform duration-500 group-hover:scale-105"
+                    />
                   </div>
-                  <h3 className="pm-dash-card-t mb-3 leading-snug">
-                    {post.title}
-                  </h3>
-                  <p className="pm-body-sm mb-4">{post.excerpt}</p>
-                  <div className="text-[12px] text-gray-5 font-mono">
-                    {new Date(post.date).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                  <div className="p-6 md:p-8 flex flex-col flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="pm-eyebrow">{post.category}</span>
+                      <span className="flex items-center gap-1 text-[11px] text-gray-5">
+                        <Clock className="w-3 h-3" /> {post.readTime}
+                      </span>
+                    </div>
+                    <h3 className="pm-dash-card-t mb-3 leading-snug group-hover:text-yellow transition-colors">
+                      {post.title}
+                    </h3>
+                    <p className="pm-body-sm mb-4 flex-1">{post.excerpt}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="text-[13px] text-gray-5 font-mono">
+                        <Calendar className="w-3 h-3 inline mr-1 -mt-0.5" />
+                        {new Date(post.date).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </div>
+                      <span className="text-[12px] font-medium text-yellow opacity-0 group-hover:opacity-100 transition-opacity">
+                        Read more →
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <Link
+              href="/insights"
+              className="inline-flex items-center gap-2 font-display text-[14px] font-medium text-yellow pm-link-underline"
+            >
+              View all insights <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
 
           <div className="mt-16 md:mt-20">
             <div className="pm-dash-card max-w-[540px] mx-auto text-center p-10">
-              <div className="text-[16px] md:text-[18px] font-semibold mb-2">
+              <div className="text-[17px] md:text-[19px] font-semibold mb-2">
                 Subscribe to insights
               </div>
               <p className="pm-body-sm mb-6">
@@ -400,7 +412,7 @@ export default function HomePage() {
               </p>
               <a
                 href="/contact"
-                className="pm-btn-primary !text-[13px] !px-6 !py-2.5 no-underline"
+                className="pm-btn-primary !text-[14px] !px-6 !py-2.5 no-underline"
               >
                 Get Notified
               </a>
@@ -454,7 +466,7 @@ export default function HomePage() {
                     <span
                       style={{
                         fontFamily: "var(--font-mono)",
-                        fontSize: "9px",
+                        fontSize: "10px",
                         color: "var(--pm-yellow)",
                         letterSpacing: "0.1em",
                         textTransform: "uppercase",
@@ -465,7 +477,7 @@ export default function HomePage() {
                       {c.label}
                     </span>
                     <span
-                      style={{ fontSize: "13px", color: "var(--pm-black)" }}
+                      style={{ fontSize: "14px", color: "var(--pm-black)" }}
                     >
                       {c.value}
                     </span>

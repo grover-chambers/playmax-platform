@@ -116,7 +116,7 @@ export default async function ServicePage({
               </div>
               <Link
                 href="/contact"
-                className="inline-flex items-center gap-2 mt-2 font-display text-[13px] font-semibold text-yellow pm-link-underline"
+                className="inline-flex items-center gap-2 mt-2 font-display text-[14px] font-semibold text-yellow pm-link-underline"
               >
                 Enquire about {service.name} <ArrowRight className="w-4 h-4" />
               </Link>

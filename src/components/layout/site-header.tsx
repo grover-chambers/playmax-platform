@@ -57,7 +57,7 @@ function SiteHeader({ className = "" }: SiteHeaderProps) {
 
       <Link
         href="/contact"
-        className="btn-primary text-[13px] px-6 py-2.5 no-underline"
+        className="btn-primary text-[14px] px-6 py-2.5 no-underline"
       >
         Get in Touch
       </Link>

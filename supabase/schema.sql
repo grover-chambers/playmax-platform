@@ -404,4 +404,41 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.research_projects FOR EACH
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.automations FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.templates FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+-- ── ARTICLES (CMS-managed blog content) ──────────────
+CREATE TABLE IF NOT EXISTS public.articles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text UNIQUE NOT NULL,
+  title text NOT NULL,
+  category text NOT NULL DEFAULT 'General',
+  author text NOT NULL DEFAULT 'PlayMax Team',
+  date date NOT NULL DEFAULT CURRENT_DATE,
+  read_time text NOT NULL DEFAULT '5 min read',
+  excerpt text NOT NULL,
+  content text NOT NULL,
+  image_url text NOT NULL,
+  image_alt text NOT NULL DEFAULT '',
+  tags text[] DEFAULT '{}',
+  published boolean NOT NULL DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Articles are publicly readable"
+  ON public.articles FOR SELECT
+  USING (published = true OR public.is_admin());
+
+CREATE POLICY "Admins can manage articles"
+  ON public.articles FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+CREATE INDEX idx_articles_slug ON public.articles (slug);
+CREATE INDEX idx_articles_published ON public.articles (published);
+CREATE INDEX idx_articles_date ON public.articles (date DESC);
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.articles
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
 COMMIT;

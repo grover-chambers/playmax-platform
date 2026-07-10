@@ -148,7 +148,7 @@ export default function ServicesPage() {
                   </ul>
                   <a
                     href="/contact"
-                    className="inline-flex items-center gap-2 mt-8 md:mt-10 font-display text-[13px] font-semibold text-yellow pm-link-underline"
+                    className="inline-flex items-center gap-2 mt-8 md:mt-10 font-display text-[14px] font-semibold text-yellow pm-link-underline"
                   >
                     Enquire about {svc.name} <ArrowRight className="w-4 h-4" />
                   </a>

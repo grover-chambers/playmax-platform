@@ -42,7 +42,7 @@ export function ProcessSteps() {
             <div
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "13px",
+                fontSize: "14px",
                 fontWeight: 600,
                 color: "var(--pm-white)",
                 marginBottom: "2px",
@@ -52,7 +52,7 @@ export function ProcessSteps() {
             </div>
             <div
               style={{
-                fontSize: "12px",
+                fontSize: "13px",
                 color: "var(--pm-gray-4)",
                 lineHeight: 1.5,
               }}
@@ -66,7 +66,7 @@ export function ProcessSteps() {
         style={{
           marginTop: "8px",
           fontFamily: "var(--font-mono)",
-          fontSize: "10px",
+          fontSize: "11px",
           color: "var(--pm-yellow)",
           letterSpacing: "0.06em",
         }}

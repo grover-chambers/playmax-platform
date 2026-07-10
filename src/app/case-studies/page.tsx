@@ -74,13 +74,13 @@ export default function CaseStudiesPage() {
                 <h3 className="pm-dash-card-t mb-4 leading-snug group-hover:text-yellow transition-colors">
                   {cs.title}
                 </h3>
-                <div className="text-[13px] text-gray-5 mb-3 md:mb-4">
+                <div className="text-[14px] text-gray-5 mb-3 md:mb-4">
                   {cs.market}
                 </div>
-                <div className="pm-dash-bdg pm-dash-bdg-g !text-[12px] !font-medium !px-3 !py-2">
+                <div className="pm-dash-bdg pm-dash-bdg-g !text-[13px] !font-medium !px-3 !py-2">
                   {cs.result}
                 </div>
-                <div className="mt-4 md:mt-5 flex items-center gap-1 text-[11px] text-gray-4 group-hover:text-yellow transition-colors">
+                <div className="mt-4 md:mt-5 flex items-center gap-1 text-[12px] text-gray-4 group-hover:text-yellow transition-colors">
                   Read case study <ArrowUpRight className="w-3 h-3" />
                 </div>
               </div>
@@ -98,7 +98,7 @@ export default function CaseStudiesPage() {
               </p>
               <a
                 href="/contact"
-                className="pm-btn-primary !text-[13px] !px-6 !py-2.5 no-underline"
+                className="pm-btn-primary !text-[14px] !px-6 !py-2.5 no-underline"
               >
                 Request a Case Study
               </a>

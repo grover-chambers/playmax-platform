@@ -1,58 +1,27 @@
-import { ArrowUpRight, Clock } from "lucide-react";
+import { Metadata } from "next";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowRight, Clock, Calendar } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/layout";
+import { LeadForm } from "@/components/lead-form";
+import { ARTICLES } from "@/lib/articles-data";
 
-const posts = [
-  {
-    title: "Why Nairobi's billboard market is shifting to digital",
-    category: "Industry Trends",
-    date: "2026-06-18",
-    readTime: "5 min read",
-    excerpt:
-      "The transition from static to digital OOH is accelerating — here's what it means for advertisers and media owners in Kenya.",
+export const metadata: Metadata = {
+  title: "Insights — PlayMax Agency | Market Research & Brand Strategy Blog",
+  description:
+    "Expert analysis on market research, brand strategy, outdoor media, and consumer behaviour in Kenya and East Africa. Practical insights for manufacturers, suppliers, and brands.",
+  openGraph: {
+    title: "Insights — PlayMax Agency",
+    description:
+      "Expert analysis on market research, brand strategy, outdoor media, and consumer behaviour in East Africa.",
   },
-  {
-    title: "How to pick the right market research method for your product",
-    category: "Research Methods",
-    date: "2026-06-10",
-    readTime: "8 min read",
-    excerpt:
-      "Not all research is created equal. We break down when to use surveys, focus groups, ethnographic studies, and data analysis.",
-  },
-  {
-    title: "5 brand activation mistakes we see in East Africa",
-    category: "Brand Strategy",
-    date: "2026-05-28",
-    readTime: "6 min read",
-    excerpt:
-      "From ignoring local context to skipping measurement — these common missteps can tank even the best-funded campaigns.",
-  },
-  {
-    title: "The ROI of competitor research before market entry",
-    category: "Research Methods",
-    date: "2026-05-15",
-    readTime: "7 min read",
-    excerpt:
-      "A case for why investing in competitor intelligence before launch often pays for itself within the first quarter.",
-  },
-  {
-    title: "OOH vs. digital: When physical media still wins",
-    category: "Industry Trends",
-    date: "2026-04-30",
-    readTime: "4 min read",
-    excerpt:
-      "Digital isn't always better. In certain Kenyan markets, outdoor media still delivers unmatched reach and recall.",
-  },
-  {
-    title: "How PlayMax measures event activation success",
-    category: "Case Study",
-    date: "2026-04-12",
-    readTime: "6 min read",
-    excerpt:
-      "Our framework for tracking footfall, engagement, and conversion at every activation we run — and why it matters.",
-  },
-];
+};
 
 export default function InsightsPage() {
+  const sorted = [...ARTICLES].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
+
   return (
     <>
       <SiteHeader />
@@ -61,61 +30,157 @@ export default function InsightsPage() {
         <div className="site-container pt-28 md:pt-36 pb-12 md:pb-16">
           <div className="pm-eyebrow mb-3 md:mb-4">Insights</div>
           <h1 className="pm-hero-title mb-6 md:mb-8">
-            Thinking on the <span className="pm-accent">market</span>
+            Thinking on the{" "}
+            <span className="pm-accent">market</span>
           </h1>
           <p className="pm-hero-sub max-w-[560px]">
             Research, analysis, and opinion on market intelligence, brand
-            strategy, and media in East Africa.
+            strategy, and media in East Africa. Written by the PlayMax team.
           </p>
         </div>
       </section>
 
       <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container section">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-            {posts.map((post) => (
-              <div key={post.title} className="pm-dash-card overflow-hidden">
-                <div className="h-[160px] bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center relative">
-                  <ArrowUpRight className="w-8 h-8 text-gray-5 group-hover:text-yellow transition-colors" />
-                </div>
-                <div className="p-6 md:p-8">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <span className="pm-eyebrow">{post.category}</span>
-                    <span className="flex items-center gap-1 text-[10px] text-gray-5">
-                      <Clock className="w-3 h-3" /> {post.readTime}
-                    </span>
-                  </div>
-                  <h3 className="pm-dash-card-t mb-3 leading-snug group-hover:text-yellow transition-colors">
-                    {post.title}
-                  </h3>
-                  <p className="pm-body-sm mb-4">{post.excerpt}</p>
-                  <div className="text-[12px] text-gray-5 font-mono">
-                    {new Date(post.date).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </div>
-                </div>
-              </div>
+          <div className="flex flex-wrap gap-2 mb-10">
+            {[...new Set(sorted.map((a) => a.category))].map((cat) => (
+              <span
+                key={cat}
+                className="px-3 py-1.5 text-[12px] font-mono font-semibold tracking-wider uppercase rounded-full"
+                style={{
+                  background: "rgba(244, 195, 0, 0.12)",
+                  color: "var(--pm-yellow)",
+                  border: "1px solid rgba(244, 195, 0, 0.2)",
+                }}
+              >
+                {cat}
+              </span>
             ))}
           </div>
 
-          <div className="mt-16 md:mt-20">
-            <div className="pm-dash-card max-w-[540px] mx-auto text-center p-10">
-              <div className="text-[16px] md:text-[18px] font-semibold mb-2">
-                Subscribe to insights
-              </div>
-              <p className="pm-body-sm mb-6">
-                Get our latest research and analysis delivered to your inbox.
-              </p>
-              <a
-                href="/contact"
-                className="pm-btn-primary !text-[13px] !px-6 !py-2.5 no-underline"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+            {sorted.map((post, i) => (
+              <Link
+                key={post.slug}
+                href={`/insights/${post.slug}`}
+                className="group block"
+                style={{
+                  opacity: 0,
+                  animation: `fade-slide-up 500ms ease-out ${i * 80}ms forwards`,
+                }}
               >
-                Get Notified
-              </a>
+                <article
+                  className="pm-dash-card overflow-hidden h-full flex flex-col"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    backdropFilter: "blur(4px)",
+                  }}
+                >
+                  <div
+                    className="relative overflow-hidden"
+                    style={{ height: "200px" }}
+                  >
+                    <Image
+                      src={post.imageUrl}
+                      alt={post.imageAlt}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      style={{ objectFit: "cover" }}
+                      className="transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <span
+                      className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-mono font-semibold tracking-wider uppercase rounded-full z-10"
+                      style={{
+                        background: "rgba(244, 195, 0, 0.9)",
+                        color: "#0A0A0A",
+                      }}
+                    >
+                      {post.category}
+                    </span>
+                  </div>
+
+                  <div className="p-6 md:p-8 flex flex-col flex-1">
+                    <div className="flex items-center gap-3 mb-3 text-[11px] text-gray-5 font-mono">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(post.date).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {post.readTime}
+                      </span>
+                    </div>
+
+                    <h3
+                      className="font-display font-bold mb-3 leading-snug transition-colors duration-200"
+                      style={{
+                        fontSize: "clamp(17px, 1.5vw, 19px)",
+                        color: "var(--pm-white)",
+                      }}
+                    >
+                      {post.title}
+                    </h3>
+
+                    <p
+                      className="text-[14px] leading-relaxed mb-4 flex-1"
+                      style={{ color: "var(--pm-gray-4)" }}
+                    >
+                      {post.excerpt}
+                    </p>
+
+                    <div
+                      className="flex items-center gap-1.5 text-xs font-display font-medium transition-colors duration-150"
+                      style={{
+                        color: "var(--pm-gray-5)",
+                      }}
+                    >
+                      <span className="group-hover:text-yellow transition-colors">
+                        Read article
+                      </span>
+                      <ArrowRight
+                        size={12}
+                        className="group-hover:translate-x-1 transition-transform"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="bg-transparent"
+        style={{ color: "var(--pm-black)", background: "var(--pm-white)" }}
+      >
+        <div className="site-container section">
+          <div
+            className="max-w-[500px] mx-auto text-center"
+            style={{ color: "var(--pm-black)" }}
+          >
+            <div
+              className="pm-eyebrow mb-3 md:mb-4"
+              style={{ color: "var(--pm-amber)" }}
+            >
+              Stay Informed
             </div>
+            <h2 className="pm-section-title mb-4 md:mb-6">
+              Subscribe to insights
+            </h2>
+            <p
+              className="pm-hero-sub mb-8 md:mb-10"
+              style={{ color: "var(--pm-gray-3)" }}
+            >
+              Get our latest research and analysis delivered to your inbox.
+            </p>
+            <LeadForm source="insights-page" />
           </div>
         </div>
       </section>

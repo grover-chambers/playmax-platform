@@ -29,13 +29,13 @@ export default function ContactPage() {
               <div className="flex flex-col gap-5 md:gap-6">
                 <div className="flex items-start gap-4">
                   <span
-                    className="pm-eyebrow !text-[10px] md:!text-[11px] w-24 flex-shrink-0"
+                    className="pm-eyebrow !text-[11px] md:!text-[12px] w-24 flex-shrink-0"
                     style={{ color: "var(--pm-amber)" }}
                   >
                     Phone
                   </span>
                   <span
-                    className="text-[15px] md:text-[16px] font-medium"
+                    className="text-[16px] md:text-[17px] font-medium"
                     style={{ color: "var(--pm-black)" }}
                   >
                     +254 700 000 000
@@ -43,13 +43,13 @@ export default function ContactPage() {
                 </div>
                 <div className="flex items-start gap-4">
                   <span
-                    className="pm-eyebrow !text-[10px] md:!text-[11px] w-24 flex-shrink-0"
+                    className="pm-eyebrow !text-[11px] md:!text-[12px] w-24 flex-shrink-0"
                     style={{ color: "var(--pm-amber)" }}
                   >
                     Email
                   </span>
                   <span
-                    className="text-[15px] md:text-[16px] font-medium"
+                    className="text-[16px] md:text-[17px] font-medium"
                     style={{ color: "var(--pm-black)" }}
                   >
                     hello@playmaxagency.co.ke
@@ -57,23 +57,23 @@ export default function ContactPage() {
                 </div>
                 <div className="flex items-start gap-4">
                   <span
-                    className="pm-eyebrow !text-[10px] md:!text-[11px] w-24 flex-shrink-0"
+                    className="pm-eyebrow !text-[11px] md:!text-[12px] w-24 flex-shrink-0"
                     style={{ color: "var(--pm-amber)" }}
                   >
                     Location
                   </span>
-                  <span className="text-[15px] md:text-[16px] text-gray-3">
+                  <span className="text-[16px] md:text-[17px] text-gray-3">
                     Westlands Business Park, Nairobi
                   </span>
                 </div>
                 <div className="flex items-start gap-4">
                   <span
-                    className="pm-eyebrow !text-[10px] md:!text-[11px] w-24 flex-shrink-0"
+                    className="pm-eyebrow !text-[11px] md:!text-[12px] w-24 flex-shrink-0"
                     style={{ color: "var(--pm-amber)" }}
                   >
                     Hours
                   </span>
-                  <span className="text-[15px] md:text-[16px] text-gray-3">
+                  <span className="text-[16px] md:text-[17px] text-gray-3">
                     Mon — Fri: 8:00 AM — 6:00 PM EAT
                   </span>
                 </div>

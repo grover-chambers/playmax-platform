@@ -52,7 +52,7 @@ export function SiteFooter() {
         <h2
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: "clamp(2rem, 5vw, 3.5rem)",
+                fontSize: "clamp(2.2rem, 5.5vw, 3.8rem)",
             fontWeight: 700,
             letterSpacing: "-0.04em",
             lineHeight: 1.1,
@@ -65,7 +65,7 @@ export function SiteFooter() {
         <h2
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: "clamp(2rem, 5vw, 3.5rem)",
+                fontSize: "clamp(2.2rem, 5.5vw, 3.8rem)",
             fontWeight: 700,
             letterSpacing: "-0.04em",
             lineHeight: 1.1,
@@ -101,7 +101,7 @@ export function SiteFooter() {
             <p
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: "9px",
+                fontSize: "10px",
                 fontWeight: 700,
                 letterSpacing: "0.15em",
                 textTransform: "uppercase",
@@ -117,7 +117,7 @@ export function SiteFooter() {
                 href="#"
                 style={{
                   display: "block",
-                  fontSize: "13px",
+                  fontSize: "14px",
                   color: "var(--pm-black)",
                   marginBottom: "10px",
                   textDecoration: "none",
@@ -154,7 +154,7 @@ export function SiteFooter() {
         <div
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: "18px",
+            fontSize: "20px",
             fontWeight: 700,
             letterSpacing: "-0.02em",
           }}
@@ -162,14 +162,14 @@ export function SiteFooter() {
           PLAY<span style={{ color: "var(--pm-yellow)" }}>MAX</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <p style={{ fontSize: "12px", color: "var(--pm-black)" }}>
+          <p style={{ fontSize: "13px", color: "var(--pm-black)" }}>
             © 2026 PlayMax Agency. Built by{" "}
             <span style={{ color: "var(--pm-yellow)" }}>Squareroot INC</span>.
           </p>
           <a
             href="/login"
             style={{
-              fontSize: "11px",
+              fontSize: "12px",
               color: "var(--pm-black)",
               textDecoration: "none",
               transition: "color 150ms ease",
