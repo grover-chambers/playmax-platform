@@ -15,6 +15,9 @@ import {
   Clock,
   Zap,
   Calendar,
+  Globe,
+  MessageSquare,
+  Upload,
 } from "lucide-react";
 import Button from "@/components/ui/button";
 import NewLeadModal from "@/components/modals/new-lead-modal";
@@ -111,6 +114,27 @@ export default function SuperAdminDashboard() {
           >
             <BarChart3 className="w-3.5 h-3.5" />
             Full analytics
+          </button>
+          <button
+            className="pm-dash-qa-btn"
+            onClick={() => router.push("/app/research")}
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Import data
+          </button>
+          <button
+            className="pm-dash-qa-btn"
+            onClick={() => router.push("/app/content")}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            Website CMS
+          </button>
+          <button
+            className="pm-dash-qa-btn"
+            onClick={() => router.push("/app/inbox")}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Inbox
           </button>
         </div>
 

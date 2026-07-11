@@ -13,6 +13,7 @@ import {
   Trash2,
   Save,
 } from "lucide-react";
+import { downloadCSV } from "@/lib/export-utils";
 
 interface Invoice {
   id: string;
@@ -217,7 +218,20 @@ export default function InvoicesPage() {
           .toLocaleString()} total`}
         actions={
           <>
-            <Button variant="secondary" size="sm">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const rows = invoices.map((inv) => [
+                  inv.id, inv.client, inv.project, inv.amount, inv.status, inv.issued, inv.due,
+                ]);
+                downloadCSV(
+                  ["Invoice", "Client", "Project", "Amount", "Status", "Issued", "Due"],
+                  rows,
+                  "invoices",
+                );
+              }}
+            >
               <Download className="w-3.5 h-3.5 mr-1.5" />
               Export
             </Button>

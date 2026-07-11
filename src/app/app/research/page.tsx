@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, Filter } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Plus, Download, Upload } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
 import BarChart from "@/components/ui/bar-chart";
 import StatusBadge from "@/components/ui/status-badge";
+import { downloadCSV } from "@/lib/export-utils";
 
 // ── Types ─────────────────────────────────────────────
 interface ResearchProject {
@@ -179,6 +180,7 @@ export default function ResearchPage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState(sampleProjects[0].id);
+  const importRef = useRef<HTMLInputElement>(null);
 
   const filtered = sampleProjects.filter((p) => {
     if (activeFilter !== "All" && p.type !== activeFilter) return false;
@@ -225,8 +227,41 @@ export default function ResearchPage() {
           subtitle="12 active projects · 5 pending review"
           actions={
             <>
-              <Button variant="secondary" size="sm">
-                <Filter size={12} className="mr-1" /> Filter
+              <input
+                ref={importRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    alert(`Import triggered for: ${file.name}`);
+                    e.target.value = "";
+                  }
+                }}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => importRef.current?.click()}
+              >
+                <Upload size={12} className="mr-1" /> Import
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const rows = sampleProjects.map((p) => [
+                    p.title, p.client, p.type, p.status, p.stats, p.progressLabel,
+                  ]);
+                  downloadCSV(
+                    ["Title", "Client", "Type", "Status", "Stats", "Progress"],
+                    rows,
+                    "research-projects",
+                  );
+                }}
+              >
+                <Download size={12} className="mr-1" /> Export
               </Button>
               <Button variant="primary" size="sm">
                 <Plus size={12} className="mr-1" /> New Research

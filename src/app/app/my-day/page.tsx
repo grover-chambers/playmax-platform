@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AlertTriangle,
   AlertCircle,
@@ -14,38 +14,17 @@ import {
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import NewTaskModal from "@/components/modals/new-task-modal";
+import { useUser } from "@/lib/user-context";
+import { createClient } from "@/lib/supabase/browser";
+import { formatTimeAgo } from "@/lib/utils";
 
 /* ── Data ──────────────────────────────────────────────── */
 
-const kpis = [
-  {
-    value: "3",
-    label: "Tasks due today",
-    sub: "2 overdue from Friday",
-    cardClass: "red",
-    valueClass: "red",
-  },
-  {
-    value: "2",
-    label: "Unread messages",
-    sub: "Twiga Foods · P&G EA",
-    cardClass: "blu",
-    valueClass: "blu",
-  },
-  {
-    value: "8",
-    label: "My open leads",
-    sub: "2 need follow-up today",
-    cardClass: "",
-    valueClass: "",
-  },
-  {
-    value: "2",
-    label: "Deals closed this month",
-    sub: "KES 1.1M won",
-    cardClass: "grn",
-    valueClass: "grn",
-  },
+const defaultKpis = [
+  { value: "3", label: "Tasks due today", sub: "2 overdue from Friday", cardClass: "red", valueClass: "red" },
+  { value: "2", label: "Unread messages", sub: "Twiga Foods · P&G EA", cardClass: "blu", valueClass: "blu" },
+  { value: "8", label: "My open leads", sub: "2 need follow-up today", cardClass: "", valueClass: "" },
+  { value: "2", label: "Deals closed this month", sub: "KES 1.1M won", cardClass: "grn", valueClass: "grn" },
 ];
 
 interface Task {
@@ -214,13 +193,113 @@ function TaskCheckbox({ done }: { done: boolean }) {
 
 export default function MyDayPage() {
   const [showNewTask, setShowNewTask] = useState(false);
+  const [myTasks, setMyTasks] = useState(tasks);
+  const [myLeads, setMyLeads] = useState(leads);
+  const [myConversations, setMyConversations] = useState(conversations);
+  const [myProjects, setMyProjects] = useState(projects);
+  const [myKpis, setMyKpis] = useState(defaultKpis);
+  const { user } = useUser();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: dbTasks } = await supabase
+          .from("tasks")
+          .select("title, status, priority, due_date")
+          .order("priority", { ascending: true });
+        if (dbTasks && dbTasks.length > 0) {
+          const now = new Date();
+          const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+          const dueTasks = dbTasks.filter(t => {
+            if (t.due_date && new Date(t.due_date) <= todayEnd) return true;
+            return t.status === "in-progress" || t.status === "todo";
+          });
+          setMyTasks(dueTasks.slice(0, 5).map(t => ({
+            id: Math.random().toString(36).slice(2),
+            title: t.title,
+            priority: (t.priority === "high" ? "high" : t.priority === "low" ? "low" : "med") as "high" | "med" | "low",
+            done: t.status === "done",
+            meta: t.due_date ? `Due ${new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "No due date",
+          })));
+          const overdue = dbTasks.filter(t => t.due_date && new Date(t.due_date) < now && t.status !== "done").length;
+          setMyKpis(prev => prev.map(k =>
+            k.label === "Tasks due today" ? { ...k, value: String(dueTasks.filter(t => t.status !== "done").length || 1), sub: `${overdue} overdue` } : k
+          ));
+        }
+      } catch { /* fallback */ }
+    })();
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: dbLeads } = await supabase
+          .from("leads")
+          .select("company, intent, status, created_at")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (dbLeads && dbLeads.length > 0) {
+          setMyLeads(dbLeads.map(l => ({
+            company: l.company,
+            intent: l.intent || "General",
+            stage: l.status ? l.status.charAt(0).toUpperCase() + l.status.slice(1) : "New",
+            contact: l.created_at ? formatTimeAgo(l.created_at) : "—",
+          })));
+          const openCount = dbLeads.filter(l => !["won", "lost"].includes(l.status)).length;
+          const wonCount = dbLeads.filter(l => l.status === "won").length;
+          setMyKpis(prev => prev.map(k =>
+            k.label === "My open leads" ? { ...k, value: String(openCount || 1) } :
+            k.label === "Deals closed this month" ? { ...k, value: String(wonCount || 0) } : k
+          ));
+        }
+      } catch { /* fallback */ }
+    })();
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: dbConvs } = await supabase
+          .from("conversations")
+          .select("contact_name, last_message, updated_at, unread")
+          .order("updated_at", { ascending: false })
+          .limit(3);
+        if (dbConvs && dbConvs.length > 0) {
+          const unreadCount = dbConvs.filter(c => c.unread).length;
+          setMyConversations(dbConvs.map(c => ({
+            name: c.contact_name || "Unknown",
+            text: c.last_message || "—",
+            time: formatTimeAgo(c.updated_at),
+            unread: !!c.unread,
+          })));
+          setMyKpis(prev => prev.map(k =>
+            k.label === "Unread messages" ? { ...k, value: String(unreadCount || 0), sub: `${unreadCount} unread` } : k
+          ));
+        }
+      } catch { /* fallback */ }
+    })();
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: dbProjects } = await supabase
+          .from("projects")
+          .select("name, type, progress")
+          .order("updated_at", { ascending: false })
+          .limit(3);
+        if (dbProjects && dbProjects.length > 0) {
+          setMyProjects(dbProjects.map(p => ({
+            name: p.name,
+            type: p.type || "Project",
+            progress: p.progress || 0,
+          })));
+        }
+      } catch { /* fallback */ }
+    })();
+  }, [user?.id]);
 
   return (
     <div>
       <NewTaskModal open={showNewTask} onClose={() => setShowNewTask(false)} />
       <PageHeader
         title="My Day"
-        subtitle="3 tasks due · 2 unread messages · 8 active leads"
+        subtitle={`${myKpis[0].value} tasks due · ${myKpis[1].value} unread messages · ${myKpis[2].value} active leads`}
       />
 
       {/* ── Alerts ──────────────────────────────── */}
@@ -238,7 +317,7 @@ export default function MyDayPage() {
       {/* ── KPI Row ─────────────────────────────── */}
       <div className="px-7 pt-4 pb-2">
         <div className="pm-dash-krow pm-dash-krow-4">
-          {kpis.map((kpi) => (
+          {myKpis.map((kpi) => (
             <div key={kpi.label} className={`pm-dash-kcard ${kpi.cardClass}`}>
               <div className={`pm-dash-kn ${kpi.valueClass}`}>{kpi.value}</div>
               <div className="pm-dash-kl">{kpi.label}</div>
@@ -276,7 +355,7 @@ export default function MyDayPage() {
               </Button>
             </div>
             <div className="pm-dash-card-b">
-              {tasks.map((task) => (
+              {myTasks.map((task) => (
                 <div key={task.id} className="pm-dash-task">
                   <TaskCheckbox done={task.done} />
                   <div className="flex-1 min-w-0">
@@ -326,7 +405,7 @@ export default function MyDayPage() {
                 <span>Stage</span>
                 <span>Last contact</span>
               </div>
-              {leads.map((lead) => (
+              {myLeads.map((lead) => (
                 <div
                   key={lead.company}
                   className="pm-dash-inv-row"
@@ -386,7 +465,7 @@ export default function MyDayPage() {
               </span>
             </div>
             <div className="pm-dash-card-b">
-              {conversations.map((conv) => (
+              {myConversations.map((conv) => (
                 <div key={conv.name} className="pm-dash-msg-prev">
                   <div
                     className="user-avatar"
@@ -449,7 +528,7 @@ export default function MyDayPage() {
               </span>
             </div>
             <div className="pm-dash-card-b">
-              {projects.map((proj) => (
+              {myProjects.map((proj) => (
                 <div key={proj.name} className="pm-dash-li">
                   <div
                     className="pm-dash-li-dot"

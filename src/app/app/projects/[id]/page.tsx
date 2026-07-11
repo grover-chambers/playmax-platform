@@ -9,6 +9,8 @@ import StatusBadge from "@/components/ui/status-badge";
 import Card from "@/components/ui/card";
 import Avatar from "@/components/ui/avatar";
 import ProgressBar from "@/components/ui/progress-bar";
+import DocumentList from "@/components/documents/document-list";
+import DocumentUpload from "@/components/documents/document-upload";
 
 type Tab =
   | "overview"
@@ -474,33 +476,11 @@ export default function ProjectDetailPage() {
 
         {activeTab === "documents" && (
           <Card hover={false} className="p-5">
-            <div className="space-y-2">
-              {p.documents.map((d, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between py-2.5 border-b border-[#1E1E1E] last:border-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded bg-black-4 flex items-center justify-center text-[8px] font-mono text-yellow flex-shrink-0">
-                      {d.type === "PDF"
-                        ? "PDF"
-                        : d.type === "Image"
-                          ? "IMG"
-                          : "XLS"}
-                    </div>
-                    <div>
-                      <div className="text-[12px] text-white font-semibold">
-                        {d.name}
-                      </div>
-                      <div className="text-[10px] text-gray-5 mt-0.5">
-                        {d.type} · {d.size}
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-gray-5">{d.date}</span>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[12px] font-semibold text-white">Project Documents</span>
+              <DocumentUpload projectId={p.id} clientId={p.client} onUploaded={() => {}} />
             </div>
+            <DocumentList projectId={p.id} canManage={true} />
           </Card>
         )}
       </div>

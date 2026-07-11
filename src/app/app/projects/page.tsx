@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, Filter } from "lucide-react";
+import React, { useMemo, useState, useEffect } from "react";
+import { Plus, Download } from "lucide-react";
 import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
@@ -11,6 +11,8 @@ import StatusBadge from "@/components/ui/status-badge";
 import Card from "@/components/ui/card";
 import ProgressBar from "@/components/ui/progress-bar";
 import NewProjectModal from "@/components/modals/new-project-modal";
+import { downloadCSV } from "@/lib/export-utils";
+import { createClient } from "@/lib/supabase/browser";
 
 interface Project {
   id: string;
@@ -140,30 +142,75 @@ const typeColors: Record<string, string> = {
   Rental: "bg-wa-green/10 text-wa-green border-wa-green/20",
 };
 
+function fmtDeadline(d: string): string {
+  if (!d) return "—";
+  const dt = new Date(d);
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function ProjectsPage() {
   const [activeType, setActiveType] = useState("All");
   const [activeStatus, setActiveStatus] = useState("All Statuses");
+  const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [data, setData] = useState<Project[]>(projects);
 
-  const filtered = projects.filter((p) => {
-    if (activeType !== "All" && p.type !== activeType) return false;
-    if (
-      activeStatus !== "All Statuses" &&
-      p.status !== activeStatus.toLowerCase()
-    )
-      return false;
-    return true;
-  });
+  useEffect(() => {
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData?.user?.id;
+        const role = userData?.user?.user_metadata?.role as string | undefined;
+
+        let query = supabase.from("projects").select("*");
+        if (role === "crm_staff" && userId) {
+          query = query.eq("assigned_to", userId);
+        }
+        const { data: dbProjects, error } = await query.order("created_at", { ascending: false });
+        if (error || !dbProjects) return;
+        if (dbProjects.length === 0) {
+          if (role === "crm_staff") setData([]);
+          return;
+        }
+        const mapped: Project[] = dbProjects.map((p) => ({
+          id: p.id,
+          name: p.name,
+          client: p.client || "—",
+          type: p.type || "Research",
+          status: (["active", "review", "draft", "confirmed"].includes(p.status) ? p.status : "draft") as Project["status"],
+          progress: p.progress || 0,
+          value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+          deadline: fmtDeadline(p.deadline),
+        }));
+        setData(mapped);
+      } catch { /* silent fallback to hardcoded */ }
+    })();
+  }, []);
+
+  const filtered = useMemo(() => {
+    return data.filter((p) => {
+      if (activeType !== "All" && p.type !== activeType) return false;
+      if (activeStatus !== "All Statuses" && p.status !== activeStatus.toLowerCase()) return false;
+      if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+  }, [activeType, activeStatus, search, data]);
+
+  function handleExport() {
+    const rows = filtered.map((p) => [p.name, p.client, p.type, p.status, String(p.progress) + "%", p.value, p.deadline]);
+    downloadCSV(["Project", "Client", "Type", "Status", "Progress", "Value", "Deadline"], rows, "projects");
+  }
 
   return (
     <div>
       <PageHeader
         title="Projects"
-        subtitle={`${projects.length} projects · KES 7.9M active value`}
+        subtitle={`${filtered.length} of ${projects.length} projects`}
         actions={
           <>
-            <Button variant="secondary" size="sm">
-              <Filter size={12} className="mr-1" /> Filter
+            <Button variant="secondary" size="sm" onClick={handleExport}>
+              <Download size={12} className="mr-1" /> Export
             </Button>
             <Button
               variant="primary"
@@ -176,7 +223,7 @@ export default function ProjectsPage() {
         }
       />
       <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1E1E1E]">
-        <SearchBox placeholder="Search projects…" className="w-56" />
+        <SearchBox placeholder="Search projects…" className="w-56" onChange={(val) => setSearch(val)} />
         <div className="flex items-center gap-1.5 ml-2">
           {typeFilters.map((filter) => (
             <FilterPill
@@ -203,7 +250,7 @@ export default function ProjectsPage() {
 
       <div className="px-7 py-5 grid grid-cols-3 gap-4">
         {filtered.map((project) => (
-          <Link key={project.id} href={`/app/projects/${project.id}`}>
+          <Link key={project.id} href={`/workspace/${project.id}`}>
             <Card className="p-4">
               <div className="flex items-center justify-between mb-2.5">
                 <span className="font-display text-[13px] font-semibold text-white leading-tight">

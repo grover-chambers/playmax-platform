@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, Filter, Grid3X3, List } from "lucide-react";
+import React, { useMemo, useState, useEffect } from "react";
+import { Plus, Download, Grid3X3, List } from "lucide-react";
 import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
@@ -10,6 +10,9 @@ import FilterPill from "@/components/ui/filter-pill";
 import Avatar from "@/components/ui/avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import NewClientModal from "@/components/modals/new-client-modal";
+import { downloadCSV } from "@/lib/export-utils";
+import { createClient } from "@/lib/supabase/browser";
+import { formatTimeAgo, uuidInitials } from "@/lib/utils";
 
 interface Client {
   id: string;
@@ -140,19 +143,70 @@ const industryFilters = ["All", "FMCG", "Telecom", "Retail", "F&B", "AgriTech"];
 
 export default function ClientsPage() {
   const [activeFilter, setActiveFilter] = useState("All");
+  const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("list");
   const [modalOpen, setModalOpen] = useState(false);
+  const [data, setData] = useState<Client[]>(clients);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: dbClients, error } = await supabase
+          .from("clients")
+          .select("*")
+          .order("updated_at", { ascending: false });
+        if (error || !dbClients || dbClients.length === 0) return;
+        const mapped: Client[] = dbClients.map((c) => ({
+          id: c.id,
+          company: c.name || c.company,
+          industry: c.industry || "—",
+          owner: c.assigned_to || "Unassigned",
+          ownerInitials: uuidInitials(c.assigned_to || ""),
+          activeProjects: 0,
+          totalValue: "KES —",
+          lastActivity: formatTimeAgo(c.updated_at),
+          status: (c.status === "active" ? "active" : c.status === "inactive" ? "draft" : "review") as "active" | "review" | "draft",
+        }));
+        setData(mapped);
+      } catch { /* silent fallback to hardcoded */ }
+    })();
+  }, []);
+
+  const filtered = useMemo(() => {
+    return data.filter((c) => {
+      if (activeFilter !== "All" && !c.industry.startsWith(activeFilter)) return false;
+      if (search && !c.company.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+  }, [activeFilter, search, data]);
+
+  const totalValue = filtered.reduce((acc, c) => {
+    const num = parseInt(c.totalValue.replace(/[^0-9]/g, ""));
+    return acc + (isNaN(num) ? 0 : num);
+  }, 0);
+
+  function handleExport() {
+    const rows = filtered.map((c) => [
+      c.company, c.industry, c.owner, String(c.activeProjects), c.totalValue, c.lastActivity, c.status,
+    ]);
+    downloadCSV(
+      ["Company", "Industry", "Account Owner", "Active Projects", "Total Value", "Last Activity", "Status"],
+      rows,
+      "clients",
+    );
+  }
 
   return (
     <div>
       <NewClientModal open={modalOpen} onClose={() => setModalOpen(false)} />
       <PageHeader
         title="Clients"
-        subtitle="10 accounts · KES 12.2M total value"
+        subtitle={`${filtered.length} accounts · KES ${totalValue.toLocaleString()} total value`}
         actions={
           <>
-            <Button variant="secondary" size="sm">
-              <Filter size={12} className="mr-1" /> Filter
+            <Button variant="secondary" size="sm" onClick={handleExport}>
+              <Download size={12} className="mr-1" /> Export
             </Button>
             <Button
               variant="primary"
@@ -165,7 +219,12 @@ export default function ClientsPage() {
         }
       />
       <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1E1E1E]">
-        <SearchBox placeholder="Search clients…" className="w-56" />
+        <SearchBox
+          placeholder="Search clients…"
+          className="w-56"
+          value={search}
+          onChange={(val) => setSearch(val)}
+        />
         <div className="flex items-center gap-1.5 ml-2">
           {industryFilters.map((filter) => (
             <FilterPill
@@ -209,7 +268,7 @@ export default function ClientsPage() {
               </tr>
             </thead>
             <tbody>
-              {clients.map((client) => (
+              {filtered.map((client) => (
                 <tr
                   key={client.id}
                   className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors cursor-pointer"
@@ -260,7 +319,7 @@ export default function ClientsPage() {
         </div>
       ) : (
         <div className="px-7 py-5 grid grid-cols-3 gap-4">
-          {clients.map((client) => (
+          {filtered.map((client) => (
             <Link key={client.id} href={`/app/clients/${client.id}`}>
               <div className="bg-[#0D0D0D] border border-[#252525] rounded-lg p-4 hover:border-yellow transition-colors cursor-pointer">
                 <div className="flex items-center justify-between mb-3">

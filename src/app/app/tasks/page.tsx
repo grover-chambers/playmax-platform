@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, CheckCircle2, Circle, Clock } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
@@ -8,6 +8,8 @@ import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
 import Avatar from "@/components/ui/avatar";
 import NewTaskModal from "@/components/modals/new-task-modal";
+import { createClient } from "@/lib/supabase/browser";
+import { uuidInitials } from "@/lib/utils";
 
 interface Task {
   id: string;
@@ -167,22 +169,47 @@ const priorityLabels: Record<string, string> = {
   low: "bg-gray-4/10 text-gray-4 border-[#2A2A2A]",
 };
 
-const projectFilters = [
-  "All Projects",
-  "Out-of-Home Campaign",
-  "Safaricom Research Study",
-  "Java House Brand Refresh",
-  "P&G Product Launch Event",
-];
+function buildProjectFilters(tasks: Task[]): string[] {
+  const names = Array.from(new Set(tasks.map((t) => t.project).filter(Boolean)));
+  return ["All Projects", ...names.slice(0, 5)];
+}
 
 export default function TasksPage() {
   const [activeProject, setActiveProject] = useState("All Projects");
   const [modalOpen, setModalOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [data, setData] = useState<Task[]>(tasks);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: dbTasks, error } = await supabase
+          .from("tasks")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error || !dbTasks || dbTasks.length === 0) return;
+        const mapped: Task[] = dbTasks.map((t) => ({
+          id: t.id,
+          name: t.title,
+          project: t.project || "—",
+          assignee: t.assigned_to || "Unassigned",
+          assigneeInitials: uuidInitials(t.assigned_to || ""),
+          dueDate: t.due_date ? new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
+          status: (["todo", "in-progress", "done"].includes(t.status) ? t.status : "todo") as Task["status"],
+          priority: (["high", "medium", "low"].includes(t.priority) ? t.priority : "medium") as Task["priority"],
+        }));
+        setData(mapped);
+      } catch { /* silent fallback to hardcoded */ }
+    })();
+  }, []);
 
   const filtered =
-    activeProject === "All Projects"
-      ? tasks
-      : tasks.filter((t) => t.project === activeProject);
+    data.filter((t) => {
+      if (activeProject !== "All Projects" && t.project !== activeProject) return false;
+      if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
 
   const grouped = statusGroups.map((group) => ({
     ...group,
@@ -193,7 +220,7 @@ export default function TasksPage() {
     <div>
       <PageHeader
         title="Tasks"
-        subtitle={`${tasks.length} tasks · ${tasks.filter((t) => t.status === "in-progress").length} in progress`}
+        subtitle={`${data.length} tasks · ${data.filter((t) => t.status === "in-progress").length} in progress`}
         actions={
           <Button
             variant="primary"
@@ -205,9 +232,9 @@ export default function TasksPage() {
         }
       />
       <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1E1E1E]">
-        <SearchBox placeholder="Search tasks…" className="w-56" />
+        <SearchBox placeholder="Search tasks…" className="w-56" value={search} onChange={(val) => setSearch(val)} />
         <div className="flex items-center gap-1.5 ml-2 flex-wrap">
-          {projectFilters.map((filter) => (
+          {buildProjectFilters(data).map((filter) => (
             <FilterPill
               key={filter}
               active={activeProject === filter}

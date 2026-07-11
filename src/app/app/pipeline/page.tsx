@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Filter, Download, Plus } from "lucide-react";
+import React, { useMemo, useState, useEffect } from "react";
+import { Download, Plus } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
@@ -9,6 +9,9 @@ import FilterPill from "@/components/ui/filter-pill";
 import KanbanColumn from "@/components/crm/kanban-column";
 import LeadCard from "@/components/crm/lead-card";
 import NewLeadModal from "@/components/modals/new-lead-modal";
+import { downloadCSV } from "@/lib/export-utils";
+import { createClient } from "@/lib/supabase/browser";
+import { formatTimeAgo, uuidInitials } from "@/lib/utils";
 
 const sourceFilters = [
   "All Sources",
@@ -171,23 +174,83 @@ const bdgClassMap: Record<string, string> = {
   r: "pm-dash-bdg-r",
 };
 
+const stageNames: Record<string, string> = {
+  new: "New",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  proposal: "Proposal Sent",
+  won: "Won",
+};
+
 export default function PipelinePage() {
   const [activeFilter, setActiveFilter] = useState("All Sources");
   const [showAddLead, setShowAddLead] = useState(false);
+  const [data, setData] = useState(pipelineData);
 
-  const columns = Object.entries(pipelineData);
+  useEffect(() => {
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: dbLeads, error } = await supabase
+          .from("leads")
+          .select("id, company, intent, value, created_at, source, assigned_to, status")
+          .order("created_at", { ascending: false });
+        if (error || !dbLeads || dbLeads.length === 0) return;
+
+        const stages = ["new", "contacted", "qualified", "proposal", "won"];
+        const mapped: Record<string, typeof pipelineData[string]> = {};
+        for (const stage of stages) {
+          const stageLeads = dbLeads
+            .filter((l) => l.status === stage)
+            .map((l) => ({
+              company: l.company,
+              intent: l.intent || "General Inquiry",
+              value: l.value ? `KES ${(l.value / 1000).toFixed(0)}K` : undefined,
+              time: formatTimeAgo(l.created_at),
+              source: l.source || "Unknown",
+              assignee: uuidInitials(l.assigned_to || ""),
+            }));
+          const name = stageNames[stage] || stage;
+          if (stageLeads.length > 0) mapped[name] = stageLeads;
+        }
+        if (Object.keys(mapped).length > 0) setData(mapped);
+      } catch { /* silent fallback */ }
+    })();
+  }, []);
+
+  const filteredData = useMemo(() => {
+    if (activeFilter === "All Sources") return data;
+    const result: Record<string, typeof data[string]> = {};
+    for (const [stage, leads] of Object.entries(data)) {
+      const filtered = leads.filter((l) => l.source === activeFilter);
+      if (filtered.length > 0) result[stage] = filtered;
+    }
+    return result;
+  }, [activeFilter, data]);
+
+  const totalLeads = Object.values(filteredData).flat().length;
+  const columns = Object.entries(filteredData);
+
+  function handleExport() {
+    const allLeads = Object.values(data).flat();
+    const rows = allLeads.map((l) => [
+      l.company, l.intent, l.value || "-", l.time, l.source, l.assignee,
+    ]);
+    downloadCSV(
+      ["Company", "Intent", "Value", "Time", "Source", "Assignee"],
+      rows,
+      "pipeline-leads",
+    );
+  }
 
   return (
     <div>
       <PageHeader
         title="Lead Pipeline"
-        subtitle="24 active leads · KES 4.2M pipeline value"
+        subtitle={`${totalLeads} leads${activeFilter !== "All Sources" ? ` · ${activeFilter}` : ""}`}
         actions={
           <>
-            <Button variant="secondary" size="sm">
-              <Filter size={12} className="mr-1" /> Filter
-            </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={handleExport}>
               <Download size={12} className="mr-1" /> Export
             </Button>
             <Button

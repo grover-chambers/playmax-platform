@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Download,
   Filter,
@@ -8,15 +8,44 @@ import {
   DollarSign,
   Target,
   Users,
+  FileText,
+  BarChart3,
+  Plus,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import FilterPill from "@/components/ui/filter-pill";
+import NewReportModal from "@/components/modals/new-report-modal";
+import { formatTimeAgo } from "@/lib/utils";
 
 const periodFilters = ["This Month", "This Quarter", "This Year", "Custom"];
 
+interface ReportSummary {
+  id: string;
+  title: string;
+  type: string;
+  visible_to_client: boolean;
+  created_at: string;
+  project_id?: string;
+}
+
 export default function ReportsPage() {
   const [period, setPeriod] = useState("This Month");
+  const [reports, setReports] = useState<ReportSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showNewReport, setShowNewReport] = useState(false);
+
+  function loadReports() {
+    fetch("/api/reports")
+      .then((r) => r.json())
+      .then(({ data }) => setReports(data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    loadReports();
+  }, []);
 
   return (
     <div className="p-6">
@@ -24,10 +53,16 @@ export default function ReportsPage() {
         title="Reports & Analytics"
         subtitle="Org-wide KPIs across all clients, projects, and channels"
         actions={
-          <Button variant="secondary" size="sm">
-            <Download className="w-3.5 h-3.5" />
-            Export PDF
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setShowNewReport(true)}>
+              <Plus className="w-3.5 h-3.5" />
+              New Report
+            </Button>
+            <Button variant="secondary" size="sm">
+              <Download className="w-3.5 h-3.5" />
+              Export PDF
+            </Button>
+          </div>
         }
       />
 
@@ -313,7 +348,48 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* ── Row 4: Recent activity table ── */}
+        {/* ── Row 4: Research Reports ── */}
+        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="w-4 h-4 text-yellow" />
+            <h3 className="text-[13px] font-semibold">Research Reports</h3>
+          </div>
+          {loading ? (
+            <div className="text-[12px] text-gray-5 py-4">Loading reports…</div>
+          ) : reports.length === 0 ? (
+            <div className="text-[12px] text-gray-5 py-4">No reports yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {reports.slice(0, 5).map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between py-2.5 border-b border-[#1a1a1a] last:border-b-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-3.5 h-3.5 text-gray-5" />
+                    <div>
+                      <div className="text-[12px] font-medium">{r.title}</div>
+                      <div className="text-[10px] text-gray-5 font-mono">
+                        {r.type} &middot; {formatTimeAgo(r.created_at)}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                      r.visible_to_client
+                        ? "bg-green/10 text-green"
+                        : "bg-gray-5/10 text-gray-5"
+                    }`}
+                  >
+                    {r.visible_to_client ? "Published" : "Draft"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Row 5: Recent activity table ── */}
         <div className="bg-black-2 border border-[#1e1e1e] rounded-lg">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#1e1e1e]">
             <h3 className="text-[13px] font-semibold">Recent Activity</h3>
@@ -404,6 +480,13 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
+
+      <NewReportModal
+        key={String(showNewReport)}
+        open={showNewReport}
+        onClose={() => setShowNewReport(false)}
+        onCreated={loadReports}
+      />
     </div>
   );
 }

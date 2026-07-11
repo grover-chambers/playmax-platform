@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/browser';
+import { formatTimeAgo } from '@/lib/utils';
 
 export interface DashboardStats {
   totalLeads: number;
@@ -10,18 +11,20 @@ export interface DashboardStats {
   staleLeads: number;
 }
 
+export interface LeadPipelineItem {
+  id: string;
+  company: string;
+  intent: string;
+  value?: number;
+  time: string;
+  source: string;
+  assigned_to: string;
+  highlight?: boolean;
+}
+
 export interface LeadPipelineData {
   stage: string;
-  leads: Array<{
-    id: string;
-    company: string;
-    intent: string;
-    value?: number;
-    time: string;
-    source: string;
-    assignee: string;
-    highlight?: boolean;
-  }>;
+  leads: LeadPipelineItem[];
 }
 
 export interface StaffPerformance {
@@ -36,6 +39,76 @@ export interface ClientHealth {
   name: string;
   status: 'Active' | 'Warm' | 'Cold';
   meta: string;
+}
+
+export interface ClientRecord {
+  id: string;
+  name: string;
+  company: string;
+  email: string;
+  phone: string;
+  industry: string;
+  status: string;
+  projectCount: number;
+  totalValue: number;
+  lastContact: string;
+  assigned_to: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectRecord {
+  id: string;
+  name: string;
+  client: string;
+  client_id?: string;
+  type: string;
+  status: string;
+  progress: number;
+  value: number;
+  deadline: string;
+  assigned_to: string;
+  created_at: string;
+  milestones?: { label: string; done: boolean }[];
+}
+
+export interface TaskRecord {
+  id: string;
+  title: string;
+  project?: string;
+  project_id?: string;
+  priority: string;
+  status: string;
+  due_date: string;
+  assigned_to: string;
+  created_at: string;
+}
+
+export interface InvoiceRecord {
+  id: string;
+  number: string;
+  client: string;
+  client_id?: string;
+  project?: string;
+  amount: number;
+  status: string;
+  issued_date: string;
+  due_date: string;
+  paid_date?: string;
+  notes?: string;
+}
+
+export interface ResearchProjectRecord {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  summary: string;
+  findings: string;
+  sources: string[];
+  project_id?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export function useDashboardStats() {
@@ -108,7 +181,7 @@ export function useLeadPipeline() {
         const supabase = createClient();
         const { data, error } = await supabase
           .from('leads')
-          .select('id, company, intent, value, created_at, source, assignee, status')
+          .select('id, company, intent, value, created_at, source, assigned_to, status')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -125,7 +198,7 @@ export function useLeadPipeline() {
               value: l.value,
               time: formatTimeAgo(l.created_at),
               source: l.source || 'Unknown',
-              assignee: l.assignee || 'Unassigned',
+              assigned_to: l.assigned_to || 'Unassigned',
             })),
         }));
 
@@ -153,15 +226,14 @@ export function useStaffPerformance() {
         const supabase = createClient();
         const { data, error } = await supabase
           .from('leads')
-          .select('assignee, status, value')
+          .select('assigned_to, status, value')
           .in('status', ['won']);
 
         if (error) throw error;
 
-        // Aggregate by assignee
         const staffMap = new Map<string, { leads: number; value: number }>();
         (data || []).forEach(lead => {
-          const assignee = lead.assignee || 'Unassigned';
+          const assignee = lead.assigned_to || 'Unassigned';
           const current = staffMap.get(assignee) || { leads: 0, value: 0 };
           current.leads += 1;
           current.value += lead.value || 0;
@@ -226,18 +298,166 @@ export function useClientHealth() {
   return { clients, loading };
 }
 
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+export function useClients() {
+  const [clients, setClients] = useState<ClientRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
+  useEffect(() => {
+    async function fetchClients() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('clients')
+          .select('*')
+          .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+        setClients(data || []);
+      } catch (err) {
+        console.error('Failed to fetch clients:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchClients();
+  }, []);
+
+  return { clients, loading };
+}
+
+export function useProjects() {
+  const [projects, setProjects] = useState<ProjectRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setProjects((data as ProjectRecord[]) || []);
+      } catch (err) {
+        console.error('Failed to fetch projects:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProjects();
+  }, []);
+
+  return { projects, loading };
+}
+
+export function useTasks() {
+  const [tasks, setTasks] = useState<TaskRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTasks() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setTasks((data as TaskRecord[]) || []);
+      } catch (err) {
+        console.error('Failed to fetch tasks:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTasks();
+  }, []);
+
+  return { tasks, loading };
+}
+
+export function useInvoices() {
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchInvoices() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('invoices')
+          .select('*')
+          .order('issued_date', { ascending: false });
+
+        if (error) throw error;
+        setInvoices((data as InvoiceRecord[]) || []);
+      } catch (err) {
+        console.error('Failed to fetch invoices:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchInvoices();
+  }, []);
+
+  return { invoices, loading };
+}
+
+export function useResearchProjects() {
+  const [projects, setProjects] = useState<ResearchProjectRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('research_projects')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setProjects((data as ResearchProjectRecord[]) || []);
+      } catch (err) {
+        console.error('Failed to fetch research projects:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProjects();
+  }, []);
+
+  return { projects, loading };
+}
+
+export function useInventory() {
+  const [items, setItems] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchInventory() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('inventory')
+          .select('*')
+          .order('name');
+
+        if (error) throw error;
+        setItems(data || []);
+      } catch (err) {
+        console.error('Failed to fetch inventory:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchInventory();
+  }, []);
+
+  return { items, loading };
 }
 
 function formatName(name: string): string {

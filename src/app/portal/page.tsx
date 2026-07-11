@@ -16,7 +16,10 @@ import {
   Clock,
   CreditCard,
   User,
+  BarChart3,
 } from "lucide-react";
+import MetricsGrid from "@/components/reports/metrics-grid";
+import DocumentList from "@/components/documents/document-list";
 
 const messages = [
   {
@@ -212,6 +215,32 @@ export default function PortalOverviewPage() {
             </div>
           </div>
         </div>
+
+          {/* ── Research Reports ──────────────────────── */}
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h">
+              <div className="flex items-center gap-2">
+                <BarChart3 size={14} className="text-yellow" />
+                <span className="pm-dash-card-t">Research Insights</span>
+              </div>
+            </div>
+            <div className="pm-dash-card-b">
+              <MetricsGrid clientId="current" />
+            </div>
+          </div>
+
+          {/* ── Documents ──────────────────────────── */}
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h">
+              <div className="flex items-center gap-2">
+                <FileText size={14} className="text-yellow" />
+                <span className="pm-dash-card-t">Documents</span>
+              </div>
+            </div>
+            <div className="pm-dash-card-b">
+              <DocumentList clientId="current" />
+            </div>
+          </div>
 
         {/* ══════════ RIGHT (1/3) ════════════ */}
         <div className="space-y-4">

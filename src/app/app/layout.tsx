@@ -28,6 +28,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { getRoleLabel } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
+import { UserProvider } from "@/lib/user-context";
 
 /* ── Clean nav structure — super_admin sees everything, others get role-scoped ── */
 interface NavItem {
@@ -254,6 +255,7 @@ export default function PlatformLayout({
     pathname === href || pathname?.startsWith(href + "/");
 
   return (
+    <UserProvider>
     <div
       className={`platform-shell !min-h-screen ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
     >
@@ -343,5 +345,6 @@ export default function PlatformLayout({
 
       <main className="flex-1 overflow-y-auto min-h-screen">{children}</main>
     </div>
+    </UserProvider>
   );
 }
