@@ -1,308 +1,209 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
-import { Download, Plus } from "lucide-react";
+import { Download, Plus, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
 import KanbanColumn from "@/components/crm/kanban-column";
-import LeadCard from "@/components/crm/lead-card";
-import NewLeadModal from "@/components/modals/new-lead-modal";
-import { downloadCSV } from "@/lib/export-utils";
+import ProjectCard from "@/components/crm/project-card";
+import NewProjectModal from "@/components/modals/new-project-modal";
 import { createClient } from "@/lib/supabase/browser";
-import { formatTimeAgo, uuidInitials } from "@/lib/utils";
 
-const sourceFilters = [
-  "All Sources",
-  "Website Form",
-  "WhatsApp",
-  "Referral",
-  "Billboard Inquiry",
+const typeFilters = [
+  "All Types",
+  "Research",
+  "Branding",
+  "Campaign",
+  "Event",
+  "Rental",
 ];
 
-const pipelineData: Record<
-  string,
-  {
-    company: string;
-    intent: string;
-    value?: string;
-    time: string;
-    source: string;
-    assignee: string;
-    highlight?: boolean;
-  }[]
-> = {
-  New: [
-    {
-      company: "Unga Group",
-      intent: "High Intent",
-      time: "2h ago",
-      source: "Website Form",
-      assignee: "BM",
-      highlight: true,
-    },
-    {
-      company: "Bidco Africa",
-      intent: "Rental Inquiry",
-      time: "5h ago",
-      source: "WhatsApp",
-      assignee: "JK",
-    },
-    {
-      company: "Kevian Kenya",
-      intent: "Medium Intent",
-      value: "KES 380K",
-      time: "1d ago",
-      source: "Referral",
-      assignee: "AW",
-    },
-  ],
-  Contacted: [
-    {
-      company: "Naivas",
-      intent: "High Intent",
-      value: "KES 520K",
-      time: "3h ago",
-      source: "Billboard Inquiry",
-      assignee: "BM",
-    },
-    {
-      company: "Safaricom",
-      intent: "Research",
-      time: "6h ago",
-      source: "Website Form",
-      assignee: "JK",
-    },
-    {
-      company: "P&G EA",
-      intent: "Branding",
-      value: "KES 890K",
-      time: "1d ago",
-      source: "Referral",
-      assignee: "AW",
-      highlight: true,
-    },
-  ],
-  Qualified: [
-    {
-      company: "Java House",
-      intent: "High Intent",
-      value: "KES 1.2M",
-      time: "4h ago",
-      source: "WhatsApp",
-      assignee: "BM",
-      highlight: true,
-    },
-    {
-      company: "Twiga Foods",
-      intent: "Medium Intent",
-      value: "KES 450K",
-      time: "2d ago",
-      source: "Website Form",
-      assignee: "JK",
-    },
-  ],
-  "Proposal Sent": [
-    {
-      company: "Kenchic",
-      intent: "High Intent",
-      value: "KES 680K",
-      time: "1d ago",
-      source: "Referral",
-      assignee: "BM",
-    },
-  ],
-  Won: [
-    {
-      company: "Haco Industries",
-      intent: "High Intent",
-      value: "KES 340K",
-      time: "3d ago",
-      source: "Billboard Inquiry",
-      assignee: "AW",
-    },
-  ],
+const stageMapping: Record<string, string> = {
+  draft: "New",
+  active: "Active",
+  in_progress: "In Progress",
+  review: "Review",
+  completed: "Completed",
 };
+
+const stageOrder = ["New", "Active", "In Progress", "Review", "Completed"];
+
+interface PipelineProject {
+  id: string;
+  name: string;
+  client: string;
+  type: string;
+  status: string;
+  progress: number;
+  value: string;
+  deadline: string;
+}
 
 const staffData = [
-  {
-    name: "Amina",
-    role: "Lead Gen",
-    progress: 85,
-    leads: 12,
-    closedValue: "KES 620K",
-  },
-  {
-    name: "James",
-    role: "Sales Exec",
-    progress: 55,
-    leads: 8,
-    closedValue: "KES 290K",
-  },
-  {
-    name: "Christine",
-    role: "Junior Sales",
-    progress: 40,
-    leads: 5,
-    closedValue: "KES 120K",
-  },
+  { name: "Amina", role: "Lead Gen", progress: 85, projects: 12, closedValue: "KES 620K" },
+  { name: "James", role: "Sales Exec", progress: 55, projects: 8, closedValue: "KES 290K" },
+  { name: "Christine", role: "Junior Sales", progress: 40, projects: 5, closedValue: "KES 120K" },
 ];
-
-const clientHealthData = [
-  { name: "Unga Group", dot: "g", status: "Active", meta: "Campaign running" },
-  {
-    name: "Java House",
-    dot: "g",
-    status: "Active",
-    meta: "Proposal under review",
-  },
-  { name: "Naivas", dot: "y", status: "Warm", meta: "Follow-up due in 2d" },
-  { name: "Bidco Africa", dot: "y", status: "Warm", meta: "Meeting scheduled" },
-  { name: "Kevian Kenya", dot: "r", status: "Cold", meta: "No response 3w+" },
-];
-
-const dotColorMap: Record<string, string> = {
-  g: "var(--pm-green)",
-  y: "var(--pm-yellow)",
-  r: "var(--pm-red)",
-};
-
-const bdgClassMap: Record<string, string> = {
-  g: "pm-dash-bdg-g",
-  y: "pm-dash-bdg-y",
-  r: "pm-dash-bdg-r",
-};
-
-const stageNames: Record<string, string> = {
-  new: "New",
-  contacted: "Contacted",
-  qualified: "Qualified",
-  proposal: "Proposal Sent",
-  won: "Won",
-};
 
 export default function PipelinePage() {
-  const [activeFilter, setActiveFilter] = useState("All Sources");
-  const [showAddLead, setShowAddLead] = useState(false);
-  const [data, setData] = useState(pipelineData);
+  const [activeFilter, setActiveFilter] = useState("All Types");
+  const [search, setSearch] = useState("");
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [projects, setProjects] = useState<PipelineProject[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const supabase = createClient();
-        const { data: dbLeads, error } = await supabase
-          .from("leads")
-          .select("id, company, intent, value, created_at, source, assigned_to, status")
-          .order("created_at", { ascending: false });
-        if (error || !dbLeads || dbLeads.length === 0) return;
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData?.user?.id;
+        const role = userData?.user?.user_metadata?.role as string | undefined;
 
-        const stages = ["new", "contacted", "qualified", "proposal", "won"];
-        const mapped: Record<string, typeof pipelineData[string]> = {};
-        for (const stage of stages) {
-          const stageLeads = dbLeads
-            .filter((l) => l.status === stage)
-            .map((l) => ({
-              company: l.company,
-              intent: l.intent || "General Inquiry",
-              value: l.value ? `KES ${(l.value / 1000).toFixed(0)}K` : undefined,
-              time: formatTimeAgo(l.created_at),
-              source: l.source || "Unknown",
-              assignee: uuidInitials(l.assigned_to || ""),
-            }));
-          const name = stageNames[stage] || stage;
-          if (stageLeads.length > 0) mapped[name] = stageLeads;
+        let query = supabase.from("projects").select("*, clients(company)");
+        if (role === "crm_staff" && userId) {
+          query = query.eq("assigned_to", userId);
         }
-        if (Object.keys(mapped).length > 0) setData(mapped);
+        const { data: dbProjects, error } = await query.order("created_at", { ascending: false });
+        if (error || !dbProjects) return;
+
+        const mapped: PipelineProject[] = dbProjects.map((p) => ({
+          id: p.id,
+          name: p.name,
+          client: p.clients?.company || "—",
+          type: p.type || "Research",
+          status: p.status || "draft",
+          progress: p.progress || 0,
+          value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+          deadline: p.end_date
+            ? new Date(p.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : "—",
+        }));
+        if (!cancelled) setProjects(mapped);
       } catch { /* silent fallback */ }
     })();
+    return () => { cancelled = true; };
   }, []);
 
-  const filteredData = useMemo(() => {
-    if (activeFilter === "All Sources") return data;
-    const result: Record<string, typeof data[string]> = {};
-    for (const [stage, leads] of Object.entries(data)) {
-      const filtered = leads.filter((l) => l.source === activeFilter);
-      if (filtered.length > 0) result[stage] = filtered;
+  const refreshProjects = async () => {
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      const role = userData?.user?.user_metadata?.role as string | undefined;
+
+      let query = supabase.from("projects").select("*, clients(company)");
+      if (role === "crm_staff" && userId) {
+        query = query.eq("assigned_to", userId);
+      }
+      const { data: dbProjects, error } = await query.order("created_at", { ascending: false });
+      if (error || !dbProjects) return;
+
+      const mapped: PipelineProject[] = dbProjects.map((p) => ({
+        id: p.id,
+        name: p.name,
+        client: p.clients?.company || "—",
+        type: p.type || "Research",
+        status: p.status || "draft",
+        progress: p.progress || 0,
+        value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+        deadline: p.end_date
+          ? new Date(p.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+          : "—",
+      }));
+      setProjects(mapped);
+    } catch { /* silent fallback */ }
+  };
+
+  const grouped = useMemo(() => {
+    const result: Record<string, PipelineProject[]> = {};
+    for (const stage of stageOrder) result[stage] = [];
+
+    const filtered = projects.filter((p) => {
+      if (activeFilter !== "All Types" && p.type !== activeFilter) return false;
+      if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+
+    for (const p of filtered) {
+      const stage = stageMapping[p.status] || "New";
+      if (result[stage]) result[stage].push(p);
     }
     return result;
-  }, [activeFilter, data]);
+  }, [projects, activeFilter, search]);
 
-  const totalLeads = Object.values(filteredData).flat().length;
-  const columns = Object.entries(filteredData);
+  const totalProjects = Object.values(grouped).flat().length;
 
   function handleExport() {
-    const allLeads = Object.values(data).flat();
-    const rows = allLeads.map((l) => [
-      l.company, l.intent, l.value || "-", l.time, l.source, l.assignee,
+    const rows = projects.map((p) => [
+      p.name, p.client, p.type, p.status, String(p.progress) + "%", p.value, p.deadline,
     ]);
-    downloadCSV(
-      ["Company", "Intent", "Value", "Time", "Source", "Assignee"],
-      rows,
-      "pipeline-leads",
+    import("@/lib/export-utils").then(({ downloadCSV }) =>
+      downloadCSV(["Project", "Client", "Type", "Status", "Progress", "Value", "Deadline"], rows, "pipeline-projects"),
     );
   }
 
   return (
     <div>
       <PageHeader
-        title="Lead Pipeline"
-        subtitle={`${totalLeads} leads${activeFilter !== "All Sources" ? ` · ${activeFilter}` : ""}`}
+        title="Project Pipeline"
+        subtitle={`${totalProjects} projects in pipeline`}
         actions={
           <>
             <Button variant="secondary" size="sm" onClick={handleExport}>
               <Download size={12} className="mr-1" /> Export
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setShowAddLead(true)}
-            >
-              <Plus size={12} className="mr-1" /> Add Lead
+            <Button variant="primary" size="sm" onClick={() => setShowNewProject(true)}>
+              <Plus size={12} className="mr-1" /> New Project
             </Button>
           </>
         }
       />
 
-      {/* ── Velocity KPIs ── */}
+      {/* ── Pipeline KPIs ── */}
       <div className="px-7 pt-5 pb-1">
         <div className="pm-dash-krow pm-dash-krow-4">
           <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">62%</div>
-            <div className="pm-dash-kl">Lead&rarr;qualified rate</div>
-            <div className="pm-dash-ksub">
-              <span className="trend-up">&uarr; 8%</span> vs last month
-            </div>
+            <div className="pm-dash-kn">{projects.filter((p) => p.status === "active" || p.status === "in_progress").length}</div>
+            <div className="pm-dash-kl">Active projects</div>
+            <div className="pm-dash-ksub">{projects.filter((p) => p.status === "draft").length} in draft</div>
           </div>
           <div className="pm-dash-kcard grn">
-            <div className="pm-dash-kn grn">11d</div>
-            <div className="pm-dash-kl">Avg days to close</div>
-            <div className="pm-dash-ksub">
-              <span className="trend-up">&darr; 3 days faster</span>
-            </div>
+            <div className="pm-dash-kn grn">{projects.filter((p) => p.status === "completed").length}</div>
+            <div className="pm-dash-kl">Completed</div>
+            <div className="pm-dash-ksub">{projects.filter((p) => p.status === "review").length} in review</div>
           </div>
           <div className="pm-dash-kcard red">
-            <div className="pm-dash-kn red">3</div>
-            <div className="pm-dash-kl">Stale leads (&gt;10 days)</div>
+            <div className="pm-dash-kn red">{projects.length}</div>
+            <div className="pm-dash-kl">Total projects</div>
             <div className="pm-dash-ksub" style={{ color: "var(--pm-red)" }}>
-              Needs reassignment
+              {projects.filter((p) => p.progress < 25 && p.status !== "completed").length} behind schedule
             </div>
           </div>
           <div className="pm-dash-kcard neu">
             <div className="pm-dash-kn" style={{ color: "var(--pm-gray-3)" }}>
-              KES 1.7M
+              {projects.filter((p) => p.status === "completed").length > 0
+                ? `KES ${(
+                    projects
+                      .filter((p) => p.status === "completed")
+                      .reduce((sum, p) => sum + (parseInt(p.value.replace(/[^0-9]/g, "")) || 0), 0) / 1000
+                  ).toFixed(0)}K`
+                : "—"}
             </div>
-            <div className="pm-dash-kl">Won this month</div>
-            <div className="pm-dash-ksub">3 deals closed</div>
+            <div className="pm-dash-kl">Completed value</div>
+            <div className="pm-dash-ksub">{projects.filter((p) => p.status === "completed").length} projects done</div>
           </div>
         </div>
       </div>
 
-      {/* ── Search & Source Filters ── */}
+      {/* ── Search & Type Filters ── */}
       <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1E1E1E]">
-        <SearchBox placeholder="Search leads&hellip;" className="w-56" />
+        <SearchBox placeholder="Search projects…" className="w-56" onChange={(val) => setSearch(val)} />
         <div className="flex items-center gap-1.5 ml-2">
-          {sourceFilters.map((filter) => (
+          {typeFilters.map((filter) => (
             <FilterPill
               key={filter}
               active={activeFilter === filter}
@@ -316,31 +217,37 @@ export default function PipelinePage() {
 
       {/* ── Kanban Board ── */}
       <div className="flex gap-4 p-7 overflow-x-auto">
-        {columns.map(([title, leads]) => (
-          <KanbanColumn key={title} title={title} count={leads.length}>
-            {leads.map((lead) => (
-              <LeadCard
-                key={lead.company}
-                company={lead.company}
-                intent={lead.intent}
-                value={lead.value}
-                time={lead.time}
-                source={lead.source}
-                assignee={lead.assignee}
-                highlight={lead.highlight}
-              />
-            ))}
-          </KanbanColumn>
-        ))}
+        {stageOrder.map((stage) => {
+          const stageProjects = grouped[stage] || [];
+          return (
+            <KanbanColumn key={stage} title={stage} count={stageProjects.length}>
+              {stageProjects.map((p) => (
+                <ProjectCard
+                  key={p.id}
+                  id={p.id}
+                  name={p.name}
+                  client={p.client}
+                  type={p.type}
+                  status={p.status}
+                  progress={p.progress}
+                  value={p.value}
+                  deadline={p.deadline}
+                />
+              ))}
+            </KanbanColumn>
+          );
+        })}
       </div>
 
       {/* ── Staff Performance + Client Health Grid ── */}
       <div className="px-7 pb-7">
         <div className="grid grid-cols-2 gap-5">
-          {/* Left Column — Staff Performance */}
           <div className="pm-dash-card">
             <div className="pm-dash-card-h">
               <span className="pm-dash-card-t">Staff Performance</span>
+              <Link href="/app/tasks" className="text-[10px] text-yellow flex items-center gap-1 hover:underline">
+                View tasks <ArrowUpRight size={10} />
+              </Link>
             </div>
             <div className="pm-dash-card-b">
               {staffData.map((staff) => (
@@ -354,10 +261,7 @@ export default function PipelinePage() {
                           className="pm-dash-prog-fill"
                           style={{
                             width: `${staff.progress}%`,
-                            background:
-                              staff.name === "Christine"
-                                ? "var(--pm-red)"
-                                : "var(--pm-yellow)",
+                            background: staff.name === "Christine" ? "var(--pm-red)" : "var(--pm-yellow)",
                           }}
                         />
                       </div>
@@ -368,13 +272,11 @@ export default function PipelinePage() {
                   </div>
                   <div className="pm-dash-staff-stats">
                     <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">{staff.leads}</div>
-                      <div className="pm-dash-staff-stat-l">leads</div>
+                      <div className="pm-dash-staff-stat-n">{staff.projects}</div>
+                      <div className="pm-dash-staff-stat-l">projects</div>
                     </div>
                     <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">
-                        {staff.closedValue}
-                      </div>
+                      <div className="pm-dash-staff-stat-n">{staff.closedValue}</div>
                       <div className="pm-dash-staff-stat-l">closed</div>
                     </div>
                   </div>
@@ -383,34 +285,50 @@ export default function PipelinePage() {
             </div>
           </div>
 
-          {/* Right Column — Client Health */}
           <div className="pm-dash-card">
             <div className="pm-dash-card-h">
               <span className="pm-dash-card-t">Client Health</span>
-              <span className="pm-dash-bdg pm-dash-bdg-r">2 at risk</span>
+              {projects.length > 0 && (
+                <span className="pm-dash-bdg pm-dash-bdg-r">
+                  {projects.filter((p) => p.progress < 25 && p.status !== "completed").length} at risk
+                </span>
+              )}
             </div>
             <div className="pm-dash-card-b">
-              {clientHealthData.map((client) => (
-                <div key={client.name} className="pm-dash-li">
-                  <div
-                    className="pm-dash-li-dot"
-                    style={{ background: dotColorMap[client.dot] }}
-                  />
-                  <div className="pm-dash-li-body">
-                    <div className="pm-dash-li-title">{client.name}</div>
-                    <div className="pm-dash-li-meta">{client.meta}</div>
-                  </div>
-                  <span className={`pm-dash-bdg ${bdgClassMap[client.dot]}`}>
-                    {client.status}
-                  </span>
-                </div>
-              ))}
+              {(() => {
+                const clientMap = new Map<string, { projects: number; completed: number; progress: number }>();
+                for (const p of projects) {
+                  const existing = clientMap.get(p.client) || { projects: 0, completed: 0, progress: 0 };
+                  existing.projects += 1;
+                  if (p.status === "completed") existing.completed += 1;
+                  existing.progress = Math.max(existing.progress, p.progress);
+                  clientMap.set(p.client, existing);
+                }
+                const clients = Array.from(clientMap.entries());
+                if (clients.length === 0) return <p className="text-[12px] text-gray-5 py-4">No client data yet.</p>;
+                return clients.slice(0, 6).map(([name, info]) => {
+                  const dot = info.completed > 0 ? "g" : info.progress >= 50 ? "g" : info.progress >= 25 ? "y" : "r";
+                  const dotColors: Record<string, string> = { g: "var(--pm-green)", y: "var(--pm-yellow)", r: "var(--pm-red)" };
+                  const bdgClasses: Record<string, string> = { g: "pm-dash-bdg-g", y: "pm-dash-bdg-y", r: "pm-dash-bdg-r" };
+                  const statusLabels: Record<string, string> = { g: "Active", y: "Warm", r: "Cold" };
+                  return (
+                    <div key={name} className="pm-dash-li">
+                      <div className="pm-dash-li-dot" style={{ background: dotColors[dot] }} />
+                      <div className="pm-dash-li-body">
+                        <div className="pm-dash-li-title">{name}</div>
+                        <div className="pm-dash-li-meta">{info.projects} project{info.projects > 1 ? "s" : ""}{info.completed > 0 ? ` · ${info.completed} completed` : ""}</div>
+                      </div>
+                      <span className={`pm-dash-bdg ${bdgClasses[dot]}`}>{statusLabels[dot]}</span>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
       </div>
 
-      <NewLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
+      <NewProjectModal open={showNewProject} onClose={() => setShowNewProject(false)} onCreated={() => { refreshProjects(); setShowNewProject(false); }} />
     </div>
   );
 }

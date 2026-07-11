@@ -156,6 +156,7 @@ export default function ProjectsPage() {
   const [data, setData] = useState<Project[]>(projects);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const supabase = createClient();
@@ -163,30 +164,63 @@ export default function ProjectsPage() {
         const userId = userData?.user?.id;
         const role = userData?.user?.user_metadata?.role as string | undefined;
 
-        let query = supabase.from("projects").select("*");
+        let query = supabase.from("projects").select("*, clients(company)");
         if (role === "crm_staff" && userId) {
           query = query.eq("assigned_to", userId);
         }
         const { data: dbProjects, error } = await query.order("created_at", { ascending: false });
         if (error || !dbProjects) return;
         if (dbProjects.length === 0) {
-          if (role === "crm_staff") setData([]);
+          if (role === "crm_staff" && !cancelled) setData([]);
           return;
         }
         const mapped: Project[] = dbProjects.map((p) => ({
           id: p.id,
           name: p.name,
-          client: p.client || "—",
+          client: p.clients?.company || p.client || "—",
           type: p.type || "Research",
           status: (["active", "review", "draft", "confirmed"].includes(p.status) ? p.status : "draft") as Project["status"],
           progress: p.progress || 0,
           value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
           deadline: fmtDeadline(p.deadline),
         }));
-        setData(mapped);
+        if (!cancelled) setData(mapped);
       } catch { /* silent fallback to hardcoded */ }
     })();
+    return () => { cancelled = true; };
   }, []);
+
+  // Reload when modal closes after creation
+  const refreshProjects = async () => {
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      const role = userData?.user?.user_metadata?.role as string | undefined;
+
+      let query = supabase.from("projects").select("*, clients(company)");
+      if (role === "crm_staff" && userId) {
+        query = query.eq("assigned_to", userId);
+      }
+      const { data: dbProjects, error } = await query.order("created_at", { ascending: false });
+      if (error || !dbProjects) return;
+      if (dbProjects.length === 0) {
+        if (role === "crm_staff") setData([]);
+        return;
+      }
+      const mapped: Project[] = dbProjects.map((p) => ({
+        id: p.id,
+        name: p.name,
+        client: p.clients?.company || p.client || "—",
+        type: p.type || "Research",
+        status: (["active", "review", "draft", "confirmed"].includes(p.status) ? p.status : "draft") as Project["status"],
+        progress: p.progress || 0,
+        value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+        deadline: fmtDeadline(p.deadline),
+      }));
+      setData(mapped);
+    } catch { /* silent fallback */ }
+  };
 
   const filtered = useMemo(() => {
     return data.filter((p) => {
@@ -284,7 +318,7 @@ export default function ProjectsPage() {
         ))}
       </div>
 
-      <NewProjectModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <NewProjectModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={refreshProjects} />
     </div>
   );
 }

@@ -135,12 +135,15 @@ export default function WorkspacePage({
         if (userId) setCurrentUser({ id: userId, role: userRole || "", name: userName || "You" });
 
         const { data: proj } = await supabase
-          .from("projects").select("*").eq("id", projectId).single();
-        if (proj) {
-          setProject({ id: proj.id, name: proj.name, client: proj.client || "—", status: proj.status || "draft" });
+          .from("projects").select("*, clients(company)").eq("id", projectId).single() as unknown as { data: Record<string, unknown> | null };
+        const projData = proj;
+        if (projData) {
+          const clientName = (projData.clients as Record<string, string> | null)?.company || (projData.client as string) || "—";
+          const projName = projData.name as string || "";
+          setProject({ id: projData.id as string, name: projName, client: clientName, status: (projData.status as string) || "draft" });
           let { data: dbTasks } = await supabase
             .from("tasks").select("*")
-            .or(`project_id.eq.${projectId},project.eq.${proj.name?.replace(/'/g, "") || ""}`)
+            .or(`project_id.eq.${projectId},project.eq.${projName.replace(/'/g, "") || ""}`)
             .order("created_at", { ascending: false });
           if (userRole === "crm_staff" && userId && dbTasks) {
             dbTasks = dbTasks.filter((t) => t.assigned_to === userId);

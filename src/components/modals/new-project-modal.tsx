@@ -8,6 +8,7 @@ import { Plus, Trash2 } from "lucide-react";
 interface NewProjectModalProps {
   open: boolean;
   onClose: () => void;
+  onCreated?: () => void;
   preselectedClient?: string;
 }
 
@@ -39,6 +40,7 @@ interface Milestone {
 export default function NewProjectModal({
   open,
   onClose,
+  onCreated,
   preselectedClient,
 }: NewProjectModalProps) {
   const [form, setForm] = useState({
@@ -153,6 +155,7 @@ export default function NewProjectModal({
       }
 
       setSubmitSuccess(true);
+      onCreated?.();
       setTimeout(() => {
         onClose();
         resetForm();
