@@ -4,15 +4,9 @@ import { canAccess, getDefaultRedirect } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response: supabaseResponse } = createClient(request);
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const pathname = request.nextUrl.pathname;
 
-  // ── Public routes — always allow ───────────────────
+  // ── Public routes — always allow, skip auth ────────
   const isPublic =
     pathname === "/login" ||
     pathname === "/forgot-password" ||
@@ -27,30 +21,33 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/case-studies") ||
     pathname.startsWith("/insights");
 
-  if (isPublic) {
-    return supabaseResponse;
-  }
+  if (isPublic) return NextResponse.next();
 
-  // ── Protected routes — require authentication ──────
+  // ── Protected routes only from here ────────────────
   const isProtected =
     pathname.startsWith("/app") || pathname.startsWith("/portal");
 
-  if (!user && isProtected) {
+  if (!isProtected) return NextResponse.next();
+
+  const { supabase, response: supabaseResponse } = createClient(request);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  // ── Role-based access control ───────────────────────
-  if (user && isProtected) {
-    const role = (user.user_metadata?.role as UserRole) || "client";
+  const role = (user.user_metadata?.role as UserRole) || "client";
 
-    if (!canAccess(role, pathname)) {
-      const url = request.nextUrl.clone();
-      url.pathname = getDefaultRedirect(role);
-      return NextResponse.redirect(url);
-    }
+  if (!canAccess(role, pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = getDefaultRedirect(role);
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;
