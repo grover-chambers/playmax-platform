@@ -995,6 +995,11 @@ h6 {
     flex-direction: column;
     gap: 8px;
 }
+.kanban-col-dragover {
+    outline: 2px dashed var(--pm-yellow);
+    outline-offset: -2px;
+    background: #121212;
+}
 
 /* Lead card */
 .lead-card {

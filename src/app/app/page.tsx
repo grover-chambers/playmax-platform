@@ -24,7 +24,7 @@ import NewLeadModal from "@/components/modals/new-lead-modal";
 import NewClientModal from "@/components/modals/new-client-modal";
 import NewProjectModal from "@/components/modals/new-project-modal";
 import NewEngagementModal from "@/components/modals/new-engagement-modal";
-import { useDashboardStats } from "@/hooks/useDashboardData";
+import { useDashboardStats, useLeadPipeline, useStaffPerformance, useInvoices } from "@/hooks/useDashboardData";
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
@@ -33,6 +33,22 @@ export default function SuperAdminDashboard() {
   const [showNewProject, setShowNewProject] = useState(false);
   const [showNewEngagement, setShowNewEngagement] = useState(false);
   const { stats, loading } = useDashboardStats();
+  const { pipeline } = useLeadPipeline();
+  const { staff } = useStaffPerformance();
+  const { invoices } = useInvoices();
+
+  const pipelineTotal = pipeline.reduce((sum, s) => sum + s.leads.length, 0);
+  const outstandingInvoices = invoices.filter((i) => i.status === "sent" || i.status === "overdue");
+  const overdueCount = invoices.filter((i) => i.status === "overdue").length;
+  const collectedTotal = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
+  const outstandingTotal = outstandingInvoices.reduce((s, i) => s + i.amount, 0);
+  const stageColors: Record<string, string> = {
+    New: "var(--pm-blue)",
+    Contacted: "var(--pm-yellow)",
+    Qualified: "var(--pm-yellow)",
+    Proposal: "var(--pm-amber)",
+    Won: "var(--pm-green)",
+  };
 
   return (
     <>
@@ -184,195 +200,72 @@ export default function SuperAdminDashboard() {
         <div className="grid grid-cols-[2fr_1fr] gap-5">
           {/* ═══════════════ LEFT COLUMN ═══════════════════ */}
           <div className="flex flex-col gap-5">
-            {/* ── Card: Pipeline health ────────────────── */}
+            {/* ── Card: Pipeline health ── */}
             <div className="pm-dash-card">
               <div className="pm-dash-card-h">
                 <span className="pm-dash-card-t">Pipeline health</span>
-                <span className="pm-dash-bdg pm-dash-bdg-y">24 leads</span>
+                <span className="pm-dash-bdg pm-dash-bdg-y">{pipelineTotal} leads</span>
               </div>
               <div className="pm-dash-card-b">
-                {/* New */}
-                <div className="pm-dash-pipe-row">
-                  <span className="pm-dash-pipe-stage">New</span>
-                  <div className="pm-dash-pipe-bar-track">
-                    <div
-                      className="pm-dash-pipe-bar-fill"
-                      style={{ width: "60%", background: "var(--pm-blue)" }}
-                    />
-                  </div>
-                  <span className="pm-dash-pipe-count">12</span>
-                  <span className="pm-dash-pipe-val">60%</span>
-                </div>
-                {/* Contacted */}
-                <div className="pm-dash-pipe-row">
-                  <span className="pm-dash-pipe-stage">Contacted</span>
-                  <div className="pm-dash-pipe-bar-track">
-                    <div
-                      className="pm-dash-pipe-bar-fill"
-                      style={{ width: "75%", background: "var(--pm-yellow)" }}
-                    />
-                  </div>
-                  <span className="pm-dash-pipe-count">9</span>
-                  <span className="pm-dash-pipe-val">75%</span>
-                </div>
-                {/* Qualified */}
-                <div className="pm-dash-pipe-row">
-                  <span className="pm-dash-pipe-stage">Qualified</span>
-                  <div className="pm-dash-pipe-bar-track">
-                    <div
-                      className="pm-dash-pipe-bar-fill"
-                      style={{ width: "50%", background: "var(--pm-yellow)" }}
-                    />
-                  </div>
-                  <span className="pm-dash-pipe-count">6</span>
-                  <span className="pm-dash-pipe-val">50%</span>
-                </div>
-                {/* Stale >10d */}
-                <div className="pm-dash-pipe-row">
-                  <span className="pm-dash-pipe-stage">Stale &gt;10d</span>
-                  <div className="pm-dash-pipe-bar-track">
-                    <div
-                      className="pm-dash-pipe-bar-fill"
-                      style={{ width: "30%", background: "var(--pm-red)" }}
-                    />
-                  </div>
-                  <span className="pm-dash-pipe-count">4</span>
-                  <span className="pm-dash-pipe-val">30%</span>
-                </div>
-                {/* Won this mo. */}
-                <div className="pm-dash-pipe-row">
-                  <span className="pm-dash-pipe-stage">Won this mo.</span>
-                  <div className="pm-dash-pipe-bar-track">
-                    <div
-                      className="pm-dash-pipe-bar-fill"
-                      style={{ width: "25%", background: "var(--pm-green)" }}
-                    />
-                  </div>
-                  <span className="pm-dash-pipe-count">3</span>
-                  <span className="pm-dash-pipe-val">25%</span>
-                </div>
+                {pipeline.length === 0 && (
+                  <p className="text-[12px] text-gray-5 text-center py-4">No leads yet.</p>
+                )}
+                {pipeline.map((s) => {
+                  const pct = pipelineTotal > 0 ? Math.round((s.leads.length / pipelineTotal) * 100) : 0;
+                  const color = stageColors[s.stage] || "var(--pm-yellow)";
+                  return (
+                    <div key={s.stage} className="pm-dash-pipe-row">
+                      <span className="pm-dash-pipe-stage">{s.stage}</span>
+                      <div className="pm-dash-pipe-bar-track">
+                        <div className="pm-dash-pipe-bar-fill" style={{ width: `${pct}%`, background: color }} />
+                      </div>
+                      <span className="pm-dash-pipe-count">{s.leads.length}</span>
+                      <span className="pm-dash-pipe-val">{pct}%</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* ── Card: Team workload ──────────────────── */}
+            {/* ── Card: Team workload ── */}
             <div className="pm-dash-card">
               <div className="pm-dash-card-h">
                 <span className="pm-dash-card-t">Team workload</span>
-                <button
-                  className="btn-sm"
-                  onClick={() => router.push("/app/admin/staff")}
-                >
-                  Manage staff
-                </button>
+                <button className="btn-sm" onClick={() => router.push("/app/admin/staff")}>Manage staff</button>
               </div>
               <div className="pm-dash-card-b">
-                {/* Alex M. */}
-                <div className="pm-dash-staff-row">
-                  <div
-                    className="user-avatar"
-                    style={{ background: "#1a3a2a", color: "var(--pm-green)" }}
-                  >
-                    AM
-                  </div>
-                  <div className="pm-dash-staff-info">
-                    <div className="pm-dash-staff-name">Alex M.</div>
-                    <div className="pm-dash-staff-role">Project Manager</div>
-                  </div>
-                  <div className="pm-dash-staff-stats">
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">8</div>
-                      <div className="pm-dash-staff-stat-l">Leads</div>
+                {staff.length === 0 && (
+                  <p className="text-[12px] text-gray-5 text-center py-4">No staff data yet.</p>
+                )}
+                {staff.slice(0, 5).map((s, i) => {
+                  const initials = s.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+                  const colors = ["#1a3a2a", "#1a2a3a", "#3a3a1a", "#3a1a1a", "#2a1a3a"];
+                  const dotColors = ["var(--pm-green)", "var(--pm-blue)", "var(--pm-yellow)", "var(--pm-red)", "var(--pm-purple)"];
+                  const statuses = ["Online", "Away", "Online", "Offline", "Online"] as const;
+                  const bdgClasses = ["pm-dash-bdg-g", "pm-dash-bdg-y", "pm-dash-bdg-g", "pm-dash-bdg-n", "pm-dash-bdg-g"];
+                  return (
+                    <div key={s.name} className="pm-dash-staff-row">
+                      <div className="user-avatar" style={{ background: colors[i % colors.length], color: dotColors[i % dotColors.length] }}>{initials}</div>
+                      <div className="pm-dash-staff-info">
+                        <div className="pm-dash-staff-name">{s.name}</div>
+                        <div className="pm-dash-staff-role">{s.role}</div>
+                      </div>
+                      <div className="pm-dash-staff-stats">
+                        <div className="pm-dash-staff-stat">
+                          <div className="pm-dash-staff-stat-n">{s.leads}</div>
+                          <div className="pm-dash-staff-stat-l">Leads</div>
+                        </div>
+                        <div className="pm-dash-staff-stat">
+                          <div className="pm-dash-staff-stat-n">{s.closedValue}</div>
+                          <div className="pm-dash-staff-stat-l">Closed</div>
+                        </div>
+                        <div className="pm-dash-staff-stat">
+                          <span className={`pm-dash-bdg ${bdgClasses[i % bdgClasses.length]}`}>{statuses[i % statuses.length]}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">12</div>
-                      <div className="pm-dash-staff-stat-l">Tasks</div>
-                    </div>
-                    <div className="pm-dash-staff-stat">
-                      <span className="pm-dash-bdg pm-dash-bdg-g">Online</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Jordan W. */}
-                <div className="pm-dash-staff-row">
-                  <div
-                    className="user-avatar"
-                    style={{ background: "#1a2a3a", color: "var(--pm-blue)" }}
-                  >
-                    JW
-                  </div>
-                  <div className="pm-dash-staff-info">
-                    <div className="pm-dash-staff-name">Jordan W.</div>
-                    <div className="pm-dash-staff-role">CRM Admin</div>
-                  </div>
-                  <div className="pm-dash-staff-stats">
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">14</div>
-                      <div className="pm-dash-staff-stat-l">Leads</div>
-                    </div>
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">9</div>
-                      <div className="pm-dash-staff-stat-l">Tasks</div>
-                    </div>
-                    <div className="pm-dash-staff-stat">
-                      <span className="pm-dash-bdg pm-dash-bdg-y">Away</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Riley N. */}
-                <div className="pm-dash-staff-row">
-                  <div
-                    className="user-avatar"
-                    style={{ background: "#3a3a1a", color: "var(--pm-yellow)" }}
-                  >
-                    RN
-                  </div>
-                  <div className="pm-dash-staff-info">
-                    <div className="pm-dash-staff-name">Riley N.</div>
-                    <div className="pm-dash-staff-role">Design Lead</div>
-                  </div>
-                  <div className="pm-dash-staff-stats">
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">5</div>
-                      <div className="pm-dash-staff-stat-l">Leads</div>
-                    </div>
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">18</div>
-                      <div className="pm-dash-staff-stat-l">Tasks</div>
-                    </div>
-                    <div className="pm-dash-staff-stat">
-                      <span className="pm-dash-bdg pm-dash-bdg-g">Online</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Kai P. */}
-                <div className="pm-dash-staff-row">
-                  <div
-                    className="user-avatar"
-                    style={{ background: "#3a1a1a", color: "var(--pm-red)" }}
-                  >
-                    KP
-                  </div>
-                  <div className="pm-dash-staff-info">
-                    <div className="pm-dash-staff-name">Kai P.</div>
-                    <div className="pm-dash-staff-role">Finance</div>
-                  </div>
-                  <div className="pm-dash-staff-stats">
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">3</div>
-                      <div className="pm-dash-staff-stat-l">Leads</div>
-                    </div>
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">7</div>
-                      <div className="pm-dash-staff-stat-l">Tasks</div>
-                    </div>
-                    <div className="pm-dash-staff-stat">
-                      <span className="pm-dash-bdg pm-dash-bdg-n">Offline</span>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -482,93 +375,44 @@ export default function SuperAdminDashboard() {
               </div>
             </div>
 
-            {/* ── Card: Finance snapshot ────────────────── */}
+            {/* ── Card: Finance snapshot ── */}
             <div className="pm-dash-card">
               <div className="pm-dash-card-h">
                 <span className="pm-dash-card-t">Finance snapshot</span>
-                <button
-                  className="btn-sm"
-                  onClick={() => router.push("/app/invoices")}
-                >
-                  View invoices
-                </button>
+                <button className="btn-sm" onClick={() => router.push("/app/invoices")}>View invoices</button>
               </div>
               <div className="pm-dash-card-b">
-                {/* Mini KPI row */}
                 <div className="flex gap-3 mb-4">
                   <div className="pm-dash-mini-kpi flex-1">
-                    <div
-                      className="pm-dash-mini-kpi-val"
-                      style={{ color: "var(--pm-red)" }}
-                    >
-                      KES 1.2M
-                    </div>
+                    <div className="pm-dash-mini-kpi-val" style={{ color: "var(--pm-red)" }}>KES {(outstandingTotal / 1000).toFixed(0)}K</div>
                     <div className="pm-dash-mini-kpi-lbl">Outstanding</div>
                   </div>
                   <div className="pm-dash-mini-kpi flex-1">
-                    <div
-                      className="pm-dash-mini-kpi-val"
-                      style={{ color: "var(--pm-green)" }}
-                    >
-                      KES 780K
-                    </div>
+                    <div className="pm-dash-mini-kpi-val" style={{ color: "var(--pm-green)" }}>KES {(collectedTotal / 1000).toFixed(0)}K</div>
                     <div className="pm-dash-mini-kpi-lbl">Collected</div>
                   </div>
                   <div className="pm-dash-mini-kpi flex-1">
-                    <div
-                      className="pm-dash-mini-kpi-val"
-                      style={{ color: "var(--pm-red)" }}
-                    >
-                      3
-                    </div>
+                    <div className="pm-dash-mini-kpi-val" style={{ color: "var(--pm-red)" }}>{overdueCount}</div>
                     <div className="pm-dash-mini-kpi-lbl">Overdue</div>
                   </div>
                 </div>
-
-                {/* List item 1 — Overdue */}
-                <div className="pm-dash-li">
-                  <div
-                    className="pm-dash-li-dot"
-                    style={{ background: "var(--pm-red)" }}
-                  />
-                  <div className="pm-dash-li-body">
-                    <div className="pm-dash-li-title">
-                      Invoice #1042 — KES 180,000
+                {invoices.length === 0 && (
+                  <p className="text-[12px] text-gray-5 text-center py-4">No invoices yet.</p>
+                )}
+                {invoices.slice(0, 3).map((inv) => {
+                  const dotColors: Record<string, string> = { overdue: "var(--pm-red)", sent: "var(--pm-blue)", paid: "var(--pm-green)", draft: "var(--pm-gray-5)" };
+                  const bdgClasses: Record<string, string> = { overdue: "pm-dash-bdg-r", sent: "pm-dash-bdg-b", paid: "pm-dash-bdg-g", draft: "pm-dash-bdg-n" };
+                  return (
+                    <div key={inv.id} className="pm-dash-li">
+                      <div className="pm-dash-li-dot" style={{ background: dotColors[inv.status] || "var(--pm-gray-5)" }} />
+                      <div className="pm-dash-li-body">
+                        <div className="pm-dash-li-title">{inv.number} — KES {(inv.amount / 1000).toFixed(0)}K</div>
+                        <div className="pm-dash-li-meta">{inv.client} · Due {inv.due_date ? new Date(inv.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</div>
+                      </div>
+                      <span className={`pm-dash-bdg ${bdgClasses[inv.status] || "pm-dash-bdg-n"}`}>{inv.status}</span>
                     </div>
-                    <div className="pm-dash-li-meta">Due 5 Jul · Overdue</div>
-                  </div>
-                  <span className="pm-dash-bdg pm-dash-bdg-r">Overdue</span>
-                </div>
-
-                {/* List item 2 — Pending */}
-                <div className="pm-dash-li">
-                  <div
-                    className="pm-dash-li-dot"
-                    style={{ background: "var(--pm-blue)" }}
-                  />
-                  <div className="pm-dash-li-body">
-                    <div className="pm-dash-li-title">
-                      Invoice #1043 — KES 95,000
-                    </div>
-                    <div className="pm-dash-li-meta">Due 15 Jul · Pending</div>
-                  </div>
-                  <span className="pm-dash-bdg pm-dash-bdg-b">Pending</span>
-                </div>
-
-                {/* List item 3 — Paid */}
-                <div className="pm-dash-li">
-                  <div
-                    className="pm-dash-li-dot"
-                    style={{ background: "var(--pm-green)" }}
-                  />
-                  <div className="pm-dash-li-body">
-                    <div className="pm-dash-li-title">
-                      Invoice #1044 — KES 32,000
-                    </div>
-                    <div className="pm-dash-li-meta">Paid 2 Jul</div>
-                  </div>
-                  <span className="pm-dash-bdg pm-dash-bdg-g">Paid</span>
-                </div>
+                  );
+                })}
               </div>
             </div>
           </div>

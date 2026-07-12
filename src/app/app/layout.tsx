@@ -29,6 +29,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getRoleLabel } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
 import { UserProvider } from "@/lib/user-context";
+import NotificationBell from "@/components/layout/notification-bell";
 
 /* ── Clean nav structure — super_admin sees everything, others get role-scoped ── */
 interface NavItem {
@@ -343,7 +344,12 @@ export default function PlatformLayout({
         )}
       </button>
 
-      <main className="flex-1 overflow-y-auto min-h-screen">{children}</main>
+      <main className="flex-1 overflow-y-auto min-h-screen">
+        <div className="sticky top-0 z-30 flex items-center justify-end px-6 py-2 bg-[#0A0A0A]/80 backdrop-blur-sm border-b border-[#1E1E1E]">
+          <NotificationBell />
+        </div>
+        {children}
+      </main>
     </div>
     </UserProvider>
   );

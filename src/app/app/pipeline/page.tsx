@@ -29,6 +29,14 @@ const stageMapping: Record<string, string> = {
   completed: "Completed",
 };
 
+const reverseStageMapping: Record<string, string> = {
+  New: "draft",
+  Active: "active",
+  "In Progress": "in_progress",
+  Review: "review",
+  Completed: "completed",
+};
+
 const stageOrder = ["New", "Active", "In Progress", "Review", "Completed"];
 
 interface PipelineProject {
@@ -116,6 +124,20 @@ export default function PipelinePage() {
       }));
       setProjects(mapped);
     } catch { /* silent fallback */ }
+  };
+
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  const handleStageDrop = async (projectId: string, stageName: string) => {
+    const newStatus = reverseStageMapping[stageName];
+    if (!newStatus) return;
+    setUpdating(projectId);
+    try {
+      const supabase = createClient();
+      await supabase.from("projects").update({ status: newStatus }).eq("id", projectId);
+      setProjects((prev) => prev.map((p) => (p.id === projectId ? { ...p, status: newStatus } : p)));
+    } catch { /* silent */ }
+    finally { setUpdating(null); }
   };
 
   const grouped = useMemo(() => {
@@ -220,7 +242,7 @@ export default function PipelinePage() {
         {stageOrder.map((stage) => {
           const stageProjects = grouped[stage] || [];
           return (
-            <KanbanColumn key={stage} title={stage} count={stageProjects.length}>
+            <KanbanColumn key={stage} title={stage} count={stageProjects.length} onDrop={handleStageDrop}>
               {stageProjects.map((p) => (
                 <ProjectCard
                   key={p.id}

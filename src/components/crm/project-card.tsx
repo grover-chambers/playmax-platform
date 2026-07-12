@@ -58,36 +58,43 @@ export default function ProjectCard({
   const typeColor = typeColors[type] || "text-gray-4 border-gray-5/30";
   const typeLabel = typeLabels[type] || type;
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
   return (
-    <Link href={`/workspace/${id}`}>
-      <div className="lead-card group">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <span className="lead-company">{name}</span>
-        </div>
-        <div className="flex items-center gap-1.5 mb-2">
-          <span className={`font-mono text-[8px] font-bold px-1.5 py-[2px] rounded-full border bg-black/40 ${typeColor}`}>
-            {typeLabel}
-          </span>
-        </div>
-        <div className="text-[13px] font-semibold text-yellow mb-2">{value}</div>
-        <div className="flex items-center gap-2 mb-1.5">
-          <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-yellow transition-all"
-              style={{ width: `${progress}%` }}
-            />
+    <div draggable onDragStart={handleDragStart} className="cursor-grab active:cursor-grabbing">
+      <Link href={`/workspace/${id}`}>
+        <div className="lead-card group">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <span className="lead-company">{name}</span>
           </div>
-          <span className="text-[9px] font-mono text-gray-5">{progress}%</span>
-        </div>
-        <div className="lead-meta">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-5">{client}</span>
-            <span className="text-[10px] text-gray-6">·</span>
-            <span className="text-[10px] text-gray-5">{deadline}</span>
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className={`font-mono text-[8px] font-bold px-1.5 py-[2px] rounded-full border bg-black/40 ${typeColor}`}>
+              {typeLabel}
+            </span>
           </div>
-          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full border capitalize ${statusStyles[status] || "text-gray-5 border-gray-5/30"}`}>{status.replace(/_/g, " ")}</span>
+          <div className="text-[13px] font-semibold text-yellow mb-2">{value}</div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-yellow transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-[9px] font-mono text-gray-5">{progress}%</span>
+          </div>
+          <div className="lead-meta">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-5">{client}</span>
+              <span className="text-[10px] text-gray-6">·</span>
+              <span className="text-[10px] text-gray-5">{deadline}</span>
+            </div>
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full border capitalize ${statusStyles[status] || "text-gray-5 border-gray-5/30"}`}>{status.replace(/_/g, " ")}</span>
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
