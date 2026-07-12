@@ -6,7 +6,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const DEMO_PASSWORD = "Demo123!";
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "Demo123!";
 
 const DEMO_ACCOUNTS: Record<
   string,

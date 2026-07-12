@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { sanitizeError } from "@/lib/errors";
 
 export async function GET(request: Request) {
   try {
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
     }
 
     const { data, error } = await query;
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     return NextResponse.json({ data });
   } catch {
     return NextResponse.json({ error: "Failed to fetch reports" }, { status: 500 });
@@ -57,14 +58,14 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (reportError) return NextResponse.json({ error: reportError.message }, { status: 500 });
+    if (reportError) return NextResponse.json({ error: sanitizeError(reportError) }, { status: 500 });
 
     if (metrics && metrics.length > 0) {
       const { error: metricsError } = await supabase
         .from("report_metrics")
         .insert(metrics.map((m: Record<string, unknown>) => ({ ...m, report_id: report.id })));
 
-      if (metricsError) return NextResponse.json({ error: metricsError.message }, { status: 500 });
+      if (metricsError) return NextResponse.json({ error: sanitizeError(metricsError) }, { status: 500 });
     }
 
     return NextResponse.json({ data: report });

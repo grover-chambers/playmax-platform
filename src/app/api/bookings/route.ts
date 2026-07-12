@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { sanitizeError } from "@/lib/errors";
 
 export async function GET() {
   try {
@@ -16,7 +17,7 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     }
 
     return NextResponse.json({ data });
@@ -35,6 +36,9 @@ export async function POST(request: Request) {
 
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!isAdmin(currentUser.role) && currentUser.role !== "finance") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -82,7 +86,7 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     }
 
     return NextResponse.json({ success: true }, { status: 201 });

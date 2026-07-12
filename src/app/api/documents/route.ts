@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { sanitizeError } from "@/lib/errors";
 
 export async function GET(request: Request) {
   try {
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
     }
 
     const { data, error } = await query;
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     return NextResponse.json({ data });
   } catch {
     return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 });
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     return NextResponse.json({ data });
   } catch {
     return NextResponse.json({ error: "Failed to create document" }, { status: 500 });

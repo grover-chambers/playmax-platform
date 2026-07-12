@@ -4,6 +4,7 @@ import {
   getCurrentUser,
   isAdmin,
 } from "@/lib/supabase/api";
+import { sanitizeError } from "@/lib/errors";
 
 export async function GET() {
   try {
@@ -21,7 +22,7 @@ export async function GET() {
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     }
 
     return NextResponse.json({ data });
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
           { status: 409 },
         );
       }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     }
 
     return NextResponse.json({ data }, { status: 201 });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { sanitizeError } from "@/lib/errors";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,7 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .eq("id", id)
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     if (!isAdmin(currentUser.role) && !data.visible_to_client) {
@@ -51,7 +52,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
 
     if (body.metrics !== undefined) {
       await supabase.from("report_metrics").delete().eq("report_id", id);
@@ -60,7 +61,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         const { error: me } = await supabase.from("report_metrics").insert(
           body.metrics.map((m: Record<string, unknown>) => ({ ...m, report_id: id }))
         );
-        if (me) return NextResponse.json({ error: me.message }, { status: 500 });
+        if (me) return NextResponse.json({ error: sanitizeError(me) }, { status: 500 });
       }
     }
 
@@ -82,7 +83,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await supabase.from("report_metrics").delete().eq("report_id", id);
 
     const { error } = await supabase.from("reports").delete().eq("id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
 
     return NextResponse.json({ success: true });
   } catch {

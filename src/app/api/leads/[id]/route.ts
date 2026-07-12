@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { sanitizeError } from "@/lib/errors";
 
 export async function PUT(
   request: Request,
@@ -37,7 +38,7 @@ export async function PUT(
     const { error } = await query.eq("id", id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
