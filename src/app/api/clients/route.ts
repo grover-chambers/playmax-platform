@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
+import { onboardClient } from "@/lib/onboarding";
 
 export async function GET() {
   try {
@@ -73,7 +74,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true }, { status: 201 });
+    const onboarding = await onboardClient({ email, name, company: company || name });
+
+    return NextResponse.json({
+      success: true,
+      onboarding: onboarding.success
+        ? { emailSent: true }
+        : { emailSent: false, reason: onboarding.reason },
+    }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
