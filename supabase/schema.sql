@@ -309,7 +309,7 @@ CREATE POLICY "admin can update research_projects" ON public.research_projects F
 CREATE POLICY "admin can delete research_projects" ON public.research_projects FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Engagements ──────────────────────────────────────
-CREATE POLICY "admin or involved can read engagements" ON public.engagements FOR SELECT TO authenticated USING (public.is_admin() OR auth.uid() = ANY(staff_involved));
+CREATE POLICY "admin or involved can read engagements" ON public.engagements FOR SELECT TO authenticated USING (public.is_admin() OR auth.uid()::text = ANY(staff_involved));
 CREATE POLICY "admin can insert engagements" ON public.engagements FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 CREATE POLICY "admin can update engagements" ON public.engagements FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 CREATE POLICY "admin can delete engagements" ON public.engagements FOR DELETE TO authenticated USING (public.is_admin());
