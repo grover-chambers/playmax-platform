@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CreditCard,
   Download,
@@ -11,6 +12,7 @@ import {
   Building2,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
+import PaymentMethodModal from "@/components/modals/payment-method-modal";
 import Button from "@/components/ui/button";
 import StatusBadge from "@/components/ui/status-badge";
 
@@ -70,6 +72,8 @@ const statusVariant: Record<
 };
 
 export default function BillingPage() {
+  const router = useRouter();
+  const [paymentModal, setPaymentModal] = useState<"update" | "change" | "add" | null>(null);
   return (
     <div>
       {/* ── Page header ── */}
@@ -78,10 +82,10 @@ export default function BillingPage() {
         subtitle="PlayMax Pro · Super Admin"
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="primary" size="sm">
+            <Button variant="primary" size="sm" onClick={() => router.push("/app/admin/billing/upgrade")}>
               <ArrowUpCircle size={14} className="mr-1" /> Upgrade Plan
             </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => window.print()}>
               <Download size={14} className="mr-1" /> Download History
             </Button>
           </div>
@@ -176,10 +180,10 @@ export default function BillingPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" onClick={() => setPaymentModal("update")}>
                 Update
               </Button>
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" onClick={() => setPaymentModal("change")}>
                 Change Payment Method
               </Button>
             </div>
@@ -192,7 +196,7 @@ export default function BillingPage() {
             <h3 className="font-display text-[15px] font-bold text-white">
               Billing History
             </h3>
-            <button className="text-[10px] text-yellow font-mono tracking-wider uppercase hover:underline flex items-center gap-1">
+            <button className="text-[10px] text-yellow font-mono tracking-wider uppercase hover:underline flex items-center gap-1" onClick={() => router.push("/app/admin/billing/history")}>
               View All <ChevronRight size={12} />
             </button>
           </div>
@@ -242,7 +246,7 @@ export default function BillingPage() {
 
             {/* Add payment method row */}
             <div className="px-4 py-3 border-t border-[#1e1e1e]">
-              <button className="flex items-center gap-2 text-[11px] text-yellow hover:underline">
+              <button className="flex items-center gap-2 text-[11px] text-yellow hover:underline" onClick={() => setPaymentModal("add")}>
                 <Building2 size={13} />
                 Add payment method
               </button>
@@ -252,17 +256,23 @@ export default function BillingPage() {
 
         {/* ── Bottom action buttons ── */}
         <div className="flex items-center gap-3 pt-2">
-          <Button variant="primary">
+          <Button variant="primary" onClick={() => router.push("/app/admin/billing/upgrade")}>
             <ArrowUpCircle size={14} className="mr-1.5" /> Upgrade Plan
           </Button>
-          <Button variant="secondary">
+          <Button variant="secondary" onClick={() => window.print()}>
             <Download size={14} className="mr-1.5" /> Download Billing History
           </Button>
-          <Button variant="secondary">
+          <Button variant="secondary" onClick={() => setPaymentModal("change")}>
             <CreditCard size={14} className="mr-1.5" /> Change Payment Method
           </Button>
         </div>
       </div>
+
+      <PaymentMethodModal
+        open={paymentModal !== null}
+        onClose={() => setPaymentModal(null)}
+        mode={paymentModal ?? "add"}
+      />
     </div>
   );
 }

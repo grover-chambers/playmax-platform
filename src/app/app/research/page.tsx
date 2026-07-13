@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { Plus, Download, Upload } from "lucide-react";
+import NewResearchModal from "@/components/modals/new-research-modal";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
@@ -177,9 +178,10 @@ const statusVariantMap: Record<string, "active" | "review" | "draft"> = {
 
 // ── Page Component ────────────────────────────────────
 export default function ResearchPage() {
-  const [activeFilter, setActiveFilter] = useState("All");
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState(sampleProjects[0].id);
+  const [showNewResearch, setShowNewResearch] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
   const filtered = sampleProjects.filter((p) => {
@@ -263,7 +265,7 @@ export default function ResearchPage() {
               >
                 <Download size={12} className="mr-1" /> Export
               </Button>
-              <Button variant="primary" size="sm">
+              <Button variant="primary" size="sm" onClick={() => setShowNewResearch(true)}>
                 <Plus size={12} className="mr-1" /> New Research
               </Button>
             </>
@@ -460,6 +462,11 @@ export default function ResearchPage() {
           </div>
         )}
       </div>
+
+      <NewResearchModal
+        open={showNewResearch}
+        onClose={() => setShowNewResearch(false)}
+      />
     </div>
   );
 }

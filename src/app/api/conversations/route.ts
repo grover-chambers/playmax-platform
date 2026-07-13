@@ -1,117 +1,102 @@
 import { NextResponse } from "next/server";
-
-const conversations = [
-  {
-    id: "conv-1",
-    contactName: "Twiga Foods",
-    contactInitials: "TF",
-    channel: "whatsapp",
-    preview: "Looks great — send over the brand identity deck when ready",
-    time: "2m ago",
-    unread: 2,
-    projectName: "Brand Identity Refresh",
-    pipelineValue: "KES 450,000",
-    status: "open",
-  },
-  {
-    id: "conv-2",
-    contactName: "Bidco Africa",
-    contactInitials: "BA",
-    channel: "email",
-    preview: "Can we get a quote for the Mombasa Rd billboard?",
-    time: "18m ago",
-    unread: 1,
-    projectName: "Billboard Inquiry",
-    pipelineValue: "KES 120,000",
-    status: "open",
-  },
-  {
-    id: "conv-3",
-    contactName: "Naivas",
-    contactInitials: "NV",
-    channel: "whatsapp",
-    preview: "The research report is exactly what we needed. Thanks!",
-    time: "1h ago",
-    unread: 0,
-    projectName: "Market Research Report",
-    pipelineValue: "KES 280,000",
-    status: "open",
-  },
-  {
-    id: "conv-4",
-    contactName: "P&G East Africa",
-    contactInitials: "PG",
-    channel: "whatsapp",
-    preview: "We'd like to expand the scope to include digital screens",
-    time: "3h ago",
-    unread: 3,
-    projectName: "Campaign Expansion",
-    pipelineValue: "KES 890,000",
-    status: "open",
-  },
-  {
-    id: "conv-5",
-    contactName: "Java House",
-    contactInitials: "JH",
-    channel: "email",
-    preview: "Please review the attached proposal for Q3 campaign",
-    time: "5h ago",
-    unread: 0,
-    projectName: "Q3 Campaign Proposal",
-    pipelineValue: "KES 320,000",
-    status: "open",
-  },
-  {
-    id: "conv-6",
-    contactName: "Unga Group",
-    contactInitials: "UG",
-    channel: "whatsapp",
-    preview: "Hi, we're interested in your media placement services",
-    time: "8h ago",
-    unread: 1,
-    projectName: "New Lead",
-    pipelineValue: "KES 150,000",
-    status: "open",
-    autoReply: true,
-  },
-];
+import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { sanitizeError } from "@/lib/errors";
 
 export async function GET() {
-  return NextResponse.json({ conversations });
-}
-
-export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { contactName, channel, preview, projectName, pipelineValue } = body;
-
-    if (!contactName || !channel || !preview) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const newConv = {
-      id: `conv-${Date.now()}`,
-      contactName,
-      contactInitials: contactName
+    let query = supabase
+      .from("conversations")
+      .select("*, client:clients(name, company)")
+      .order("last_message_at", { ascending: false, nullsFirst: false });
+
+    if (currentUser.role === "crm_staff") {
+      query = query.eq("assigned_to", currentUser.id);
+    }
+
+    const { data, error } = await query;
+    if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
+
+    const conversations = (data || []).map((c) => ({
+      id: c.id,
+      contactName: c.contact_name,
+      contactInitials: (c.contact_name || "")
         .split(" ")
         .map((w: string) => w[0])
         .join("")
         .slice(0, 2)
         .toUpperCase(),
-      channel,
-      preview,
-      time: "now",
-      unread: 1,
-      projectName: projectName || null,
-      pipelineValue: pipelineValue || null,
-      status: "open",
-    };
+      channel: c.channel,
+      preview: "",
+      time: "",
+      unread: 0,
+      projectName: null,
+      pipelineValue: null,
+      status: c.status,
+      autoReply: false,
+    }));
 
-    return NextResponse.json({ conversation: newConv }, { status: 201 });
+    return NextResponse.json({ conversations });
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: "Failed to fetch conversations" }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { client_id, contact_name, channel } = body;
+
+    if (!client_id || !contact_name || !channel) {
+      return NextResponse.json({ error: "Missing required fields: client_id, contact_name, channel" }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .insert({
+        client_id,
+        contact_name,
+        channel,
+        assigned_to: currentUser.id,
+        status: "open",
+        metadata: {},
+      })
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
+
+    return NextResponse.json({
+      conversation: {
+        id: data.id,
+        contactName: data.contact_name,
+        contactInitials: (data.contact_name || "")
+          .split(" ")
+          .map((w: string) => w[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase(),
+        channel: data.channel,
+        preview: "",
+        time: "now",
+        unread: 0,
+        projectName: null,
+        pipelineValue: null,
+        status: data.status,
+      },
+    }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
   }
 }

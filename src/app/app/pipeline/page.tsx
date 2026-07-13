@@ -126,7 +126,7 @@ export default function PipelinePage() {
     } catch { /* silent fallback */ }
   };
 
-  const [updating, setUpdating] = useState<string | null>(null);
+  const [, setUpdating] = useState<string | null>(null);
 
   const handleStageDrop = async (projectId: string, stageName: string) => {
     const newStatus = reverseStageMapping[stageName];

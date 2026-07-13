@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, RefreshCw, Eye, RotateCcw, Link } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
+import ConfirmActionModal from "@/components/modals/confirm-action-modal";
 import Button from "@/components/ui/button";
 import StatusBadge from "@/components/ui/status-badge";
 
@@ -70,8 +72,10 @@ const STATUS_BADGE_MAP: Record<TemplateStatus, "active" | "review" | "draft"> =
 /* ── Page ──────────────────────────────────────────── */
 
 export default function WhatsAppTemplatesPage() {
+  const router = useRouter();
   const [templates] = useState<WhatsAppTemplate[]>(sampleTemplates);
   const [wabaIdHidden, setWabaIdHidden] = useState(true);
+  const [confirmAction, setConfirmAction] = useState<"rotate" | "reconnect" | null>(null);
 
   const approvedCount = templates.filter((t) => t.status === "Approved").length;
   const pendingCount = templates.filter((t) => t.status === "Pending").length;
@@ -85,7 +89,7 @@ export default function WhatsAppTemplatesPage() {
         title="WhatsApp Templates"
         subtitle={`${templates.length} template${templates.length !== 1 ? "s" : ""}`}
         actions={
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={() => router.push("/app/admin/whatsapp/submit")}>
             <Plus size={12} className="mr-1" /> Submit New Template
           </Button>
         }
@@ -197,12 +201,14 @@ export default function WhatsAppTemplatesPage() {
                       <button
                         className="btn-sm py-1! px-2.5! text-[10px] hover:bg-yellow/10! hover:text-yellow!"
                         title="Sync status with WhatsApp"
+                        onClick={() => router.push("/app/admin/whatsapp")}
                       >
                         <RefreshCw className="w-3 h-3" />
                       </button>
                       <button
                         className="btn-sm py-1! px-2.5! text-[10px] hover:bg-white/10!"
                         title="View template details"
+                        onClick={() => router.push("/app/admin/whatsapp")}
                       >
                         <Eye className="w-3 h-3" />
                       </button>
@@ -264,15 +270,31 @@ export default function WhatsAppTemplatesPage() {
 
           {/* Actions */}
           <div className="flex gap-3 mt-5 pt-4 border-t border-[#1e1e1e]">
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => setConfirmAction("rotate")}>
               <RotateCcw className="w-3 h-3 mr-1" /> Rotate API Key
             </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => setConfirmAction("reconnect")}>
               <Link className="w-3 h-3 mr-1" /> Reconnect
             </Button>
           </div>
         </div>
       </div>
+
+      <ConfirmActionModal
+        open={confirmAction === "rotate"}
+        onClose={() => setConfirmAction(null)}
+        title="Rotate API Key"
+        message="This will invalidate the current API key. All services using this key will lose access until updated with the new key. Continue?"
+        confirmLabel="Rotate Key"
+      />
+
+      <ConfirmActionModal
+        open={confirmAction === "reconnect"}
+        onClose={() => setConfirmAction(null)}
+        title="Reconnect WhatsApp"
+        message="This will attempt to re-establish the connection to WhatsApp Business API. Your current templates and settings will be preserved."
+        confirmLabel="Reconnect"
+      />
     </div>
   );
 }

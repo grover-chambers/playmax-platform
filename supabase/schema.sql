@@ -245,163 +245,223 @@ CREATE OR REPLACE FUNCTION public.is_admin() RETURNS boolean AS $$
 $$ LANGUAGE sql STABLE;
 
 -- ── Clients ──────────────────────────────────────────
+DROP POLICY IF EXISTS "admin can read all clients" ON public.clients;
 CREATE POLICY "admin can read all clients" ON public.clients FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin can insert clients" ON public.clients;
 CREATE POLICY "admin can insert clients" ON public.clients FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "admin can update clients" ON public.clients;
 CREATE POLICY "admin can update clients" ON public.clients FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin can delete clients" ON public.clients;
 CREATE POLICY "admin can delete clients" ON public.clients FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Leads ────────────────────────────────────────────
+DROP POLICY IF EXISTS "Anyone can insert leads" ON public.leads;
 CREATE POLICY "Anyone can insert leads" ON public.leads FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "admin or assigned can read leads" ON public.leads;
 CREATE POLICY "admin or assigned can read leads" ON public.leads FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin or assigned can update leads" ON public.leads;
 CREATE POLICY "admin or assigned can update leads" ON public.leads FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin can delete leads" ON public.leads;
 CREATE POLICY "admin can delete leads" ON public.leads FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Projects ─────────────────────────────────────────
+DROP POLICY IF EXISTS "admin or assigned can read projects" ON public.projects;
 CREATE POLICY "admin or assigned can read projects" ON public.projects FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin can insert projects" ON public.projects;
 CREATE POLICY "admin can insert projects" ON public.projects FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "admin or assigned can update projects" ON public.projects;
 CREATE POLICY "admin or assigned can update projects" ON public.projects FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin can delete projects" ON public.projects;
 CREATE POLICY "admin can delete projects" ON public.projects FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Tasks ────────────────────────────────────────────
+DROP POLICY IF EXISTS "admin or assigned can read tasks" ON public.tasks;
 CREATE POLICY "admin or assigned can read tasks" ON public.tasks FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin can insert tasks" ON public.tasks;
 CREATE POLICY "admin can insert tasks" ON public.tasks FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "admin or assigned can update tasks" ON public.tasks;
 CREATE POLICY "admin or assigned can update tasks" ON public.tasks FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin can delete tasks" ON public.tasks;
 CREATE POLICY "admin can delete tasks" ON public.tasks FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Inventory ────────────────────────────────────────
+DROP POLICY IF EXISTS "authenticated can read inventory" ON public.inventory;
 CREATE POLICY "authenticated can read inventory" ON public.inventory FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "admin can insert inventory" ON public.inventory;
 CREATE POLICY "admin can insert inventory" ON public.inventory FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "admin can update inventory" ON public.inventory;
 CREATE POLICY "admin can update inventory" ON public.inventory FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "admin can delete inventory" ON public.inventory;
 CREATE POLICY "admin can delete inventory" ON public.inventory FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Bookings ─────────────────────────────────────────
+DROP POLICY IF EXISTS "authenticated can read bookings" ON public.bookings;
 CREATE POLICY "authenticated can read bookings" ON public.bookings FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "authenticated can insert bookings" ON public.bookings;
 CREATE POLICY "authenticated can insert bookings" ON public.bookings FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "authenticated can update bookings" ON public.bookings;
 CREATE POLICY "authenticated can update bookings" ON public.bookings FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "admin can delete bookings" ON public.bookings;
 CREATE POLICY "admin can delete bookings" ON public.bookings FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Invoices ─────────────────────────────────────────
+DROP POLICY IF EXISTS "finance or admin can read invoices" ON public.invoices;
 CREATE POLICY "finance or admin can read invoices" ON public.invoices FOR SELECT TO authenticated USING (public.is_admin() OR public.user_role() = 'finance');
+DROP POLICY IF EXISTS "finance or admin can insert invoices" ON public.invoices;
 CREATE POLICY "finance or admin can insert invoices" ON public.invoices FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR public.user_role() = 'finance');
+DROP POLICY IF EXISTS "finance or admin can update invoices" ON public.invoices;
 CREATE POLICY "finance or admin can update invoices" ON public.invoices FOR UPDATE TO authenticated USING (public.is_admin() OR public.user_role() = 'finance') WITH CHECK (public.is_admin() OR public.user_role() = 'finance');
+DROP POLICY IF EXISTS "admin can delete invoices" ON public.invoices;
 CREATE POLICY "admin can delete invoices" ON public.invoices FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Conversations ────────────────────────────────────
+DROP POLICY IF EXISTS "admin or assigned can read conversations" ON public.conversations;
 CREATE POLICY "admin or assigned can read conversations" ON public.conversations FOR SELECT TO authenticated USING (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin or assigned can insert conversations" ON public.conversations;
 CREATE POLICY "admin or assigned can insert conversations" ON public.conversations FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin or assigned can update conversations" ON public.conversations;
 CREATE POLICY "admin or assigned can update conversations" ON public.conversations FOR UPDATE TO authenticated USING (public.is_admin() OR assigned_to = auth.uid()) WITH CHECK (public.is_admin() OR assigned_to = auth.uid());
+DROP POLICY IF EXISTS "admin can delete conversations" ON public.conversations;
 CREATE POLICY "admin can delete conversations" ON public.conversations FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Messages ─────────────────────────────────────────
+DROP POLICY IF EXISTS "authenticated can read messages" ON public.messages;
 CREATE POLICY "authenticated can read messages" ON public.messages FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "authenticated can insert messages" ON public.messages;
 CREATE POLICY "authenticated can insert messages" ON public.messages FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "admin can delete messages" ON public.messages;
 CREATE POLICY "admin can delete messages" ON public.messages FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Deliverables ─────────────────────────────────────
+DROP POLICY IF EXISTS "admin or uploader can read deliverables" ON public.deliverables;
 CREATE POLICY "admin or uploader can read deliverables" ON public.deliverables FOR SELECT TO authenticated USING (public.is_admin() OR uploaded_by = auth.uid());
+DROP POLICY IF EXISTS "admin or uploader can insert deliverables" ON public.deliverables;
 CREATE POLICY "admin or uploader can insert deliverables" ON public.deliverables FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR uploaded_by = auth.uid());
+DROP POLICY IF EXISTS "admin or uploader can delete deliverables" ON public.deliverables;
 CREATE POLICY "admin or uploader can delete deliverables" ON public.deliverables FOR DELETE TO authenticated USING (public.is_admin() OR uploaded_by = auth.uid());
 
 -- ── Research Projects ────────────────────────────────
+DROP POLICY IF EXISTS "admin or assigned can read research_projects" ON public.research_projects;
 CREATE POLICY "admin or assigned can read research_projects" ON public.research_projects FOR SELECT TO authenticated USING (public.is_admin() OR auth.uid() IN (SELECT assigned_to FROM public.projects WHERE id = research_projects.project_id));
+DROP POLICY IF EXISTS "admin can insert research_projects" ON public.research_projects;
 CREATE POLICY "admin can insert research_projects" ON public.research_projects FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "admin can update research_projects" ON public.research_projects;
 CREATE POLICY "admin can update research_projects" ON public.research_projects FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "admin can delete research_projects" ON public.research_projects;
 CREATE POLICY "admin can delete research_projects" ON public.research_projects FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Engagements ──────────────────────────────────────
+DROP POLICY IF EXISTS "admin or involved can read engagements" ON public.engagements;
 CREATE POLICY "admin or involved can read engagements" ON public.engagements FOR SELECT TO authenticated USING (public.is_admin() OR auth.uid()::text = ANY(staff_involved));
+DROP POLICY IF EXISTS "admin can insert engagements" ON public.engagements;
 CREATE POLICY "admin can insert engagements" ON public.engagements FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "admin can update engagements" ON public.engagements;
 CREATE POLICY "admin can update engagements" ON public.engagements FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "admin can delete engagements" ON public.engagements;
 CREATE POLICY "admin can delete engagements" ON public.engagements FOR DELETE TO authenticated USING (public.is_admin());
 
 -- ── Activity Log ─────────────────────────────────────
+DROP POLICY IF EXISTS "authenticated can read activity_log" ON public.activity_log;
 CREATE POLICY "authenticated can read activity_log" ON public.activity_log FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "authenticated can insert activity_log" ON public.activity_log;
 CREATE POLICY "authenticated can insert activity_log" ON public.activity_log FOR INSERT TO authenticated WITH CHECK (true);
 
-CREATE INDEX idx_clients_status ON public.clients (status);
-CREATE INDEX idx_clients_assigned_to ON public.clients (assigned_to);
-CREATE INDEX idx_clients_created_at ON public.clients (created_at);
+CREATE INDEX IF NOT EXISTS idx_clients_status ON public.clients (status);
+CREATE INDEX IF NOT EXISTS idx_clients_assigned_to ON public.clients (assigned_to);
+CREATE INDEX IF NOT EXISTS idx_clients_created_at ON public.clients (created_at);
 
-CREATE INDEX idx_leads_status ON public.leads (status);
-CREATE INDEX idx_leads_source ON public.leads (source);
-CREATE INDEX idx_leads_assigned_to ON public.leads (assigned_to);
-CREATE INDEX idx_leads_created_at ON public.leads (created_at);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON public.leads (status);
+CREATE INDEX IF NOT EXISTS idx_leads_source ON public.leads (source);
+CREATE INDEX IF NOT EXISTS idx_leads_assigned_to ON public.leads (assigned_to);
+CREATE INDEX IF NOT EXISTS idx_leads_created_at ON public.leads (created_at);
 
-CREATE INDEX idx_projects_client_id ON public.projects (client_id);
-CREATE INDEX idx_projects_status ON public.projects (status);
-CREATE INDEX idx_projects_type ON public.projects (type);
-CREATE INDEX idx_projects_assigned_to ON public.projects (assigned_to);
-CREATE INDEX idx_projects_created_at ON public.projects (created_at);
+CREATE INDEX IF NOT EXISTS idx_projects_client_id ON public.projects (client_id);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON public.projects (status);
+CREATE INDEX IF NOT EXISTS idx_projects_type ON public.projects (type);
+CREATE INDEX IF NOT EXISTS idx_projects_assigned_to ON public.projects (assigned_to);
+CREATE INDEX IF NOT EXISTS idx_projects_created_at ON public.projects (created_at);
 
-CREATE INDEX idx_tasks_project_id ON public.tasks (project_id);
-CREATE INDEX idx_tasks_status ON public.tasks (status);
-CREATE INDEX idx_tasks_priority ON public.tasks (priority);
-CREATE INDEX idx_tasks_assigned_to ON public.tasks (assigned_to);
-CREATE INDEX idx_tasks_due_date ON public.tasks (due_date);
+CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON public.tasks (project_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON public.tasks (status);
+CREATE INDEX IF NOT EXISTS idx_tasks_priority ON public.tasks (priority);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON public.tasks (assigned_to);
+CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON public.tasks (due_date);
 
-CREATE INDEX idx_inventory_type ON public.inventory (type);
-CREATE INDEX idx_inventory_status ON public.inventory (status);
-CREATE INDEX idx_inventory_location ON public.inventory (location);
-CREATE INDEX idx_inventory_area ON public.inventory (area);
-CREATE INDEX idx_inventory_booked_by ON public.inventory (booked_by);
+CREATE INDEX IF NOT EXISTS idx_inventory_type ON public.inventory (type);
+CREATE INDEX IF NOT EXISTS idx_inventory_status ON public.inventory (status);
+CREATE INDEX IF NOT EXISTS idx_inventory_location ON public.inventory (location);
+CREATE INDEX IF NOT EXISTS idx_inventory_area ON public.inventory (area);
+CREATE INDEX IF NOT EXISTS idx_inventory_booked_by ON public.inventory (booked_by);
 
-CREATE INDEX idx_bookings_client_id ON public.bookings (client_id);
-CREATE INDEX idx_bookings_inventory_id ON public.bookings (inventory_id);
-CREATE INDEX idx_bookings_status ON public.bookings (status);
-CREATE INDEX idx_bookings_start_date ON public.bookings (start_date);
-CREATE INDEX idx_bookings_end_date ON public.bookings (end_date);
+CREATE INDEX IF NOT EXISTS idx_bookings_client_id ON public.bookings (client_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_inventory_id ON public.bookings (inventory_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON public.bookings (status);
+CREATE INDEX IF NOT EXISTS idx_bookings_start_date ON public.bookings (start_date);
+CREATE INDEX IF NOT EXISTS idx_bookings_end_date ON public.bookings (end_date);
 
-CREATE INDEX idx_invoices_client_id ON public.invoices (client_id);
-CREATE INDEX idx_invoices_project_id ON public.invoices (project_id);
-CREATE INDEX idx_invoices_status ON public.invoices (status);
-CREATE INDEX idx_invoices_invoice_number ON public.invoices (invoice_number);
-CREATE INDEX idx_invoices_due_date ON public.invoices (due_date);
+CREATE INDEX IF NOT EXISTS idx_invoices_client_id ON public.invoices (client_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_project_id ON public.invoices (project_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices (status);
+CREATE INDEX IF NOT EXISTS idx_invoices_invoice_number ON public.invoices (invoice_number);
+CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON public.invoices (due_date);
 
-CREATE INDEX idx_conversations_client_id ON public.conversations (client_id);
-CREATE INDEX idx_conversations_channel ON public.conversations (channel);
-CREATE INDEX idx_conversations_status ON public.conversations (status);
-CREATE INDEX idx_conversations_assigned_to ON public.conversations (assigned_to);
-CREATE INDEX idx_conversations_last_message_at ON public.conversations (last_message_at);
+CREATE INDEX IF NOT EXISTS idx_conversations_client_id ON public.conversations (client_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_channel ON public.conversations (channel);
+CREATE INDEX IF NOT EXISTS idx_conversations_status ON public.conversations (status);
+CREATE INDEX IF NOT EXISTS idx_conversations_assigned_to ON public.conversations (assigned_to);
+CREATE INDEX IF NOT EXISTS idx_conversations_last_message_at ON public.conversations (last_message_at);
 
-CREATE INDEX idx_messages_conversation_id ON public.messages (conversation_id);
-CREATE INDEX idx_messages_channel ON public.messages (channel);
-CREATE INDEX idx_messages_created_at ON public.messages (created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON public.messages (conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_channel ON public.messages (channel);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON public.messages (created_at);
 
-CREATE INDEX idx_deliverables_project_id ON public.deliverables (project_id);
-CREATE INDEX idx_deliverables_uploaded_by ON public.deliverables (uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_deliverables_project_id ON public.deliverables (project_id);
+CREATE INDEX IF NOT EXISTS idx_deliverables_uploaded_by ON public.deliverables (uploaded_by);
 
-CREATE INDEX idx_research_projects_client_id ON public.research_projects (client_id);
-CREATE INDEX idx_research_projects_project_id ON public.research_projects (project_id);
-CREATE INDEX idx_research_projects_type ON public.research_projects (type);
-CREATE INDEX idx_research_projects_status ON public.research_projects (status);
-CREATE INDEX idx_research_projects_due_date ON public.research_projects (due_date);
+CREATE INDEX IF NOT EXISTS idx_research_projects_client_id ON public.research_projects (client_id);
+CREATE INDEX IF NOT EXISTS idx_research_projects_project_id ON public.research_projects (project_id);
+CREATE INDEX IF NOT EXISTS idx_research_projects_type ON public.research_projects (type);
+CREATE INDEX IF NOT EXISTS idx_research_projects_status ON public.research_projects (status);
+CREATE INDEX IF NOT EXISTS idx_research_projects_due_date ON public.research_projects (due_date);
 
-CREATE INDEX idx_automations_type ON public.automations (type);
-CREATE INDEX idx_automations_enabled ON public.automations (enabled);
+CREATE INDEX IF NOT EXISTS idx_automations_type ON public.automations (type);
+CREATE INDEX IF NOT EXISTS idx_automations_enabled ON public.automations (enabled);
 
-CREATE INDEX idx_templates_type ON public.templates (type);
+CREATE INDEX IF NOT EXISTS idx_templates_type ON public.templates (type);
 
-CREATE INDEX idx_engagements_client_id ON public.engagements (client_id);
-CREATE INDEX idx_engagements_project_id ON public.engagements (project_id);
-CREATE INDEX idx_engagements_date ON public.engagements (date);
-CREATE INDEX idx_engagements_engagement_type ON public.engagements (engagement_type);
+CREATE INDEX IF NOT EXISTS idx_engagements_client_id ON public.engagements (client_id);
+CREATE INDEX IF NOT EXISTS idx_engagements_project_id ON public.engagements (project_id);
+CREATE INDEX IF NOT EXISTS idx_engagements_date ON public.engagements (date);
+CREATE INDEX IF NOT EXISTS idx_engagements_engagement_type ON public.engagements (engagement_type);
 
-CREATE INDEX idx_activity_log_client_id ON public.activity_log (client_id);
-CREATE INDEX idx_activity_log_project_id ON public.activity_log (project_id);
-CREATE INDEX idx_activity_log_user_id ON public.activity_log (user_id);
-CREATE INDEX idx_activity_log_created_at ON public.activity_log (created_at);
+CREATE INDEX IF NOT EXISTS idx_activity_log_client_id ON public.activity_log (client_id);
+CREATE INDEX IF NOT EXISTS idx_activity_log_project_id ON public.activity_log (project_id);
+CREATE INDEX IF NOT EXISTS idx_activity_log_user_id ON public.activity_log (user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_log_created_at ON public.activity_log (created_at);
 
+DROP TRIGGER IF EXISTS set_updated_at ON public.clients;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.clients FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.leads;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.leads FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.projects;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.tasks;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.tasks FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.inventory;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.inventory FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.bookings;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.bookings FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.invoices;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.conversations;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.engagements;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.engagements FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.research_projects;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.research_projects FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.automations;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.automations FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.templates;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.templates FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ── ARTICLES (CMS-managed blog content) ──────────────
@@ -425,19 +485,22 @@ CREATE TABLE IF NOT EXISTS public.articles (
 
 ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Articles are publicly readable" ON public.articles;
 CREATE POLICY "Articles are publicly readable"
   ON public.articles FOR SELECT
   USING (published = true OR public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can manage articles" ON public.articles;
 CREATE POLICY "Admins can manage articles"
   ON public.articles FOR ALL
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
-CREATE INDEX idx_articles_slug ON public.articles (slug);
-CREATE INDEX idx_articles_published ON public.articles (published);
-CREATE INDEX idx_articles_date ON public.articles (date DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_slug ON public.articles (slug);
+CREATE INDEX IF NOT EXISTS idx_articles_published ON public.articles (published);
+CREATE INDEX IF NOT EXISTS idx_articles_date ON public.articles (date DESC);
 
+DROP TRIGGER IF EXISTS set_updated_at ON public.articles;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.articles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
+import InvoiceDetailModal from "@/components/modals/invoice-detail-modal";
 import {
   Plus,
   Send,
@@ -85,6 +86,7 @@ const initialInvoices: Invoice[] = [
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [modalOpen, setModalOpen] = useState(false);
+  const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
 
   // New invoice form state
   const [formClient, setFormClient] = useState("");
@@ -325,6 +327,7 @@ export default function InvoicesPage() {
                       <button
                         className="text-[11px] text-gray-5 hover:text-yellow transition-colors font-medium flex items-center gap-1"
                         title="View details"
+                        onClick={() => setDetailInvoice(inv)}
                       >
                         <Eye size={12} />
                       </button>
@@ -576,6 +579,12 @@ export default function InvoicesPage() {
           </div>
         </div>
       </Modal>
+
+      <InvoiceDetailModal
+        open={detailInvoice !== null}
+        onClose={() => setDetailInvoice(null)}
+        invoice={detailInvoice}
+      />
     </div>
   );
 }

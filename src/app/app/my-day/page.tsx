@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   AlertCircle,
@@ -192,6 +193,7 @@ function TaskCheckbox({ done }: { done: boolean }) {
 /* ── Page ───────────────────────────────────────────────── */
 
 export default function MyDayPage() {
+  const router = useRouter();
   const [showNewTask, setShowNewTask] = useState(false);
   const [myTasks, setMyTasks] = useState(tasks);
   const [myLeads, setMyLeads] = useState(leads);
@@ -387,7 +389,7 @@ export default function MyDayPage() {
                 />
                 My leads
               </span>
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" onClick={() => router.push("/app/pipeline")}>
                 View all
               </Button>
             </div>

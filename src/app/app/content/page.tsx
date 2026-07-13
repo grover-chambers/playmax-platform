@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import {
@@ -178,6 +179,7 @@ function HealthIcon({ status }: { status: "good" | "warn" | "stale" }) {
 }
 
 export default function ContentDeskPage() {
+  const router = useRouter();
   return (
     <div
       className="flex flex-col h-full"
@@ -251,7 +253,7 @@ export default function ContentDeskPage() {
                 <span className="pm-dash-card-t">Content Queue</span>
                 <span className="pm-dash-bdg pm-dash-bdg-r">3 need action</span>
               </div>
-              <button className="btn-sm" type="button">
+              <button className="btn-sm" type="button" onClick={() => router.push("/app/content/articles")}>
                 <Eye className="w-3.5 h-3.5" />
                 View all
               </button>
@@ -287,6 +289,7 @@ export default function ContentDeskPage() {
                             type="button"
                             title="Edit"
                             style={{ color: "var(--pm-gray-4)" }}
+                            onClick={() => router.push("/app/content/articles")}
                           >
                             <FileEdit className="w-3.5 h-3.5" />
                           </button>
@@ -295,6 +298,7 @@ export default function ContentDeskPage() {
                             type="button"
                             title="Review / Approve"
                             style={{ color: "var(--pm-gray-4)" }}
+                            onClick={() => router.push("/app/content")}
                           >
                             <FileCheck className="w-3.5 h-3.5" />
                           </button>
@@ -303,6 +307,7 @@ export default function ContentDeskPage() {
                             type="button"
                             title="Open"
                             style={{ color: "var(--pm-gray-4)" }}
+                            onClick={() => router.push("/app/content/articles")}
                           >
                             <ArrowUpRight className="w-3.5 h-3.5" />
                           </button>
@@ -418,7 +423,7 @@ export default function ContentDeskPage() {
           >
             <div className="pm-dash-card-h">
               <span className="pm-dash-card-t">Staff Directory</span>
-              <Button variant="primary" size="sm">
+              <Button variant="primary" size="sm" onClick={() => router.push("/app/admin/staff")}>
                 <UserPlus className="w-3.5 h-3.5" />
                 Add staff
               </Button>

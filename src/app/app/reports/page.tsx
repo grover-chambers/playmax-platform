@@ -17,6 +17,7 @@ import Button from "@/components/ui/button";
 import FilterPill from "@/components/ui/filter-pill";
 import NewReportModal from "@/components/modals/new-report-modal";
 import { formatTimeAgo } from "@/lib/utils";
+import { downloadCSV } from "@/lib/export-utils";
 
 const periodFilters = ["This Month", "This Quarter", "This Year", "Custom"];
 
@@ -34,6 +35,7 @@ export default function ReportsPage() {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewReport, setShowNewReport] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   function loadReports() {
     fetch("/api/reports")
@@ -58,7 +60,7 @@ export default function ReportsPage() {
               <Plus className="w-3.5 h-3.5" />
               New Report
             </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => window.print()}>
               <Download className="w-3.5 h-3.5" />
               Export PDF
             </Button>
@@ -78,7 +80,7 @@ export default function ReportsPage() {
           </FilterPill>
         ))}
         <div className="ml-auto">
-          <Button variant="secondary" size="sm">
+          <Button variant="secondary" size="sm" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="w-3.5 h-3.5" />
             More filters
           </Button>
@@ -393,7 +395,7 @@ export default function ReportsPage() {
         <div className="bg-black-2 border border-[#1e1e1e] rounded-lg">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#1e1e1e]">
             <h3 className="text-[13px] font-semibold">Recent Activity</h3>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => downloadCSV(["Action", "Entity", "User", "Time"], [], "recent-activity")}>
               <Download className="w-3.5 h-3.5" />
               Export CSV
             </Button>
