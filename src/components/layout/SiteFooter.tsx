@@ -171,13 +171,28 @@ export function SiteFooter() {
       >
         <div
           style={{
+            display: "flex",
+            gap: "1px",
             fontFamily: "var(--font-display)",
             fontSize: "20px",
             fontWeight: 700,
             letterSpacing: "-0.02em",
+            lineHeight: 1,
           }}
         >
-          MARKET<span style={{ color: "var(--pm-yellow)" }}> LINK</span>
+          {"PLAYMAX".split("").map((char, i) => (
+            <span
+              key={i}
+              style={{
+                display: "inline-block",
+                animation: "pm-bounce-letter 2.4s ease-in-out infinite",
+                animationDelay: `${i * 0.12}s`,
+                color: i < 4 ? "var(--pm-navy)" : "#C9A04A",
+              }}
+            >
+              {char}
+            </span>
+          ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <p style={{ fontSize: "13px", color: "var(--pm-black)" }}>
