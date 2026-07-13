@@ -261,41 +261,13 @@ export function SiteFooter() {
       <div
         className="site-container"
         style={{
-          paddingBottom: "24px",
+          paddingBottom: "32px",
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          justifyContent: "center",
           gap: "20px",
+          flexWrap: "wrap",
         }}
       >
-        {/* PLAYMAX bouncing logo — last remnant of the old brand */}
-        <div
-          style={{
-            display: "flex",
-            gap: "1px",
-            fontFamily: "var(--font-display)",
-            fontSize: "28px",
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            lineHeight: 1,
-          }}
-        >
-          {"PLAYMAX".split("").map((char, i) => (
-            <span
-              key={i}
-              style={{
-                display: "inline-block",
-                animation: "pm-bounce-letter 2.4s ease-in-out infinite",
-                animationDelay: `${i * 0.12}s`,
-                color: i < 4 ? "var(--pm-navy)" : "#C9A04A",
-              }}
-            >
-              {char}
-            </span>
-          ))}
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap" }}>
         {SOCIAL_LINKS.map((s) => (
           <a
             key={s.label}
@@ -330,7 +302,6 @@ export function SiteFooter() {
             {s.icon}
           </a>
         ))}
-      </div>
       </div>
     </footer>
   );
