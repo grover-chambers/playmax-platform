@@ -17,7 +17,7 @@ export const ARTICLES: Article[] = [
     slug: "kenya-billboard-market-shifting-digital",
     title: "Why Kenya's Billboard Market Is Shifting to Digital",
     category: "Industry Trends",
-    author: "PlayMax Research Team",
+    author: "Market Link Research Team",
     date: "2026-06-18",
     readTime: "7 min read",
     excerpt:
@@ -58,7 +58,7 @@ For brands and agencies, the message is clear: digital outdoor advertising is no
     slug: "how-to-pick-right-market-research-method",
     title: "How to Pick the Right Market Research Method for Your Product",
     category: "Research Methods",
-    author: "PlayMax Research Team",
+    author: "Market Link Research Team",
     date: "2026-06-10",
     readTime: "8 min read",
     excerpt:
@@ -104,14 +104,14 @@ Before commissioning new research, ask yourself what data you already have. Sale
 
 The most effective research programs combine methods. A typical sequence might be: data analysis to identify the question → qualitative research to understand the context → a quantitative survey to measure the scale → ethnographic observation to validate. This approach, known as sequential mixed methods, produces insights that are both deep and broadly applicable.
 
-At PlayMax, we design every research program around the specific decision it is meant to inform. The method follows the question, never the other way around.
+At Market Link, we design every research program around the specific decision it is meant to inform. The method follows the question, never the other way around.
 `,
   },
   {
     slug: "brand-activation-mistakes-east-africa",
     title: "5 Brand Activation Mistakes We See in East Africa",
     category: "Brand Strategy",
-    author: "PlayMax Strategy Team",
+    author: "Market Link Strategy Team",
     date: "2026-05-28",
     readTime: "6 min read",
     excerpt:
@@ -160,7 +160,7 @@ We recommend setting three to five measurable objectives before any activation, 
     slug: "rise-programmatic-ooh-advertising-africa",
     title: "The Rise of Programmatic OOH Advertising in Africa",
     category: "Media Trends",
-    author: "PlayMax Media Team",
+    author: "Market Link Media Team",
     date: "2026-05-15",
     readTime: "7 min read",
     excerpt:
@@ -194,14 +194,14 @@ The key infrastructure requirement for programmatic OOH is reliable internet con
 
 For brands interested in programmatic OOH, the first step is working with a media partner who has programmatic inventory access and understands the technical requirements. Creative assets need to be produced in the correct file format and resolution, and campaign parameters must be clearly defined.
 
-At PlayMax, we are investing in programmatic OOH capabilities to give our clients access to this emerging channel. We believe programmatic will fundamentally reshape outdoor advertising in East Africa over the next three to five years, and we want our clients to be ahead of the curve, not playing catch-up.
+At Market Link, we are investing in programmatic OOH capabilities to give our clients access to this emerging channel. We believe programmatic will fundamentally reshape outdoor advertising in East Africa over the next three to five years, and we want our clients to be ahead of the curve, not playing catch-up.
 `,
   },
   {
     slug: "why-consumer-behaviour-data-matters-brands-kenya",
     title: "Why Consumer Behaviour Data Matters for Brands in Kenya",
     category: "Data & Analytics",
-    author: "PlayMax Analytics Team",
+    author: "Market Link Analytics Team",
     date: "2026-04-30",
     readTime: "6 min read",
     excerpt:
@@ -246,7 +246,7 @@ The most important investment is not the research budget — it is the willingne
     slug: "crafting-brand-strategy-east-african-markets",
     title: "Crafting a Brand Strategy for East African Markets",
     category: "Brand Strategy",
-    author: "PlayMax Strategy Team",
+    author: "Market Link Strategy Team",
     date: "2026-04-18",
     readTime: "7 min read",
     excerpt:
@@ -286,14 +286,14 @@ The tension between consistency and local relevance is the central challenge of 
 
 The solution is to define clearly what must be consistent (the brand promise, the visual identity system, the quality standard) and what can flex (messaging, media mix, pricing, promotions). A clear brand guideline document that specifies these boundaries empowers local teams to adapt effectively without damaging the brand.
 
-At PlayMax, we help brands navigate this tension by building regional strategies on a foundation of market-specific research, ensuring that every strategic decision is rooted in evidence rather than assumption.
+At Market Link, we help brands navigate this tension by building regional strategies on a foundation of market-specific research, ensuring that every strategic decision is rooted in evidence rather than assumption.
 `,
   },
   {
     slug: "guide-to-ooh-media-planning-kenya",
     title: "A Complete Guide to OOH Media Planning in Kenya",
     category: "Media Planning",
-    author: "PlayMax Media Team",
+    author: "Market Link Media Team",
     date: "2026-04-05",
     readTime: "8 min read",
     excerpt:
@@ -329,7 +329,7 @@ For digital screens, creative should be designed for the screen's specific aspec
 
 OOH measurement in Kenya has traditionally been limited to traffic counts and brand surveys. However, new measurement approaches are emerging. Mobile location data can now estimate how many people pass a site and, through anonymised panel data, provide demographic profiles. Brand lift studies — measuring awareness before and after a campaign — remain the gold standard for effectiveness measurement.
 
-At PlayMax, we recommend a combination of location analytics and brand lift measurement for all significant OOH campaigns. The investment in measurement is typically 5-10% of the total campaign budget and provides invaluable data for optimising future campaigns.
+At Market Link, we recommend a combination of location analytics and brand lift measurement for all significant OOH campaigns. The investment in measurement is typically 5-10% of the total campaign budget and provides invaluable data for optimising future campaigns.
 
 **Budgeting and buying**
 
@@ -344,7 +344,7 @@ Planning an OOH campaign in Kenya requires expertise, local knowledge, and caref
     slug: "importance-local-market-intelligence-product-launch",
     title: "The Importance of Local Market Intelligence Before a Product Launch",
     category: "Market Research",
-    author: "PlayMax Research Team",
+    author: "Market Link Research Team",
     date: "2026-03-20",
     readTime: "6 min read",
     excerpt:
@@ -380,7 +380,7 @@ Effective market intelligence is not a last-minute check box. It should be built
 
 This sequenced approach to research ensures that decisions are informed by evidence at every stage, rather than being made in a vacuum and validated (or not) by a single research report at the end.
 
-**The PlayMax approach**
+**The Market Link approach**
 
 At PlayMax, we design market intelligence programs that are tailored to each client's specific decision timeline and budget. We believe that every brand entering the Kenyan or East African market deserves access to the intelligence that separates successful launches from expensive learning experiences. Whether you are a multinational entering the region for the first time or a local brand expanding into a new category, the right research can make the difference between leading the market and catching up.`,
   },

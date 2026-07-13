@@ -4,7 +4,7 @@ import type React from "react";
 const resend = new Resend(process.env.RESEND_API_KEY || "re_mock");
 
 const domain = process.env.RESEND_DOMAIN || "resend.dev";
-const fromName = "PlayMax Agency";
+const fromName = "Market Link";
 const localPart = domain === "resend.dev" ? "onboarding" : "hello";
 const DEFAULT_FROM = `${fromName} <${localPart}@${domain}>`;
 const DEFAULT_REPLY_TO = `${localPart}@${domain}`;

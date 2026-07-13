@@ -470,7 +470,7 @@ CREATE TABLE IF NOT EXISTS public.articles (
   slug text UNIQUE NOT NULL,
   title text NOT NULL,
   category text NOT NULL DEFAULT 'General',
-  author text NOT NULL DEFAULT 'PlayMax Team',
+  author text NOT NULL DEFAULT 'Market Link Team',
   date date NOT NULL DEFAULT CURRENT_DATE,
   read_time text NOT NULL DEFAULT '5 min read',
   excerpt text NOT NULL,

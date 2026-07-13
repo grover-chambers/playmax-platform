@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
@@ -222,9 +223,13 @@ function LoginForm() {
         <div className="relative z-10 flex flex-col justify-between w-full px-16 py-16">
           {/* Logo */}
           <div>
-            <h1 className="site-logo text-[26px]">
-              PLAY<span className="site-logo-accent">MAX</span>
-            </h1>
+            <Image
+              src="/marketlink-logo.png"
+              alt="Market Link"
+              width={140}
+              height={32}
+              style={{ height: "32px", width: "auto" }}
+            />
           </div>
 
           {view === "client" ? (
@@ -237,7 +242,7 @@ function LoginForm() {
                 </h2>
                 <p className="text-[14px] leading-relaxed text-gray-5 max-w-[420px]">
                   Sign in to your client portal to track projects, review
-                  deliverables, and stay connected with your PlayMax team.
+                  deliverables, and stay connected with your Market Link team.
                 </p>
               </div>
 
@@ -268,7 +273,7 @@ function LoginForm() {
                   <span className="text-yellow">one gateway.</span>
                 </h2>
                 <p className="text-[14px] leading-relaxed text-gray-5 max-w-[420px]">
-                  Access the PlayMax staff portal to manage pipelines, tasks,
+                  Access the Market Link staff portal to manage pipelines, tasks,
                   reporting, and client work from a single dashboard.
                 </p>
               </div>
@@ -296,7 +301,7 @@ function LoginForm() {
           {/* Footer quote */}
           <div className="border-t border-white/5 pt-6">
             <p className="text-[11px] text-gray-5 italic leading-relaxed max-w-[400px]">
-              &ldquo;PlayMax transformed how we understand the Kenyan market.
+              &ldquo;Market Link transformed how we understand the Kenyan market.
               Their insights changed our approach completely.&rdquo;
               <span className="block text-[10px] not-italic text-gray-6 mt-1">
                 &mdash; Client, Nairobi
@@ -311,9 +316,14 @@ function LoginForm() {
         <div className="w-full max-w-[420px] mx-auto">
           {/* Mobile logo only */}
           <div className="lg:hidden text-center mb-10">
-            <h1 className="site-logo text-[22px] mb-3">
-              PLAY<span className="site-logo-accent">MAX</span>
-            </h1>
+            <Image
+              src="/marketlink-logo.png"
+              alt="Market Link"
+              width={120}
+              height={28}
+              style={{ height: "28px", width: "auto" }}
+              className="mx-auto mb-3"
+            />
           </div>
 
           {/* ── CLIENT PORTAL VIEW ──────────────────── */}
@@ -413,7 +423,7 @@ function LoginForm() {
                   type="button"
                   disabled={loading}
                   onClick={() => {
-                    setEmail("demo.client@playmax.com");
+                    setEmail("demo.client@marketlink.co.ke");
                     setPassword("Demo123!");
                     setError("");
                   }}
@@ -464,7 +474,7 @@ function LoginForm() {
                   Staff Portal
                 </h2>
                 <p className="text-[11px] text-gray-5 mt-1">
-                  Sign in with your PlayMax account
+                  Sign in with your Market Link account
                 </p>
               </div>
 
@@ -642,7 +652,7 @@ function LoginForm() {
           )}
 
           <p className="text-center text-[10px] text-gray-5 mt-10">
-            &copy; 2026 PlayMax Agency. All rights reserved.
+            &copy; 2026 Market Link. All rights reserved.
           </p>
         </div>
       </div>

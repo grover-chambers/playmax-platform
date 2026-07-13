@@ -1,5 +1,5 @@
 /* ============================================================
-   PLAYMAX AGENCY — GLOBAL DESIGN SYSTEM
+   MARKET LINK — GLOBAL DESIGN SYSTEM
    Tailwind CSS 4 theme aliases live in tailwind.css
    Fonts: Space Grotesk (display/headings), Space Mono (labels/mono),
           Inter (body copy)
@@ -7,30 +7,43 @@
 
 /* ── TOKENS ─────────────────────────────────────────── */
 :root {
-    /* Brand */
-    --pm-black: #0a0a0a;
-    --pm-black-2: #141414;
-    --pm-black-3: #1e1e1e;
-    --pm-black-4: #2a2a2a;
-    --pm-offblack: #161616;
-    --pm-yellow: #f4c300;
-    --pm-yellow-dim: #c49b00;
-    --pm-amber: #c9a227;
-    --pm-yellow-pale: #fff8d6;
-    --pm-yellow-wash: #fff8dc;
-    --pm-cream: #f5f1e8;
-    --pm-white: #ffffff;
+    /* Brand — Market Link palette */
+    --pm-navy: #1A1C23;
+    --pm-navy-2: #22252E;
+    --pm-navy-3: #2A2E3A;
+    --pm-navy-4: #353A47;
+    --pm-olive: #7E8072;
+    --pm-olive-light: #9A9D8E;
+    --pm-gold: #C9A04A;
+    --pm-gold-dim: #A07E35;
+    --pm-cream-warm: #E8E2CC;
+    --pm-cream-pale: #F8F3E6;
+    --pm-white: #FFFFFF;
+    --pm-light-gray: #F3F3F1;
 
-    /* Neutrals */
-    --pm-gray-1: #f5f5f5;
-    --pm-gray-2: #e8e8e8;
-    --pm-gray-3: #bbbbbb;
-    --pm-gray-4: #888888;
-    --pm-gray-5: #444444;
+    /* Legacy aliases — map to new palette */
+    --pm-black: var(--pm-navy);
+    --pm-black-2: var(--pm-navy-2);
+    --pm-black-3: var(--pm-navy-3);
+    --pm-black-4: var(--pm-navy-4);
+    --pm-offblack: var(--pm-navy);
+    --pm-yellow: var(--pm-gold);
+    --pm-yellow-dim: var(--pm-gold-dim);
+    --pm-amber: var(--pm-gold);
+    --pm-yellow-pale: var(--pm-cream-pale);
+    --pm-yellow-wash: var(--pm-cream-warm);
+    --pm-cream: var(--pm-cream-warm);
+
+    /* Neutrals (adjusted for navy base) */
+    --pm-gray-1: #E8E6E0;
+    --pm-gray-2: #C4C2BA;
+    --pm-gray-3: #9B9A94;
+    --pm-gray-4: #70716C;
+    --pm-gray-5: #5A5E6B;
 
     /* Semantic */
-    --pm-green: #22c55e;
-    --pm-red: #ef4444;
+    --pm-green: #3D8F5A;
+    --pm-red: #B94A48;
     --pm-blue: #3b82f6;
     --pm-wa-green: #25d366;
 

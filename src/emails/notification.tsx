@@ -25,7 +25,7 @@ export function NotificationEmail({ name, message, actionLabel, actionUrl }: Not
             letterSpacing: "-0.02em",
           }}
         >
-          PLAY<span style={{ color: "#FCD34D" }}>MAX</span>
+          MARKET<span style={{ color: "#C9A04A" }}> LINK</span>
         </span>
       </div>
 
@@ -65,10 +65,10 @@ export function NotificationEmail({ name, message, actionLabel, actionUrl }: Not
       />
 
       <p style={{ fontSize: "12px", color: "#9CA3AF", margin: "0" }}>
-        PlayMax Agency &middot; Westlands Business Park, Nairobi, Kenya
+        Market Link &middot; Westlands Business Park, Nairobi, Kenya
         <br />
-        <a href="mailto:hello@playmaxagency.co.ke" style={{ color: "#9CA3AF" }}>
-          hello@playmaxagency.co.ke
+        <a href="mailto:hello@marketlink.co.ke" style={{ color: "#9CA3AF" }}>
+          hello@marketlink.co.ke
         </a>
       </p>
     </div>

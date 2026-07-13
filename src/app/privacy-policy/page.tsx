@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/layout";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — PlayMax Agency",
-  description: "How PlayMax collects, uses, and protects your personal data in compliance with the Kenya Data Protection Act 2019 and the EU GDPR.",
+  title: "Privacy Policy — Market Link",
+  description: "How Market Link collects, uses, and protects your personal data in compliance with the Kenya Data Protection Act 2019 and the EU GDPR.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -17,7 +17,7 @@ export default function PrivacyPolicyPage() {
 
           <section className="prose-custom space-y-6 text-[15px] leading-relaxed">
             <p>
-              PlayMax Agency (&ldquo;PlayMax&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;)
+              Market Link (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;)
               is committed to protecting your privacy. This Privacy Policy explains how we collect, use,
               disclose, and safeguard your personal data when you visit our website, use our services,
               or interact with us. It is aligned with the <strong>Kenya Data Protection Act, No. 24 of 2019</strong>{/* */}
@@ -27,7 +27,7 @@ export default function PrivacyPolicyPage() {
 
             <h2 className="text-xl font-display font-bold mt-10 mb-3">1. Who We Are</h2>
             <p>
-              PlayMax Agency is a market intelligence, brand strategy, and media activation firm operating
+              Market Link is a market intelligence, brand strategy, and media activation firm operating
               in Nairobi, Kenya. We provide research, strategy, outdoor media, event activations, data
               analytics, and campaign management services to manufacturers, suppliers, and market entrants
               across East Africa.
@@ -35,7 +35,7 @@ export default function PrivacyPolicyPage() {
             <p>
               <strong>Registered office:</strong> Westlands Business Park, Off Waiyaki Way, Nairobi, Kenya.
               <br />
-              <strong>Email:</strong> hello@playmaxagency.co.ke
+              <strong>Email:</strong> hello@marketlink.co.ke
               <br />
               <strong>Phone:</strong> +254 700 000 000
             </p>
@@ -110,7 +110,7 @@ export default function PrivacyPolicyPage() {
               <li><strong>Withdraw consent:</strong> at any time, without affecting the lawfulness of prior processing.</li>
             </ul>
             <p>
-              To exercise any of these rights, contact us at <strong>hello@playmaxagency.co.ke</strong>.
+              To exercise any of these rights, contact us at <strong>hello@marketlink.co.ke</strong>.
               We will respond within 30 days as required by the DPA. If you are unsatisfied, you may lodge
               a complaint with the <strong>Office of the Data Protection Commissioner (ODPC)</strong> at
               www.odpc.go.ke.
@@ -148,7 +148,7 @@ export default function PrivacyPolicyPage() {
               practices, please contact our Data Protection Officer:
             </p>
             <p>
-              <strong>Email:</strong> hello@playmaxagency.co.ke
+              <strong>Email:</strong> hello@marketlink.co.ke
               <br />
               <strong>Phone:</strong> +254 700 000 000
               <br />

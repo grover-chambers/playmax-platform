@@ -1,8 +1,8 @@
 export async function uploadToCloudinary(file: File): Promise<{ url: string; public_id: string } | null> {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("upload_preset", "playmax_documents");
-  formData.append("folder", "playmax/documents");
+  formData.append("upload_preset", "marketlink_documents");
+  formData.append("folder", "marketlink/documents");
 
   try {
     const res = await fetch(

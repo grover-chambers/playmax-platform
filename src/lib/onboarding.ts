@@ -54,7 +54,7 @@ export async function onboardClient({ email, name, company }: OnboardClientParam
 
   await sendEmail({
     to: email,
-    subject: `Welcome to PlayMax, ${name} — your account is ready`,
+    subject: `Welcome to Market Link, ${name} — your account is ready`,
     react: OnboardingEmail({
       name,
       email,

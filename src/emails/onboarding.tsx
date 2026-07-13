@@ -25,7 +25,7 @@ export function OnboardingEmail({ name, email, tempPassword, loginUrl }: Onboard
             letterSpacing: "-0.02em",
           }}
         >
-          PLAY<span style={{ color: "#FCD34D" }}>MAX</span>
+          MARKET<span style={{ color: "#C9A04A" }}> LINK</span>
         </span>
       </div>
 
@@ -38,7 +38,7 @@ export function OnboardingEmail({ name, email, tempPassword, loginUrl }: Onboard
           color: "#111827",
         }}
       >
-        Welcome to PlayMax, {name}
+        Welcome to Market Link, {name}
       </h1>
 
       <p style={{ fontSize: "15px", lineHeight: "1.6", color: "#4B5563", margin: "0 0 24px" }}>
@@ -66,7 +66,7 @@ export function OnboardingEmail({ name, email, tempPassword, loginUrl }: Onboard
           <span
             style={{
               fontFamily: "'Space Mono', monospace",
-              backgroundColor: "#FEF3C7",
+              backgroundColor: "#E8E2CC",
               padding: "2px 8px",
               borderRadius: "4px",
               fontSize: "13px",
@@ -108,10 +108,10 @@ export function OnboardingEmail({ name, email, tempPassword, loginUrl }: Onboard
       />
 
       <p style={{ fontSize: "12px", color: "#9CA3AF", margin: "0" }}>
-        PlayMax Agency &middot; Westlands Business Park, Nairobi, Kenya
+        Market Link &middot; Westlands Business Park, Nairobi, Kenya
         <br />
-        <a href="mailto:hello@playmaxagency.co.ke" style={{ color: "#9CA3AF" }}>
-          hello@playmaxagency.co.ke
+        <a href="mailto:hello@marketlink.co.ke" style={{ color: "#9CA3AF" }}>
+          hello@marketlink.co.ke
         </a>
       </p>
     </div>

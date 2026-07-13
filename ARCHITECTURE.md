@@ -1,4 +1,4 @@
-# PlayMax Platform — Architecture Report
+# Market Link — Platform Architecture
 
 > **Agency CRM + Website Management Platform**
 > Built with Next.js 15 (App Router), Supabase, Resend, and Tailwind CSS

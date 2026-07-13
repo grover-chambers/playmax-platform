@@ -36,8 +36,13 @@ function Sidebar({
 }: SidebarProps) {
   return (
     <aside className={`sidebar ${className}`}>
-      <div className="sidebar-logo">
-        PLAY<span className="text-yellow">MAX</span>
+      <div className="sidebar-logo flex items-center gap-2">
+        <span className="w-5 h-5 rounded-full border-2 border-[var(--pm-gold)] flex items-center justify-center">
+          <span className="w-2 h-2 rounded-full bg-[var(--pm-gold)]" />
+        </span>
+        <span className="font-display text-[13px] font-bold uppercase tracking-wider text-white">
+          Market Link
+        </span>
       </div>
 
       <nav className="flex-1 overflow-y-auto">

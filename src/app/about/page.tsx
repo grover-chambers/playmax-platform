@@ -34,14 +34,14 @@ export default function AboutPage() {
 
       <section className="bg-transparent" style={{ color: "var(--pm-white)" }}>
         <div className="site-container pt-28 md:pt-36 pb-12 md:pb-16">
-          <div className="pm-eyebrow mb-3 md:mb-4">About PlayMax</div>
+          <div className="pm-eyebrow mb-3 md:mb-4">About Market Link</div>
           <h1 className="pm-hero-title mb-6 md:mb-8">
             We find the market.
             <br />
             <span className="pm-accent">You own it.</span>
           </h1>
           <p className="pm-hero-sub max-w-[620px]">
-            PlayMax Agency is a Kenyan market intelligence and brand
+            Market Link is a Kenyan market intelligence and brand
             activation firm. We help manufacturers, suppliers, and market
             entrants understand, enter, and dominate Kenyan and East African
             markets.
@@ -58,14 +58,14 @@ export default function AboutPage() {
               </h2>
               <div className="flex flex-col gap-5 md:gap-6 pm-body-sm">
                 <p>
-                  PlayMax started because we kept seeing the same problem:
+                  Market Link started because we kept seeing the same problem:
                   brands spending big on campaigns without first understanding
                   the market they were trying to reach. Research firms gave
                   data, ad agencies gave creative, media owners gave space — but
                   nobody connected the dots.
                 </p>
                 <p>
-                  We built PlayMax to close that gap. One team that does
+                  We built Market Link to close that gap. One team that does
                   research, builds strategy, and activates brands on the ground
                   — in Nairobi, Mombasa, Kisumu, and beyond. No handoffs, no
                   dropped balls.

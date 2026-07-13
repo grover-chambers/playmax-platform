@@ -1,17 +1,13 @@
-/* ── Full-page scroll gradient — black to sunset yellow ──────────── */
+/* ── Full-page background — olive/sand gradient ────────── */
 /* Apply to the top-level page wrapper (see app/layout.tsx) */
 .pm-page-gradient {
     background: linear-gradient(
         180deg,
-        #0a0a0a 0%,
-        /* hero — near black */ #1a140c 14%,
-        /* stats bar — warm near-black */ #2e2210 28%,
-        /* services — dark amber-brown */ #4a3510 42%,
-        /* inventory — deep amber */ #6e4e12 56%,
-        /* trusted-by — amber-gold */ #9c7318 70%,
-        /* CTA — warm gold */ #d9a82a 84%,
-        /* contact form — bright gold */ #f7d774 100%
-            /* footer — soft sunset yellow */
+        #1A1C23 0%,
+        #2D3028 20%,
+        #4A4D3E 50%,
+        #6B6E5C 75%,
+        #7E8072 100%
     );
     min-height: 100vh;
 }
@@ -20,5 +16,3 @@
 .pm-page-gradient section {
     background: transparent;
 }
-
-/* Cards use transparent / backdrop-blur backgrounds defined in globals.css */

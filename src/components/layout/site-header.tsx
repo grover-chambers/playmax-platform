@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface SiteHeaderProps {
   className?: string;
@@ -14,8 +15,6 @@ const navLinks = [
   { label: "Insights", href: "/insights" },
   { label: "About", href: "/about" },
 ];
-
-const LOGO_LETTERS = "PLAYMAX".split("");
 
 function SiteHeader({ className = "" }: SiteHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
@@ -31,20 +30,15 @@ function SiteHeader({ className = "" }: SiteHeaderProps) {
     <header
       className={`site-header ${scrolled ? "site-header-shrink" : ""} ${className}`}
     >
-      <Link
-        href="/"
-        className="site-logo"
-        style={{ display: "flex", gap: "1px" }}
-      >
-        {LOGO_LETTERS.map((char, i) => (
-          <span
-            key={i}
-            className={i < 4 ? "pm-bounce-letter" : "pm-bounce-max"}
-            style={{ animationDelay: `${i * 0.12}s` }}
-          >
-            {char}
-          </span>
-        ))}
+      <Link href="/" className="site-logo">
+        <Image
+          src="/marketlink-logo.png"
+          alt="Market Link"
+          width={160}
+          height={40}
+          style={{ objectFit: "contain" }}
+          priority
+        />
       </Link>
 
       <nav className="site-nav max-md:hidden">

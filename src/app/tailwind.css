@@ -1,5 +1,5 @@
 /* ============================================================
-   PLAYMAX — Tailwind CSS 4 Base
+   MARKET LINK — Tailwind CSS 4 Base
    ============================================================ */
 @import "tailwindcss";
 
@@ -26,6 +26,12 @@
     --color-gray-3: var(--pm-gray-3);
     --color-gray-4: var(--pm-gray-4);
     --color-gray-5: var(--pm-gray-5);
+    --color-navy: var(--pm-navy);
+    --color-olive: var(--pm-olive);
+    --color-olive-light: var(--pm-olive-light);
+    --color-gold: var(--pm-gold);
+    --color-cream-warm: var(--pm-cream-warm);
+    --color-light-gray: var(--pm-light-gray);
     --color-green: var(--pm-green);
     --color-red: var(--pm-red);
     --color-blue: var(--pm-blue);

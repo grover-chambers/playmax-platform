@@ -179,9 +179,9 @@ export const sampleMessages: Record<string, Message[]> = {
       text: "Report uploaded to client portal — notification sent automatically",
       time: "8:30 AM",
       channel: "whatsapp",
-      senderName: "PlayMax",
-      isAutomation: true,
-    },
+          senderName: "Market Link",
+          isAutomation: true,
+        },
   ],
   "conv-4": [
     {
@@ -246,12 +246,12 @@ export const sampleMessages: Record<string, Message[]> = {
       id: "m17",
       conversationId: "conv-6",
       direction: "outbound",
-      text: "Thank you for reaching out! We've received your message and our team will get back to you within 2 hours. In the meantime, feel free to browse our available inventory at playmax.co.ke/inventory",
+      text: "Thank you for reaching out! We've received your message and our team will get back to you within 2 hours. In the meantime, feel free to browse our available inventory at marketlink.co.ke/inventory",
       time: "4:01 AM",
       channel: "whatsapp",
-      senderName: "PlayMax",
-      isAutomation: true,
-    },
+          senderName: "Market Link",
+          isAutomation: true,
+        },
   ],
 };
 

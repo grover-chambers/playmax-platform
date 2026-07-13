@@ -4,9 +4,9 @@ import "./globals.css";
 import "../styles/globals-addendum.css";
 
 export const metadata: Metadata = {
-  title: "PlayMax Agency — Market Research, Brand Strategy & Media Activation",
+  title: "Market Link — Research, Strategy & Market Access",
   description:
-    "PlayMax Agency delivers end-to-end market intelligence, brand strategy, and physical media activation for manufacturers, suppliers, and market entrants.",
+    "Market Link connects brands to actionable market intelligence, brand strategy, and media activation across East Africa.",
 };
 
 export default function RootLayout({

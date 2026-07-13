@@ -52,7 +52,7 @@ export default function ContactPage() {
                     className="text-[16px] md:text-[17px] font-medium"
                     style={{ color: "var(--pm-black)" }}
                   >
-                    hello@playmaxagency.co.ke
+                    hello@marketlink.co.ke
                   </span>
                 </div>
                 <div className="flex items-start gap-4">

@@ -38,7 +38,7 @@ const FOOTER_COLS = [
     title: "Contact",
     links: [
       { label: "+254 700 000 000", href: "tel:+254700000000" },
-      { label: "hello@playmaxagency.co.ke", href: "mailto:hello@playmaxagency.co.ke" },
+      { label: "hello@marketlink.co.ke", href: "mailto:hello@marketlink.co.ke" },
       { label: "Westlands, Nairobi", href: "https://maps.google.com/?q=Westlands+Nairobi" },
     ],
   },
@@ -181,7 +181,7 @@ export function SiteFooter() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <p style={{ fontSize: "13px", color: "var(--pm-black)" }}>
-            © 2026 PlayMax Agency. Built by{" "}
+            © 2026 Market Link. Built by{" "}
             <span style={{ color: "var(--pm-yellow)" }}>Squareroot INC</span>.
           </p>
           <span style={{ width: "1px", height: "14px", background: "#1A1A1A" }} />

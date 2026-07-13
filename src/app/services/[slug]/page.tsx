@@ -40,7 +40,7 @@ export async function generateMetadata({
   const service = getServiceBySlug(slug);
   if (!service) return { title: "Service Not Found" };
   return {
-    title: `${service.name} — PlayMax Agency`,
+    title: `${service.name} — Market Link`,
     description: service.tagline,
   };
 }
