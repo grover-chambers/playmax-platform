@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/layout";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — PlayMax Agency",
-  description: "Terms and conditions governing the use of PlayMax Agency's website and services.",
+  title: "Terms of Service — Market Link",
+  description: "Terms and conditions governing the use of Market Link's website and services.",
 };
 
 export default function TermsPage() {
@@ -18,13 +18,13 @@ export default function TermsPage() {
           <section className="prose-custom space-y-6 text-[15px] leading-relaxed">
             <h2 className="text-xl font-display font-bold mt-10 mb-3">1. Acceptance of Terms</h2>
             <p>
-              By accessing or using the PlayMax Agency website and services, you agree to be bound by
+              By accessing or using the Market Link website and services, you agree to be bound by
               these Terms of Service. If you do not agree, please do not use our website or services.
             </p>
 
             <h2 className="text-xl font-display font-bold mt-10 mb-3">2. Services</h2>
             <p>
-              PlayMax Agency provides market research, brand strategy, outdoor media, event activations,
+              Market Link provides market research, brand strategy, outdoor media, event activations,
               data analytics, and campaign management services. Specific terms for each engagement are
               defined in a separate Statement of Work (SOW) or contract signed by both parties.
             </p>
@@ -32,7 +32,7 @@ export default function TermsPage() {
             <h2 className="text-xl font-display font-bold mt-10 mb-3">3. Intellectual Property</h2>
             <p>
               All content on this website — including text, graphics, logos, case studies, and research
-              reports — is the property of PlayMax Agency unless otherwise stated. You may not reproduce,
+              reports — is the property of Market Link unless otherwise stated. You may not reproduce,
               distribute, or modify any content without our written permission. Deliverables produced
               under a paid engagement are governed by the intellectual property terms in the applicable SOW.
             </p>
@@ -48,7 +48,7 @@ export default function TermsPage() {
 
             <h2 className="text-xl font-display font-bold mt-10 mb-3">5. Limitation of Liability</h2>
             <p>
-              PlayMax Agency shall not be liable for any indirect, incidental, or consequential damages
+              Market Link shall not be liable for any indirect, incidental, or consequential damages
               arising from your use of this website or our services, to the maximum extent permitted by
               Kenyan law.
             </p>
@@ -61,7 +61,7 @@ export default function TermsPage() {
 
             <h2 className="text-xl font-display font-bold mt-10 mb-3">7. Contact</h2>
             <p>
-              For questions about these terms, contact us at <strong>hello@playmaxagency.co.ke</strong>.
+              For questions about these terms, contact us at <strong>hello@marketlink.co.ke</strong>.
             </p>
           </section>
         </article>

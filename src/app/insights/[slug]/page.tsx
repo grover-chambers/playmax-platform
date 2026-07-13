@@ -22,9 +22,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const article = getArticleBySlug(slug);
-  if (!article) return { title: "Article Not Found — PlayMax Agency" };
+  if (!article) return { title: "Article Not Found — Market Link" };
   return {
-    title: `${article.title} — PlayMax Agency Insights`,
+    title: `${article.title} — Market Link Insights`,
     description: article.excerpt,
     openGraph: {
       title: article.title,

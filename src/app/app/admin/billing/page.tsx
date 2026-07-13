@@ -79,7 +79,7 @@ export default function BillingPage() {
       {/* ── Page header ── */}
       <PageHeader
         title="Billing & SaaS License"
-        subtitle="PlayMax Pro · Super Admin"
+        subtitle="Market Link Pro · Super Admin"
         actions={
           <div className="flex items-center gap-2">
             <Button variant="primary" size="sm" onClick={() => router.push("/app/admin/billing/upgrade")}>
@@ -102,7 +102,7 @@ export default function BillingPage() {
               </div>
               <div>
                 <h3 className="font-display text-[15px] font-bold text-white">
-                  PlayMax Pro
+                  Market Link Pro
                 </h3>
                 <p className="text-[11px] text-gray-5 mt-0.5">Current Plan</p>
               </div>

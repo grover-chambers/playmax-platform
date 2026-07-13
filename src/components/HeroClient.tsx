@@ -75,7 +75,7 @@ export function HeroClient() {
           </span>
         </h1>
         <p className="pm-hero-sub mb-8">
-          PlayMax Agency delivers end-to-end market intelligence, brand
+          Market Link delivers end-to-end market intelligence, brand
           strategy, and physical media activation for manufacturers, suppliers,
           and market entrants.
         </p>

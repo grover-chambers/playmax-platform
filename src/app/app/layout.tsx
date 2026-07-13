@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, startTransition } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   GitBranch,
@@ -20,9 +19,6 @@ import {
   MessageCircle,
   Settings,
   ClipboardList,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
   Globe,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
@@ -30,8 +26,9 @@ import { getRoleLabel } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
 import { UserProvider } from "@/lib/user-context";
 import NotificationBell from "@/components/layout/notification-bell";
+import DashboardLayout from "@/components/layout/dashboard-layout";
+import type { DashboardNavSection } from "@/components/layout/dashboard-layout";
 
-/* ── Clean nav structure — super_admin sees everything, others get role-scoped ── */
 interface NavItem {
   icon: React.ElementType;
   label: string;
@@ -53,13 +50,7 @@ const allNavSections: NavSection[] = [
         icon: LayoutDashboard,
         label: "Dashboard",
         href: "/app",
-        roles: [
-          "super_admin",
-          "crm_admin",
-          "crm_staff",
-          "cms_admin",
-          "finance",
-        ],
+        roles: ["super_admin", "crm_admin", "crm_staff", "cms_admin", "finance"],
       },
       {
         icon: GitBranch,
@@ -178,9 +169,7 @@ export default function PlatformLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
   const router = useRouter();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<any>(null);
@@ -222,8 +211,7 @@ export default function PlatformLayout({
 
   const role = (user?.user_metadata?.role as UserRole) || null;
 
-  // Filter nav sections by role
-  const navSections = allNavSections
+  const navSections: DashboardNavSection[] = allNavSections
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
@@ -252,105 +240,21 @@ export default function PlatformLayout({
     user?.user_metadata?.name || user?.email || "Not signed in";
   const displayRole = role ? getRoleLabel(role) : "User";
 
-  const isActive = (href: string) =>
-    pathname === href || pathname?.startsWith(href + "/");
-
   return (
     <UserProvider>
-    <div
-      className={`platform-shell !min-h-screen ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
-    >
-      <aside
-        className={`sidebar !h-screen ${sidebarCollapsed ? "collapsed" : ""}`}
-      >
-        {/* Logo */}
-        <div className="sidebar-logo">
-          {sidebarCollapsed ? (
-            <span className="text-yellow font-display text-xl">PM</span>
-          ) : (
-            <>
-              PLAY<span className="text-yellow">MAX</span>
-            </>
-          )}
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-0">
-          {navSections.map((section) => (
-            <div key={section.label}>
-              <div className="sidebar-section">{section.label}</div>
-              {section.items.map((item) => {
-                const active = isActive(item.href);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`sidebar-item ${active ? "active" : ""}`}
-                    title={sidebarCollapsed ? item.label : undefined}
-                  >
-                    <Icon className="sidebar-item-icon" />
-                    <span className="flex-1 truncate">{item.label}</span>
-                    {item.badge && (
-                      <span className="sidebar-badge">{item.badge}</span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        {/* User section */}
-        <div className="sidebar-user">
-          {loadingUser ? (
-            <div className="user-avatar">?</div>
-          ) : user ? (
-            <>
-              <div className="user-avatar">{getInitials()}</div>
-              <div className="flex-1 min-w-0">
-                <div className="user-name truncate">{displayName}</div>
-                <div className="user-role truncate">{displayRole}</div>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="btn-sm p-1.5! border-none! hover:bg-red/20! hover:text-red! transition-colors"
-                title="Sign out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </>
-          ) : (
-            <Link href="/login" className="btn-sm py-1! px-3! text-xs">
-              Sign in
-            </Link>
-          )}
-        </div>
-      </aside>
-
-      {/* Toggle button */}
-      <button
-        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        className="sidebar-toggle-btn"
-        style={{
-          left: sidebarCollapsed ? "64px" : "var(--sidebar-w)",
+      <DashboardLayout
+        navSections={navSections}
+        topBar={<NotificationBell />}
+        user={{
+          initials: getInitials(),
+          name: displayName,
+          role: displayRole,
         }}
-        aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        loadingUser={loadingUser}
+        onSignOut={handleSignOut}
       >
-        {sidebarCollapsed ? (
-          <ChevronRight size={20} />
-        ) : (
-          <ChevronLeft size={20} />
-        )}
-      </button>
-
-      <main className="flex-1 overflow-y-auto min-h-screen">
-        <div className="sticky top-0 z-30 flex items-center justify-end px-6 py-2 bg-[#0A0A0A]/80 backdrop-blur-sm border-b border-[#1E1E1E]">
-          <NotificationBell />
-        </div>
         {children}
-      </main>
-    </div>
+      </DashboardLayout>
     </UserProvider>
   );
 }

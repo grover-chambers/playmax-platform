@@ -118,14 +118,14 @@ export default function HomePage() {
       <RevealSection className="section" style={{ color: "var(--pm-white)" }}>
         <div className="container-sm">
           <div className="mb-14">
-            <div className="pm-eyebrow mb-4">About PlayMax</div>
+            <div className="pm-eyebrow mb-4">About Market Link</div>
             <h2 className="pm-section-title mb-6">
               We find the market.
               <br />
               <span className="pm-accent">You own it.</span>
             </h2>
             <p className="pm-hero-sub max-w-150">
-              PlayMax Agency is a Kenyan market intelligence and brand
+              Market Link is a Kenyan market intelligence and brand
               activation firm. We help manufacturers, suppliers, and market
               entrants understand, enter, and dominate Kenyan and East African
               markets.
@@ -459,7 +459,7 @@ export default function HomePage() {
               <div className="flex flex-col gap-3 mt-2">
                 {[
                   { label: "WhatsApp", value: "+254 700 000 000" },
-                  { label: "Email", value: "hello@playmaxagency.co.ke" },
+                  { label: "Email", value: "hello@marketlink.co.ke" },
                   { label: "Office", value: "Westlands, Nairobi" },
                 ].map((c) => (
                   <div key={c.label} className="flex items-center gap-3">

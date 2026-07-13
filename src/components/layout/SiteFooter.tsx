@@ -177,7 +177,7 @@ export function SiteFooter() {
             letterSpacing: "-0.02em",
           }}
         >
-          PLAY<span style={{ color: "var(--pm-yellow)" }}>MAX</span>
+          MARKET<span style={{ color: "var(--pm-yellow)" }}> LINK</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <p style={{ fontSize: "13px", color: "var(--pm-black)" }}>

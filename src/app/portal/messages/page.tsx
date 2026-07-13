@@ -15,7 +15,7 @@ const sampleMessages: Message[] = [
     text: "Hi P&G team! Just wanted to confirm — the Westlands Screen Package is on track for deployment next week. Everything looks good on our end.",
     time: "10:30 AM",
     channel: "email",
-    senderName: "PlayMax Agency",
+    senderName: "Market Link",
   },
   {
     id: "pm-2",
@@ -33,7 +33,7 @@ const sampleMessages: Message[] = [
     text: "Yes, the Campaign Creative Deck will be uploaded to your portal by end of day Wednesday. I'll ping you once it's ready.",
     time: "11:22 AM",
     channel: "email",
-    senderName: "PlayMax Agency",
+    senderName: "Market Link",
   },
   {
     id: "pm-4",
@@ -51,7 +51,7 @@ const sampleMessages: Message[] = [
     text: "Absolutely! I'll send over a calendar invite for tomorrow afternoon. We'll walk through the revised scope and updated pricing.",
     time: "2:18 PM",
     channel: "email",
-    senderName: "PlayMax Agency",
+    senderName: "Market Link",
   },
 ];
 
@@ -87,7 +87,7 @@ export default function PortalMessagesPage() {
     <div>
       <div className="mb-6">
         <h1 className="page-title">Messages</h1>
-        <p className="page-subtitle">Communication with PlayMax Agency</p>
+        <p className="page-subtitle">Communication with Market Link</p>
       </div>
 
       <div
@@ -103,10 +103,10 @@ export default function PortalMessagesPage() {
             </div>
             <div className="px-3 py-3">
               <div className="card-hover-yellow card !bg-yellow/5 !border-yellow/20 px-3 py-2.5 cursor-pointer flex items-center gap-2.5">
-                <Avatar initials="PM" variant="yellow" size="md" />
+                <Avatar initials="ML" variant="yellow" size="md" />
                 <div className="min-w-0">
                   <div className="text-[12px] font-semibold truncate">
-                    PlayMax Agency
+                    Market Link
                   </div>
                   <div className="text-[10px] text-gray-5 truncate">
                     Absolutely! I&apos;ll send over...
@@ -118,9 +118,9 @@ export default function PortalMessagesPage() {
 
           <div className="flex-1 flex flex-col min-w-0">
             <div className="px-5 py-3 border-b border-[#1A1A1A] bg-black flex items-center gap-3">
-              <Avatar initials="PM" variant="yellow" size="md" />
+              <Avatar initials="ML" variant="yellow" size="md" />
               <div>
-                <div className="text-[13px] font-semibold">PlayMax Agency</div>
+                <div className="text-[13px] font-semibold">Market Link</div>
                 <div className="text-[10px] text-gray-5 font-mono">
                   Account Manager · Active
                 </div>

@@ -42,7 +42,7 @@ export default function StaffManagementPage() {
       const demoStaff: StaffMember[] = [
         {
           id: "1",
-          email: currentUser?.email || "admin@playmaxagency.co.ke",
+          email: currentUser?.email || "admin@marketlink.co.ke",
           name: currentUser?.user_metadata?.name || "Current User",
           role: (currentUser?.user_metadata?.role as UserRole) || "super_admin",
           status: "active",
@@ -50,7 +50,7 @@ export default function StaffManagementPage() {
         },
         {
           id: "2",
-          email: "brian@playmaxagency.co.ke",
+          email: "brian@marketlink.co.ke",
           name: "Brian Mwangi",
           role: "crm_admin",
           status: "active",
@@ -58,7 +58,7 @@ export default function StaffManagementPage() {
         },
         {
           id: "3",
-          email: "amina@playmaxagency.co.ke",
+          email: "amina@marketlink.co.ke",
           name: "Amina Mohamed",
           role: "crm_staff",
           status: "active",
@@ -66,7 +66,7 @@ export default function StaffManagementPage() {
         },
         {
           id: "4",
-          email: "joy@playmaxagency.co.ke",
+          email: "joy@marketlink.co.ke",
           name: "Joy Kariuki",
           role: "cms_admin",
           status: "active",
@@ -74,7 +74,7 @@ export default function StaffManagementPage() {
         },
         {
           id: "5",
-          email: "finance@playmaxagency.co.ke",
+          email: "finance@marketlink.co.ke",
           name: "Peter Odhiambo",
           role: "finance",
           status: "inactive",
@@ -228,7 +228,7 @@ export default function StaffManagementPage() {
                 <label className="form-label">Email Address</label>
                 <input
                   type="email"
-                  placeholder="jane@playmaxagency.co.ke"
+                  placeholder="jane@marketlink.co.ke"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   className="form-input"

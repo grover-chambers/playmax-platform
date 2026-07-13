@@ -7,11 +7,11 @@ import { LeadForm } from "@/components/lead-form";
 import { ARTICLES } from "@/lib/articles-data";
 
 export const metadata: Metadata = {
-  title: "Insights — PlayMax Agency | Market Research & Brand Strategy Blog",
+  title: "Insights — Market Link | Market Research & Brand Strategy Blog",
   description:
     "Expert analysis on market research, brand strategy, outdoor media, and consumer behaviour in Kenya and East Africa. Practical insights for manufacturers, suppliers, and brands.",
   openGraph: {
-    title: "Insights — PlayMax Agency",
+    title: "Insights — Market Link",
     description:
       "Expert analysis on market research, brand strategy, outdoor media, and consumer behaviour in East Africa.",
   },
@@ -35,7 +35,7 @@ export default function InsightsPage() {
           </h1>
           <p className="pm-hero-sub max-w-[560px]">
             Research, analysis, and opinion on market intelligence, brand
-            strategy, and media in East Africa. Written by the PlayMax team.
+            strategy,             and media in East Africa. Written by the Market Link team.
           </p>
         </div>
       </section>

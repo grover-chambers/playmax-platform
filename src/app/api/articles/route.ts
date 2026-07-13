@@ -72,7 +72,7 @@ export async function POST(request: Request) {
         slug,
         title,
         category: category || "General",
-        author: author || "PlayMax Team",
+        author: author || "Market Link Team",
         date: date || new Date().toISOString().split("T")[0],
         read_time: read_time || "5 min read",
         excerpt,

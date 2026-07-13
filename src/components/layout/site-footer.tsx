@@ -8,7 +8,7 @@ function SiteFooter() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16 mb-12 md:mb-16">
           <div>
             <div className="site-logo mb-5">
-              PLAY<span className="site-logo-accent">MAX</span>
+              MARKET<span className="site-logo-accent"> LINK</span>
             </div>
             <p className="body-copy-sm max-w-[280px]">
               Market intelligence, brand strategy, and media activation for
@@ -43,7 +43,7 @@ function SiteFooter() {
               <div>Westlands Business Park</div>
               <div>Off Waiyaki Way, Nairobi</div>
               <div className="text-white">+254 700 000 000</div>
-              <div className="text-white">hello@playmaxagency.co.ke</div>
+              <div className="text-white">hello@marketlink.co.ke</div>
             </div>
           </div>
         </div>
@@ -52,7 +52,7 @@ function SiteFooter() {
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="footer-copy">
-            © 2026 PlayMax Agency. All rights reserved.
+            © 2026 Market Link. All rights reserved.
           </div>
           <div className="footer-copy">
             Built by{" "}

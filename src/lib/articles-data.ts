@@ -382,7 +382,7 @@ This sequenced approach to research ensures that decisions are informed by evide
 
 **The Market Link approach**
 
-At PlayMax, we design market intelligence programs that are tailored to each client's specific decision timeline and budget. We believe that every brand entering the Kenyan or East African market deserves access to the intelligence that separates successful launches from expensive learning experiences. Whether you are a multinational entering the region for the first time or a local brand expanding into a new category, the right research can make the difference between leading the market and catching up.`,
+At Market Link, we design market intelligence programs that are tailored to each client's specific decision timeline and budget. We believe that every brand entering the Kenyan or East African market deserves access to the intelligence that separates successful launches from expensive learning experiences. Whether you are a multinational entering the region for the first time or a local brand expanding into a new category, the right research can make the difference between leading the market and catching up.`,
   },
 ];
 

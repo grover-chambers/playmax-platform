@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/layout";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy — PlayMax Agency",
-  description: "How PlayMax Agency uses cookies and similar technologies, in compliance with the Kenya Data Protection Act 2019 and the EU ePrivacy Directive.",
+  title: "Cookie Policy — Market Link",
+  description: "How Market Link uses cookies and similar technologies, in compliance with the Kenya Data Protection Act 2019 and the EU ePrivacy Directive.",
 };
 
 export default function CookiePolicyPage() {
@@ -17,7 +17,7 @@ export default function CookiePolicyPage() {
 
           <section className="prose-custom space-y-6 text-[15px] leading-relaxed">
             <p>
-              This Cookie Policy explains how PlayMax Agency (&ldquo;PlayMax&rdquo;, &ldquo;we&rdquo;,
+              This Cookie Policy explains how Market Link (&ldquo;we&rdquo;,
               &ldquo;us&rdquo;, or &ldquo;our&rdquo;) uses cookies and similar tracking technologies on our
               website. It is designed to comply with the <strong>Kenya Data Protection Act, No. 24 of 2019</strong>{/* */}
               and the <strong>EU ePrivacy Directive</strong> (via GDPR).
@@ -155,7 +155,7 @@ export default function CookiePolicyPage() {
               If you have questions about our use of cookies, please contact us:
             </p>
             <p>
-              <strong>Email:</strong> hello@playmaxagency.co.ke
+              <strong>Email:</strong> hello@marketlink.co.ke
               <br />
               <strong>Phone:</strong> +254 700 000 000
               <br />

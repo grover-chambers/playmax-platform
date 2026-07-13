@@ -423,7 +423,7 @@ function LoginForm() {
                   type="button"
                   disabled={loading}
                   onClick={() => {
-                    setEmail("demo.client@marketlink.co.ke");
+                    setEmail("demo.client@playmax.com");
                     setPassword("Demo123!");
                     setError("");
                   }}

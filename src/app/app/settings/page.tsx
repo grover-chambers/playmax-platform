@@ -8,10 +8,10 @@ import Input from "@/components/ui/input";
 const tabs = ["General", "Team", "Automations", "Templates", "Integrations"];
 
 const teamMembers = [
-  { name: "Brian Mwangi", initials: "BM", role: "Director", email: "brian@playmaxagency.co.ke", status: "active" },
-  { name: "Amina Mohamed", initials: "AM", role: "Account Manager", email: "amina@playmaxagency.co.ke", status: "active" },
-  { name: "Joy Kariuki", initials: "JK", role: "Research Lead", email: "joy@playmaxagency.co.ke", status: "active" },
-  { name: "Peter Odhiambo", initials: "PO", role: "Media Ops", email: "peter@playmaxagency.co.ke", status: "inactive" },
+  { name: "Brian Mwangi", initials: "BM", role: "Director", email: "brian@marketlink.co.ke", status: "active" },
+  { name: "Amina Mohamed", initials: "AM", role: "Account Manager", email: "amina@marketlink.co.ke", status: "active" },
+  { name: "Joy Kariuki", initials: "JK", role: "Research Lead", email: "joy@marketlink.co.ke", status: "active" },
+  { name: "Peter Odhiambo", initials: "PO", role: "Media Ops", email: "peter@marketlink.co.ke", status: "inactive" },
 ];
 
 const automations = [
@@ -39,8 +39,8 @@ const integrations = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("General");
-  const [agencyName, setAgencyName] = useState("PlayMax Agency");
-  const [agencyEmail, setAgencyEmail] = useState("hello@playmaxagency.co.ke");
+  const [agencyName, setAgencyName] = useState("Market Link");
+  const [agencyEmail, setAgencyEmail] = useState("hello@marketlink.co.ke");
   const [agencyPhone, setAgencyPhone] = useState("+254 700 000 000");
   const [whatsappNumber, setWhatsappNumber] = useState("+254 700 000 000");
   const [currency, setCurrency] = useState("KES");
