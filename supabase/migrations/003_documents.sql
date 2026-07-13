@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS public.reports (
   type text NOT NULL DEFAULT 'market_research',
   content text,
   visible_to_client boolean DEFAULT false,
-  generated_from uuid,
+  generated_from uuid REFERENCES public.research_projects(id),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -45,10 +45,6 @@ CREATE TABLE IF NOT EXISTS public.report_metrics (
   sort_order int DEFAULT 0,
   created_at timestamptz DEFAULT now()
 );
-
-ALTER TABLE public.reports
-  ADD COLUMN IF NOT EXISTS visible_to_client boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS generated_from uuid REFERENCES public.research_projects(id);
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_documents_project_id ON public.documents(project_id);
