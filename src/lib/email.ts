@@ -3,8 +3,11 @@ import type React from "react";
 
 const resend = new Resend(process.env.RESEND_API_KEY || "re_mock");
 
-const DEFAULT_FROM = "PlayMax Agency <hello@playmaxagency.co.ke>";
-const DEFAULT_REPLY_TO = "hello@playmaxagency.co.ke";
+const domain = process.env.RESEND_DOMAIN || "resend.dev";
+const fromName = "PlayMax Agency";
+const localPart = domain === "resend.dev" ? "onboarding" : "hello";
+const DEFAULT_FROM = `${fromName} <${localPart}@${domain}>`;
+const DEFAULT_REPLY_TO = `${localPart}@${domain}`;
 
 export interface SendEmailParams {
   to: string | string[];
