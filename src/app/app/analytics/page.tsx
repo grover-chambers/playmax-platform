@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload,
@@ -11,23 +11,62 @@ import {
   Package,
   Calendar,
   Building2,
+  Loader2,
 } from "lucide-react";
 import Button from "@/components/ui/button";
 import PageHeader from "@/components/layout/page-header";
-
-const kpis = [
-  { icon: Store, value: "10", label: "Branches", color: "var(--pm-blue)" },
-  { icon: Package, value: "13,377", label: "Products", color: "var(--pm-green)" },
-  { icon: Upload, value: "0", label: "Uploads", color: "var(--pm-yellow)" },
-  { icon: Calendar, value: "0", label: "Periods", color: "var(--pm-purple)" },
-];
-
-const recentUploads = [
-  { file: "inventory-items.xlsx", store: "—", period: "—", rows: "13,377", errors: 0, status: "✅" },
-];
+import type {
+  AnalyticsBranch,
+  AnalyticsStagingUpload,
+} from "@/lib/analytics-types";
 
 export default function AnalyticsDashboard() {
   const router = useRouter();
+
+  const [branches, setBranches] = useState<AnalyticsBranch[]>([]);
+  const [uploads, setUploads] = useState<AnalyticsStagingUpload[]>([]);
+  const [productCount, setProductCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [dimRes, upRes] = await Promise.all([
+          fetch("/api/analytics/dimensions"),
+          fetch("/api/analytics/uploads"),
+        ]);
+
+        if (!dimRes.ok) throw new Error("Failed to load dimensions");
+        if (!upRes.ok) throw new Error("Failed to load uploads");
+
+        const dim = await dimRes.json();
+        const up = await upRes.json();
+
+        setBranches(dim.branches ?? []);
+        setProductCount(dim.productCount ?? 0);
+        setUploads(up.uploads ?? []);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const activePeriods = new Set(
+    uploads.filter((u) => u.period_id).map((u) => u.period_id)
+  ).size;
+
+  const kpis = [
+    { icon: Store, value: loading ? "—" : String(branches.length), label: "Branches" },
+    { icon: Package, value: loading ? "—" : productCount.toLocaleString(), label: "Products" },
+    { icon: Upload, value: loading ? "—" : String(uploads.length), label: "Uploads" },
+    { icon: Calendar, value: loading ? "—" : String(activePeriods), label: "Periods" },
+  ];
+
+  const recentUploads = uploads.slice(0, 5);
 
   return (
     <div className="p-6">
@@ -42,19 +81,28 @@ export default function AnalyticsDashboard() {
         }
       />
 
+      {/* Error banner */}
+      {error && (
+        <div className="mt-4 px-4 py-3 rounded-lg bg-red/10 border border-red/20 text-red text-[12px]">
+          {error}
+        </div>
+      )}
+
       {/* KPI Row */}
       <div className="pm-dash-krow pm-dash-krow-4 mt-5">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
             <div key={kpi.label} className="pm-dash-kcard">
-              <div className="flex items-center gap-3">
-                <Icon className="w-5 h-5" style={{ color: kpi.color }} />
-                <div>
-                  <div className="pm-dash-kn">{kpi.value}</div>
-                  <div className="pm-dash-kl">{kpi.label}</div>
-                </div>
+              <div className="pm-dash-kl pm-dash-kl-icon">
+                {loading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Icon size={14} />
+                )}
+                {kpi.label}
               </div>
+              <div className="pm-dash-kn">{kpi.value}</div>
             </div>
           );
         })}
@@ -66,40 +114,49 @@ export default function AnalyticsDashboard() {
         <div className="pm-dash-card">
           <div className="pm-dash-card-h">
             <span className="pm-dash-card-t">Recent uploads</span>
-            <button className="btn-sm" onClick={() => router.push("/app/analytics/upload")}>
+            <button className="btn-sm" onClick={() => router.push("/app/analytics/upload/history")}>
               View all
             </button>
           </div>
           <div className="pm-dash-card-b">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="text-gray-5 font-mono">
-                  <th className="text-left pb-2 font-normal">File</th>
-                  <th className="text-left pb-2 font-normal">Store</th>
-                  <th className="text-left pb-2 font-normal">Period</th>
-                  <th className="text-right pb-2 font-normal">Rows</th>
-                  <th className="text-center pb-2 font-normal">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentUploads.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="text-center py-8 text-gray-5">
-                      No data uploaded yet.
-                    </td>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-4 h-4 text-gray-5 animate-spin" />
+                <span className="ml-2 text-[11px] text-gray-5">Loading...</span>
+              </div>
+            ) : (
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="text-gray-5 font-mono">
+                    <th className="text-left pb-2 font-normal">File</th>
+                    <th className="text-left pb-2 font-normal">Branch</th>
+                    <th className="text-left pb-2 font-normal">Period</th>
+                    <th className="text-right pb-2 font-normal">Rows</th>
+                    <th className="text-center pb-2 font-normal">Status</th>
                   </tr>
-                )}
-                {recentUploads.map((u) => (
-                  <tr key={u.file} className="border-t border-[#1E1E1E]">
-                    <td className="py-2.5 text-white font-medium">{u.file}</td>
-                    <td className="py-2.5 text-gray-4">{u.store}</td>
-                    <td className="py-2.5 text-gray-4">{u.period}</td>
-                    <td className="py-2.5 text-right text-gray-4 font-mono">{u.rows}</td>
-                    <td className="py-2.5 text-center">{u.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {recentUploads.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="text-center py-8 text-gray-5">
+                        No data uploaded yet.
+                      </td>
+                    </tr>
+                  )}
+                  {recentUploads.map((u) => (
+                    <tr key={u.id} className="border-t border-[#1E1E1E]">
+                      <td className="py-2.5 text-white font-medium truncate max-w-[180px]">{u.filename}</td>
+                      <td className="py-2.5 text-gray-4">{u.branch_name ?? "—"}</td>
+                      <td className="py-2.5 text-gray-4">{u.period_label ?? "—"}</td>
+                      <td className="py-2.5 text-right text-gray-4 font-mono">{u.total_rows.toLocaleString()}</td>
+                      <td className="py-2.5 text-center">
+                        {u.status === "imported" ? "✅" : u.status === "failed" ? "❌" : "⏳"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -117,15 +174,24 @@ export default function AnalyticsDashboard() {
                 <Upload className="w-3.5 h-3.5" />
                 Upload XLSX file
               </button>
-              <button className="pm-dash-qa-btn w-full justify-start" disabled>
+              <button
+                className="pm-dash-qa-btn w-full justify-start"
+                onClick={() => router.push("/app/analytics/reports")}
+              >
                 <TrendingUp className="w-3.5 h-3.5" />
                 Market share report
               </button>
-              <button className="pm-dash-qa-btn w-full justify-start" disabled>
+              <button
+                className="pm-dash-qa-btn w-full justify-start"
+                onClick={() => router.push("/app/analytics/reports")}
+              >
                 <BarChart3 className="w-3.5 h-3.5" />
                 Category performance
               </button>
-              <button className="pm-dash-qa-btn w-full justify-start" disabled>
+              <button
+                className="pm-dash-qa-btn w-full justify-start"
+                onClick={() => router.push("/app/analytics/reports")}
+              >
                 <PieChart className="w-3.5 h-3.5" />
                 Competitor comparison
               </button>
@@ -144,10 +210,24 @@ export default function AnalyticsDashboard() {
               <span className="pm-dash-card-t">Data freshness</span>
             </div>
             <div className="pm-dash-card-b">
-              <p className="text-[11px] text-gray-4">
-                Product master loaded from <strong className="text-white">inventory-items.xlsx</strong>.
-                Upload per-store sales reports to begin analysis.
-              </p>
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-3 h-3 text-gray-5 animate-spin" />
+                  <span className="text-[11px] text-gray-5">Loading...</span>
+                </div>
+              ) : uploads.length > 0 ? (
+                <p className="text-[11px] text-gray-4">
+                  <strong className="text-white">{uploads.length}</strong> file{uploads.length !== 1 && "s"} uploaded.
+                  {uploads.some((u) => u.status === "imported") && " Data is ready for analysis."}
+                  {uploads.some((u) => u.status === "failed") && (
+                    <span className="text-red ml-1">{uploads.filter((u) => u.status === "failed").length} failed.</span>
+                  )}
+                </p>
+              ) : (
+                <p className="text-[11px] text-gray-4">
+                  No data uploaded yet. Upload per-store sales reports to begin analysis.
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { Store, Package, Building2, Tags } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Store, Package, Building2, Tags, Loader2 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
+import type {
+  AnalyticsBranch,
+  AnalyticsCategory,
+  AnalyticsManufacturer,
+} from "@/lib/analytics-types";
 
 type DimTab = "branches" | "categories" | "manufacturers" | "products";
 
@@ -13,44 +18,50 @@ const tabs: { key: DimTab; label: string; icon: React.ElementType }[] = [
   { key: "products", label: "Products", icon: Package },
 ];
 
-const sampleBranches = [
-  { code: "NVS", name: "Naivasha Branch", city: "Naivasha", region: "Rift Valley", tier: "standard" },
-  { code: "NKR", name: "Nakuru Branch", city: "Nakuru", region: "Rift Valley", tier: "standard" },
-  { code: "NRK", name: "Narok Branch", city: "Narok", region: "Rift Valley", tier: "standard" },
-  { code: "NPM", name: "Nampark Makongeni", city: "Nairobi", region: "Nairobi", tier: "flagship" },
-  { code: "NYH", name: "Nyahururu Branch", city: "Nyahururu", region: "Rift Valley", tier: "standard" },
-  { code: "MER", name: "Meru Branch", city: "Meru", region: "Eastern", tier: "standard" },
-  { code: "MUA", name: "Maua Branch", city: "Maua", region: "Eastern", tier: "standard" },
-  { code: "KRT", name: "Karatina Branch", city: "Karatina", region: "Central", tier: "standard" },
-  { code: "THK", name: "Thika Branch", city: "Thika", region: "Central", tier: "standard" },
-  { code: "ENG", name: "Engineer Branch", city: "Engineer", region: "Rift Valley", tier: "standard" },
-];
-
-const sampleCategories = [
-  { name: "MAIZE FLOUR", products: 245 },
-  { name: "WHEAT FLOUR", products: 138 },
-  { name: "COOKING OIL", products: 89 },
-  { name: "RICE", products: 67 },
-  { name: "SUGAR", products: 42 },
-  { name: "MILK & DAIRY", products: 156 },
-  { name: "BEVERAGES", products: 312 },
-  { name: "SOAP & DETERGENTS", products: 198 },
-  { name: "CONFECTIONERY", products: 224 },
-  { name: "CANNED GOODS", products: 78 },
-];
-
-const sampleManufacturers = [
-  { name: "RAHA MILLERS", code: "RAHA", products: 34 },
-  { name: "AJAB FLOUR", code: "AJAB", products: 18 },
-  { name: "SUNFRESH", code: "SF", products: 27 },
-  { name: "UNILEVER KE", code: "UNLVR", products: 56 },
-  { name: "COCA COLA", code: "COKE", products: 12 },
-];
-
 export default function DimensionsPage() {
   const [activeTab, setActiveTab] = useState<DimTab>("branches");
+  const [branches, setBranches] = useState<AnalyticsBranch[]>([]);
+  const [categories, setCategories] = useState<AnalyticsCategory[]>([]);
+  const [manufacturers, setManufacturers] = useState<AnalyticsManufacturer[]>([]);
+  const [productCount, setProductCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("/api/analytics/dimensions");
+        if (!res.ok) throw new Error("Failed to load dimensions");
+        const data = await res.json();
+        setBranches(data.branches ?? []);
+        setCategories(data.categories ?? []);
+        setManufacturers(data.manufacturers ?? []);
+        setProductCount(data.productCount ?? 0);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
 
   const renderTable = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-4 h-4 text-gray-5 animate-spin" />
+          <span className="ml-2 text-[11px] text-gray-5">Loading dimensions...</span>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="p-8 text-center text-[12px] text-red">{error}</div>
+      );
+    }
+
     switch (activeTab) {
       case "branches":
         return (
@@ -65,12 +76,17 @@ export default function DimensionsPage() {
               </tr>
             </thead>
             <tbody>
-              {sampleBranches.map((b) => (
-                <tr key={b.code} className="border-b border-[#1E1E1E] last:border-0">
+              {branches.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-8 text-gray-5">No branches found.</td>
+                </tr>
+              )}
+              {branches.map((b) => (
+                <tr key={b.id} className="border-b border-[#1E1E1E] last:border-0">
                   <td className="px-4 py-2.5 text-white font-mono">{b.code}</td>
                   <td className="px-4 py-2.5 text-white">{b.name}</td>
-                  <td className="px-4 py-2.5 text-gray-4">{b.city}</td>
-                  <td className="px-4 py-2.5 text-gray-4">{b.region}</td>
+                  <td className="px-4 py-2.5 text-gray-4">{b.city ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-gray-4">{b.region ?? "—"}</td>
                   <td className="px-4 py-2.5">
                     <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full border ${
                       b.tier === "flagship"
@@ -94,14 +110,19 @@ export default function DimensionsPage() {
             <thead>
               <tr className="text-gray-5 font-mono border-b border-[#252525]">
                 <th className="text-left px-4 py-3 font-normal">Category</th>
-                <th className="text-right px-4 py-3 font-normal">Products</th>
+                <th className="text-left px-4 py-3 font-normal">Description</th>
               </tr>
             </thead>
             <tbody>
-              {sampleCategories.map((c) => (
-                <tr key={c.name} className="border-b border-[#1E1E1E] last:border-0">
+              {categories.length === 0 && (
+                <tr>
+                  <td colSpan={2} className="text-center py-8 text-gray-5">No categories found.</td>
+                </tr>
+              )}
+              {categories.map((c) => (
+                <tr key={c.id} className="border-b border-[#1E1E1E] last:border-0">
                   <td className="px-4 py-2.5 text-white">{c.name}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-4 font-mono">{c.products}</td>
+                  <td className="px-4 py-2.5 text-gray-4">{c.description ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -115,15 +136,18 @@ export default function DimensionsPage() {
               <tr className="text-gray-5 font-mono border-b border-[#252525]">
                 <th className="text-left px-4 py-3 font-normal">Manufacturer</th>
                 <th className="text-left px-4 py-3 font-normal">Code</th>
-                <th className="text-right px-4 py-3 font-normal">Products</th>
               </tr>
             </thead>
             <tbody>
-              {sampleManufacturers.map((m) => (
-                <tr key={m.name} className="border-b border-[#1E1E1E] last:border-0">
+              {manufacturers.length === 0 && (
+                <tr>
+                  <td colSpan={2} className="text-center py-8 text-gray-5">No manufacturers found.</td>
+                </tr>
+              )}
+              {manufacturers.map((m) => (
+                <tr key={m.id} className="border-b border-[#1E1E1E] last:border-0">
                   <td className="px-4 py-2.5 text-white">{m.name}</td>
-                  <td className="px-4 py-2.5 text-gray-4 font-mono">{m.code}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-4 font-mono">{m.products}</td>
+                  <td className="px-4 py-2.5 text-gray-4 font-mono">{m.code ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -134,7 +158,9 @@ export default function DimensionsPage() {
         return (
           <div className="p-8 text-center text-[12px] text-gray-5">
             <Package className="w-8 h-8 mx-auto mb-2 text-gray-5" />
-            <p>13,377 products loaded from <strong className="text-white">inventory-items.xlsx</strong>.</p>
+            <p>
+              <strong className="text-white">{productCount.toLocaleString()}</strong> products loaded.
+            </p>
             <p className="mt-1">Search and filter functionality coming soon.</p>
           </div>
         );

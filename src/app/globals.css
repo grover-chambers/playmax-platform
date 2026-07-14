@@ -2537,3 +2537,254 @@ h6 {
         padding-left: 20px;
     }
 }
+
+/* Mobile menu trigger (hidden on desktop, shown via media query below) */
+.mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 60;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    background: var(--pm-black-2);
+    border: 1px solid var(--pm-black-4);
+    border-radius: var(--radius-lg);
+    color: var(--pm-white);
+    cursor: pointer;
+}
+.mobile-menu-btn:hover {
+    background: var(--pm-black-3);
+}
+
+/* Dark backdrop behind the mobile drawer */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 10, 0.6);
+    z-index: 49;
+}
+
+/* ── WORKSPACE LIGHT THEME (dashboard shell only) ─────────────
+   Sidebar stays dark navy/gold (brand identity, matches SNDBX's
+   own dark-sidebar pattern). The main content area goes light,
+   using the new olive/cream palette, so cards/stats/filters read
+   the way SNDBX's dashboard does — light surface, dark sidebar. */
+.platform-shell {
+    --ws-bg: var(--pm-cream-pale);
+    --ws-surface: var(--pm-white);
+    --ws-border: var(--pm-cream-warm);
+    --ws-text: var(--pm-navy);
+    --ws-text-muted: var(--pm-gray-4);
+    --ws-accent: #A68A2E;
+    --ws-accent-hover: #8C7526;
+}
+.platform-shell > main {
+    background: var(--ws-bg);
+    color: var(--ws-text);
+}
+
+/* ── Mobile responsive ─────────────────────── */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: var(--sidebar-w) !important;
+        transform: translateX(-100%);
+        transition: transform var(--transition-slow);
+    }
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+    .sidebar.collapsed {
+        width: var(--sidebar-w) !important;
+    }
+    .sidebar-toggle-btn {
+        display: none;
+    }
+    .mobile-menu-btn {
+        display: flex;
+    }
+    .sidebar-overlay.open {
+        display: block;
+    }
+}
+
+/* ══════════════════════════════════════════════════════
+   WORKSPACE LIGHT THEME — pm-dash-* overrides
+   Scoped to .platform-shell so the marketing site (which
+   reuses .card/.badge/.filter-pill/.stat-card elsewhere)
+   is completely unaffected. This is the SNDBX-style light
+   surface, recolored with Market Link's cream/olive/navy.
+   ══════════════════════════════════════════════════════ */
+.platform-shell .pm-dash-welcome {
+    background: linear-gradient(90deg, var(--pm-navy) 0%, #4A4630 100%);
+    border-bottom: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.platform-shell .pm-dash-welcome h2 {
+    color: var(--pm-white);
+}
+.platform-shell .pm-dash-welcome p {
+    color: rgba(255, 255, 255, 0.75);
+}
+.platform-shell .pm-dash-card-t,
+.platform-shell .pm-card-title,
+.platform-shell .pm-dash-kn,
+.platform-shell .pm-dash-staff-name,
+.platform-shell .pm-dash-staff-stat-n,
+.platform-shell .pm-dash-li-title,
+.platform-shell .pm-dash-task-title,
+.platform-shell .pm-dash-mp-name,
+.platform-shell .pm-dash-inv-client,
+.platform-shell .pm-dash-pipe-count,
+.platform-shell .pm-dash-feed-actor {
+    color: var(--ws-text);
+}
+.platform-shell .pm-body-sm,
+.platform-shell .pm-dash-kl,
+.platform-shell .pm-dash-ksub,
+.platform-shell .pm-dash-pipe-stage,
+.platform-shell .pm-dash-pipe-val,
+.platform-shell .pm-dash-staff-role,
+.platform-shell .pm-dash-staff-stat-l,
+.platform-shell .pm-dash-feed-text,
+.platform-shell .pm-dash-feed-time,
+.platform-shell .pm-dash-mini-kpi-lbl,
+.platform-shell .pm-dash-li-meta,
+.platform-shell .pm-dash-task-meta,
+.platform-shell .pm-dash-mp-text,
+.platform-shell .pm-dash-inv-row,
+.platform-shell .pm-dash-inv-head,
+.platform-shell .pm-dash-prog-lbl {
+    color: var(--ws-text-muted);
+}
+
+/* Stat-card label with leading icon */
+.platform-shell .pm-dash-kl-icon {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 500;
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+.platform-shell .pm-dash-kl-icon svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+/* Cards — white surface, hairline border, soft shadow on hover */
+.platform-shell .pm-dash-card,
+.platform-shell .pm-dash-kcard {
+    background: var(--ws-surface);
+    border: 1px solid var(--ws-border);
+    backdrop-filter: none;
+    box-shadow: none;
+}
+.platform-shell .pm-dash-card:hover,
+.platform-shell .pm-dash-kcard:hover {
+    border-color: var(--ws-accent);
+    box-shadow: 0 4px 16px rgba(10, 20, 40, 0.06);
+}
+.platform-shell .pm-dash-card-h {
+    border-bottom: 1px solid var(--ws-border);
+}
+.platform-shell .pm-dash-qa-btn {
+    border-color: var(--ws-border);
+    color: var(--ws-text-muted);
+}
+.platform-shell .pm-dash-qa-btn:hover {
+    color: var(--ws-accent);
+    border-color: var(--ws-accent);
+    background: rgba(166, 138, 46, 0.08);
+}
+
+/* Divider lines */
+.platform-shell .pm-dash-staff-row,
+.platform-shell .pm-dash-feed-item,
+.platform-shell .pm-dash-li,
+.platform-shell .pm-dash-task,
+.platform-shell .pm-dash-msg-prev,
+.platform-shell .pm-dash-inv-row {
+    border-bottom: 1px solid var(--ws-border);
+}
+.platform-shell .pm-dash-msg-prev:hover {
+    background: var(--ws-bg);
+}
+.platform-shell .pm-dash-inv-head {
+    border-bottom: 2px solid var(--ws-border);
+}
+.platform-shell .pm-dash-pipe-bar-track,
+.platform-shell .pm-dash-prog-track {
+    background: var(--ws-border);
+}
+.platform-shell .pm-dash-prog-fill {
+    background: var(--ws-accent);
+}
+
+/* Badges keep their semantic colors (green/red/blue read fine on white),
+   only the neutral + gold variants shift to the workspace accent */
+.platform-shell .pm-dash-bdg-y,
+.platform-shell .pm-dash-pri-med {
+    background: rgba(166, 138, 46, 0.12);
+    color: var(--ws-accent);
+}
+.platform-shell .pm-dash-bdg-n,
+.platform-shell .pm-dash-pri-low {
+    background: var(--ws-border);
+    color: var(--ws-text-muted);
+}
+.platform-shell .pm-dash-feed-dot.y {
+    background: var(--ws-accent);
+}
+
+/* Shared components reused from the marketing site — light variant
+   scoped to the dashboard so public pages stay untouched */
+.platform-shell .card {
+    background: var(--ws-surface);
+    border-color: var(--ws-border);
+}
+.platform-shell .card:hover {
+    border-color: var(--ws-accent);
+}
+.platform-shell .filter-pill {
+    border-color: var(--ws-border);
+    color: var(--ws-text-muted);
+    background: var(--ws-surface);
+}
+.platform-shell .filter-pill:hover {
+    color: var(--ws-text);
+    border-color: var(--ws-accent);
+}
+.platform-shell .filter-pill.active {
+    background: rgba(166, 138, 46, 0.1);
+    border-color: var(--ws-accent);
+    color: var(--ws-accent);
+}
+.platform-shell .stat-card {
+    background: var(--ws-surface);
+    border: 1px solid var(--ws-border);
+}
+.platform-shell .stat-num {
+    color: var(--ws-accent);
+}
+.platform-shell .stat-label {
+    color: var(--ws-text-muted);
+}
+.platform-shell .form-input,
+.platform-shell .form-textarea,
+.platform-shell .form-select {
+    background: var(--ws-surface);
+    border-color: var(--ws-border);
+    color: var(--ws-text);
+}
+.platform-shell .form-label {
+    color: var(--ws-text-muted);
+}

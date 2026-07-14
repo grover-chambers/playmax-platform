@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut, Menu, X } from "lucide-react";
 
 export interface DashboardNavItem {
   icon: React.ElementType;
@@ -46,6 +46,26 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Restore collapse state on mount (SNDBX-style persistence)
+  useEffect(() => {
+    startTransition(() => {
+      const saved = localStorage.getItem("pm-sidebar-collapsed");
+      if (saved !== null) setSidebarCollapsed(saved === "true");
+    });
+  }, []);
+
+  const toggleSidebar = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    localStorage.setItem("pm-sidebar-collapsed", String(next));
+  };
+
+  // Close the mobile drawer whenever the route changes
+  useEffect(() => {
+    startTransition(() => setMobileOpen(false));
+  }, [pathname]);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -54,9 +74,24 @@ export default function DashboardLayout({
     <div
       className={`platform-shell !min-h-screen ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
     >
+      {/* Mobile menu trigger */}
+      <button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="mobile-menu-btn"
+        aria-label={mobileOpen ? "Close menu" : "Open menu"}
+      >
+        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Backdrop behind the mobile drawer */}
+      <div
+        className={`sidebar-overlay ${mobileOpen ? "open" : ""}`}
+        onClick={() => setMobileOpen(false)}
+      />
+
       {/* Sidebar */}
       <aside
-        className={`sidebar !h-screen ${sidebarCollapsed ? "collapsed" : ""}`}
+        className={`sidebar !h-screen ${sidebarCollapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}
       >
         {/* Logo */}
         <div className="sidebar-logo">
@@ -188,7 +223,7 @@ export default function DashboardLayout({
 
       {/* Toggle button */}
       <button
-        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onClick={toggleSidebar}
         className="sidebar-toggle-btn"
         style={{
           left: sidebarCollapsed ? "60px" : "var(--sidebar-w)",
@@ -205,7 +240,7 @@ export default function DashboardLayout({
       {/* Main content */}
       <main className="flex-1 overflow-y-auto min-h-screen">
         {topBar && (
-          <div className="sticky top-0 z-30 flex items-center justify-end px-6 py-2 bg-[#0A0A0A]/80 backdrop-blur-sm border-b border-[#1E1E1E]">
+          <div className="sticky top-0 z-30 flex items-center justify-end px-6 py-2 bg-[var(--ws-surface)]/90 backdrop-blur-sm border-b border-[var(--ws-border)]">
             {topBar}
           </div>
         )}
