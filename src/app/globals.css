@@ -2439,31 +2439,6 @@ h6 {
 }
 
 /* ═══════════════════════════════════════════════════════
-   LOGO BOUNCE ANIMATION
-   ═══════════════════════════════════════════════════════ */
-@keyframes pm-bounce-letter {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-    35% {
-        transform: translateY(-8px);
-    }
-    55% {
-        transform: translateY(-3px);
-    }
-}
-.pm-bounce-letter {
-    display: inline-block;
-    animation: pm-bounce-letter 2.4s ease-in-out infinite;
-}
-.pm-bounce-max {
-    display: inline-block;
-    animation: pm-bounce-letter 2.4s ease-in-out infinite;
-    color: var(--pm-yellow);
-}
-
-/* ═══════════════════════════════════════════════════════
    SERVICES STRIP MARQUEE
    ═══════════════════════════════════════════════════════ */
 @keyframes pm-marquee-scroll {

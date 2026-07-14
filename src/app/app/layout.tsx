@@ -20,6 +20,9 @@ import {
   Settings,
   ClipboardList,
   Globe,
+  TrendingUp,
+  Upload,
+  Database,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { getRoleLabel } from "@/lib/roles";
@@ -118,6 +121,35 @@ const allNavSections: NavSection[] = [
         label: "Preview Client",
         href: "/app/preview-client",
         roles: ["super_admin"],
+      },
+    ],
+  },
+  {
+    label: "Analytics",
+    items: [
+      {
+        icon: TrendingUp,
+        label: "Dashboard",
+        href: "/app/analytics",
+        roles: ["super_admin", "crm_admin"],
+      },
+      {
+        icon: Upload,
+        label: "Data Upload",
+        href: "/app/analytics/upload",
+        roles: ["super_admin", "crm_admin"],
+      },
+      {
+        icon: BarChart3,
+        label: "Reports",
+        href: "/app/analytics/reports",
+        roles: ["super_admin", "crm_admin"],
+      },
+      {
+        icon: Database,
+        label: "Dimensions",
+        href: "/app/analytics/dimensions",
+        roles: ["super_admin", "crm_admin"],
       },
     ],
   },
