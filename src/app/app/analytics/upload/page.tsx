@@ -332,6 +332,8 @@ export default function AnalyticsUploadPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [dimensionsLoaded, setDimensionsLoaded] = useState(false);
+  const [dimensionsLoading, setDimensionsLoading] = useState(false);
+  const [dimensionsError, setDimensionsError] = useState<string | null>(null);
 
   // Detected metadata from file
   const [detectedMeta, setDetectedMeta] = useState<DetectedMetadata | null>(null);
@@ -359,25 +361,51 @@ export default function AnalyticsUploadPage() {
       return;
     }
 
+    setDimensionsLoading(true);
+    setDimensionsError(null);
+
     try {
       const [dimRes, perRes] = await Promise.all([
         fetch("/api/analytics/dimensions"),
         fetch("/api/analytics/periods"),
       ]);
+
+      if (!dimRes.ok) {
+        const err = await dimRes.json().catch(() => ({ error: "Dimensions request failed" }));
+        throw new Error(err.error || `Dimensions API returned ${dimRes.status}`);
+      }
+      if (!perRes.ok) {
+        const err = await perRes.json().catch(() => ({ error: "Periods request failed" }));
+        throw new Error(err.error || `Periods API returned ${perRes.status}`);
+      }
+
       const dimData = await dimRes.json();
       const perData = await perRes.json();
       const brs: Branch[] = dimData.branches ?? [];
       const cats: Category[] = dimData.categories ?? [];
+      const pers: Period[] = perData.periods ?? [];
 
       setBranches(brs);
       setCategories(cats);
-      setPeriods(perData.periods ?? []);
+      setPeriods(pers);
       setDimensionsLoaded(true);
+
+      if (pers.length === 0) {
+        setDimensionsError("No periods found in the database. Create periods in Analytics Settings first.");
+      }
 
       if (metadata) autoMatchDimensions(metadata, brs, cats);
     } catch (e) {
       console.error("Failed to load dimensions:", e);
+      setDimensionsError(e instanceof Error ? e.message : "Failed to load dimensions");
+    } finally {
+      setDimensionsLoading(false);
     }
+  };
+
+  const retryDimensions = async () => {
+    setDimensionsLoaded(false);
+    await ensureDimensions(detectedMeta ?? undefined);
   };
 
   const autoMatchDimensions = (
@@ -1075,23 +1103,29 @@ export default function AnalyticsUploadPage() {
                 {/* Branch */}
                 <div>
                   <label className="font-mono text-[10px] text-gray-5 uppercase tracking-wider block mb-2">
-                    Branch{" "}
+                    Branch{' '}
                     {needsBranch && (
                       <span className="text-red">*</span>
                     )}
                   </label>
-                  <select
-                    value={selectedBranchId}
-                    onChange={(e) => setSelectedBranchId(e.target.value)}
-                    className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
-                  >
-                    <option value="">— Select branch —</option>
-                    {branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.code} — {b.name}
-                      </option>
-                    ))}
-                  </select>
+                  {dimensionsLoading ? (
+                    <div className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Loading...
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedBranchId}
+                      onChange={(e) => setSelectedBranchId(e.target.value)}
+                      className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
+                    >
+                      <option value="">— Select branch —</option>
+                      {branches.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.code} — {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Category */}
@@ -1099,18 +1133,24 @@ export default function AnalyticsUploadPage() {
                   <label className="font-mono text-[10px] text-gray-5 uppercase tracking-wider block mb-2">
                     Category
                   </label>
-                  <select
-                    value={selectedCategoryId}
-                    onChange={(e) => setSelectedCategoryId(e.target.value)}
-                    className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
-                  >
-                    <option value="">— Select category —</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  {dimensionsLoading ? (
+                    <div className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Loading...
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedCategoryId}
+                      onChange={(e) => setSelectedCategoryId(e.target.value)}
+                      className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
+                    >
+                      <option value="">— Select category —</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Period */}
@@ -1118,18 +1158,40 @@ export default function AnalyticsUploadPage() {
                   <label className="font-mono text-[10px] text-gray-5 uppercase tracking-wider block mb-2">
                     Period <span className="text-red">*</span>
                   </label>
-                  <select
-                    value={selectedPeriodId}
-                    onChange={(e) => setSelectedPeriodId(e.target.value)}
-                    className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
-                  >
-                    <option value="">— Select period —</option>
-                    {periods.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label} ({p.start_date} — {p.end_date})
-                      </option>
-                    ))}
-                  </select>
+                  {dimensionsLoading ? (
+                    <div className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Loading periods...
+                    </div>
+                  ) : (
+                    <>
+                      <select
+                        value={selectedPeriodId}
+                        onChange={(e) => setSelectedPeriodId(e.target.value)}
+                        className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
+                      >
+                        <option value="">— Select period —</option>
+                        {periods.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label} ({p.start_date} — {p.end_date})
+                          </option>
+                        ))}
+                      </select>
+                      {periods.length === 0 && dimensionsLoaded && !dimensionsError && (
+                        <p className="text-[10px] text-gray-5 mt-1">
+                          No periods found. <button onClick={retryDimensions} className="text-teal underline cursor-pointer">Retry</button>
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {dimensionsError && (
+                    <div className="mt-2 p-2 bg-red/10 border border-red/30 rounded text-[10px] text-red flex items-start gap-2">
+                      <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <div>{dimensionsError}</div>
+                        <button onClick={retryDimensions} className="text-teal underline mt-1 cursor-pointer">Retry loading</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
