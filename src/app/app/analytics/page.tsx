@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Button from "@/components/ui/button";
 import PageHeader from "@/components/layout/page-header";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import type {
   AnalyticsBranch,
   AnalyticsStagingUpload,
@@ -26,6 +27,7 @@ export default function AnalyticsDashboard() {
   const [branches, setBranches] = useState<AnalyticsBranch[]>([]);
   const [uploads, setUploads] = useState<AnalyticsStagingUpload[]>([]);
   const [productCount, setProductCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +68,9 @@ export default function AnalyticsDashboard() {
     { icon: Calendar, value: loading ? "—" : String(activePeriods), label: "Periods" },
   ];
 
-  const recentUploads = uploads.slice(0, 5);
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [uploads.length]);
+
+  const { paginated: recentUploads, total } = usePagination(uploads, page, 5);
 
   return (
     <div className="page-content">
@@ -125,7 +129,7 @@ export default function AnalyticsDashboard() {
                 <span className="ml-2 text-[11px] text-gray-5">Loading...</span>
               </div>
             ) : (
-              <table className="w-full text-[11px]">
+              <><table className="w-full text-[11px]">
                 <thead>
                   <tr className="text-gray-5 font-mono">
                     <th className="text-left pb-2 font-normal">File</th>
@@ -136,7 +140,7 @@ export default function AnalyticsDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentUploads.length === 0 && (
+                   {uploads.length === 0 && (
                     <tr>
                       <td colSpan={5} className="text-center py-8 text-gray-5">
                         No data uploaded yet.
@@ -154,9 +158,11 @@ export default function AnalyticsDashboard() {
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            )}
+            </tbody>
+          </table>
+          <Pagination page={page} pageSize={5} total={total} onPageChange={setPage} />
+          </>
+        )}
           </div>
         </div>
 

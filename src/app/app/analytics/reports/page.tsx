@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Button from "@/components/ui/button";
 import PageHeader from "@/components/layout/page-header";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import type {
   AnalyticsCategory,
   MarketShareResponse,
@@ -63,6 +64,9 @@ export default function MarketShareReport() {
   const [marketData, setMarketData] = useState<MarketShareResponse | null>(null);
   const [categoryData, setCategoryData] = useState<CategoryPerformanceRow[]>([]);
   const [competitorData, setCompetitorData] = useState<CompetitorRow[]>([]);
+  const [marketPage, setMarketPage] = useState(1);
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [competitorPage, setCompetitorPage] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
@@ -102,12 +106,15 @@ export default function MarketShareReport() {
       switch (activeTab) {
         case "market_share":
           setMarketData(data);
+          setMarketPage(1);
           break;
         case "category_performance":
           setCategoryData(data.categories ?? []);
+          setCategoryPage(1);
           break;
         case "competitor_comparison":
           setCompetitorData(data.manufacturers ?? []);
+          setCompetitorPage(1);
           break;
       }
     } catch (e: unknown) {
@@ -116,6 +123,13 @@ export default function MarketShareReport() {
       setLoading(false);
     }
   }, [activeTab, selectedCategory, periodStart, periodEnd, compareStart, compareEnd]);
+
+  const branchesForTable = marketData ? [...marketData.branches].sort((a, b) => a.rank - b.rank) : [];
+  const { paginated: paginatedMarket, total: totalMarket } = usePagination(branchesForTable, marketPage, 20);
+  const sortedCategoryData = [...categoryData].sort((a, b) => b.total_sales - a.total_sales);
+  const { paginated: paginatedCategory, total: totalCategory } = usePagination(sortedCategoryData, categoryPage, 20);
+  const sortedCompetitorData = [...competitorData].sort((a, b) => b.total_sales - a.total_sales);
+  const { paginated: paginatedCompetitor, total: totalCompetitor } = usePagination(sortedCompetitorData, competitorPage, 20);
 
   const handleSave = async () => {
     setSaving(true);
@@ -367,9 +381,7 @@ export default function MarketShareReport() {
                 </tr>
               </thead>
               <tbody>
-                {marketData.branches
-                  .sort((a, b) => a.rank - b.rank)
-                  .map((r) => {
+                {paginatedMarket.map((r) => {
                     const badge = growthBadge(r.sales, r.prev_sales);
                     const BadgeIcon = badge.icon;
                     return (
@@ -422,6 +434,7 @@ export default function MarketShareReport() {
                 </tr>
               </tfoot>
             </table>
+            <Pagination page={marketPage} pageSize={20} total={totalMarket} onPageChange={setMarketPage} />
           </div>
         </>
       )}
@@ -486,9 +499,7 @@ export default function MarketShareReport() {
                     <td colSpan={6} className="text-center py-8 text-gray-5">No data available.</td>
                   </tr>
                 )}
-                {categoryData
-                  .sort((a, b) => b.total_sales - a.total_sales)
-                  .map((r) => {
+                {paginatedCategory.map((r) => {
                     const badge = growthBadge(r.total_sales, r.prev_total_sales);
                     const BadgeIcon = badge.icon;
                     return (
@@ -509,6 +520,7 @@ export default function MarketShareReport() {
                   })}
               </tbody>
             </table>
+            <Pagination page={categoryPage} pageSize={20} total={totalCategory} onPageChange={setCategoryPage} />
           </div>
         </>
       )}
@@ -573,9 +585,7 @@ export default function MarketShareReport() {
                     <td colSpan={6} className="text-center py-8 text-gray-5">No data available.</td>
                   </tr>
                 )}
-                {competitorData
-                  .sort((a, b) => b.total_sales - a.total_sales)
-                  .map((r) => (
+                {paginatedCompetitor.map((r) => (
                     <tr key={r.manufacturer} className="border-b border-[#1E1E1E] last:border-0">
                       <td className="px-4 py-3 text-white font-medium">{r.manufacturer}</td>
                       <td className="px-4 py-3 text-right text-white font-mono">{formatKES(r.total_sales)}</td>
@@ -587,6 +597,7 @@ export default function MarketShareReport() {
                   ))}
               </tbody>
             </table>
+            <Pagination page={competitorPage} pageSize={20} total={totalCompetitor} onPageChange={setCompetitorPage} />
           </div>
         </>
       )}

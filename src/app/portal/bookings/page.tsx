@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Button from "@/components/ui/button";
 import StatusBadge from "@/components/ui/status-badge";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import { Calendar, MapPin, Clock, ExternalLink } from "lucide-react";
 
 interface Booking {
@@ -46,6 +47,8 @@ const bookings: Booking[] = [
 ];
 
 export default function PortalBookingsPage() {
+  const [page, setPage] = useState(1);
+  const { paginated, total } = usePagination(bookings, page, 20);
   return (
     <div>
       <div className="mb-8">
@@ -56,7 +59,7 @@ export default function PortalBookingsPage() {
       </div>
 
       <div className="grid gap-4">
-        {bookings.map((b) => (
+        {paginated.map((b) => (
           <div
             key={b.id}
             className="bg-black-2 border border-[#252525] rounded-lg px-6 py-5 flex items-start justify-between gap-4"
@@ -111,6 +114,7 @@ export default function PortalBookingsPage() {
           </div>
         ))}
       </div>
+      <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
     </div>
   );
 }

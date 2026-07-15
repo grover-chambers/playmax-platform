@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { Eye, LogOut, ExternalLink, Monitor, Smartphone } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 const clientAccounts = [
   { id: "c1", name: "Bidco Africa", industry: "FMCG / Manufacturing", owner: "Amina Mwangi", projectCount: 3, lastActive: "2h ago" },
@@ -20,10 +21,15 @@ export default function PreviewClientPage() {
   const [search, setSearch] = useState("");
   const [previewing, setPreviewing] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
+  const [page, setPage] = useState(1);
 
   const filtered = clientAccounts.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const { paginated, total } = usePagination(filtered, page, 20);
+
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [search]);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--ws-bg)" }}>
@@ -255,7 +261,7 @@ export default function PreviewClientPage() {
 
           {/* Client grid */}
           <div className="p-7 grid grid-cols-2 gap-4">
-            {filtered.map((client) => (
+            {paginated.map((client) => (
               <button
                 key={client.id}
                 onClick={() => setPreviewing(client.name)}
@@ -286,6 +292,7 @@ export default function PreviewClientPage() {
               </button>
             ))}
           </div>
+          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
         </div>
       )}
     </div>

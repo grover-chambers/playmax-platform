@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -18,6 +18,7 @@ import NewTaskModal from "@/components/modals/new-task-modal";
 import { useUser } from "@/lib/user-context";
 import { createClient } from "@/lib/supabase/browser";
 import { formatTimeAgo } from "@/lib/utils";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 /* ── Data ──────────────────────────────────────────────── */
 
@@ -200,6 +201,8 @@ export default function MyDayPage() {
   const [myConversations, setMyConversations] = useState(conversations);
   const [myProjects, setMyProjects] = useState(projects);
   const [myKpis, setMyKpis] = useState(defaultKpis);
+  const [leadsPage, setLeadsPage] = useState(1);
+  const [convPage, setConvPage] = useState(1);
   const { user } = useUser();
 
   useEffect(() => {
@@ -238,7 +241,7 @@ export default function MyDayPage() {
           .from("leads")
           .select("company, intent, status, created_at")
           .order("created_at", { ascending: false })
-          .limit(5);
+          ;
         if (dbLeads && dbLeads.length > 0) {
           setMyLeads(dbLeads.map(l => ({
             company: l.company,
@@ -262,7 +265,7 @@ export default function MyDayPage() {
           .from("conversations")
           .select("contact_name, last_message, updated_at, unread")
           .order("updated_at", { ascending: false })
-          .limit(3);
+          ;
         if (dbConvs && dbConvs.length > 0) {
           const unreadCount = dbConvs.filter(c => c.unread).length;
           setMyConversations(dbConvs.map(c => ({
@@ -295,6 +298,12 @@ export default function MyDayPage() {
       } catch { /* fallback */ }
     })();
   }, [user?.id]);
+
+  useEffect(() => { startTransition(() => { setLeadsPage(1); }); }, [myLeads]);
+  useEffect(() => { startTransition(() => { setConvPage(1); }); }, [myConversations]);
+
+  const { paginated: paginatedLeads, total: totalLeads } = usePagination(myLeads, leadsPage, 20);
+  const { paginated: paginatedConvs, total: totalConvs } = usePagination(myConversations, convPage, 20);
 
   return (
     <div>
@@ -407,7 +416,7 @@ export default function MyDayPage() {
                 <span>Stage</span>
                 <span>Last contact</span>
               </div>
-              {myLeads.map((lead) => (
+              {paginatedLeads.map((lead) => (
                 <div
                   key={lead.company}
                   className="pm-dash-inv-row"
@@ -442,6 +451,7 @@ export default function MyDayPage() {
                   </span>
                 </div>
               ))}
+              <Pagination page={leadsPage} pageSize={20} total={totalLeads} onPageChange={setLeadsPage} />
             </div>
           </div>
         </div>
@@ -467,7 +477,7 @@ export default function MyDayPage() {
               </span>
             </div>
             <div className="pm-dash-card-b">
-              {myConversations.map((conv) => (
+              {paginatedConvs.map((conv) => (
                 <div key={conv.name} className="pm-dash-msg-prev">
                   <div
                     className="user-avatar"
@@ -514,6 +524,7 @@ export default function MyDayPage() {
                   />
                 </div>
               ))}
+              <Pagination page={convPage} pageSize={20} total={totalConvs} onPageChange={setConvPage} />
             </div>
           </div>
 

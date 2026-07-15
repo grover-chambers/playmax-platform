@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Button from "@/components/ui/button";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import { FileText, Presentation, BarChart3, Image, Download } from "lucide-react";
 
 interface Deliverable {
@@ -21,17 +22,19 @@ const deliverables: Deliverable[] = [
 ];
 
 export default function PortalDeliverablesPage() {
+  const [page, setPage] = useState(1);
+  const { paginated, total } = usePagination(deliverables, page, 20);
   return (
     <div>
       <div className="mb-6">
         <h1 className="font-display text-xl font-bold">Deliverables</h1>
         <p className="text-xs text-gray-4 mt-0.5">
-          {deliverables.length} files across your projects
+          {total} files across your projects
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {deliverables.map((d) => {
+        {paginated.map((d) => {
           const Icon = d.icon;
           return (
             <div
@@ -66,6 +69,7 @@ export default function PortalDeliverablesPage() {
           );
         })}
       </div>
+      <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
     </div>
   );
 }

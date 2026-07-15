@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import StatusBadge from "@/components/ui/status-badge";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Project {
   name: string;
@@ -20,12 +21,14 @@ const projects: Project[] = [
 ];
 
 export default function PortalProjectsPage() {
+  const [page, setPage] = useState(1);
+  const { paginated: paginatedProjects, total: totalProjects } = usePagination(projects, page, 20);
   return (
     <div>
       <div className="mb-6">
         <h1 className="font-display text-xl font-bold">Projects</h1>
         <p className="text-xs text-gray-4 mt-0.5">
-          {projects.length} projects for P&G East Africa
+          {totalProjects} projects for P&G East Africa
         </p>
       </div>
 
@@ -46,7 +49,7 @@ export default function PortalProjectsPage() {
             </tr>
           </thead>
           <tbody>
-            {projects.map((project) => (
+            {paginatedProjects.map((project) => (
               <tr
                 key={project.name}
                 className="border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors"
@@ -85,6 +88,7 @@ export default function PortalProjectsPage() {
             ))}
           </tbody>
         </table>
+        <Pagination page={page} pageSize={20} total={totalProjects} onPageChange={setPage} />
       </div>
     </div>
   );

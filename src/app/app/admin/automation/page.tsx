@@ -11,6 +11,7 @@ import {
 import Button from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import StatusBadge from "@/components/ui/status-badge";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface AutomationRule {
   id: string;
@@ -98,10 +99,12 @@ const initialRules: AutomationRule[] = [
 
 export default function AutomationPage() {
   const [rules, setRules] = useState<AutomationRule[]>(initialRules);
+  const [page, setPage] = useState(1);
   const [showNewRule, setShowNewRule] = useState(false);
   const [showLog, setShowLog] = useState(false);
 
   const toggleRule = (id: string) => {
+    setPage(1);
     setRules((prev) =>
       prev.map((r) =>
         r.id === id
@@ -114,6 +117,8 @@ export default function AutomationPage() {
       ),
     );
   };
+
+  const { paginated, total } = usePagination(rules, page, 20);
 
   return (
     <div className="page-content">
@@ -182,7 +187,7 @@ export default function AutomationPage() {
           <span className="text-center">Last triggered</span>
           <span className="text-center">Status</span>
         </div>
-        {rules.map((rule) => (
+        {paginated.map((rule) => (
           <div
             key={rule.id}
             className="grid grid-cols-[1fr_1.5fr_80px_100px_80px] gap-3 px-5 py-4 border-b border-[#111] hover:bg-white/[.02] transition-colors items-center"
@@ -232,6 +237,7 @@ export default function AutomationPage() {
           </div>
         ))}
       </div>
+      <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
 
       {/* ── New Rule Modal ── */}
       <Modal open={showNewRule} onClose={() => setShowNewRule(false)} title="New Automation Rule">

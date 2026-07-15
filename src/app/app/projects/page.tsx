@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, startTransition } from "react";
 import { Plus, Download } from "lucide-react";
 import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
@@ -13,6 +13,7 @@ import ProgressBar from "@/components/ui/progress-bar";
 import NewProjectModal from "@/components/modals/new-project-modal";
 import { downloadCSV } from "@/lib/export-utils";
 import { createClient } from "@/lib/supabase/browser";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Project {
   id: string;
@@ -154,6 +155,7 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [data, setData] = useState<Project[]>(projects);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -231,6 +233,10 @@ export default function ProjectsPage() {
     });
   }, [activeType, activeStatus, search, data]);
 
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [activeType, activeStatus, search]);
+
+  const { paginated, total } = usePagination(filtered, page, 20);
+
   function handleExport() {
     const rows = filtered.map((p) => [p.name, p.client, p.type, p.status, String(p.progress) + "%", p.value, p.deadline]);
     downloadCSV(["Project", "Client", "Type", "Status", "Progress", "Value", "Deadline"], rows, "projects");
@@ -283,7 +289,7 @@ export default function ProjectsPage() {
       </div>
 
       <div className="px-7 py-5 grid grid-cols-3 gap-4">
-        {filtered.map((project) => (
+        {paginated.map((project) => (
           <Link key={project.id} href={`/workspace/${project.id}`}>
             <Card className="p-4">
               <div className="flex items-center justify-between mb-2.5">
@@ -317,6 +323,8 @@ export default function ProjectsPage() {
           </Link>
         ))}
       </div>
+
+      <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
 
       <NewProjectModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={refreshProjects} />
     </div>

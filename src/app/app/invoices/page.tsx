@@ -15,6 +15,7 @@ import {
   Save,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/export-utils";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Invoice {
   id: string;
@@ -87,6 +88,7 @@ export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [modalOpen, setModalOpen] = useState(false);
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
+  const [page, setPage] = useState(1);
 
   // New invoice form state
   const [formClient, setFormClient] = useState("");
@@ -191,9 +193,12 @@ export default function InvoicesPage() {
     };
 
     setInvoices((prev) => [newInvoice, ...prev]);
+    setPage(1);
     setModalOpen(false);
     resetForm();
   };
+
+  const { paginated, total } = usePagination(invoices, page, 20);
 
   const statusColor = (status: string) => {
     switch (status) {
@@ -288,7 +293,7 @@ export default function InvoicesPage() {
                   </td>
                 </tr>
               ) : (
-                invoices.map((inv) => (
+                paginated.map((inv) => (
                   <tr
                     key={inv.id}
                     className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors"
@@ -338,6 +343,8 @@ export default function InvoicesPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
 
       {/* ── New Invoice Modal ── */}

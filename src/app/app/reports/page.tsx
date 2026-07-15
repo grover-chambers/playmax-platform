@@ -18,6 +18,7 @@ import FilterPill from "@/components/ui/filter-pill";
 import NewReportModal from "@/components/modals/new-report-modal";
 import { formatTimeAgo } from "@/lib/utils";
 import { downloadCSV } from "@/lib/export-utils";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 const periodFilters = ["This Month", "This Quarter", "This Year", "Custom"];
 
@@ -36,6 +37,16 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [showNewReport, setShowNewReport] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const recentActivity = [
+    { date: "07 Jul 2026", event: "Invoice paid", client: "Haco Industries", value: "KES 560K", by: "Faith" },
+    { date: "06 Jul 2026", event: "Lead won", client: "Twiga Foods", value: "KES 780K", by: "Amina" },
+    { date: "05 Jul 2026", event: "Project milestone", client: "Safaricom", value: "—", by: "James" },
+    { date: "05 Jul 2026", event: "Research report published", client: "Bidco Africa", value: "—", by: "Christine" },
+    { date: "04 Jul 2026", event: "Booking confirmed", client: "P&G EA", value: "KES 255K", by: "System" },
+    { date: "03 Jul 2026", event: "New lead", client: "Unga Group", value: "—", by: "Website" },
+  ];
+  const { paginated, total } = usePagination(recentActivity, page, 20);
 
   function loadReports() {
     fetch("/api/reports")
@@ -414,50 +425,7 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  {
-                    date: "07 Jul 2026",
-                    event: "Invoice paid",
-                    client: "Haco Industries",
-                    value: "KES 560K",
-                    by: "Faith",
-                  },
-                  {
-                    date: "06 Jul 2026",
-                    event: "Lead won",
-                    client: "Twiga Foods",
-                    value: "KES 780K",
-                    by: "Amina",
-                  },
-                  {
-                    date: "05 Jul 2026",
-                    event: "Project milestone",
-                    client: "Safaricom",
-                    value: "—",
-                    by: "James",
-                  },
-                  {
-                    date: "05 Jul 2026",
-                    event: "Research report published",
-                    client: "Bidco Africa",
-                    value: "—",
-                    by: "Christine",
-                  },
-                  {
-                    date: "04 Jul 2026",
-                    event: "Booking confirmed",
-                    client: "P&G EA",
-                    value: "KES 255K",
-                    by: "System",
-                  },
-                  {
-                    date: "03 Jul 2026",
-                    event: "New lead",
-                    client: "Unga Group",
-                    value: "—",
-                    by: "Website",
-                  },
-                ].map((row, i) => (
+                {paginated.map((row, i) => (
                   <tr
                     key={i}
                     className="border-b border-[#1a1a1a] hover:bg-white/[.02]"
@@ -481,6 +449,7 @@ export default function ReportsPage() {
             </table>
           </div>
         </div>
+        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
 
       <NewReportModal

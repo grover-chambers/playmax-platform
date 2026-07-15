@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, startTransition } from "react";
 import { Download, Plus, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
@@ -11,6 +11,7 @@ import KanbanColumn from "@/components/crm/kanban-column";
 import ProjectCard from "@/components/crm/project-card";
 import NewProjectModal from "@/components/modals/new-project-modal";
 import { createClient } from "@/lib/supabase/browser";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 const typeFilters = [
   "All Types",
@@ -61,6 +62,7 @@ export default function PipelinePage() {
   const [search, setSearch] = useState("");
   const [showNewProject, setShowNewProject] = useState(false);
   const [projects, setProjects] = useState<PipelineProject[]>([]);
+  const [clientPage, setClientPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,6 +160,22 @@ export default function PipelinePage() {
   }, [projects, activeFilter, search]);
 
   const totalProjects = Object.values(grouped).flat().length;
+
+  const clientHealthList = useMemo(() => {
+    const clientMap = new Map<string, { projects: number; completed: number; progress: number }>();
+    for (const p of projects) {
+      const existing = clientMap.get(p.client) || { projects: 0, completed: 0, progress: 0 };
+      existing.projects += 1;
+      if (p.status === "completed") existing.completed += 1;
+      existing.progress = Math.max(existing.progress, p.progress);
+      clientMap.set(p.client, existing);
+    }
+    return Array.from(clientMap.entries());
+  }, [projects]);
+
+  const { paginated: paginatedClients, total: totalClients } = usePagination(clientHealthList, clientPage, 20);
+
+  useEffect(() => { startTransition(() => { setClientPage(1); }); }, [projects]);
 
   function handleExport() {
     const rows = projects.map((p) => [
@@ -317,18 +335,10 @@ export default function PipelinePage() {
               )}
             </div>
             <div className="pm-dash-card-b">
-              {(() => {
-                const clientMap = new Map<string, { projects: number; completed: number; progress: number }>();
-                for (const p of projects) {
-                  const existing = clientMap.get(p.client) || { projects: 0, completed: 0, progress: 0 };
-                  existing.projects += 1;
-                  if (p.status === "completed") existing.completed += 1;
-                  existing.progress = Math.max(existing.progress, p.progress);
-                  clientMap.set(p.client, existing);
-                }
-                const clients = Array.from(clientMap.entries());
-                if (clients.length === 0) return <p className="text-[12px] text-gray-5 py-4">No client data yet.</p>;
-                return clients.slice(0, 6).map(([name, info]) => {
+              {paginatedClients.length === 0 ? (
+                <p className="text-[12px] text-gray-5 py-4">No client data yet.</p>
+              ) : (
+                <>{paginatedClients.map(([name, info]) => {
                   const dot = info.completed > 0 ? "g" : info.progress >= 50 ? "g" : info.progress >= 25 ? "y" : "r";
                   const dotColors: Record<string, string> = { g: "var(--pm-green)", y: "var(--pm-yellow)", r: "var(--pm-red)" };
                   const bdgClasses: Record<string, string> = { g: "pm-dash-bdg-g", y: "pm-dash-bdg-y", r: "pm-dash-bdg-r" };
@@ -343,8 +353,10 @@ export default function PipelinePage() {
                       <span className={`pm-dash-bdg ${bdgClasses[dot]}`}>{statusLabels[dot]}</span>
                     </div>
                   );
-                });
-              })()}
+                })}
+                  <Pagination page={clientPage} pageSize={20} total={totalClients} onPageChange={setClientPage} />
+                </>
+              )}
             </div>
           </div>
         </div>

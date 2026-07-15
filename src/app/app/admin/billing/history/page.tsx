@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Search, Download } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
@@ -31,12 +32,15 @@ const statusVariant: Record<string, "active" | "review" | "draft" | "confirmed">
 export default function BillingHistoryPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const filtered = fullHistory.filter(
     (inv) =>
       inv.id.toLowerCase().includes(search.toLowerCase()) ||
       inv.status.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const { paginated, total } = usePagination(filtered, page, 20);
 
   return (
     <div>
@@ -58,7 +62,7 @@ export default function BillingHistoryPage() {
               className="w-full bg-black border border-[#252525] rounded-lg pl-9 pr-3 py-2 text-[12px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40"
               placeholder="Search invoices..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
           <Button
@@ -88,7 +92,7 @@ export default function BillingHistoryPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((inv) => (
+              {paginated.map((inv) => (
                 <tr
                   key={inv.id}
                   className="border-b border-[#1e1e1e] hover:bg-white/2 transition-colors"
@@ -115,6 +119,7 @@ export default function BillingHistoryPage() {
               No invoices match your search.
             </div>
           )}
+          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
         </div>
       </div>
     </div>

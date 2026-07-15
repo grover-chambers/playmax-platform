@@ -21,6 +21,22 @@ import * as XLSX from "xlsx";
 type UploadFormat = "per_store_sales" | "chain_wide_sales" | "inventory";
 type UploadStep = "select" | "raw_preview" | "column_mapping" | "mapped_preview" | "importing" | "done";
 
+// Store name → branch code lookup (client-side)
+const STORE_NAME_TO_BRANCH: Record<string, string> = {
+  "NAIVASHA": "NVS",
+  "NAKURU": "NKR",
+  "NAROK": "NRK",
+  "THIKA STORE(NAMPAK)": "NPM",
+  "THIKA STORE(Nampak)": "NPM",
+  "NYAHURURU": "NYH",
+  "MERU": "MER",
+  "MAUA": "MUA",
+  "KARATINA": "KRT",
+  "THIKA CBD": "HQ",
+  "HQ": "HQ",
+  "ENGINEER": "ENG",
+};
+
 const formatOptions: { value: UploadFormat; label: string; desc: string }[] = [
   { value: "per_store_sales", label: "Per-store sales report", desc: "Single category × single store (e.g. Maize Flour — Nakuru)" },
   { value: "chain_wide_sales", label: "Chain-wide summary", desc: "All products, all stores aggregated (e.g. sales_of_products_by_date)" },
@@ -36,13 +52,13 @@ const REQUIRED_FIELDS: Record<UploadFormat, string[]> = {
 
 // All possible field definitions
 const FIELD_DEFINITIONS: Record<string, { label: string; required: boolean; description: string }> = {
-  stock_code: { label: "Stock Code / SKU", required: true, description: "Unique product identifier" },
-  product_name: { label: "Product Name", required: false, description: "Product description/name" },
+  stock_code: { label: "Stock Code / SKU", required: true, description: "Unique product identifier (Item Code)" },
+  product_name: { label: "Product Name", required: false, description: "Product description / name (Description)" },
   quantity: { label: "Quantity", required: true, description: "Units sold or in stock" },
-  total: { label: "Total Amount (KES)", required: true, description: "Total sales value or cost" },
-  unit_price: { label: "Unit Price", required: false, description: "Price per unit" },
-  unit_cost: { label: "Unit Cost", required: false, description: "Cost per unit" },
-  weight_tonnes: { label: "Weight (tonnes)", required: false, description: "Weight in tonnes" },
+  total: { label: "Total Amount (KES)", required: true, description: "Total sales value (Total)" },
+  unit_price: { label: "Unit Price", required: false, description: "Price per unit (Selling Price)" },
+  unit_cost: { label: "Unit Cost", required: false, description: "Cost per unit (Standard Cost)" },
+  weight_tonnes: { label: "Weight (tonnes)", required: false, description: "Weight in tonnes (Weight (T))" },
   sub_category: { label: "Sub Category", required: false, description: "Product sub-category" },
 };
 
@@ -61,6 +77,14 @@ export default function AnalyticsUploadPage() {
   // Raw parsed data
   const [rawRows, setRawRows] = useState<Record<string, unknown>[]>([]);
   const [rawHeaders, setRawHeaders] = useState<string[]>([]);
+
+  // Per-store metadata (extracted from first rows)
+  const [storeMetadata, setStoreMetadata] = useState<{
+    period: string;
+    store: string;
+    category: string;
+    branchCode: string;
+  } | null>(null);
 
   // Column mapping
   const [columnMap, setColumnMap] = useState<Record<string, string>>({});
@@ -132,6 +156,7 @@ export default function AnalyticsUploadPage() {
     setColumnMap({});
     setUploadId(null);
     setImportResult(null);
+    setStoreMetadata(null);
     setStep("select");
   };
 
@@ -166,17 +191,71 @@ export default function AnalyticsUploadPage() {
         const data = await file.arrayBuffer();
         const workbook = XLSX.read(data);
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-        const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
 
-        // Create upload record first
+        let rows: Record<string, unknown>[] = [];
+        let headers: string[] = [];
+        let metadata: { period: string; store: string; category: string; branchCode: string } | null = null;
+
+        if (format === "per_store_sales") {
+          // Per-store: read as raw arrays to extract metadata from first rows
+          const rawArrays = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
+          const metaPeriod = String(rawArrays[1]?.[1] ?? "").trim();
+          const metaStore = String(rawArrays[2]?.[1] ?? "").trim();
+          const metaCategory = String(rawArrays[3]?.[1] ?? "").trim();
+          const cleanStore = metaStore.toUpperCase().replace(/\s+/g, " ");
+          const branchCode = STORE_NAME_TO_BRANCH[cleanStore] || STORE_NAME_TO_BRANCH[metaStore.toUpperCase().trim()] || "";
+
+          metadata = {
+            period: metaPeriod,
+            store: metaStore,
+            category: metaCategory,
+            branchCode,
+          };
+
+          // Find the header row (row index 5 in original, index 5 in 0-based rawArrays)
+          // Columns: Item Code | Description | Sub Category | Standard Cost | Selling Price | Quantity | Weight (T) | Total
+          const headerRowIndex = rawArrays.findIndex(
+            (arr, i) => i >= 4 && Array.isArray(arr) && arr.some(c => String(c ?? "").toLowerCase().includes("item code"))
+          );
+
+          if (headerRowIndex === -1) {
+            throw new Error("Could not find header row (expected 'Item Code' column)");
+          }
+
+          const rawHeaders = rawArrays[headerRowIndex].map(h => String(h).trim());
+
+          // Convert data rows (after header) to JSON
+          const dataRows: Record<string, unknown>[] = [];
+          for (let i = headerRowIndex + 1; i < rawArrays.length; i++) {
+            const row = rawArrays[i];
+            if (!row || row.every(c => c === undefined || c === null || String(c).trim() === "")) continue;
+            const obj: Record<string, unknown> = {};
+            rawHeaders.forEach((h, idx) => {
+              obj[h] = row[idx] ?? "";
+            });
+            dataRows.push(obj);
+          }
+
+          rows = dataRows;
+          headers = rawHeaders;
+          setStoreMetadata(metadata);
+        } else {
+          // Other formats: standard sheet_to_json
+          rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+          headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+        }
+
+        // Build upload payload with metadata
+        const uploadPayload: Record<string, unknown> = {
+          filename: file.name,
+          file_type: format,
+          metadata: metadata ? { period: metadata.period, store: metadata.store, category: metadata.category, branch_code: metadata.branchCode } : {},
+        };
+
         const uploadRes = await fetch("/api/analytics/uploads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            filename: file.name,
-            file_type: format,
-          }),
+          body: JSON.stringify(uploadPayload),
         });
 
         if (!uploadRes.ok) {
@@ -190,18 +269,18 @@ export default function AnalyticsUploadPage() {
         setRawRows(rows);
         setRawHeaders(headers);
 
-      // Auto-map common column names
+      // Auto-map common column names (fixed mappings)
       const autoMap: Record<string, string> = {};
       headers.forEach(h => {
         const lower = h.toLowerCase().trim();
         if (["stock code", "stock_code", "sku", "code", "item code"].includes(lower)) autoMap[h] = "stock_code";
         else if (["product name", "product_name", "product", "description", "item name"].includes(lower)) autoMap[h] = "product_name";
-        else if (["quantity", "qty", "units", "unit cost"].includes(lower)) autoMap[h] = "quantity";
+        else if (["quantity", "qty", "units"].includes(lower)) autoMap[h] = "quantity";
         else if (["total amount", "total_amount", "total", "sales", "total sales", "amount"].includes(lower)) autoMap[h] = "total";
         else if (["unit price", "unit_price", "price", "selling price"].includes(lower)) autoMap[h] = "unit_price";
-        else if (["unit cost", "unit_cost", "cost", "cost price"].includes(lower)) autoMap[h] = "unit_cost";
-        else if (["weight", "weight_tonnes", "tonnes", "weight (tonnes)"].includes(lower)) autoMap[h] = "weight_tonnes";
-        else if (["sub category", "sub_category", "subcategory", "category"].includes(lower)) autoMap[h] = "sub_category";
+        else if (["unit cost", "unit_cost", "cost", "cost price", "standard cost"].includes(lower)) autoMap[h] = "unit_cost";
+        else if (["weight", "weight_tonnes", "tonnes", "weight (tonnes)", "weight (t)"].includes(lower)) autoMap[h] = "weight_tonnes";
+        else if (["sub category", "sub_category", "subcategory"].includes(lower)) autoMap[h] = "sub_category";
       });
 
       setColumnMap(autoMap);
@@ -402,6 +481,23 @@ export default function AnalyticsUploadPage() {
                 <span className="font-display text-[13px] font-semibold text-white">Raw Data Preview</span>
                 <span className="text-[10px] text-gray-5 ml-2">{rawRows.length} rows × {rawHeaders.length} columns</span>
               </div>
+
+              {/* Per-store metadata badge */}
+              {storeMetadata && (
+                <div className="flex items-center gap-3 text-[10px]">
+                  <span className="text-gray-5">Period:</span>
+                  <span className="text-white font-medium">{storeMetadata.period}</span>
+                  <span className="text-gray-5">Store:</span>
+                  <span className="text-white font-medium">{storeMetadata.store}</span>
+                  {storeMetadata.branchCode && (
+                    <span className="px-2 py-0.5 rounded bg-green/10 text-green border border-green/30 text-[9px] font-mono">
+                      → {storeMetadata.branchCode}
+                    </span>
+                  )}
+                  <span className="text-gray-5">Category:</span>
+                  <span className="text-white font-medium">{storeMetadata.category}</span>
+                </div>
+              )}
               <Button variant="primary" size="sm" onClick={goToMapping}>
                 <ArrowRight className="w-3.5 h-3.5 mr-1" /> Map Columns
               </Button>

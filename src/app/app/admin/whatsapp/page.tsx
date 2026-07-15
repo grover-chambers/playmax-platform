@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import { useRouter } from "next/navigation";
 import { Plus, RefreshCw, Eye, RotateCcw, Link } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
@@ -74,6 +75,7 @@ const STATUS_BADGE_MAP: Record<TemplateStatus, "active" | "review" | "draft"> =
 export default function WhatsAppTemplatesPage() {
   const router = useRouter();
   const [templates] = useState<WhatsAppTemplate[]>(sampleTemplates);
+  const [page, setPage] = useState(1);
   const [wabaIdHidden, setWabaIdHidden] = useState(true);
   const [confirmAction, setConfirmAction] = useState<"rotate" | "reconnect" | null>(null);
 
@@ -81,6 +83,8 @@ export default function WhatsAppTemplatesPage() {
   const pendingCount = templates.filter((t) => t.status === "Pending").length;
   const rejectedCount = templates.filter((t) => t.status === "Rejected").length;
   const totalSentThisMonth = 1248; // simulated
+
+  const { paginated, total } = usePagination(templates, page, 20);
 
   return (
     <div>
@@ -157,7 +161,7 @@ export default function WhatsAppTemplatesPage() {
               </tr>
             </thead>
             <tbody>
-              {templates.map((tmpl) => (
+              {paginated.map((tmpl) => (
                 <tr
                   key={tmpl.id}
                   className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors"
@@ -224,6 +228,7 @@ export default function WhatsAppTemplatesPage() {
               No templates found.
             </div>
           )}
+          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
         </div>
       </div>
 

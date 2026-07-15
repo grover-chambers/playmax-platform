@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Store, Package, Building2, Tags, Loader2 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import type {
   AnalyticsBranch,
   AnalyticsCategory,
@@ -24,6 +25,9 @@ export default function DimensionsPage() {
   const [categories, setCategories] = useState<AnalyticsCategory[]>([]);
   const [manufacturers, setManufacturers] = useState<AnalyticsManufacturer[]>([]);
   const [productCount, setProductCount] = useState(0);
+  const [branchPage, setBranchPage] = useState(1);
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [manufacturerPage, setManufacturerPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +41,9 @@ export default function DimensionsPage() {
         setCategories(data.categories ?? []);
         setManufacturers(data.manufacturers ?? []);
         setProductCount(data.productCount ?? 0);
+        setBranchPage(1);
+        setCategoryPage(1);
+        setManufacturerPage(1);
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Failed to load data");
       } finally {
@@ -45,6 +52,10 @@ export default function DimensionsPage() {
     }
     load();
   }, []);
+
+  const { paginated: paginatedBranches, total: totalBranches } = usePagination(branches, branchPage, 20);
+  const { paginated: paginatedCategories, total: totalCategories } = usePagination(categories, categoryPage, 20);
+  const { paginated: paginatedManufacturers, total: totalManufacturers } = usePagination(manufacturers, manufacturerPage, 20);
 
   const renderTable = () => {
     if (loading) {
@@ -65,6 +76,7 @@ export default function DimensionsPage() {
     switch (activeTab) {
       case "branches":
         return (
+          <>
           <table className="w-full text-[11px]">
             <thead>
               <tr className="text-gray-5 font-mono border-b border-[#252525]">
@@ -81,7 +93,7 @@ export default function DimensionsPage() {
                   <td colSpan={5} className="text-center py-8 text-gray-5">No branches found.</td>
                 </tr>
               )}
-              {branches.map((b) => (
+              {paginatedBranches.map((b) => (
                 <tr key={b.id} className="border-b border-[#1E1E1E] last:border-0">
                   <td className="px-4 py-2.5 text-white font-mono">{b.code}</td>
                   <td className="px-4 py-2.5 text-white">{b.name}</td>
@@ -102,10 +114,13 @@ export default function DimensionsPage() {
               ))}
             </tbody>
           </table>
+          <Pagination page={branchPage} pageSize={20} total={totalBranches} onPageChange={setBranchPage} />
+          </>
         );
 
       case "categories":
         return (
+          <>
           <table className="w-full text-[11px]">
             <thead>
               <tr className="text-gray-5 font-mono border-b border-[#252525]">
@@ -119,7 +134,7 @@ export default function DimensionsPage() {
                   <td colSpan={2} className="text-center py-8 text-gray-5">No categories found.</td>
                 </tr>
               )}
-              {categories.map((c) => (
+              {paginatedCategories.map((c) => (
                 <tr key={c.id} className="border-b border-[#1E1E1E] last:border-0">
                   <td className="px-4 py-2.5 text-white">{c.name}</td>
                   <td className="px-4 py-2.5 text-gray-4">{c.description ?? "—"}</td>
@@ -127,10 +142,13 @@ export default function DimensionsPage() {
               ))}
             </tbody>
           </table>
+          <Pagination page={categoryPage} pageSize={20} total={totalCategories} onPageChange={setCategoryPage} />
+          </>
         );
 
       case "manufacturers":
         return (
+          <>
           <table className="w-full text-[11px]">
             <thead>
               <tr className="text-gray-5 font-mono border-b border-[#252525]">
@@ -144,7 +162,7 @@ export default function DimensionsPage() {
                   <td colSpan={2} className="text-center py-8 text-gray-5">No manufacturers found.</td>
                 </tr>
               )}
-              {manufacturers.map((m) => (
+              {paginatedManufacturers.map((m) => (
                 <tr key={m.id} className="border-b border-[#1E1E1E] last:border-0">
                   <td className="px-4 py-2.5 text-white">{m.name}</td>
                   <td className="px-4 py-2.5 text-gray-4 font-mono">{m.code ?? "—"}</td>
@@ -152,6 +170,8 @@ export default function DimensionsPage() {
               ))}
             </tbody>
           </table>
+          <Pagination page={manufacturerPage} pageSize={20} total={totalManufacturers} onPageChange={setManufacturerPage} />
+          </>
         );
 
       case "products":

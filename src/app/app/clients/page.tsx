@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, startTransition } from "react";
 import { Plus, Download, Grid3X3, List } from "lucide-react";
 import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
@@ -13,6 +13,7 @@ import NewClientModal from "@/components/modals/new-client-modal";
 import { downloadCSV } from "@/lib/export-utils";
 import { createClient } from "@/lib/supabase/browser";
 import { formatTimeAgo, uuidInitials } from "@/lib/utils";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Client {
   id: string;
@@ -147,6 +148,7 @@ export default function ClientsPage() {
   const [view, setView] = useState<"grid" | "list">("list");
   const [modalOpen, setModalOpen] = useState(false);
   const [data, setData] = useState<Client[]>(clients);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -169,9 +171,12 @@ export default function ClientsPage() {
           status: (c.status === "active" ? "active" : c.status === "inactive" ? "draft" : "review") as "active" | "review" | "draft",
         }));
         setData(mapped);
+        setPage(1);
       } catch { /* silent fallback to hardcoded */ }
     })();
   }, []);
+
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [activeFilter, search]);
 
   const filtered = useMemo(() => {
     return data.filter((c) => {
@@ -180,6 +185,8 @@ export default function ClientsPage() {
       return true;
     });
   }, [activeFilter, search, data]);
+
+  const { paginated, total } = usePagination(filtered, page, 20);
 
   const totalValue = filtered.reduce((acc, c) => {
     const num = parseInt(c.totalValue.replace(/[^0-9]/g, ""));
@@ -268,7 +275,7 @@ export default function ClientsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((client) => (
+              {paginated.map((client) => (
                 <tr
                   key={client.id}
                   className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors cursor-pointer"
@@ -319,7 +326,7 @@ export default function ClientsPage() {
         </div>
       ) : (
         <div className="px-7 py-5 grid grid-cols-3 gap-4">
-          {filtered.map((client) => (
+          {paginated.map((client) => (
             <Link key={client.id} href={`/app/clients/${client.id}`}>
               <div className="bg-[#0D0D0D] border border-[#252525] rounded-lg p-4 hover:border-yellow transition-colors cursor-pointer">
                 <div className="flex items-center justify-between mb-3">
@@ -353,6 +360,9 @@ export default function ClientsPage() {
           ))}
         </div>
       )}
+      <div className="px-7 pb-5">
+        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
+      </div>
     </div>
   );
 }

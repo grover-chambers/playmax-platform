@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Button from "@/components/ui/button";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import {
   Sun,
   AlertTriangle,
@@ -50,6 +51,10 @@ const deliverables = [
 ];
 
 export default function PortalOverviewPage() {
+  const [deliverablePage, setDeliverablePage] = useState(1);
+  const [messagePage, setMessagePage] = useState(1);
+  const { paginated: paginatedDeliverables, total: totalDeliverables } = usePagination(deliverables, deliverablePage, 20);
+  const { paginated: paginatedMessages, total: totalMessages } = usePagination(messages, messagePage, 20);
   return (
     <div>
       {/* ── Welcome strip ──────────────────────────── */}
@@ -187,10 +192,10 @@ export default function PortalOverviewPage() {
                   Deliverables awaiting review
                 </span>
               </div>
-              <span className="pm-dash-bdg pm-dash-bdg-y">3 pending</span>
+              <span className="pm-dash-bdg pm-dash-bdg-y">{totalDeliverables} pending</span>
             </div>
             <div className="pm-dash-card-b">
-              {deliverables.map((d, i) => (
+              {paginatedDeliverables.map((d, i) => (
                 <div key={i} className="pm-dash-del-row">
                   <div>
                     <div className="pm-dash-del-name">{d.name}</div>
@@ -212,6 +217,7 @@ export default function PortalOverviewPage() {
                   </div>
                 </div>
               ))}
+            <Pagination page={deliverablePage} pageSize={20} total={totalDeliverables} onPageChange={setDeliverablePage} />
             </div>
           </div>
         </div>
@@ -251,10 +257,10 @@ export default function PortalOverviewPage() {
                 <MessageSquare size={14} className="text-yellow" />
                 <span className="pm-dash-card-t">Messages</span>
               </div>
-              <span className="pm-dash-bdg pm-dash-bdg-y">2 unread</span>
+              <span className="pm-dash-bdg pm-dash-bdg-y">{totalMessages} unread</span>
             </div>
             <div className="pm-dash-card-b">
-              {messages.map((msg, i) => (
+              {paginatedMessages.map((msg, i) => (
                 <div key={i} className="pm-dash-msg-prev">
                   <span
                     className="user-avatar"
@@ -271,6 +277,7 @@ export default function PortalOverviewPage() {
                   </div>
                 </div>
               ))}
+              <Pagination page={messagePage} pageSize={20} total={totalMessages} onPageChange={setMessagePage} />
 
               <div className="mt-3 flex gap-2">
                 <textarea

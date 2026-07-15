@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Button from "@/components/ui/button";
 import StatusBadge from "@/components/ui/status-badge";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Invoice {
   id: string;
@@ -22,12 +23,14 @@ const invoices: Invoice[] = [
 ];
 
 export default function PortalInvoicesPage() {
+  const [page, setPage] = useState(1);
+  const { paginated: paginatedInvoices, total: totalInvoices } = usePagination(invoices, page, 20);
   return (
     <div>
       <div className="mb-6">
         <h1 className="font-display text-xl font-bold">Invoices</h1>
         <p className="text-xs text-gray-4 mt-0.5">
-          {invoices.length} invoices for P&G East Africa
+          {totalInvoices} invoices for P&G East Africa
         </p>
       </div>
 
@@ -48,7 +51,7 @@ export default function PortalInvoicesPage() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map((inv) => (
+            {paginatedInvoices.map((inv) => (
               <tr
                 key={inv.id}
                 className="border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors"
@@ -94,6 +97,7 @@ export default function PortalInvoicesPage() {
             ))}
           </tbody>
         </table>
+        <Pagination page={page} pageSize={20} total={totalInvoices} onPageChange={setPage} />
       </div>
     </div>
   );

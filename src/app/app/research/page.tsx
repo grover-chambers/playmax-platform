@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, startTransition } from "react";
 import { Plus, Download, Upload } from "lucide-react";
 import NewResearchModal from "@/components/modals/new-research-modal";
 import PageHeader from "@/components/layout/page-header";
@@ -10,6 +10,7 @@ import FilterPill from "@/components/ui/filter-pill";
 import BarChart from "@/components/ui/bar-chart";
 import StatusBadge from "@/components/ui/status-badge";
 import { downloadCSV } from "@/lib/export-utils";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 // ── Types ─────────────────────────────────────────────
 interface ResearchProject {
@@ -182,6 +183,7 @@ export default function ResearchPage() {
   const [showNewResearch, setShowNewResearch] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const importRef = useRef<HTMLInputElement>(null);
 
   const filtered = sampleProjects.filter((p) => {
@@ -196,6 +198,10 @@ export default function ResearchPage() {
     }
     return true;
   });
+
+  const { paginated, total } = usePagination(filtered, page, 20);
+
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [activeFilter, search]);
 
   const selected =
     sampleProjects.find((p) => p.id === selectedId) || sampleProjects[0];
@@ -290,7 +296,7 @@ export default function ResearchPage() {
           ))}
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {filtered.map((project) => {
+          {paginated.map((project) => {
             const isActive = project.id === selectedId;
             return (
               <div
@@ -357,6 +363,7 @@ export default function ResearchPage() {
               No research projects match your filter.
             </div>
           )}
+          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
         </div>
       </div>
 

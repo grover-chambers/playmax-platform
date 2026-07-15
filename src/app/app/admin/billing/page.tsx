@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import { useRouter } from "next/navigation";
 import {
   CreditCard,
@@ -73,7 +74,10 @@ const statusVariant: Record<
 
 export default function BillingPage() {
   const router = useRouter();
+  const [page, setPage] = useState(1);
   const [paymentModal, setPaymentModal] = useState<"update" | "change" | "add" | null>(null);
+  const { paginated, total } = usePagination(billingHistory, page, 20);
+
   return (
     <div>
       {/* ── Page header ── */}
@@ -216,7 +220,7 @@ export default function BillingPage() {
                 </tr>
               </thead>
               <tbody>
-                {billingHistory.map((invoice) => (
+                {paginated.map((invoice) => (
                   <tr
                     key={invoice.id}
                     className="border-b border-[#1e1e1e] hover:bg-white/2 transition-colors"
@@ -243,6 +247,7 @@ export default function BillingPage() {
                 ))}
               </tbody>
             </table>
+            <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
 
             {/* Add payment method row */}
             <div className="px-4 py-3 border-t border-[#1e1e1e]">
