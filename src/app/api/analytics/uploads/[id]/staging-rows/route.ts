@@ -86,28 +86,28 @@ export async function POST(request: Request, context: RouteContext) {
       }),
     );
 
-    const { data, error } = await supabase
-      .from("analytics_staging_rows")
-      .insert(rowsToInsert)
-      .select();
+    const { data: insertedRows, error } = await supabase
+          .from("analytics_staging_rows")
+          .insert(rowsToInsert)
+          .select();
 
-    if (error) {
-      return NextResponse.json(
-        { error: sanitizeError(error) },
-        { status: 500 },
-      );
-    }
+        if (error) {
+          return NextResponse.json(
+            { error: sanitizeError(error) },
+            { status: 500 },
+          );
+        }
 
-    // Update upload total_rows count
-    await supabase
-      .from("analytics_staging_uploads")
-      .update({
-        total_rows: rows.length,
-        status: "parsed",
-      })
-      .eq("id", id);
+        // Update upload total_rows count
+        await supabase
+          .from("analytics_staging_uploads")
+          .update({
+            total_rows: rows.length,
+            status: "parsed",
+          })
+          .eq("id", id);
 
-    return NextResponse.json({ rows: data }, { status: 201 });
+        return NextResponse.json({ rows: insertedRows }, { status: 201 });
   } catch {
     return NextResponse.json(
       { error: "Failed to insert staging rows" },

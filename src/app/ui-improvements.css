@@ -1,0 +1,395 @@
+/* ============================================================
+   UI IMPROVEMENTS - Added for better spacing, visibility, and UX
+   ============================================================ */
+
+/* ── IMPROVED TABLE STYLES ─────────────────────────────── */
+
+/* Larger table cells with better padding */
+.pm-table-enhanced,
+.table-enhanced {
+    font-size: var(--text-sm);
+}
+
+.pm-table-enhanced th,
+.table-enhanced th {
+    padding: var(--space-4) var(--space-5);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--pm-gray-4);
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pm-table-enhanced td,
+.table-enhanced td {
+    padding: var(--space-4) var(--space-5);
+    font-size: var(--text-sm);
+    color: var(--pm-white);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Row hover effect */
+.pm-table-enhanced tbody tr,
+.table-enhanced tbody tr {
+    transition: background var(--transition-fast);
+}
+
+.pm-table-enhanced tbody tr:hover,
+.table-enhanced tbody tr:hover {
+    background: rgba(244, 195, 0, 0.03);
+}
+
+/* Row height increase */
+.pm-table-enhanced tbody tr,
+.table-enhanced tbody tr {
+    min-height: 56px;
+}
+
+/* ── ACTION BUTTONS IN TABLES ──────────────────────────── */
+
+.pm-table-action-btn,
+.table-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--pm-gray-4);
+    transition: all var(--transition-fast);
+}
+
+.pm-table-action-btn:hover,
+.table-action-btn:hover {
+    background: var(--pm-yellow);
+    border-color: var(--pm-yellow);
+    color: var(--pm-black);
+    transform: scale(1.05);
+}
+
+.pm-table-action-btn:focus-visible,
+.table-action-btn:focus-visible {
+    outline: 2px solid var(--pm-yellow);
+    outline-offset: 2px;
+}
+
+/* Action button group in table cells */
+.pm-table-actions,
+.table-actions {
+    display: inline-flex;
+    gap: var(--space-2);
+}
+
+/* ── FONT COLOR FIXES FOR LIGHT BACKGROUNDS ───────────── */
+
+/* Ensure text is visible on light/cream backgrounds */
+.bg-light,
+.bg-cream,
+.bg-white,
+.pm-dash-card,
+.pm-dash-kcard,
+.pm-dash-welcome,
+.pm-dash-card-h,
+.pm-dash-card-b,
+.pm-dash-card-b-0,
+.pm-dash-staff-row,
+.pm-dash-feed-item,
+.pm-dash-li,
+.pm-dash-task,
+.pm-dash-msg-prev,
+.pm-dash-inv-row,
+.pm-dash-cq-row,
+.pm-dash-bchart,
+.pm-dash-bbar,
+.pm-dash-bbar-label,
+.pm-dash-hb-item,
+.pm-dash-hb-label,
+.pm-dash-hb-count,
+.pm-dash-hb-meta {
+    color: var(--pm-navy) !important;
+}
+
+/* Text on light cards - ensure readability */
+.pm-dash-card,
+.pm-dash-kcard {
+    background: var(--pm-white) !important;
+    border: 1px solid var(--pm-cream-warm);
+}
+
+.pm-dash-card *,
+.pm-dash-kcard * {
+    color: var(--pm-navy) !important;
+}
+
+/* Specific fixes for elements that need dark text */
+.pm-dash-card-t,
+.pm-dash-kl,
+.pm-dash-kn,
+.pm-dash-ksub,
+.pm-dash-staff-name,
+.pm-dash-staff-role,
+.pm-dash-staff-stat-n,
+.pm-dash-staff-stat-l,
+.pm-dash-li-title,
+.pm-dash-li-meta,
+.pm-dash-feed-text,
+.pm-dash-feed-actor,
+.pm-dash-feed-time,
+.pm-dash-mini-kpi-val,
+.pm-dash-mini-kpi-lbl,
+.pm-dash-inv-client,
+.pm-dash-inv-row,
+.pm-dash-inv-head,
+.pm-dash-pipe-stage,
+.pm-dash-pipe-count,
+.pm-dash-pipe-val,
+.pm-dash-prog-lbl,
+.pm-dash-cq-title,
+.pm-dash-cq-meta,
+.pm-dash-cq-right,
+.pm-dash-bbar-label,
+.pm-dash-hb-label,
+.pm-dash-hb-count,
+.pm-dash-hb-meta,
+.pm-dash-task-title,
+.pm-dash-task-meta,
+.pm-dash-mp-name,
+.pm-dash-mp-text,
+.stat-card,
+.stat-num,
+.stat-label {
+    color: var(--pm-navy) !important;
+}
+
+/* ── BUTTON IMPROVEMENTS ─────────────────────────────── */
+
+/* Larger, more visible buttons */
+.btn-lg {
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    min-height: 44px;
+}
+
+.btn-md {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    min-height: 40px;
+}
+
+/* Primary button more visible */
+.btn-primary-enhanced {
+    background: var(--pm-yellow);
+    color: var(--pm-navy);
+    font-weight: 700;
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius);
+    transition: all var(--transition-fast);
+    border: none;
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    min-height: 40px;
+}
+
+.btn-primary-enhanced:hover {
+    background: #ffd520;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(244, 195, 0, 0.3);
+}
+
+/* Secondary button on light backgrounds */
+.btn-secondary-light {
+    background: transparent;
+    color: var(--pm-navy);
+    border: 2px solid var(--pm-cream-warm);
+    font-weight: 600;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius);
+    min-height: 40px;
+}
+
+.btn-secondary-light:hover {
+    background: var(--pm-cream-pale);
+    border-color: var(--pm-yellow);
+    color: var(--pm-navy);
+}
+
+/* Ghost button */
+.btn-ghost-light {
+    background: transparent;
+    color: var(--pm-navy);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    font-size: var(--text-sm);
+    transition: all var(--transition-fast);
+}
+
+.btn-ghost-light:hover {
+    background: var(--pm-cream-pale);
+}
+
+/* ── IMPROVED CARD SPACING ───────────────────────────── */
+
+.pm-dash-card,
+.pm-dash-kcard {
+    padding: var(--space-6);
+    gap: var(--space-4);
+}
+
+.pm-dash-card-h {
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--pm-cream-warm);
+    margin-bottom: var(--space-4);
+}
+
+.pm-dash-card-b {
+    padding-top: var(--space-2);
+}
+
+/* Card content spacing */
+.pm-dash-card-b > * + * {
+    margin-top: var(--space-4);
+}
+
+/* ── INPUT FIELD IMPROVEMENTS ────────────────────────── */
+
+.form-input-light,
+.form-textarea-light,
+.form-select-light {
+    background: var(--pm-white);
+    border: 2px solid var(--pm-cream-warm);
+    color: var(--pm-navy);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    border-radius: var(--radius);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-input-light:focus,
+.form-textarea-light:focus,
+.form-select-light:focus {
+    border-color: var(--pm-yellow);
+    box-shadow: 0 0 0 3px rgba(244, 195, 0, 0.2);
+    outline: none;
+}
+
+.form-input-light::placeholder,
+.form-textarea-light::placeholder {
+    color: var(--pm-gray-4);
+}
+
+.form-label-light {
+    color: var(--pm-navy);
+    font-weight: 600;
+    font-size: var(--text-xs);
+    margin-bottom: var(--space-2);
+    display: block;
+}
+
+/* ── PANE/SECTION SPACING ────────────────────────────── */
+
+.pane-section {
+    padding: var(--space-8) 0;
+}
+
+.pane-section + .pane-section {
+    margin-top: var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--pm-cream-warm);
+}
+
+/* Grid gap improvements */
+.grid-enhanced {
+    gap: var(--space-6);
+}
+
+.grid-enhanced > * {
+    min-height: 200px;
+}
+
+/* ── VISIBILITY IMPROVEMENTS ─────────────────────────── */
+
+/* Badge improvements */
+.badge-enhanced {
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    letter-spacing: 0.04em;
+    min-width: fit-content;
+}
+
+/* Icon button improvements */
+.icon-btn-enhanced {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--pm-gray-3);
+    transition: all var(--transition-fast);
+}
+
+.icon-btn-enhanced:hover {
+    background: var(--pm-yellow);
+    border-color: var(--pm-yellow);
+    color: var(--pm-navy);
+    transform: scale(1.05);
+}
+
+/* ── RESPONSIVE ADJUSTMENTS ──────────────────────────── */
+
+@media (max-width: 1024px) {
+    .pm-table-enhanced td,
+    .table-enhanced td {
+        padding: var(--space-3) var(--space-4);
+        font-size: var(--text-xs);
+    }
+    
+    .pm-table-enhanced th,
+    .table-enhanced th {
+        padding: var(--space-3) var(--space-4);
+        font-size: var(--text-xs);
+    }
+    
+    .pm-table-action-btn,
+    .table-action-btn {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+@media (max-width: 768px) {
+    .pm-table-enhanced,
+    .table-enhanced {
+        font-size: var(--text-xs);
+    }
+    
+    .pm-dash-card,
+    .pm-dash-kcard {
+        padding: var(--space-4);
+    }
+    
+    .pane-section {
+        padding: var(--space-6) 0;
+    }
+}
+
+/* ── PRINT STYLES ────────────────────────────────────── */
+
+@media print {
+    .pm-table-action-btn,
+    .table-action-btn,
+    .btn-primary-enhanced,
+    .btn-secondary-light,
+    .icon-btn-enhanced {
+        display: none !important;
+    }
+}

@@ -225,21 +225,35 @@ export default function AnalyticsUploadPage() {
   const applyMapping = async () => {
       // POST mapped rows to staging API
       if (!uploadId) return;
-    
+
+      // Transform mapped rows to match staging-rows API expected format
+      const rowsToStore = mappedRowsComputed.map((r, idx) => ({
+        row_number: r.row,
+        stock_code: r.stock_code || null,
+        product_name: r.product_name || null,
+        sub_category: r.sub_category || null,
+        unit_cost: r.unit_cost ? Number(r.unit_cost) : null,
+        unit_price: r.unit_price ? Number(r.unit_price) : null,
+        quantity: r.quantity ? Number(r.quantity) : null,
+        weight_tonnes: r.weight_tonnes ? Number(r.weight_tonnes) : null,
+        total_amount: r.total ? Number(r.total) : null,
+        raw_data: r.raw,
+      }));
+
       const res = await fetch(`/api/analytics/uploads/${uploadId}/staging-rows`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: mappedRowsComputed }),
+        body: JSON.stringify({ rows: rowsToStore }),
       });
-    
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Failed to store staging rows" }));
         alert(err.error ?? "Failed to store staging rows");
         return;
       }
-    
+
       setStep("mapped_preview");
-    };
+    };;
 
   const handleImport = async () => {
     if (!uploadId) return;
