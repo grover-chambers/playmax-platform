@@ -39,11 +39,21 @@ export async function POST(_request: Request, context: RouteContext) {
       );
     }
 
-    // Get staging rows
-    const { data: rows, error: rowsError } = await supabase
+    // Get staging rows — only import rows with a stock_code
+    const { data: allRows, error: rowsError } = await supabase
       .from("analytics_staging_rows")
       .select("*")
-      .eq("upload_id", id);
+      .eq("upload_id", id)
+      .not("stock_code", "is", null)
+      .not("stock_code", "eq", "")
+      .order("row_number");
+
+    // Also get count of skipped rows for the summary
+    const { data: allStagingRows } = await supabase
+      .from("analytics_staging_rows")
+      .select("row_number, stock_code")
+      .eq("upload_id", id)
+      .order("row_number");
 
     if (rowsError) {
       return NextResponse.json(
@@ -52,9 +62,13 @@ export async function POST(_request: Request, context: RouteContext) {
       );
     }
 
-    if (!rows || rows.length === 0) {
+    const rows = allRows ?? [];
+    const totalStagingRows = allStagingRows?.length ?? 0;
+    const skippedDueToMissing = totalStagingRows - rows.length;
+
+    if (rows.length === 0) {
       return NextResponse.json(
-        { error: "No staging rows to import" },
+        { error: "No valid staging rows to import (all rows are missing stock_code)" },
         { status: 400 },
       );
     }
@@ -177,21 +191,20 @@ export async function POST(_request: Request, context: RouteContext) {
       }
     }
 
-    // Update upload status
     const status = errors.length === 0 ? "imported" : errors.length < rows.length ? "imported" : "failed";
 
     await supabase
       .from("analytics_staging_uploads")
       .update({
         status,
-        total_rows: rows.length,
-        error_rows: errors.length + skipped.length,
+        total_rows: totalStagingRows,
+        error_rows: errors.length + skippedDueToMissing,
       })
       .eq("id", id);
 
     return NextResponse.json({
       imported: imported.length,
-      skipped: skipped.length,
+      skipped: skipped.length + skippedDueToMissing,
       errors,
       status,
     });
