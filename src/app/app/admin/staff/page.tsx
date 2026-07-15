@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, startTransition } from "react";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import { Plus, Mail, UserCheck, UserX, Loader2 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
@@ -24,6 +25,7 @@ export default function StaffManagementPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
+  const [page, setPage] = useState(1);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
@@ -83,6 +85,7 @@ export default function StaffManagementPage() {
       ];
 
       setStaff(demoStaff);
+      setPage(1);
     } catch {
       setStaff([]);
     }
@@ -154,6 +157,8 @@ export default function StaffManagementPage() {
     return true;
   });
 
+  const { paginated, total } = usePagination(filtered, page, 20);
+
   return (
     <div>
       <PageHeader
@@ -174,7 +179,7 @@ export default function StaffManagementPage() {
         <SearchBox
           placeholder="Search staff…"
           value={search}
-          onChange={setSearch}
+          onChange={(val) => { setSearch(val); setPage(1); }}
           className="w-56"
         />
         <div className="flex items-center gap-1.5">
@@ -182,7 +187,7 @@ export default function StaffManagementPage() {
             <FilterPill
               key={filter}
               active={roleFilter === filter}
-              onClick={() => setRoleFilter(filter)}
+              onClick={() => { setRoleFilter(filter); setPage(1); }}
             >
               {filter === "All" ? "All Roles" : ROLE_LABELS[filter as UserRole]}
             </FilterPill>
@@ -311,7 +316,7 @@ export default function StaffManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((member) => (
+                {paginated.map((member) => (
                   <tr
                     key={member.id}
                     className="border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors"
@@ -380,6 +385,7 @@ export default function StaffManagementPage() {
                 No staff match your search or filter.
               </div>
             )}
+            <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
           </div>
         )}
       </div>

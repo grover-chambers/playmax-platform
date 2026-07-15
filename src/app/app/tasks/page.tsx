@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { Plus, CheckCircle2, Circle, Clock } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
@@ -10,6 +10,7 @@ import Avatar from "@/components/ui/avatar";
 import NewTaskModal from "@/components/modals/new-task-modal";
 import { createClient } from "@/lib/supabase/browser";
 import { uuidInitials } from "@/lib/utils";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Task {
   id: string;
@@ -179,6 +180,7 @@ export default function TasksPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [data, setData] = useState<Task[]>(tasks);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -211,9 +213,13 @@ export default function TasksPage() {
       return true;
     });
 
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [activeProject, search]);
+
+  const { paginated, total } = usePagination(filtered, page, 20);
+
   const grouped = statusGroups.map((group) => ({
     ...group,
-    tasks: filtered.filter((t) => t.status === group.key),
+    tasks: paginated.filter((t) => t.status === group.key),
   }));
 
   return (
@@ -306,6 +312,8 @@ export default function TasksPage() {
           </div>
         ))}
       </div>
+
+      <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
 
       <NewTaskModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>

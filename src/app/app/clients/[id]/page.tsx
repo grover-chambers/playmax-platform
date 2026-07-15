@@ -8,6 +8,7 @@ import Avatar from "@/components/ui/avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 type Tab = "overview" | "projects" | "communications" | "invoices" | "activity";
 
@@ -153,7 +154,11 @@ const tabItems: { key: Tab; label: string }[] = [
 
 export default function ClientDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [invoicePage, setInvoicePage] = useState(1);
+  const [activityPage, setActivityPage] = useState(1);
   const c = clientData;
+  const { paginated: paginatedInvoices, total: totalInvoices } = usePagination(c.invoices, invoicePage, 20);
+  const { paginated: paginatedActivity, total: totalActivity } = usePagination(c.activity, activityPage, 20);
 
   return (
     <div>
@@ -414,7 +419,7 @@ export default function ClientDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {c.invoices.map((inv) => (
+                {paginatedInvoices.map((inv) => (
                   <tr key={inv.id} className="border-b border-[#1A1A1A]">
                     <td className="py-3 text-[12px] text-white font-semibold">
                       {inv.id}
@@ -440,20 +445,21 @@ export default function ClientDetailPage() {
                 ))}
               </tbody>
             </table>
+            <Pagination page={invoicePage} pageSize={20} total={totalInvoices} onPageChange={setInvoicePage} />
           </Card>
         )}
 
         {activeTab === "activity" && (
           <Card hover={false} className="p-5">
             <div className="space-y-0">
-              {c.activity.map((a, i) => (
+              {paginatedActivity.map((a, i) => (
                 <div
                   key={i}
                   className="flex items-start gap-3 py-3 border-b border-[#1E1E1E] last:border-0"
                 >
                   <div className="flex flex-col items-center mt-1">
                     <div className="w-2 h-2 rounded-full bg-yellow flex-shrink-0" />
-                    {i < c.activity.length - 1 && (
+                    {i < paginatedActivity.length - 1 && (
                       <div className="w-px h-full bg-[#1E1E1E] mt-1" />
                     )}
                   </div>
@@ -470,6 +476,7 @@ export default function ClientDetailPage() {
                 </div>
               ))}
             </div>
+            <Pagination page={activityPage} pageSize={20} total={totalActivity} onPageChange={setActivityPage} />
           </Card>
         )}
       </div>

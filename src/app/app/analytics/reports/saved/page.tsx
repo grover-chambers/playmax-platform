@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, FileText, Trash2, Loader2 } from "lucide-react";
 import Button from "@/components/ui/button";
 import PageHeader from "@/components/layout/page-header";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import type { AnalyticsSavedReport } from "@/lib/analytics-types";
 
 export default function SavedReportsPage() {
@@ -12,6 +13,7 @@ export default function SavedReportsPage() {
   const [reports, setReports] = useState<AnalyticsSavedReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,6 +31,10 @@ export default function SavedReportsPage() {
     }
     load();
   }, []);
+
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [reports.length]);
+
+  const { paginated, total } = usePagination(reports, page, 20);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this report?")) return;
@@ -77,7 +83,7 @@ export default function SavedReportsPage() {
             <p className="text-[11px] text-gray-5 mt-1">Generate a report and save it to see it here.</p>
           </div>
         ) : (
-          reports.map((r) => (
+          paginated.map((r) => (
             <div
               key={r.id}
               className="flex items-center justify-between bg-black-3 border border-[#252525] rounded-lg px-5 py-4"
@@ -105,6 +111,9 @@ export default function SavedReportsPage() {
               </div>
             </div>
           ))
+        )}
+        {reports.length > 0 && (
+          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
         )}
       </div>
     </div>

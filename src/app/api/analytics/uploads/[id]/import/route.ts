@@ -143,6 +143,24 @@ export async function POST(_request: Request, context: RouteContext) {
             },
           );
 
+          // Also populate pricing fact table (per_store_sales only)
+          if (upload.file_type === "per_store_sales" && (row.unit_cost || row.unit_price || row.weight_tonnes)) {
+            await supabase.from("analytics_fact_pricing").upsert(
+              {
+                period_id: upload.period_id,
+                product_id: productId,
+                branch_id: branchId || null,
+                standard_cost: row.unit_cost ?? null,
+                selling_price: row.unit_price ?? null,
+                weight_tonnes: row.weight_tonnes ?? null,
+              },
+              {
+                onConflict: "period_id,product_id,branch_id",
+                ignoreDuplicates: false,
+              },
+            );
+          }
+
           imported.push(row.row_number);
         } catch {
           errors.push(`Row ${row.row_number}: unexpected error`);

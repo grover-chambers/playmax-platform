@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -11,6 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Article {
   id: string;
@@ -25,6 +26,7 @@ interface Article {
 export default function ArticlesListPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetch("/api/articles")
@@ -35,6 +37,10 @@ export default function ArticlesListPage() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [articles]);
+
+  const { paginated, total } = usePagination(articles, page, 20);
 
   return (
     <div
@@ -90,7 +96,7 @@ export default function ArticlesListPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {articles.map((a) => (
+            {paginated.map((a) => (
               <div
                 key={a.id}
                 className="flex items-center gap-4 px-5 py-4 rounded-lg transition-colors"
@@ -167,6 +173,7 @@ export default function ArticlesListPage() {
             ))}
           </div>
         )}
+        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
     </div>
   );

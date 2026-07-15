@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import { Download, Search } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
@@ -250,6 +251,7 @@ export default function AuditLogPage() {
   const [toDate, setToDate] = useState("");
   const [actionFilter, setActionFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
 
   // ── Filter logic ──
   const filtered = useMemo(() => {
@@ -285,6 +287,7 @@ export default function AuditLogPage() {
       return true;
     });
   }, [entries, actionFilter, searchQuery, fromDate, toDate]);
+  const { paginated, total } = usePagination(filtered, page, 20);
 
   // ── CSV Export ──
   function exportCSV() {
@@ -339,7 +342,7 @@ export default function AuditLogPage() {
         <input
           type="date"
           value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
+          onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
           className="form-input w-36! py-1.5! text-[11px]!"
           placeholder="From date"
         />
@@ -350,7 +353,7 @@ export default function AuditLogPage() {
         <input
           type="date"
           value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
+          onChange={(e) => { setToDate(e.target.value); setPage(1); }}
           className="form-input w-36! py-1.5! text-[11px]!"
           placeholder="To date"
         />
@@ -358,7 +361,7 @@ export default function AuditLogPage() {
         {/* Action type dropdown */}
         <select
           value={actionFilter}
-          onChange={(e) => setActionFilter(e.target.value)}
+          onChange={(e) => { setActionFilter(e.target.value); setPage(1); }}
           className="form-select w-28! py-1.5! text-[11px]!"
         >
           {ACTION_FILTERS.map((f) => (
@@ -375,7 +378,7 @@ export default function AuditLogPage() {
             type="text"
             placeholder="Search user, target, details…"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
             className="form-input pl-8! py-1.5! text-[11px]!"
           />
         </div>
@@ -401,7 +404,7 @@ export default function AuditLogPage() {
             </thead>
             <tbody>
               {filtered.length > 0 ? (
-                filtered.map((entry) => {
+                paginated.map((entry) => {
                   const badge =
                     actionBadgeConfig[entry.action] ?? actionBadgeConfig.Create;
                   return (
@@ -465,6 +468,7 @@ export default function AuditLogPage() {
               )}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
         </div>
       </div>
     </div>

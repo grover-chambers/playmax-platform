@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle, AlertCircle, Trash2, Loader2 } from "lucide-react";
 import Button from "@/components/ui/button";
 import PageHeader from "@/components/layout/page-header";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 import type { AnalyticsStagingUpload } from "@/lib/analytics-types";
 
 export default function UploadHistoryPage() {
@@ -12,6 +13,7 @@ export default function UploadHistoryPage() {
   const [uploads, setUploads] = useState<AnalyticsStagingUpload[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,6 +23,10 @@ export default function UploadHistoryPage() {
       .catch(() => setError("Failed to load data"))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [uploads.length]);
+
+  const { paginated, total } = usePagination(uploads, page, 20);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this upload record?")) return;
@@ -63,7 +69,7 @@ export default function UploadHistoryPage() {
             <span className="ml-2 text-[11px] text-gray-5">Loading uploads...</span>
           </div>
         ) : (
-          <table className="w-full text-[11px]">
+          <><table className="w-full text-[11px]">
             <thead>
               <tr className="text-gray-5 font-mono border-b border-[#252525]">
                 <th className="text-left px-4 py-3 font-normal">File</th>
@@ -84,7 +90,7 @@ export default function UploadHistoryPage() {
                   </td>
                 </tr>
               )}
-              {uploads.map((u) => (
+              {paginated.map((u) => (
                 <tr key={u.id} className="border-b border-[#1E1E1E] last:border-0">
                   <td className="px-4 py-2.5 text-white font-medium truncate max-w-[200px]">{u.filename}</td>
                   <td className="px-4 py-2.5 text-gray-4">
@@ -123,6 +129,8 @@ export default function UploadHistoryPage() {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
+          </>
         )}
       </div>
     </div>

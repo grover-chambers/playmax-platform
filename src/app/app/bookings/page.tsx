@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { format, parseISO } from "date-fns";
 import { Plus } from "lucide-react";
 import FilterPill from "@/components/ui/filter-pill";
@@ -9,6 +9,7 @@ import Button from "@/components/ui/button";
 import NewBookingModal from "@/components/modals/new-booking-modal";
 import { sampleBookings } from "@/lib/data";
 import { Booking } from "@/lib/types";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 const statusFilters = [
   "All",
@@ -32,11 +33,15 @@ export default function BookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [bookings] = useState<Booking[]>(sampleBookings);
   const [modalOpen, setModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => { startTransition(() => { setPage(1); }); }, [statusFilter]);
 
   const filtered = bookings.filter((b) => {
     if (statusFilter !== "All" && b.status !== statusFilter) return false;
     return true;
   });
+  const { paginated, total } = usePagination(filtered, page, 20);
 
   return (
     <div className="p-6">
@@ -86,7 +91,7 @@ export default function BookingsPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((b) => (
+            {paginated.map((b) => (
               <tr
                 key={b.id}
                 className="border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors"
@@ -120,6 +125,7 @@ export default function BookingsPage() {
             No bookings match the selected filter.
           </div>
         )}
+        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
 
       <NewBookingModal open={modalOpen} onClose={() => setModalOpen(false)} />

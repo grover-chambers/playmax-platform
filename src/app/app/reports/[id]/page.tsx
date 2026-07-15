@@ -14,6 +14,7 @@ import {
 import Button from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import { formatTimeAgo } from "@/lib/utils";
+import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Metric {
   id: string;
@@ -50,12 +51,14 @@ export default function ReportDetailPage({
   const [newValue, setNewValue] = useState("");
   const [newUnit, setNewUnit] = useState("count");
   const [newChart, setNewChart] = useState("bar");
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     const r = await fetch(`/api/reports/${id}`);
     if (!r.ok) return router.push("/app/reports");
     const { data } = await r.json();
     setReport(data);
+    setPage(1);
     setLoading(false);
   }, [id, router]);
 
@@ -118,6 +121,8 @@ export default function ReportDetailPage({
     if (r.ok) router.push("/app/reports");
   }
 
+  const { paginated, total } = usePagination(report?.metrics || [], page, 20);
+
   if (loading) return <div className="p-6 text-[12px] text-gray-5">Loading…</div>;
   if (!report) return null;
 
@@ -179,7 +184,7 @@ export default function ReportDetailPage({
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-3">
-            {report.metrics.map((m) => (
+            {paginated.map((m) => (
               <div
                 key={m.id}
                 className="bg-[#0D0D0D] border border-[#1E1E1E] rounded-lg p-4 relative group"
@@ -207,6 +212,7 @@ export default function ReportDetailPage({
             ))}
           </div>
         )}
+        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
 
       {/* Add Metric Modal */}

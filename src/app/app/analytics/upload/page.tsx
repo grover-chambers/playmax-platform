@@ -60,7 +60,21 @@ interface Period {
   month: number;
 }
 
-// ── Constants ────────────────────────────────────────────────────
+// Store name → branch code lookup (client-side)
+const STORE_NAME_TO_BRANCH: Record<string, string> = {
+  "NAIVASHA": "NVS",
+  "NAKURU": "NKR",
+  "NAROK": "NRK",
+  "THIKA STORE(NAMPAK)": "NPM",
+  "THIKA STORE(Nampak)": "NPM",
+  "NYAHURURU": "NYH",
+  "MERU": "MER",
+  "MAUA": "MUA",
+  "KARATINA": "KRT",
+  "THIKA CBD": "HQ",
+  "HQ": "HQ",
+  "ENGINEER": "ENG",
+};
 const formatOptions: { value: UploadFormat; label: string; desc: string }[] = [
   {
     value: "per_store_sales",
@@ -324,6 +338,14 @@ export default function AnalyticsUploadPage() {
   const [rawRows, setRawRows] = useState<Record<string, unknown>[]>([]);
   const [rawHeaders, setRawHeaders] = useState<string[]>([]);
 
+  // Per-store metadata (extracted from first rows)
+  const [storeMetadata, setStoreMetadata] = useState<{
+    period: string;
+    store: string;
+    category: string;
+    branchCode: string;
+  } | null>(null);
+
   // Column mapping
   const [columnMap, setColumnMap] = useState<Record<string, string>>({});
 
@@ -509,6 +531,7 @@ export default function AnalyticsUploadPage() {
     setDetectedMeta(null);
     detectedHeadersRef.current = [];
     detectedRowsRef.current = [];
+    setStoreMetadata(null);
     setStep("select");
   };
 
@@ -560,6 +583,30 @@ export default function AnalyticsUploadPage() {
       }
 
       setDetectedMeta(metadata);
+
+      // For per-store sales, also extract structured metadata with branch code lookup
+      if (format === "per_store_sales") {
+        try {
+          const rawArrays = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
+          const metaPeriod = String(rawArrays[1]?.[1] ?? "").trim();
+          const metaStore = String(rawArrays[2]?.[1] ?? "").trim();
+          const metaCategory = String(rawArrays[3]?.[1] ?? "").trim();
+          const cleanStore = metaStore.toUpperCase().replace(/\s+/g, " ");
+          const branchCode =
+            STORE_NAME_TO_BRANCH[cleanStore] ||
+            STORE_NAME_TO_BRANCH[metaStore.toUpperCase().trim()] ||
+            "";
+          setStoreMetadata({
+            period: metaPeriod,
+            store: metaStore,
+            category: metaCategory,
+            branchCode,
+          });
+        } catch {
+          // Fallback: generic metadata already set via parseSheetWithMetadata
+        }
+      }
+
       detectedHeadersRef.current = headers;
       detectedRowsRef.current = rows;
 
@@ -1225,6 +1272,23 @@ export default function AnalyticsUploadPage() {
                   {rawRows.length} rows × {rawHeaders.length} columns
                 </span>
               </div>
+
+              {/* Per-store metadata badge */}
+              {storeMetadata && (
+                <div className="flex items-center gap-3 text-[10px]">
+                  <span className="text-gray-5">Period:</span>
+                  <span className="text-white font-medium">{storeMetadata.period}</span>
+                  <span className="text-gray-5">Store:</span>
+                  <span className="text-white font-medium">{storeMetadata.store}</span>
+                  {storeMetadata.branchCode && (
+                    <span className="px-2 py-0.5 rounded bg-green/10 text-green border border-green/30 text-[9px] font-mono">
+                      → {storeMetadata.branchCode}
+                    </span>
+                  )}
+                  <span className="text-gray-5">Category:</span>
+                  <span className="text-white font-medium">{storeMetadata.category}</span>
+                </div>
+              )}
               <Button variant="primary" size="sm" onClick={goToMapping}>
                 <ArrowRight className="w-3.5 h-3.5 mr-1" /> Map Columns
               </Button>
