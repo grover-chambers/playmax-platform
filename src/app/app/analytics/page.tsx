@@ -69,7 +69,7 @@ export default function AnalyticsDashboard() {
   const recentUploads = uploads.slice(0, 5);
 
   return (
-    <div className="p-6">
+    <div className="page-content">
       <PageHeader
         title="Analytics Dashboard"
         subtitle="FMCG market analysis engine — overview"

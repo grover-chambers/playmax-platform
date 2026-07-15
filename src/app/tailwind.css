@@ -38,6 +38,10 @@
     --color-red: var(--pm-red);
     --color-blue: var(--pm-blue);
     --color-wa-green: var(--pm-wa-green);
+    --color-teal: var(--pm-teal);
+    --color-teal-dark: var(--pm-teal-dark);
+    --color-teal-light: var(--pm-teal-light);
+    --color-sidebar: var(--pm-sidebar);
     --font-display: var(--pm-font-display);
     --font-mono: var(--pm-font-mono);
     --font-body: var(--pm-font-body);

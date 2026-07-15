@@ -168,7 +168,7 @@ export default function DimensionsPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="page-content">
       <PageHeader
         title="Dimensions"
         subtitle="Manage branches, categories, manufacturers, and products"

@@ -37,7 +37,7 @@ export default function UploadHistoryPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="page-content">
       <PageHeader
         title="Upload History"
         subtitle="All XLSX files ingested into the analytics engine"

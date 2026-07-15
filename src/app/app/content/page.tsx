@@ -183,7 +183,7 @@ export default function ContentDeskPage() {
   return (
     <div
       className="flex flex-col h-full"
-      style={{ background: "var(--pm-black)" }}
+      style={{ background: "var(--ws-bg)" }}
     >
       <PageHeader
         title="Content Desk"

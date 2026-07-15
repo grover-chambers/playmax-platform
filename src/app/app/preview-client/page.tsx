@@ -26,7 +26,7 @@ export default function PreviewClientPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D]">
+    <div className="min-h-screen" style={{ background: "var(--ws-bg)" }}>
       {previewing ? (
         /* ── Preview Mode ── */
         <div className="min-h-screen flex flex-col">
@@ -67,7 +67,7 @@ export default function PreviewClientPage() {
           {/* Preview frame */}
           <div
             className={`flex-1 flex items-start justify-center overflow-y-auto p-6 ${
-              viewMode === "mobile" ? "bg-black" : "bg-[#0D0D0D]"
+              viewMode === "mobile" ? "bg-[var(--ws-bg)]" : "bg-[var(--ws-bg)]"
             }`}
           >
             <div

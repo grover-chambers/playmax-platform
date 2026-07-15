@@ -96,20 +96,20 @@ export default function DashboardLayout({
         {/* Logo */}
         <div className="sidebar-logo">
           {sidebarCollapsed ? (
-            <span className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--pm-gold)] mx-auto">
-              <span className="w-2.5 h-2.5 rounded-full bg-[var(--pm-gold)]" />
+            <span className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--pm-ivory)] mx-auto">
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--pm-ivory)]" />
             </span>
           ) : (
             <div className="flex items-center gap-2.5">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--pm-gold)] flex-shrink-0">
-                <span className="w-2.5 h-2.5 rounded-full bg-[var(--pm-gold)]" />
+              <span className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--pm-ivory)] flex-shrink-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-[var(--pm-ivory)]" />
               </span>
               <div className="flex flex-col">
                 <span className="font-display text-[14px] font-bold uppercase tracking-wider text-white leading-tight">
                   Market Link
                 </span>
                 {logoSubtitle && (
-                  <span className="text-[9px] font-mono text-gray-5 uppercase tracking-[0.15em] leading-tight mt-0.5">
+                  <span className="text-[9px] font-mono text-white/50 uppercase tracking-[0.15em] leading-tight mt-0.5">
                     {logoSubtitle}
                   </span>
                 )}

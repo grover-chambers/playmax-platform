@@ -162,7 +162,7 @@ export default function MarketShareReport() {
     : 1;
 
   return (
-    <div className="p-6">
+    <div className="page-content">
       <PageHeader
         title="Reports"
         subtitle="Build and view market analysis reports"

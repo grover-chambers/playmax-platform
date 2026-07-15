@@ -295,7 +295,7 @@ export default function AnalyticsUploadPage() {
   const currentStepIndex = steps.findIndex(s => s.key === step);
 
   return (
-    <div className="p-6">
+    <div className="page-content">
       <PageHeader
         title="Data Upload"
         subtitle="Import XLSX files — parse, map columns, review, then import"

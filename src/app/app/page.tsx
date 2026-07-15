@@ -86,7 +86,7 @@ export default function SuperAdminDashboard() {
       </div>
 
       {/* ── Content wrapper ────────────────────────────────── */}
-      <div className="p-6">
+      <div className="page-content">
         {/* ── Quick actions strip ────────────────────────── */}
         <div className="pm-dash-qa-strip">
           <button

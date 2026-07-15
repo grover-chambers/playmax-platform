@@ -45,7 +45,7 @@ export default function SavedReportsPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="page-content">
       <PageHeader
         title="Saved Reports"
         subtitle="Previously generated and saved reports"
