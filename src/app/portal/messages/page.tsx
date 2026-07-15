@@ -1,93 +1,101 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import React, { useState, useEffect, useRef, startTransition } from "react";
+import { Send, Loader2 } from "lucide-react";
 import Avatar from "@/components/ui/avatar";
 import Button from "@/components/ui/button";
-import MessageBubble from "@/components/inbox/message-bubble";
-import { Message } from "@/lib/types";
 
-const sampleMessages: Message[] = [
-  {
-    id: "pm-1",
-    conversationId: "conv-pm",
-    direction: "outbound",
-    text: "Hi P&G team! Just wanted to confirm — the Westlands Screen Package is on track for deployment next week. Everything looks good on our end.",
-    time: "10:30 AM",
-    channel: "email",
-    senderName: "Market Link",
-  },
-  {
-    id: "pm-2",
-    conversationId: "conv-pm",
-    direction: "inbound",
-    text: "Great, thanks for the update! Do you have the final creative assets ready? We need to get internal sign-off by Thursday.",
-    time: "11:15 AM",
-    channel: "email",
-    senderName: "P&G East Africa",
-  },
-  {
-    id: "pm-3",
-    conversationId: "conv-pm",
-    direction: "outbound",
-    text: "Yes, the Campaign Creative Deck will be uploaded to your portal by end of day Wednesday. I'll ping you once it's ready.",
-    time: "11:22 AM",
-    channel: "email",
-    senderName: "Market Link",
-  },
-  {
-    id: "pm-4",
-    conversationId: "conv-pm",
-    direction: "inbound",
-    text: "Perfect. Also, can we schedule a quick call to discuss the Campaign Expansion timeline? We have some budget adjustments to review.",
-    time: "2:00 PM",
-    channel: "email",
-    senderName: "P&G East Africa",
-  },
-  {
-    id: "pm-5",
-    conversationId: "conv-pm",
-    direction: "outbound",
-    text: "Absolutely! I'll send over a calendar invite for tomorrow afternoon. We'll walk through the revised scope and updated pricing.",
-    time: "2:18 PM",
-    channel: "email",
-    senderName: "Market Link",
-  },
-];
+
+interface Conversation {
+  id: string;
+  contact_name: string;
+  channel: string;
+  status: string;
+  last_message_at: string | null;
+}
+
+interface Message {
+  id: string;
+  conversation_id: string;
+  direction: string;
+  text: string;
+  channel: string;
+  sender_name: string | null;
+  is_automation: boolean;
+  created_at: string;
+}
 
 export default function PortalMessagesPage() {
-  const [messages, setMessages] = useState<Message[]>(sampleMessages);
+
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [loadingConvs, setLoadingConvs] = useState(true);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/portal/conversations")
+      .then((r) => r.json())
+      .then(({ conversations: data }) => {
+        startTransition(() => {
+          setConversations(data || []);
+          setLoadingConvs(false);
+          if (data && data.length > 0) setActiveConvId(data[0].id);
+        });
+      })
+      .catch(() => startTransition(() => setLoadingConvs(false)));
+  }, []);
+
+  useEffect(() => {
+    if (!activeConvId) return;
+    fetch(`/api/portal/messages?conversationId=${activeConvId}`)
+      .then((r) => r.json())
+      .then(({ messages: data }) => {
+        startTransition(() => {
+          setMessages(data || []);
+          setLoadingMsgs(false);
+        });
+      })
+      .catch(() => startTransition(() => setLoadingMsgs(false)));
+  }, [activeConvId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const newMsg: Message = {
-      id: `pm-${Date.now()}`,
-      conversationId: "conv-pm",
-      direction: "inbound",
-      text: input.trim(),
-      time: new Date().toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      }),
-      channel: "email",
-      senderName: "P&G East Africa",
-    };
-    setMessages((prev) => [...prev, newMsg]);
-    setInput("");
+  const handleSend = async () => {
+    if (!input.trim() || !activeConvId || sending) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/portal/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversation_id: activeConvId,
+          text: input.trim(),
+          channel: "email",
+        }),
+      });
+      if (res.ok) {
+        const { message } = await res.json();
+        setMessages((prev) => [...prev, message]);
+        setInput("");
+      }
+    } finally {
+      setSending(false);
+    }
   };
+
+  const activeConv = conversations.find((c) => c.id === activeConvId);
 
   return (
     <div>
       <div className="mb-6">
         <h1 className="page-title">Messages</h1>
-        <p className="page-subtitle">Communication with Market Link</p>
+        <p className="page-subtitle">Communication with your account manager</p>
       </div>
 
       <div
@@ -95,72 +103,142 @@ export default function PortalMessagesPage() {
         style={{ height: "calc(100vh - 260px)" }}
       >
         <div className="flex h-full">
+          {/* Sidebar */}
           <div className="w-[220px] border-r border-[#1A1A1A] flex flex-col flex-shrink-0">
             <div className="px-4 py-3 border-b border-[#1A1A1A]">
-              <span className="eyebrow !text-[9px] !text-gray-5">
-                Conversations
-              </span>
+              <span className="eyebrow !text-[9px] !text-gray-5">Conversations</span>
             </div>
-            <div className="px-3 py-3">
-              <div className="card-hover-yellow card !bg-yellow/5 !border-yellow/20 px-3 py-2.5 cursor-pointer flex items-center gap-2.5">
-                <Avatar initials="ML" variant="yellow" size="md" />
-                <div className="min-w-0">
-                  <div className="text-[12px] font-semibold truncate">
-                    Market Link
-                  </div>
-                  <div className="text-[10px] text-gray-5 truncate">
-                    Absolutely! I&apos;ll send over...
-                  </div>
+            <div className="px-3 py-3 flex-1 overflow-y-auto">
+              {loadingConvs ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-4 h-4 animate-spin text-teal" />
                 </div>
-              </div>
+              ) : conversations.length === 0 ? (
+                <div className="text-[11px] text-gray-5 py-4 text-center">No conversations yet</div>
+              ) : (
+                conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => { setLoadingMsgs(true); setActiveConvId(conv.id); }}
+                    className={`w-full text-left card !bg-yellow/5 !border-yellow/20 px-3 py-2.5 cursor-pointer flex items-center gap-2.5 mb-2 ${
+                      activeConvId === conv.id ? "ring-1 ring-teal" : ""
+                    }`}
+                  >
+                    <Avatar
+                      initials={
+                        conv.contact_name
+                          ?.split(" ")
+                          .map((w) => w[0])
+                          .join("")
+                          .slice(0, 2) || "?"
+                      }
+                      variant="yellow"
+                      size="md"
+                    />
+                    <div className="min-w-0">
+                      <div className="text-[12px] font-semibold truncate">{conv.contact_name}</div>
+                      <div className="text-[10px] text-gray-5 truncate">{conv.channel}</div>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col min-w-0">
-            <div className="px-5 py-3 border-b border-[#1A1A1A] bg-black flex items-center gap-3">
-              <Avatar initials="ML" variant="yellow" size="md" />
-              <div>
-                <div className="text-[13px] font-semibold">Market Link</div>
-                <div className="text-[10px] text-gray-5 font-mono">
-                  Account Manager · Active
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-5 py-4 bg-[#0D0D0D]">
-              {messages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} />
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="px-5 py-3 border-t border-[#1A1A1A] bg-black">
-              <div className="flex items-end gap-2">
-                <div className="compose-input flex items-end gap-2">
-                  <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    placeholder="Type a message..."
-                    rows={1}
-                    className="flex-1 bg-transparent border-none outline-none text-[13px] text-white resize-none placeholder:text-[#555]"
+          {/* Chat area — dark-themed, resists light-theme overrides */}
+          <div className="flex-1 flex flex-col min-w-0 messages-chat">
+            {activeConv ? (
+              <>
+                <div className="pm-chat-header px-5 py-3 border-b border-[#1A1A1A] bg-[#0D0D0D] flex items-center gap-3">
+                  <Avatar
+                    initials={
+                      activeConv.contact_name
+                        ?.split(" ")
+                        .map((w) => w[0])
+                        .join("")
+                        .slice(0, 2) || "?"
+                    }
+                    variant="yellow"
+                    size="md"
                   />
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleSend}
-                    disabled={!input.trim()}
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                  </Button>
+                  <div>
+                    <div className="text-[13px] font-semibold text-white">{activeConv.contact_name}</div>
+                    <div className="text-[10px] text-gray-5 font-mono">
+                      {activeConv.channel} · {activeConv.status}
+                    </div>
+                  </div>
                 </div>
+
+                <div className="flex-1 overflow-y-auto px-5 py-4 bg-[#0D0D0D]">
+                  {loadingMsgs ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-5 h-5 animate-spin text-teal" />
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="text-[12px] text-gray-5 text-center py-8">No messages yet</div>
+                  ) : (
+                    messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`mb-3 flex ${
+                          msg.direction === "inbound" ? "justify-start" : "justify-end"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[70%] rounded-lg px-4 py-2.5 ${
+                            msg.direction === "inbound"
+                              ? "bg-[#1a1a1a] border border-[#2a2a2a]"
+                              : "bg-teal/20 border border-teal/30"
+                          }`}
+                        >
+                          <p className="text-[13px] text-gray-1 leading-relaxed">{msg.text}</p>
+                          <div className="flex items-center justify-end gap-1.5 mt-1">
+                            <span className="text-[10px] text-gray-5 font-mono">
+                              {new Date(msg.created_at).toLocaleTimeString("en-US", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div className="pm-chat-input px-5 py-3 border-t border-[#1A1A1A] bg-[#0D0D0D]">
+                  <div className="flex items-end gap-2">
+                    <textarea
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      placeholder="Type a message..."
+                      rows={1}
+                      className="flex-1 bg-transparent border-none outline-none text-[13px] text-white resize-none placeholder:text-gray-5"
+                    />
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleSend}
+                      disabled={!input.trim() || sending}
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-[13px] text-gray-5">
+                Select a conversation
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

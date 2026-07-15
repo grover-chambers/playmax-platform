@@ -40,7 +40,7 @@ const settingsSections = [
 export default function PortalSettingsPage() {
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="font-display text-xl font-bold">Settings</h1>
         <p className="text-xs text-gray-4 mt-0.5">
           Manage your account and portal preferences
@@ -60,14 +60,14 @@ export default function PortalSettingsPage() {
                 <Icon size={18} className="text-yellow" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-semibold text-white group-hover:text-yellow transition-colors">
+                <div className="text-[13px] font-semibold text-white group-hover:text-teal transition-colors">
                   {section.label}
                 </div>
                 <div className="text-[11px] text-gray-5 mt-0.5">
                   {section.desc}
                 </div>
               </div>
-              <ChevronRight size={16} className="text-gray-5 group-hover:text-yellow transition-colors flex-shrink-0" />
+              <ChevronRight size={16} className="text-gray-5 group-hover:text-teal transition-colors flex-shrink-0" />
             </Link>
           );
         })}

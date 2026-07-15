@@ -15,6 +15,7 @@ import { getRoleLabel } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import type { DashboardNavItem } from "@/components/layout/dashboard-layout";
+import { PortalProvider } from "@/components/portal/portal-provider";
 
 const portalNavItems: DashboardNavItem[] = [
   { icon: Home, label: "Overview", href: "/portal" },
@@ -76,13 +77,13 @@ export default function PortalLayout({
       userExtra={
         <Link
           href="/portal/settings"
-          className="text-[11px] font-medium px-2 py-1 rounded border border-[#2A2A2A] text-gray-4 hover:text-white hover:border-[#555] transition-all"
+          className="text-[11px] font-medium px-2 py-1 rounded border border-[#2A2A2A] text-gray-4 hover:text-teal hover:border-teal transition-all"
         >
           Settings
         </Link>
       }
     >
-      {children}
+      <PortalProvider>{children}</PortalProvider>
     </DashboardLayout>
   );
 }
