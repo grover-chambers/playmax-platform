@@ -458,8 +458,8 @@ export default function HomePage() {
 
               <div className="flex flex-col gap-3 mt-2">
                 {[
-                  { label: "WhatsApp", value: "+254 700 000 000" },
-                  { label: "Email", value: "hello@marketlink.co.ke" },
+                  { label: "WhatsApp", value: "+254 741 953 190" },
+                  { label: "Email", value: "playmaxltd@gmail.com" },
                   { label: "Office", value: "Westlands, Nairobi" },
                 ].map((c) => (
                   <div key={c.label} className="flex items-center gap-3">
