@@ -2905,3 +2905,107 @@ h6 {
 .platform-shell > main .bg-black {
     background: var(--ws-bg);
 }
+
+/* ═══════════════════════════════════════════════════════
+   INLINE TAILWIND CLASS MIGRATION — LIGHT THEME
+   Override dark-theme Tailwind utilities used inline in
+   portal/dashboard JSX. Scoped to .platform-shell so
+   marketing/public pages are unaffected.
+
+   Rules:
+   • White/ivory bg → fonts are black (navy) and grey
+   • Grey/dark bg  → fonts are ivory and white
+   ══════════════════════════════════════════════════════ */
+
+/* ── TEXT COLORS ─────────────────────────────────────── */
+
+/* .text-white inside surface-migrated containers → navy text */
+.platform-shell > main .bg-black-2.text-white,
+.platform-shell > main .bg-black-2 .text-white,
+.platform-shell > main .bg-black-3.text-white,
+.platform-shell > main .bg-black-3 .text-white,
+.platform-shell > main .bg-black-4.text-white,
+.platform-shell > main .bg-black-4 .text-white {
+    color: var(--ws-text) !important;
+}
+
+/* .text-yellow inside white cards → teal accent (visible on light bg) */
+.platform-shell > main .text-yellow {
+    color: var(--ws-accent) !important;
+}
+/* Preserve yellow inside dark welcome banner */
+.platform-shell .pm-dash-welcome .text-yellow {
+    color: var(--pm-yellow) !important;
+}
+
+/* .text-gray-3 (#9B9A94) → darker for better contrast on white */
+.platform-shell > main .text-gray-3 {
+    color: #555 !important;
+}
+
+/* ── BORDERS ─────────────────────────────────────────── */
+
+/* Dark hex borders on white surfaces → subtle cream */
+.platform-shell > main .bg-black-2 [class*="border-[#"],
+.platform-shell > main .bg-black-3 [class*="border-[#"],
+.platform-shell > main .bg-black-4 [class*="border-[#"],
+.platform-shell > main .bg-black-2[class*="border-[#"],
+.platform-shell > main .bg-black-3[class*="border-[#"],
+.platform-shell > main .bg-black-4[class*="border-[#"] {
+    border-color: var(--ws-border) !important;
+}
+.platform-shell > main [class*="border-black-4"] {
+    border-color: var(--ws-border) !important;
+}
+
+/* ── INTERACTION STATES ──────────────────────────────── */
+
+/* Table row hover → subtle tint on white */
+.platform-shell > main tr:hover {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Focus ring → teal on light bg */
+.platform-shell > main [class*="focus:border-yellow"] {
+    border-color: var(--ws-accent) !important;
+}
+
+/* ── ICON ACCENT CONTAINERS ──────────────────────────── */
+
+/* Yellow tint containers → teal tint on light bg */
+.platform-shell > main .bg-yellow\/10 {
+    background: rgba(15, 118, 110, 0.08) !important;
+}
+.platform-shell > main .border-yellow\/20 {
+    border-color: rgba(15, 118, 110, 0.2) !important;
+}
+
+/* .text-gray-5 on white surfaces → slightly darker for readability */
+.platform-shell > main .text-gray-5 {
+    color: #6B6B65 !important;
+}
+
+/* ── MESSAGES CHAT AREA — stay dark in light theme ─────────────
+   The conversation UI (header, body, input) is intentionally dark
+   even when the rest of the portal uses a light surface. */
+.platform-shell .messages-chat {
+    background: #0D0D0D !important;
+}
+.platform-shell .messages-chat * {
+    border-color: #2a2a2a;
+}
+.platform-shell .pm-chat-header,
+.platform-shell .pm-chat-input {
+    background: #0D0D0D !important;
+}
+.platform-shell .pm-chat-header .text-white,
+.platform-shell .pm-chat-input .text-white,
+.platform-shell .messages-chat textarea {
+    color: var(--pm-white) !important;
+}
+.platform-shell .messages-chat .text-gray-5 {
+    color: #666 !important;
+}
+.platform-shell .messages-chat .text-gray-1 {
+    color: #e0e0e0 !important;
+}
