@@ -51,17 +51,15 @@ interface PipelineProject {
   deadline: string;
 }
 
-const staffData = [
-  { name: "Amina", role: "Lead Gen", progress: 85, projects: 12, closedValue: "KES 620K" },
-  { name: "James", role: "Sales Exec", progress: 55, projects: 8, closedValue: "KES 290K" },
-  { name: "Christine", role: "Junior Sales", progress: 40, projects: 5, closedValue: "KES 120K" },
-];
+
 
 export default function PipelinePage() {
   const [activeFilter, setActiveFilter] = useState("All Types");
   const [search, setSearch] = useState("");
   const [showNewProject, setShowNewProject] = useState(false);
   const [projects, setProjects] = useState<PipelineProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [clientPage, setClientPage] = useState(1);
 
   useEffect(() => {
@@ -93,7 +91,8 @@ export default function PipelinePage() {
             : "—",
         }));
         if (!cancelled) setProjects(mapped);
-      } catch { /* silent fallback */ }
+      } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load pipeline"); }
+      finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -188,6 +187,12 @@ export default function PipelinePage() {
 
   return (
     <div>
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">Loading pipeline…</div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-20 text-red text-[13px]">{error}</div>
+      ) : (
+      <>
       <PageHeader
         title="Project Pipeline"
         subtitle={`${totalProjects} projects in pipeline`}
@@ -290,38 +295,35 @@ export default function PipelinePage() {
               </Link>
             </div>
             <div className="pm-dash-card-b">
-              {staffData.map((staff) => (
-                <div key={staff.name} className="pm-dash-staff-row">
-                  <div className="pm-dash-staff-info">
-                    <div className="pm-dash-staff-name">{staff.name}</div>
-                    <div className="pm-dash-staff-role">{staff.role}</div>
-                    <div className="pm-dash-prog-wrap">
-                      <div className="pm-dash-prog-track">
-                        <div
-                          className="pm-dash-prog-fill"
-                          style={{
-                            width: `${staff.progress}%`,
-                            background: staff.name === "Christine" ? "var(--pm-red)" : "var(--pm-yellow)",
-                          }}
-                        />
+              {projects.length === 0 ? (
+                <p className="text-[12px] text-gray-5 py-4">No staff data yet.</p>
+              ) : (
+                (() => {
+                  const staffMap = new Map<string, { progress: number; projects: number; closedValue: number }>();
+                  projects.forEach(p => {
+                    const staff = p.client || "Unassigned";
+                    const existing = staffMap.get(staff) || { progress: 0, projects: 0, closedValue: 0 };
+                    existing.projects += 1;
+                    if (p.status === "completed") existing.closedValue += parseInt(p.value.replace(/[^0-9]/g, "")) || 0;
+                    existing.progress = Math.max(existing.progress, p.progress);
+                    staffMap.set(staff, existing);
+                  });
+                  return Array.from(staffMap.entries()).slice(0, 5).map(([name, info]) => (
+                    <div key={name} className="pm-dash-staff-row">
+                      <div className="pm-dash-staff-info">
+                        <div className="pm-dash-staff-name">{name}</div>
+                        <div className="pm-dash-staff-role">{info.projects} project{info.projects !== 1 ? "s" : ""}</div>
+                        <div className="pm-dash-prog-wrap">
+                          <div className="pm-dash-prog-track">
+                            <div className="pm-dash-prog-fill" style={{ width: `${info.progress}%`, background: "var(--pm-yellow)" }} />
+                          </div>
+                          <div className="pm-dash-prog-lbl"><span>{info.progress}%</span></div>
+                        </div>
                       </div>
-                      <div className="pm-dash-prog-lbl">
-                        <span>{staff.progress}%</span>
-                      </div>
                     </div>
-                  </div>
-                  <div className="pm-dash-staff-stats">
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">{staff.projects}</div>
-                      <div className="pm-dash-staff-stat-l">projects</div>
-                    </div>
-                    <div className="pm-dash-staff-stat">
-                      <div className="pm-dash-staff-stat-n">{staff.closedValue}</div>
-                      <div className="pm-dash-staff-stat-l">closed</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  ));
+                })()
+              )}
             </div>
           </div>
 
@@ -363,6 +365,8 @@ export default function PipelinePage() {
       </div>
 
       <NewProjectModal open={showNewProject} onClose={() => setShowNewProject(false)} onCreated={() => { refreshProjects(); setShowNewProject(false); }} />
+      </>
+      )}
     </div>
   );
 }

@@ -4,7 +4,6 @@ import React, { useState, useEffect, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
-  AlertCircle,
   CheckCircle2,
   Plus,
   MessageSquare,
@@ -23,10 +22,10 @@ import Pagination, { usePagination } from "@/components/ui/pagination";
 /* ── Data ──────────────────────────────────────────────── */
 
 const defaultKpis = [
-  { value: "3", label: "Tasks due today", sub: "2 overdue from Friday", cardClass: "red", valueClass: "red" },
-  { value: "2", label: "Unread messages", sub: "Twiga Foods · P&G EA", cardClass: "blu", valueClass: "blu" },
-  { value: "8", label: "My open leads", sub: "2 need follow-up today", cardClass: "", valueClass: "" },
-  { value: "2", label: "Deals closed this month", sub: "KES 1.1M won", cardClass: "grn", valueClass: "grn" },
+  { value: "—", label: "Tasks due today", sub: "Loading…", cardClass: "red", valueClass: "red" },
+  { value: "—", label: "Unread messages", sub: "Loading…", cardClass: "blu", valueClass: "blu" },
+  { value: "—", label: "My open leads", sub: "Loading…", cardClass: "", valueClass: "" },
+  { value: "—", label: "Deals closed this month", sub: "Loading…", cardClass: "grn", valueClass: "grn" },
 ];
 
 interface Task {
@@ -36,44 +35,6 @@ interface Task {
   done: boolean;
   meta: string;
 }
-
-const tasks: Task[] = [
-  {
-    id: "t1",
-    title: "Follow up with Twiga Foods on proposal",
-    priority: "high",
-    done: false,
-    meta: "Due today · 2h ago",
-  },
-  {
-    id: "t2",
-    title: "Review OOH creative concepts for P&G EA",
-    priority: "high",
-    done: false,
-    meta: "Due today · 3h ago",
-  },
-  {
-    id: "t3",
-    title: "Update lead tracker with new inquiries",
-    priority: "med",
-    done: false,
-    meta: "Due today",
-  },
-  {
-    id: "t4",
-    title: "Organise research folder",
-    priority: "low",
-    done: false,
-    meta: "Due tomorrow",
-  },
-  {
-    id: "t5",
-    title: "Send weekly report to management",
-    priority: "high",
-    done: true,
-    meta: "Completed 9:42 AM",
-  },
-];
 
 const priorityLabel: Record<string, string> = {
   high: "pm-dash-pri-high",
@@ -94,34 +55,6 @@ interface Lead {
   contact: string;
 }
 
-const leads: Lead[] = [
-  {
-    company: "Twiga Foods",
-    intent: "Medium Intent",
-    stage: "Proposal",
-    contact: "2h ago",
-  },
-  {
-    company: "P&G EA",
-    intent: "High Intent",
-    stage: "Qualified",
-    contact: "1d ago",
-  },
-  {
-    company: "Kevian Kenya",
-    intent: "Medium Intent",
-    stage: "Contacted",
-    contact: "12d ago",
-  },
-  {
-    company: "Java House",
-    intent: "Brand Refresh",
-    stage: "Proposal",
-    contact: "3d ago",
-  },
-  { company: "Kenchic", intent: "Research", stage: "New", contact: "5d ago" },
-];
-
 interface Conversation {
   name: string;
   text: string;
@@ -129,38 +62,11 @@ interface Conversation {
   unread: boolean;
 }
 
-const conversations: Conversation[] = [
-  {
-    name: "Twiga Foods",
-    text: "Hi, we've reviewed the proposal and would like to discuss the OOH placement options...",
-    time: "4h ago",
-    unread: true,
-  },
-  {
-    name: "P&G EA",
-    text: "Could you share the revised media plan for the Nairobi metro rollout?",
-    time: "6h ago",
-    unread: true,
-  },
-  {
-    name: "Kenchic",
-    text: "Thanks for the update, looking forward to the next deliverable.",
-    time: "1d ago",
-    unread: false,
-  },
-];
-
 interface Project {
   name: string;
   type: string;
   progress: number;
 }
-
-const projects: Project[] = [
-  { name: "OOH Campaign — P&G EA", type: "Out-of-Home", progress: 72 },
-  { name: "Java House Brand Refresh", type: "Branding", progress: 45 },
-  { name: "Safaricom Research Study", type: "Research", progress: 28 },
-];
 
 /* ── Components ────────────────────────────────────────── */
 
@@ -196,107 +102,87 @@ function TaskCheckbox({ done }: { done: boolean }) {
 export default function MyDayPage() {
   const router = useRouter();
   const [showNewTask, setShowNewTask] = useState(false);
-  const [myTasks, setMyTasks] = useState(tasks);
-  const [myLeads, setMyLeads] = useState(leads);
-  const [myConversations, setMyConversations] = useState(conversations);
-  const [myProjects, setMyProjects] = useState(projects);
+  const [myTasks, setMyTasks] = useState<Task[]>([]);
+  const [myLeads, setMyLeads] = useState<Lead[]>([]);
+  const [myConversations, setMyConversations] = useState<Conversation[]>([]);
+  const [myProjects, setMyProjects] = useState<Project[]>([]);
   const [myKpis, setMyKpis] = useState(defaultKpis);
+  const [loading, setLoading] = useState(true);
   const [leadsPage, setLeadsPage] = useState(1);
   const [convPage, setConvPage] = useState(1);
   const { user } = useUser();
 
   useEffect(() => {
-    (async () => {
-      try {
-        const supabase = createClient();
-        const { data: dbTasks } = await supabase
-          .from("tasks")
-          .select("title, status, priority, due_date")
-          .order("priority", { ascending: true });
-        if (dbTasks && dbTasks.length > 0) {
-          const now = new Date();
-          const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-          const dueTasks = dbTasks.filter(t => {
-            if (t.due_date && new Date(t.due_date) <= todayEnd) return true;
-            return t.status === "in-progress" || t.status === "todo";
-          });
-          setMyTasks(dueTasks.slice(0, 5).map(t => ({
-            id: Math.random().toString(36).slice(2),
-            title: t.title,
-            priority: (t.priority === "high" ? "high" : t.priority === "low" ? "low" : "med") as "high" | "med" | "low",
-            done: t.status === "done",
-            meta: t.due_date ? `Due ${new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "No due date",
-          })));
-          const overdue = dbTasks.filter(t => t.due_date && new Date(t.due_date) < now && t.status !== "done").length;
-          setMyKpis(prev => prev.map(k =>
-            k.label === "Tasks due today" ? { ...k, value: String(dueTasks.filter(t => t.status !== "done").length || 1), sub: `${overdue} overdue` } : k
-          ));
-        }
-      } catch { /* fallback */ }
-    })();
-    (async () => {
-      try {
-        const supabase = createClient();
-        const { data: dbLeads } = await supabase
-          .from("leads")
-          .select("company, intent, status, created_at")
-          .order("created_at", { ascending: false })
-          ;
-        if (dbLeads && dbLeads.length > 0) {
-          setMyLeads(dbLeads.map(l => ({
-            company: l.company,
-            intent: l.intent || "General",
-            stage: l.status ? l.status.charAt(0).toUpperCase() + l.status.slice(1) : "New",
-            contact: l.created_at ? formatTimeAgo(l.created_at) : "—",
-          })));
-          const openCount = dbLeads.filter(l => !["won", "lost"].includes(l.status)).length;
-          const wonCount = dbLeads.filter(l => l.status === "won").length;
-          setMyKpis(prev => prev.map(k =>
-            k.label === "My open leads" ? { ...k, value: String(openCount || 1) } :
-            k.label === "Deals closed this month" ? { ...k, value: String(wonCount || 0) } : k
-          ));
-        }
-      } catch { /* fallback */ }
-    })();
-    (async () => {
-      try {
-        const supabase = createClient();
-        const { data: dbConvs } = await supabase
-          .from("conversations")
-          .select("contact_name, last_message, updated_at, unread")
-          .order("updated_at", { ascending: false })
-          ;
-        if (dbConvs && dbConvs.length > 0) {
-          const unreadCount = dbConvs.filter(c => c.unread).length;
-          setMyConversations(dbConvs.map(c => ({
-            name: c.contact_name || "Unknown",
-            text: c.last_message || "—",
-            time: formatTimeAgo(c.updated_at),
-            unread: !!c.unread,
-          })));
-          setMyKpis(prev => prev.map(k =>
-            k.label === "Unread messages" ? { ...k, value: String(unreadCount || 0), sub: `${unreadCount} unread` } : k
-          ));
-        }
-      } catch { /* fallback */ }
-    })();
-    (async () => {
-      try {
-        const supabase = createClient();
-        const { data: dbProjects } = await supabase
-          .from("projects")
-          .select("name, type, progress")
-          .order("updated_at", { ascending: false })
-          .limit(3);
-        if (dbProjects && dbProjects.length > 0) {
-          setMyProjects(dbProjects.map(p => ({
-            name: p.name,
-            type: p.type || "Project",
-            progress: p.progress || 0,
-          })));
-        }
-      } catch { /* fallback */ }
-    })();
+    let cancelled = false;
+    const supabase = createClient();
+    Promise.allSettled([
+      supabase.from("tasks").select("title, status, priority, due_date").order("priority", { ascending: true }),
+      supabase.from("leads").select("company, intent, status, created_at").order("created_at", { ascending: false }),
+      supabase.from("conversations").select("id, contact_name, last_message_at, status").order("last_message_at", { ascending: false }),
+      supabase.from("projects").select("name, type, progress").order("updated_at", { ascending: false }).limit(3),
+    ]).then(([tasksRes, leadsRes, convsRes, projsRes]) => {
+      if (cancelled) return;
+      const dbTasks = tasksRes.status === "fulfilled" ? tasksRes.value.data : null;
+      const dbLeads = leadsRes.status === "fulfilled" ? leadsRes.value.data : null;
+      const dbConvs = convsRes.status === "fulfilled" ? convsRes.value.data : null;
+      const dbProjects = projsRes.status === "fulfilled" ? projsRes.value.data : null;
+
+      if (dbTasks && dbTasks.length > 0) {
+        const now = new Date();
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        const dueTasks = dbTasks.filter((t: { due_date?: string; status?: string }) => {
+          if (t.due_date && new Date(t.due_date) <= todayEnd) return true;
+          return t.status === "in_progress" || t.status === "todo";
+        });
+        setMyTasks(dueTasks.slice(0, 5).map((t: { title: string; status?: string; priority?: string; due_date?: string }) => ({
+          id: Math.random().toString(36).slice(2),
+          title: t.title,
+          priority: (t.priority === "high" ? "high" : t.priority === "low" ? "low" : "med") as "high" | "med" | "low",
+          done: t.status === "done",
+          meta: t.due_date ? `Due ${new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "No due date",
+        })));
+        const overdue = dbTasks.filter((t: { due_date?: string; status?: string }) => t.due_date && new Date(t.due_date) < now && t.status !== "done").length;
+        setMyKpis(prev => prev.map(k =>
+          k.label === "Tasks due today" ? { ...k, value: String(dueTasks.filter((t: { status?: string }) => t.status !== "done").length || 0), sub: `${overdue} overdue` } : k
+        ));
+      }
+
+      if (dbLeads && dbLeads.length > 0) {
+        setMyLeads(dbLeads.map((l: { company: string; intent?: string; status?: string; created_at?: string }) => ({
+          company: l.company,
+          intent: l.intent || "General",
+          stage: l.status ? l.status.charAt(0).toUpperCase() + l.status.slice(1) : "New",
+          contact: l.created_at ? formatTimeAgo(l.created_at) : "—",
+        })));
+        const openCount = dbLeads.filter((l: { status?: string }) => !["won", "lost"].includes(l.status || "")).length;
+        const wonCount = dbLeads.filter((l: { status?: string }) => l.status === "won").length;
+        setMyKpis(prev => prev.map(k =>
+          k.label === "My open leads" ? { ...k, value: String(openCount || 0) } :
+          k.label === "Deals closed this month" ? { ...k, value: String(wonCount || 0) } : k
+        ));
+      }
+
+      if (dbConvs && dbConvs.length > 0) {
+        setMyConversations(dbConvs.map((c: { contact_name?: string; last_message_at?: string; status?: string }) => ({
+          name: c.contact_name || "Unknown",
+          text: c.status || "Active",
+          time: c.last_message_at ? formatTimeAgo(c.last_message_at) : "—",
+          unread: false,
+        })));
+        setMyKpis(prev => prev.map(k =>
+          k.label === "Unread messages" ? { ...k, value: String(dbConvs.length), sub: `${dbConvs.length} conversations` } : k
+        ));
+      }
+
+      if (dbProjects && dbProjects.length > 0) {
+        setMyProjects(dbProjects.map((p: { name: string; type?: string; progress?: number }) => ({
+          name: p.name,
+          type: p.type || "Project",
+          progress: p.progress || 0,
+        })));
+      }
+    }).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   useEffect(() => { startTransition(() => { setLeadsPage(1); }); }, [myLeads]);
@@ -307,6 +193,10 @@ export default function MyDayPage() {
 
   return (
     <div>
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">Loading your day…</div>
+      ) : (
+      <>
       <NewTaskModal open={showNewTask} onClose={() => setShowNewTask(false)} />
       <PageHeader
         title="My Day"
@@ -315,14 +205,11 @@ export default function MyDayPage() {
 
       {/* ── Alerts ──────────────────────────────── */}
       <div className="px-7 pt-5 pb-2">
-        <AlertBox variant="y" icon={AlertTriangle}>
-          <strong>Twiga Foods</strong> has an unread message waiting for your
-          reply — 4 hours old.
-        </AlertBox>
-        <AlertBox variant="r" icon={AlertCircle}>
-          <strong>Kevian Kenya</strong> lead has been stale for 12 days. Follow
-          up or escalate.
-        </AlertBox>
+        {myConversations.length > 0 && myConversations[0]?.unread && (
+          <AlertBox variant="y" icon={AlertTriangle}>
+            <strong>{myConversations[0].name}</strong> has a recent message — check your inbox.
+          </AlertBox>
+        )}
       </div>
 
       {/* ── KPI Row ─────────────────────────────── */}
@@ -584,6 +471,8 @@ export default function MyDayPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

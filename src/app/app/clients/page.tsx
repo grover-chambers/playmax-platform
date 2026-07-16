@@ -12,7 +12,7 @@ import StatusBadge from "@/components/ui/status-badge";
 import NewClientModal from "@/components/modals/new-client-modal";
 import { downloadCSV } from "@/lib/export-utils";
 import { createClient } from "@/lib/supabase/browser";
-import { formatTimeAgo, uuidInitials } from "@/lib/utils";
+import { formatTimeAgo } from "@/lib/utils";
 import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Client {
@@ -27,118 +27,7 @@ interface Client {
   status: "active" | "review" | "draft";
 }
 
-const clients: Client[] = [
-  {
-    id: "1",
-    company: "Unga Group",
-    industry: "FMCG / Manufacturing",
-    owner: "Brian Mwangi",
-    ownerInitials: "BM",
-    activeProjects: 3,
-    totalValue: "KES 2.4M",
-    lastActivity: "2h ago",
-    status: "active",
-  },
-  {
-    id: "2",
-    company: "Bidco Africa",
-    industry: "FMCG / Manufacturing",
-    owner: "James Kamau",
-    ownerInitials: "JK",
-    activeProjects: 1,
-    totalValue: "KES 890K",
-    lastActivity: "5h ago",
-    status: "active",
-  },
-  {
-    id: "3",
-    company: "Safaricom",
-    industry: "Telecommunications",
-    owner: "Alice Wanjiku",
-    ownerInitials: "AW",
-    activeProjects: 2,
-    totalValue: "KES 1.8M",
-    lastActivity: "1d ago",
-    status: "active",
-  },
-  {
-    id: "4",
-    company: "Java House",
-    industry: "Food & Beverage",
-    owner: "Brian Mwangi",
-    ownerInitials: "BM",
-    activeProjects: 2,
-    totalValue: "KES 1.5M",
-    lastActivity: "3h ago",
-    status: "active",
-  },
-  {
-    id: "5",
-    company: "Naivas",
-    industry: "Retail",
-    owner: "James Kamau",
-    ownerInitials: "JK",
-    activeProjects: 1,
-    totalValue: "KES 620K",
-    lastActivity: "2d ago",
-    status: "review",
-  },
-  {
-    id: "6",
-    company: "P&G East Africa",
-    industry: "FMCG / Manufacturing",
-    owner: "Alice Wanjiku",
-    ownerInitials: "AW",
-    activeProjects: 2,
-    totalValue: "KES 3.1M",
-    lastActivity: "6h ago",
-    status: "active",
-  },
-  {
-    id: "7",
-    company: "Twiga Foods",
-    industry: "AgriTech / Distribution",
-    owner: "Brian Mwangi",
-    ownerInitials: "BM",
-    activeProjects: 1,
-    totalValue: "KES 450K",
-    lastActivity: "1d ago",
-    status: "review",
-  },
-  {
-    id: "8",
-    company: "Kenchic",
-    industry: "Food / Agriculture",
-    owner: "Alice Wanjiku",
-    ownerInitials: "AW",
-    activeProjects: 1,
-    totalValue: "KES 680K",
-    lastActivity: "4d ago",
-    status: "active",
-  },
-  {
-    id: "9",
-    company: "Haco Industries",
-    industry: "FMCG / Manufacturing",
-    owner: "James Kamau",
-    ownerInitials: "JK",
-    activeProjects: 1,
-    totalValue: "KES 340K",
-    lastActivity: "3d ago",
-    status: "draft",
-  },
-  {
-    id: "10",
-    company: "Kevian Kenya",
-    industry: "FMCG / Beverages",
-    owner: "Brian Mwangi",
-    ownerInitials: "BM",
-    activeProjects: 1,
-    totalValue: "KES 380K",
-    lastActivity: "5d ago",
-    status: "review",
-  },
-];
+
 
 const industryFilters = ["All", "FMCG", "Telecom", "Retail", "F&B", "AgriTech"];
 
@@ -147,7 +36,9 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("list");
   const [modalOpen, setModalOpen] = useState(false);
-  const [data, setData] = useState<Client[]>(clients);
+  const [data, setData] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -159,20 +50,25 @@ export default function ClientsPage() {
           .select("*")
           .order("updated_at", { ascending: false });
         if (error || !dbClients || dbClients.length === 0) return;
-        const mapped: Client[] = dbClients.map((c) => ({
-          id: c.id,
-          company: c.name || c.company,
-          industry: c.industry || "—",
-          owner: c.assigned_to || "Unassigned",
-          ownerInitials: uuidInitials(c.assigned_to || ""),
-          activeProjects: 0,
-          totalValue: "KES —",
-          lastActivity: formatTimeAgo(c.updated_at),
-          status: (c.status === "active" ? "active" : c.status === "inactive" ? "draft" : "review") as "active" | "review" | "draft",
-        }));
+        const mapped: Client[] = dbClients.map((c) => {
+          const ownerName = c.assigned_to?.split("@")[0]?.replace(".", " ")?.replace(/\b\w/g, (l: string) => l.toUpperCase()) || "Unassigned";
+          const initials = ownerName === "Unassigned" ? "UA" : ownerName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+          return {
+            id: c.id,
+            company: c.name || c.company,
+            industry: c.industry || "—",
+            owner: ownerName,
+            ownerInitials: initials,
+            activeProjects: 0,
+            totalValue: "KES —",
+            lastActivity: formatTimeAgo(c.updated_at),
+            status: (c.status === "active" ? "active" : c.status === "inactive" ? "draft" : "review") as "active" | "review" | "draft",
+          };
+        });
         setData(mapped);
         setPage(1);
-      } catch { /* silent fallback to hardcoded */ }
+      } catch (e) { setError(e instanceof Error ? e.message : "Failed to load clients"); }
+      finally { setLoading(false); }
     })();
   }, []);
 
@@ -206,6 +102,12 @@ export default function ClientsPage() {
 
   return (
     <div className="page-content">
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">Loading clients…</div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-20 text-red text-[13px]">{error}</div>
+      ) : (
+      <>
       <NewClientModal open={modalOpen} onClose={() => setModalOpen(false)} />
       <PageHeader
         title="Clients"
@@ -363,6 +265,8 @@ export default function ClientsPage() {
       <div className="px-7 pb-5">
         <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
+      </>
+      )}
     </div>
   );
 }

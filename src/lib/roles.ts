@@ -21,6 +21,7 @@ const routePermissions: Record<string, AccessLevel> = {
   "/app/bookings": ["super_admin", "crm_admin", "finance"],
   "/app/research": ["super_admin", "crm_admin"],
   "/app/invoices": ["super_admin", "finance"],
+  "/app/analytics": ["super_admin", "crm_admin", "finance"],
   // Super admin pages
   "/app/settings": ["super_admin"],
   "/app/reports": ["super_admin", "crm_admin", "crm_staff"],
