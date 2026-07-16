@@ -198,7 +198,7 @@ export default function UploadDetailPage({
                 ) : (
                   <RefreshCw className="w-3.5 h-3.5 mr-1" />
                 )}
-                "Re-import"
+                {"Re-import"}
               </Button>
             )}
             <Button
