@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const validTypes = ["per_store_sales", "chain_wide_sales", "inventory"];
+    const validTypes = ["per_store_sales", "chain_wide_sales", "inventory", "sales_transactions", "stock_movements", "supplier_details", "pricing", "product_master", "supplier_products"];
     if (!validTypes.includes(file_type)) {
       return NextResponse.json(
         { error: `file_type must be one of: ${validTypes.join(", ")}` },

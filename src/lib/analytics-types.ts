@@ -1,6 +1,6 @@
 /* ── Analytics Engine Types ─────────────────────────────── */
 
-export type UploadFileType = "per_store_sales" | "chain_wide_sales" | "inventory";
+export type UploadFileType = "per_store_sales" | "chain_wide_sales" | "inventory" | "sales_transactions" | "stock_movements" | "supplier_details" | "pricing" | "product_master" | "supplier_products";
 export type UploadStatus = "uploaded" | "parsed" | "validated" | "imported" | "failed";
 export type BranchTier = "standard" | "flagship" | "express";
 
