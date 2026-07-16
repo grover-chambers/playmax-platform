@@ -474,6 +474,61 @@ function matchCategory(catText: string, categories: Category[]): Category | null
   return null;
 }
 
+/**
+ * Parse a date-range string from file metadata (e.g. "01/01/2026 - 14/07/2026")
+ * into ISO dates + a human label. Detects DD/MM/YYYY vs MM/DD/YYYY.
+ * Returns null if unparseable.
+ */
+function parsePeriodDateRange(text: string): {
+  start_date: string;
+  end_date: string;
+  label: string;
+} | null {
+  const parts = text.split(/\s*[-–]\s*/);
+  if (parts.length !== 2) return null;
+
+  const parseDate = (s: string): Date | null => {
+    const segs = s.trim().split(/[\/\.\-]/);
+    if (segs.length !== 3) return null;
+    const nums = segs.map(Number);
+    if (nums.some(isNaN)) return null;
+    const [a, b, c] = nums;
+    const year = c > 99 ? c : 2000 + c;
+    let month: number;
+    let day: number;
+    if (a > 12) {
+      // first part is day → DD/MM/YYYY
+      day = a;
+      month = b;
+    } else if (b > 12) {
+      // second part is day → MM/DD/YYYY
+      month = a;
+      day = b;
+    } else {
+      // ambiguous — default to MM/DD/YYYY
+      month = a;
+      day = b;
+    }
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return new Date(year, month - 1, day);
+  };
+
+  const start = parseDate(parts[0]);
+  const end = parseDate(parts[1]);
+  if (!start || !end) return null;
+
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const sl = `${MONTHS[start.getMonth()]} ${start.getFullYear()}`;
+  const el = `${MONTHS[end.getMonth()]} ${end.getFullYear()}`;
+
+  return {
+    start_date: fmt(start),
+    end_date: fmt(end),
+    label: sl === el ? sl : `${sl} — ${el}`,
+  };
+}
+
 // ── Component ────────────────────────────────────────────────────
 
 export default function AnalyticsUploadPage() {
@@ -513,6 +568,8 @@ export default function AnalyticsUploadPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [dimensionsLoaded, setDimensionsLoaded] = useState(false);
+  const periodAutoCreatedRef = useRef(false);
+  const [periodSource, setPeriodSource] = useState<"manual" | "auto-detected">("manual");
   const [dimensionsLoading, setDimensionsLoading] = useState(false);
   const [dimensionsError, setDimensionsError] = useState<string | null>(null);
 
@@ -582,6 +639,54 @@ export default function AnalyticsUploadPage() {
       }
 
       if (metadata) autoMatchDimensions(metadata, brs, cats);
+
+      // ── Auto-create period from file metadata date range ──────
+      if (
+        periodRequired &&
+        metadata?.period &&
+        !periodAutoCreatedRef.current
+      ) {
+        periodAutoCreatedRef.current = true;
+        const parsed = parsePeriodDateRange(metadata.period);
+        if (parsed) {
+          // Try to find an existing period that matches these dates
+          const existing = pers.find(
+            (p) => p.start_date === parsed.start_date && p.end_date === parsed.end_date,
+          );
+          if (existing) {
+            setSelectedPeriodId(existing.id);
+            setPeriodSource("auto-detected");
+            setDimensionsError(null);
+          } else {
+            // Auto-create the period
+            try {
+              const createRes = await fetch("/api/analytics/periods", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  label: parsed.label,
+                  start_date: parsed.start_date,
+                  end_date: parsed.end_date,
+                }),
+              });
+              const createData = await createRes.json();
+              if (createData.period) {
+                const newPeriod: Period = createData.period;
+                setPeriods((prev) => [
+                  ...prev.filter((p) => p.id !== newPeriod.id),
+                  newPeriod,
+                ]);
+                setSelectedPeriodId(newPeriod.id);
+                setPeriodSource("auto-detected");
+                setDimensionsError(null);
+              }
+            } catch (err) {
+              console.error("Failed to auto-create period:", err);
+              setDimensionsError("Detected a period from the file but could not create it automatically. Please create it in Analytics Settings.");
+            }
+          }
+        }
+      }
     } catch (e) {
       console.error("Failed to load dimensions:", e);
       setDimensionsError(e instanceof Error ? e.message : "Failed to load dimensions");
@@ -735,6 +840,8 @@ export default function AnalyticsUploadPage() {
     detectedHeadersRef.current = [];
     detectedRowsRef.current = [];
     setStoreMetadata(null);
+    periodAutoCreatedRef.current = false;
+    setPeriodSource("manual");
     setStep("select");
   };
 
@@ -1459,10 +1566,18 @@ export default function AnalyticsUploadPage() {
                   </div>
                 </div>
                 {detectedMeta.period && (
-                  <div className="mt-3 text-[10px] text-yellow">
-                    <AlertCircle className="w-3 h-3 inline mr-1" />
-                    Date range is for reference only — select the actual
-                    reporting period below.
+                  <div className="mt-3 text-[10px]">
+                    {periodSource === "auto-detected" ? (
+                      <span className="text-teal">
+                        <CheckCircle className="w-3 h-3 inline mr-1" />
+                        Period auto-detected and created from date range.
+                      </span>
+                    ) : (
+                      <span className="text-yellow">
+                        <AlertCircle className="w-3 h-3 inline mr-1" />
+                        Date range detected — select the matching reporting period below.
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -1538,21 +1653,31 @@ export default function AnalyticsUploadPage() {
                     </div>
                   ) : (
                     <>
-                      <select
-                        value={selectedPeriodId}
-                        onChange={(e) => setSelectedPeriodId(e.target.value)}
-                        className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
-                      >
-                        <option value="">— Select period —</option>
-                        {!periodRequired && (
-                          <option value="no_period">No period — reference data</option>
-                        )}
-                        {periods.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.label} ({p.start_date} — {p.end_date})
-                          </option>
-                        ))}
-                      </select>
+                      {periodSource === "auto-detected" && selectedPeriodId ? (
+                        <div className="w-full bg-black-3 border border-teal/30 rounded px-3 py-2 text-[11px] text-teal flex items-center gap-2">
+                          <CheckCircle className="w-3 h-3" />
+                          <span>
+                            {periods.find((p) => p.id === selectedPeriodId)?.label || "Period"}
+                            {" — auto-detected from file"}
+                          </span>
+                        </div>
+                      ) : (
+                        <select
+                          value={selectedPeriodId}
+                          onChange={(e) => setSelectedPeriodId(e.target.value)}
+                          className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
+                        >
+                          <option value="">— Select period —</option>
+                          {!periodRequired && (
+                            <option value="no_period">No period — reference data</option>
+                          )}
+                          {periods.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.label} ({p.start_date} — {p.end_date})
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       {periods.length === 0 && dimensionsLoaded && !dimensionsError && (
                         <p className="text-[10px] text-gray-5 mt-1">
                           No periods found. <button onClick={retryDimensions} className="text-teal underline cursor-pointer">Retry</button>
@@ -1581,14 +1706,15 @@ export default function AnalyticsUploadPage() {
               {!periodRequired && !selectedPeriodId && (
                 <p className="text-[10px] text-gray-5 mt-2">
                   <AlertCircle className="w-3 h-3 inline mr-1" /> This format
-                  doesn&apos;t require a period — select &quot;No period&quot; if this is
-                  reference data.
+doesn&apos;t require a period — select &quot;No period&quot; if this is
+reference data.
                 </p>
               )}
-              {periodRequired && !selectedPeriodId && (
+              {periodRequired && !selectedPeriodId && dimensionsError && (
                 <p className="text-[10px] text-yellow mt-2">
                   <AlertCircle className="w-3 h-3 inline mr-1" /> Period is
-                  required for sales data — select a period or create one below.
+required for sales data — auto-detection failed. Please create one in
+Analytics Settings, then retry.
                 </p>
               )}
             </div>
