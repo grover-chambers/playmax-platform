@@ -110,7 +110,7 @@ export default function MetricsGrid({ clientId, projectId }: MetricsGridProps) {
             {(report.metrics || []).map((metric) => (
               <div
                 key={metric.id}
-                className={`bg-[#0D0D0D] border border-[#1E1E1E] rounded-lg p-3 ${chartTypeClass(metric.chart_type)}`}
+                className={`pm-dash-card pm-dash-card-b ${chartTypeClass(metric.chart_type)}`}
               >
                 <div className="text-[10px] text-gray-5 uppercase tracking-wider font-mono mb-1">
                   {metric.metric_label}

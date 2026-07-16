@@ -253,7 +253,7 @@ export default function UploadDetailPage({
 
       {/* Upload metadata */}
       <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="p-3 bg-black-3 border border-[#252525] rounded-lg">
+        <div className="pm-dash-card pm-dash-card-b">
           <div className="text-[9px] text-gray-5 uppercase font-mono">Status</div>
           <div className="text-[12px] text-white mt-1 flex items-center gap-1.5">
             {upload.status === "imported" ? (
@@ -264,19 +264,19 @@ export default function UploadDetailPage({
             {upload.status}
           </div>
         </div>
-        <div className="p-3 bg-black-3 border border-[#252525] rounded-lg">
+        <div className="pm-dash-card pm-dash-card-b">
           <div className="text-[9px] text-gray-5 uppercase font-mono">Period</div>
           <div className="text-[12px] text-white mt-1">{upload.period_label ?? "—"}</div>
         </div>
-        <div className="p-3 bg-black-3 border border-[#252525] rounded-lg">
+        <div className="pm-dash-card pm-dash-card-b">
           <div className="text-[9px] text-gray-5 uppercase font-mono">Branch</div>
           <div className="text-[12px] text-white mt-1">{upload.branch_name ?? "—"}</div>
         </div>
-        <div className="p-3 bg-black-3 border border-[#252525] rounded-lg">
+        <div className="pm-dash-card pm-dash-card-b">
           <div className="text-[9px] text-gray-5 uppercase font-mono">Total Rows</div>
           <div className="text-[12px] text-white mt-1 font-mono">{upload.total_rows.toLocaleString()}</div>
         </div>
-        <div className="p-3 bg-black-3 border border-[#252525] rounded-lg">
+        <div className="pm-dash-card pm-dash-card-b">
           <div className="text-[9px] text-gray-5 uppercase font-mono">Errors</div>
           <div className={`text-[12px] mt-1 font-mono ${upload.error_rows > 0 ? "text-red" : "text-white"}`}>
             {upload.error_rows}
@@ -304,7 +304,7 @@ export default function UploadDetailPage({
       </div>
 
       {/* Staging rows table */}
-      <div className="mt-3 border border-[#252525] rounded-lg bg-black-3 overflow-hidden">
+      <div className="mt-3 pm-dash-card pm-dash-card-b-0 overflow-hidden">
         <table className="w-full text-[11px]">
           <thead>
             <tr className="text-gray-5 font-mono border-b border-[#252525]">
