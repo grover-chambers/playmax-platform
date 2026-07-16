@@ -57,6 +57,68 @@ interface Booking {
   inventory?: { name: string; location: string } | null;
 }
 
+interface ActivityItem {
+  id: string;
+  type: "project" | "invoice" | "booking" | "deliverable";
+  title: string;
+  detail: string;
+  date: string;
+  status: string;
+}
+
+function buildActivityFeed(
+  projects: Project[],
+  invoices: Invoice[],
+  bookings: Booking[],
+  kpis: KpiData | null,
+): ActivityItem[] {
+  const items: ActivityItem[] = [];
+
+  for (const p of projects) {
+    items.push({
+      id: `p-${p.id}`,
+      type: "project",
+      title: p.name,
+      detail: `${p.type.replace(/_/g, " ")} — ${p.progress}% complete`,
+      date: p.end_date || p.id,
+      status: p.status,
+    });
+  }
+  for (const inv of invoices) {
+    items.push({
+      id: `i-${inv.id}`,
+      type: "invoice",
+      title: inv.invoice_number,
+      detail: `${formatCurrency(inv.amount)} — ${inv.status}`,
+      date: inv.due_date || inv.id,
+      status: inv.status,
+    });
+  }
+  for (const b of bookings) {
+    items.push({
+      id: `b-${b.id}`,
+      type: "booking",
+      title: b.inventory?.name || "Booking",
+      detail: `${new Date(b.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — ${new Date(b.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`,
+      date: b.start_date,
+      status: b.status,
+    });
+  }
+  if (kpis && kpis.pendingDeliverables > 0) {
+    items.push({
+      id: "deliverables",
+      type: "deliverable",
+      title: "New deliverables available",
+      detail: `${kpis.pendingDeliverables} file${kpis.pendingDeliverables > 1 ? "s" : ""} ready for download`,
+      date: new Date().toISOString(),
+      status: "available",
+    });
+  }
+
+  // Sort by most recent first (use creation order as tiebreaker)
+  return items.slice(0, 8);
+}
+
 function formatCurrency(amount: number): string {
   if (amount >= 1_000_000) return `KES ${(amount / 1_000_000).toFixed(1)}M`;
   if (amount >= 1_000) return `KES ${(amount / 1_000).toFixed(0)}K`;
@@ -198,6 +260,38 @@ export default function PortalOverviewPage() {
           <Link href="/portal/invoices" className="underline">view invoices</Link>
         </div>
       )}
+
+      {/* ── Activity Feed ─────────────────────────── */}
+      <div className="pm-dash-card mb-6">
+        <div className="pm-dash-card-h">
+          <div className="flex items-center gap-2">
+            <BarChart3 size={14} className="text-yellow" />
+            <span className="pm-dash-card-t">Recent Activity</span>
+          </div>
+        </div>
+        <div className="pm-dash-card-b">
+          {buildActivityFeed(recentProjects, recentInvoices, recentBookings, kpis).length === 0 ? (
+            <div className="text-[12px] text-gray-4 py-3">No recent activity</div>
+          ) : (
+            buildActivityFeed(recentProjects, recentInvoices, recentBookings, kpis).map((item) => (
+              <div key={item.id} className="pm-dash-feed-item">
+                <div className={`pm-dash-feed-dot ${
+                  item.type === "project" ? "b" :
+                  item.type === "invoice" ? (item.status === "overdue" ? "r" : "y") :
+                  item.type === "booking" ? "g" : "g"
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <div className="pm-dash-feed-text">{item.title}</div>
+                  <div className="pm-dash-feed-time">{item.detail}</div>
+                </div>
+                <span className={`pm-dash-bdg ${statusBadgeClass(item.status)} text-[8px]`}>
+                  {item.status.replace(/_/g, " ")}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
 
       {/* ── Two-column layout ──────────────────────── */}
       <div className="grid grid-cols-3 gap-6">

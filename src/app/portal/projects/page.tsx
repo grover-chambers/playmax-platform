@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, startTransition } from "react";
 import StatusBadge from "@/components/ui/status-badge";
+import PageHeader from "@/components/layout/page-header";
 import { Loader2 } from "lucide-react";
 
 interface Project {
@@ -63,20 +64,18 @@ export default function PortalProjectsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="font-display text-xl font-bold">Projects</h1>
-        <p className="text-xs text-gray-4 mt-0.5">
-          {projects.length} project{projects.length !== 1 ? "s" : ""}
-        </p>
-      </div>
+    <div className="page-content">
+      <PageHeader
+        title="Projects"
+        subtitle={`${projects.length} project${projects.length !== 1 ? "s" : ""}`}
+      />
 
       {projects.length === 0 ? (
-        <div className="bg-black-2 border border-[#252525] rounded-lg p-8 text-center text-[13px] text-gray-4">
-          No projects yet
+        <div className="pm-dash-card p-6 text-center">
+          <div className="text-[12px] text-gray-4">No projects yet</div>
         </div>
       ) : (
-        <div className="bg-black-2 border border-[#252525] rounded-lg overflow-hidden">
+        <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#1A1A1A]">
@@ -89,7 +88,7 @@ export default function PortalProjectsPage() {
             </thead>
             <tbody>
               {projects.map((p) => (
-                <tr key={p.id} className="border-b border-[#1A1A1A] transition-colors">
+                <tr key={p.id} className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors">
                   <td className="px-4 py-3.5 text-[13px] font-semibold text-white">{p.name}</td>
                   <td className="px-4 py-3.5 text-[12px] text-gray-4">{p.type.replace(/_/g, " ")}</td>
                   <td className="px-4 py-3.5">
