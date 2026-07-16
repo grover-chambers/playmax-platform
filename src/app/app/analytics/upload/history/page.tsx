@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, startTransition } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle, AlertCircle, Trash2, Loader2 } from "lucide-react";
 import Button from "@/components/ui/button";
@@ -24,7 +24,7 @@ export default function UploadHistoryPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { startTransition(() => { setPage(1); }); }, [uploads.length]);
+
 
   const { paginated, total } = usePagination(uploads, page, 20);
 

@@ -33,6 +33,7 @@ interface DetectedMetadata {
   period: string | null;
   store: string | null;
   category: string | null;
+  supplier: string | null;
 }
 
 interface Branch {
@@ -338,13 +339,14 @@ function parseSheetWithMetadata(sheet: XLSX.WorkSheet): {
   metadata: DetectedMetadata;
   headers: string[];
   rows: Record<string, unknown>[];
+  grandTotal: { quantity: number; weight: number; total: number } | null;
 } {
   const grid: unknown[][] = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
     defval: "",
   });
 
-  const metadata: DetectedMetadata = { period: null, store: null, category: null };
+  const metadata: DetectedMetadata = { period: null, store: null, category: null, supplier: null };
 
   // Scan first 20 rows for metadata labels
   const scanLimit = Math.min(grid.length, 20);
@@ -388,6 +390,16 @@ function parseSheetWithMetadata(sheet: XLSX.WorkSheet): {
         } else if (j + 1 < row.length && String(row[j + 1]).trim()) {
           metadata.category = String(row[j + 1]).trim();
         }
+
+      // Supplier
+      if (!metadata.supplier && /supplier|vendor|provider/.test(cell)) {
+        const colonMatch = raw.match(/:\s*(.+)/i);
+        if (colonMatch) {
+          metadata.supplier = colonMatch[1].trim();
+        } else if (j + 1 < row.length && String(row[j + 1]).trim()) {
+          metadata.supplier = String(row[j + 1]).trim();
+        }
+      }
       }
     }
   }
@@ -426,6 +438,12 @@ function parseSheetWithMetadata(sheet: XLSX.WorkSheet): {
     const allEmpty = row.every((cell) => String(cell ?? "").trim() === "");
     if (allEmpty) continue;
 
+    // Skip Grand Total / Sub Total / summary rows
+    const firstCell = String(row[0] ?? "").trim().toLowerCase();
+    if (/^(grand\s*total|sub\s*total|total\s*sales|category\s*total|\*\*total\*\*)$/i.test(firstCell)) {
+      continue;
+    }
+
     const obj: Record<string, unknown> = {};
     headers.forEach((h, j) => {
       obj[h] = row[j] ?? "";
@@ -433,7 +451,25 @@ function parseSheetWithMetadata(sheet: XLSX.WorkSheet): {
     rows.push(obj);
   }
 
-  return { metadata, headers, rows };
+  // Extract Grand Total if present
+  let grandTotal: { quantity: number; weight: number; total: number } | null = null;
+  for (let i = headerRowIndex + 1; i < grid.length; i++) {
+    const row = grid[i];
+    const firstCell = String(row[0] ?? "").trim().toLowerCase();
+    if (/^grand\s*total$/i.test(firstCell)) {
+      const qtyIdx = headers.findIndex(h => /quantity/i.test(h));
+      const weightIdx = headers.findIndex(h => /weight/i.test(h));
+      const totalIdx = headers.findIndex(h => /^total$/i.test(h));
+      grandTotal = {
+        quantity: qtyIdx >= 0 ? parseFloat(String(row[qtyIdx] ?? "0").replace(/[^\d.-]/g, "")) || 0 : 0,
+        weight: weightIdx >= 0 ? parseFloat(String(row[weightIdx] ?? "0").replace(/[^\d.-]/g, "")) || 0 : 0,
+        total: totalIdx >= 0 ? parseFloat(String(row[totalIdx] ?? "0").replace(/[^\d.-]/g, "")) || 0 : 0,
+      };
+      break;
+    }
+  }
+
+  return { metadata, headers, rows, grandTotal };
 }
 
 function matchBranch(storeText: string, branches: Branch[]): Branch | null {
@@ -577,6 +613,7 @@ export default function AnalyticsUploadPage() {
   const [detectedMeta, setDetectedMeta] = useState<DetectedMetadata | null>(null);
   const detectedHeadersRef = useRef<string[]>([]);
   const detectedRowsRef = useRef<Record<string, unknown>[]>([]);
+  const grandTotalRef = useRef<{ quantity: number; weight: number; total: number } | null>(null);
 
   // Selections for confirm_details
   const [selectedBranchId, setSelectedBranchId] = useState("");
@@ -839,6 +876,7 @@ export default function AnalyticsUploadPage() {
     setDetectedMeta(null);
     detectedHeadersRef.current = [];
     detectedRowsRef.current = [];
+    grandTotalRef.current = null;
     setStoreMetadata(null);
     periodAutoCreatedRef.current = false;
     setPeriodSource("manual");
@@ -884,7 +922,7 @@ export default function AnalyticsUploadPage() {
       const workbook = XLSX.read(data);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-      const { metadata, headers, rows } = parseSheetWithMetadata(sheet);
+      const { metadata, headers, rows, grandTotal } = parseSheetWithMetadata(sheet);
 
       if (headers.length === 0 || rows.length === 0) {
         throw new Error(
@@ -919,6 +957,7 @@ export default function AnalyticsUploadPage() {
 
       detectedHeadersRef.current = headers;
       detectedRowsRef.current = rows;
+      grandTotalRef.current = grandTotal;
 
       // Load dimensions and auto-match
       await ensureDimensions(metadata);
@@ -964,6 +1003,8 @@ export default function AnalyticsUploadPage() {
           period_id: effectivePeriodId,
           branch_id: selectedBranchId || null,
           category_id: selectedCategoryId || null,
+          grand_total: grandTotalRef.current,
+          supplier_name: detectedMeta?.supplier || null,
         }),
       });
 
@@ -1539,13 +1580,21 @@ export default function AnalyticsUploadPage() {
                 <h4 className="font-display text-[11px] font-semibold text-white mb-3">
                   Detected from File
                 </h4>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <span className="text-[9px] text-gray-5 uppercase">
                       Store
                     </span>
                     <div className="text-[12px] text-white mt-1">
                       {detectedMeta.store || "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-gray-5 uppercase">
+                      Supplier
+                    </span>
+                    <div className="text-[12px] text-white mt-1">
+                      {detectedMeta.supplier || "—"}
                     </div>
                   </div>
                   <div>

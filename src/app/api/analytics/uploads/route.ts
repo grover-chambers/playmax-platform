@@ -91,6 +91,35 @@ export async function POST(request: Request) {
       );
     }
 
+    // Capture Grand Total data for branch summary (if provided)
+    const { grand_total } = body;
+    if (grand_total && data && data.branch_id && data.period_id) {
+      const { data: supplierMeta } = await supabase
+        .from("analytics_staging_uploads")
+        .select("metadata")
+        .eq("id", data.id)
+        .single();
+
+      // Get supplier name from metadata or request body
+      const supplierName = body.supplier_name ?? null;
+
+      await supabase.from("analytics_fact_branch_summary").upsert(
+        {
+          upload_id: data.id,
+          branch_id: data.branch_id,
+          period_id: data.period_id,
+          supplier_name: supplierName,
+          total_quantity: grand_total.quantity ?? 0,
+          total_weight_tonnes: grand_total.weight ?? 0,
+          total_amount: grand_total.total ?? 0,
+        },
+        {
+          onConflict: "branch_id,period_id,supplier_name",
+          ignoreDuplicates: false,
+        }
+      );
+    }
+
     return NextResponse.json({ upload: data }, { status: 201 });
   } catch {
     return NextResponse.json(
