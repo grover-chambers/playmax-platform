@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 
+export const dynamic = "force-dynamic";
+
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
@@ -172,39 +174,172 @@ export async function POST(_request: Request, context: RouteContext) {
     if (upload.file_type === "inventory") {
       for (const row of rows) {
         try {
-          if (!row.stock_code) {
-            skipped.push(row.row_number);
-            continue;
+          // Auto-create product if needed
+          let productId: string | null = null;
+          if (row.stock_code) {
+            const { data: existing } = await supabase
+              .from("analytics_products")
+              .select("id")
+              .eq("stock_code", row.stock_code)
+              .single();
+            if (existing) {
+              productId = existing.id;
+            } else {
+              const { data: newProd } = await supabase
+                .from("analytics_products")
+                .insert({ stock_code: row.stock_code, name: row.product_name || row.stock_code })
+                .select("id")
+                .single();
+              productId = newProd?.id ?? null;
+            }
           }
-
-          const { data: existing } = await supabase
-            .from("analytics_products")
-            .select("id")
-            .eq("stock_code", row.stock_code)
-            .maybeSingle();
-
-          if (!existing) {
-            errors.push(`Row ${row.row_number}: unknown stock_code "${row.stock_code}"`);
-            continue;
-          }
+          if (!productId) { skipped.push(row.row_number); continue; }
 
           await supabase.from("analytics_fact_inventory").upsert(
             {
               snapshot_date: new Date().toISOString().split("T")[0],
-              product_id: existing.id,
-              branch_id: upload.branch_id || null,
+              product_id: productId,
+              branch_id: upload.branch_id,
+              supplier_id: upload.supplier_id || null,
               quantity_on_hand: row.quantity ?? 0,
-              unit_cost: row.unit_cost ?? null,
+              unit_cost: row.unit_cost ? parseFloat(String(row.unit_cost).replace(/[^\d.-]/g, "")) : null,
             },
-            {
-              onConflict: "snapshot_date,product_id,branch_id",
-              ignoreDuplicates: false,
-            },
+            { onConflict: "snapshot_date,product_id,branch_id" }
           );
-
           imported.push(row.row_number);
-        } catch {
-          errors.push(`Row ${row.row_number}: unexpected error`);
+        } catch (e) {
+          errors.push(`Row ${row.row_number}: ${e instanceof Error ? e.message : "Unknown error"}`);
+        }
+      }
+    }
+
+    // For product_master → upsert into analytics_products + auto-create categories
+    if (upload.file_type === "product_master") {
+      for (const row of rows) {
+        try {
+          if (!row.stock_code) { skipped.push(row.row_number); continue; }
+
+          // Auto-create category if provided and doesn't exist
+          let categoryId: string | null = null;
+          const categoryName = row.sub_category || row.category_name;
+          if (categoryName) {
+            const { data: existingCat } = await supabase
+              .from("analytics_categories")
+              .select("id")
+              .ilike("name", categoryName.trim())
+              .single();
+            if (existingCat) {
+              categoryId = existingCat.id;
+            } else {
+              const { data: newCat } = await supabase
+                .from("analytics_categories")
+                .insert({ name: categoryName.trim().toUpperCase() })
+                .select("id")
+                .single();
+              categoryId = newCat?.id ?? null;
+            }
+          }
+
+          // Upsert product
+          await supabase.from("analytics_products").upsert(
+            {
+              stock_code: row.stock_code,
+              name: row.product_name || row.stock_code,
+              category_id: categoryId,
+              sub_category: row.sub_category || null,
+              pack_size: row.pack_size || null,
+            },
+            { onConflict: "stock_code" }
+          );
+          imported.push(row.row_number);
+        } catch (e) {
+          errors.push(`Row ${row.row_number}: ${e instanceof Error ? e.message : "Unknown error"}`);
+        }
+      }
+    }
+
+    // For supplier_products → create supplier + junction links
+    if (upload.file_type === "supplier_products") {
+      for (const row of rows) {
+        try {
+          if (!row.stock_code || !row.supplier_name) { skipped.push(row.row_number); continue; }
+
+          // Auto-create supplier if doesn't exist
+          let supplierId: string | null = null;
+          const { data: existingSup } = await supabase
+            .from("analytics_suppliers")
+            .select("id")
+            .ilike("name", row.supplier_name.trim())
+            .single();
+          if (existingSup) {
+            supplierId = existingSup.id;
+          } else {
+            const { data: newSup } = await supabase
+              .from("analytics_suppliers")
+              .insert({
+                name: row.supplier_name.trim(),
+                code: row.supplier_code || null,
+              })
+              .select("id")
+              .single();
+            supplierId = newSup?.id ?? null;
+          }
+          if (!supplierId) { skipped.push(row.row_number); continue; }
+
+          // Find or create product
+          let productId: string | null = null;
+          const { data: existingProd } = await supabase
+            .from("analytics_products")
+            .select("id")
+            .eq("stock_code", row.stock_code)
+            .single();
+          if (existingProd) {
+            productId = existingProd.id;
+          } else {
+            // Auto-create category if provided
+            let categoryId: string | null = null;
+            if (row.category_name) {
+              const { data: cat } = await supabase
+                .from("analytics_categories")
+                .select("id")
+                .ilike("name", row.category_name.trim())
+                .single();
+              if (cat) {
+                categoryId = cat.id;
+              } else {
+                const { data: newCat } = await supabase
+                  .from("analytics_categories")
+                  .insert({ name: row.category_name.trim().toUpperCase() })
+                  .select("id")
+                  .single();
+                categoryId = newCat?.id ?? null;
+              }
+            }
+            const { data: newProd } = await supabase
+              .from("analytics_products")
+              .insert({
+                stock_code: row.stock_code,
+                name: row.product_name || row.stock_code,
+                category_id: categoryId,
+              })
+              .select("id")
+              .single();
+            productId = newProd?.id ?? null;
+          }
+          if (!productId) { skipped.push(row.row_number); continue; }
+
+          // Create junction link
+          await supabase.from("analytics_supplier_products").upsert(
+            {
+              supplier_id: supplierId,
+              product_id: productId,
+              pack_size: row.pack_size || null,
+            },
+            { onConflict: "supplier_id,product_id" }
+          );
+          imported.push(row.row_number);
+        } catch (e) {
+          errors.push(`Row ${row.row_number}: ${e instanceof Error ? e.message : "Unknown error"}`);
         }
       }
     }

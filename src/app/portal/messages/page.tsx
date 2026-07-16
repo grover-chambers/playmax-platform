@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, startTransition } from "react";
 import { Send, Loader2 } from "lucide-react";
 import Avatar from "@/components/ui/avatar";
 import Button from "@/components/ui/button";
+import PageHeader from "@/components/layout/page-header";
 
 
 interface Conversation {
@@ -92,14 +93,11 @@ export default function PortalMessagesPage() {
   const activeConv = conversations.find((c) => c.id === activeConvId);
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="page-title">Messages</h1>
-        <p className="page-subtitle">Communication with your account manager</p>
-      </div>
+    <div className="page-content">
+      <PageHeader title="Messages" subtitle="Communication with your account manager" />
 
       <div
-        className="card !bg-black-2 overflow-hidden"
+        className="pm-dash-card pm-dash-card-b-0 overflow-hidden"
         style={{ height: "calc(100vh - 260px)" }}
       >
         <div className="flex h-full">
@@ -120,7 +118,7 @@ export default function PortalMessagesPage() {
                   <button
                     key={conv.id}
                     onClick={() => { setLoadingMsgs(true); setActiveConvId(conv.id); }}
-                    className={`w-full text-left card !bg-yellow/5 !border-yellow/20 px-3 py-2.5 cursor-pointer flex items-center gap-2.5 mb-2 ${
+                    className={`w-full text-left pm-dash-card !bg-teal/5 !border-teal/20 px-3 py-2.5 cursor-pointer flex items-center gap-2.5 mb-2 ${
                       activeConvId === conv.id ? "ring-1 ring-teal" : ""
                     }`}
                   >

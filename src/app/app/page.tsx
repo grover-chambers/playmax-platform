@@ -40,8 +40,8 @@ export default function SuperAdminDashboard() {
   const pipelineTotal = pipeline.reduce((sum, s) => sum + s.leads.length, 0);
   const outstandingInvoices = invoices.filter((i) => i.status === "sent" || i.status === "overdue");
   const overdueCount = invoices.filter((i) => i.status === "overdue").length;
-  const collectedTotal = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
-  const outstandingTotal = outstandingInvoices.reduce((s, i) => s + i.amount, 0);
+  const collectedTotal = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + (i.amount ?? 0), 0);
+  const outstandingTotal = outstandingInvoices.reduce((s, i) => s + (i.amount ?? 0), 0);
   const stageColors: Record<string, string> = {
     New: "var(--pm-blue)",
     Contacted: "var(--pm-yellow)",
@@ -158,7 +158,7 @@ export default function SuperAdminDashboard() {
         <div className="pm-dash-krow pm-dash-krow-4">
           {/* Card 1 — Pipeline value */}
           <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">{loading ? "..." : `KES ${(stats.pipelineValue / 1000000).toFixed(1)}M`}</div>
+            <div className="pm-dash-kn">{loading ? "..." : `KES ${((stats.pipelineValue ?? 0) / 1000000).toFixed(1)}M`}</div>
             <div className="pm-dash-kl">Pipeline value</div>
             <div className="pm-dash-ksub">
               <TrendingUp className="inline-block w-3 h-3 trend-up align-text-bottom" />{" "}
@@ -178,7 +178,7 @@ export default function SuperAdminDashboard() {
 
           {/* Card 3 — Collected this month (blue) */}
           <div className="pm-dash-kcard blu">
-            <div className="pm-dash-kn blu">{loading ? "..." : `KES ${(stats.collectedThisMonth / 1000).toFixed(0)}K`}</div>
+            <div className="pm-dash-kn blu">{loading ? "..." : `KES ${((stats.collectedThisMonth ?? 0) / 1000).toFixed(0)}K`}</div>
             <div className="pm-dash-kl">Collected this month</div>
             <div className="pm-dash-ksub">
               Target: KES 1.2M{" "}
@@ -384,11 +384,11 @@ export default function SuperAdminDashboard() {
               <div className="pm-dash-card-b">
                 <div className="flex gap-3 mb-4">
                   <div className="pm-dash-mini-kpi flex-1">
-                    <div className="pm-dash-mini-kpi-val" style={{ color: "var(--pm-red)" }}>KES {(outstandingTotal / 1000).toFixed(0)}K</div>
+                    <div className="pm-dash-mini-kpi-val" style={{ color: "var(--pm-red)" }}>KES {((outstandingTotal ?? 0) / 1000).toFixed(0)}K</div>
                     <div className="pm-dash-mini-kpi-lbl">Outstanding</div>
                   </div>
                   <div className="pm-dash-mini-kpi flex-1">
-                    <div className="pm-dash-mini-kpi-val" style={{ color: "var(--pm-green)" }}>KES {(collectedTotal / 1000).toFixed(0)}K</div>
+                    <div className="pm-dash-mini-kpi-val" style={{ color: "var(--pm-green)" }}>KES {((collectedTotal ?? 0) / 1000).toFixed(0)}K</div>
                     <div className="pm-dash-mini-kpi-lbl">Collected</div>
                   </div>
                   <div className="pm-dash-mini-kpi flex-1">
@@ -406,7 +406,7 @@ export default function SuperAdminDashboard() {
                     <div key={inv.id} className="pm-dash-li">
                       <div className="pm-dash-li-dot" style={{ background: dotColors[inv.status] || "var(--pm-gray-5)" }} />
                       <div className="pm-dash-li-body">
-                        <div className="pm-dash-li-title">{inv.number} — KES {(inv.amount / 1000).toFixed(0)}K</div>
+                        <div className="pm-dash-li-title">{inv.number} — KES {((inv.amount ?? 0) / 1000).toFixed(0)}K</div>
                         <div className="pm-dash-li-meta">{inv.client} · Due {inv.due_date ? new Date(inv.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</div>
                       </div>
                       <span className={`pm-dash-bdg ${bdgClasses[inv.status] || "pm-dash-bdg-n"}`}>{inv.status}</span>

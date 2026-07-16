@@ -8,6 +8,7 @@ import type {
   AnalyticsBranch,
   AnalyticsCategory,
   AnalyticsManufacturer,
+  AnalyticsProductWithJoins,
 } from "@/lib/analytics-types";
 
 type DimTab = "branches" | "categories" | "manufacturers" | "products";
@@ -24,26 +25,28 @@ export default function DimensionsPage() {
   const [branches, setBranches] = useState<AnalyticsBranch[]>([]);
   const [categories, setCategories] = useState<AnalyticsCategory[]>([]);
   const [manufacturers, setManufacturers] = useState<AnalyticsManufacturer[]>([]);
-  const [productCount, setProductCount] = useState(0);
+  const [products, setProducts] = useState<AnalyticsProductWithJoins[]>([]);
   const [branchPage, setBranchPage] = useState(1);
   const [categoryPage, setCategoryPage] = useState(1);
   const [manufacturerPage, setManufacturerPage] = useState(1);
+  const [productPage, setProductPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/analytics/dimensions");
+        const res = await fetch("/api/analytics/dimensions?include_products=true");
         if (!res.ok) throw new Error("Failed to load dimensions");
         const data = await res.json();
         setBranches(data.branches ?? []);
         setCategories(data.categories ?? []);
         setManufacturers(data.manufacturers ?? []);
-        setProductCount(data.productCount ?? 0);
+        setProducts(data.products ?? []);
         setBranchPage(1);
         setCategoryPage(1);
         setManufacturerPage(1);
+        setProductPage(1);
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Failed to load data");
       } finally {
@@ -56,132 +59,192 @@ export default function DimensionsPage() {
   const { paginated: paginatedBranches, total: totalBranches } = usePagination(branches, branchPage, 20);
   const { paginated: paginatedCategories, total: totalCategories } = usePagination(categories, categoryPage, 20);
   const { paginated: paginatedManufacturers, total: totalManufacturers } = usePagination(manufacturers, manufacturerPage, 20);
+  const { paginated: paginatedProducts, total: totalProducts } = usePagination(products, productPage, 20);
 
   const renderTable = () => {
     if (loading) {
       return (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-4 h-4 text-gray-5 animate-spin" />
-          <span className="ml-2 text-[11px] text-gray-5">Loading dimensions...</span>
+        <div className="pm-dash-card">
+          <div className="pm-dash-card-b flex items-center justify-center py-12">
+            <Loader2 className="w-4 h-4 text-gray-5 animate-spin" />
+            <span className="ml-2 text-[11px] text-gray-5">Loading dimensions...</span>
+          </div>
         </div>
       );
     }
 
     if (error) {
       return (
-        <div className="p-8 text-center text-[12px] text-red">{error}</div>
+        <div className="pm-dash-card">
+          <div className="pm-dash-card-b text-center text-[12px] text-red py-8">{error}</div>
+        </div>
       );
     }
 
     switch (activeTab) {
       case "branches":
         return (
-          <>
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="text-gray-5 font-mono border-b border-[#252525]">
-                <th className="text-left px-4 py-3 font-normal">Code</th>
-                <th className="text-left px-4 py-3 font-normal">Name</th>
-                <th className="text-left px-4 py-3 font-normal">City</th>
-                <th className="text-left px-4 py-3 font-normal">Region</th>
-                <th className="text-left px-4 py-3 font-normal">Tier</th>
-              </tr>
-            </thead>
-            <tbody>
-              {branches.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-5">No branches found.</td>
-                </tr>
-              )}
-              {paginatedBranches.map((b) => (
-                <tr key={b.id} className="border-b border-[#1E1E1E] last:border-0">
-                  <td className="px-4 py-2.5 text-white font-mono">{b.code}</td>
-                  <td className="px-4 py-2.5 text-white">{b.name}</td>
-                  <td className="px-4 py-2.5 text-gray-4">{b.city ?? "—"}</td>
-                  <td className="px-4 py-2.5 text-gray-4">{b.region ?? "—"}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full border ${
-                      b.tier === "flagship"
-                        ? "bg-yellow/10 text-yellow border-yellow/20"
-                        : b.tier === "express"
-                          ? "bg-blue/10 text-blue border-blue/20"
-                          : "bg-transparent text-gray-4 border-[#2A2A2A]"
-                    }`}>
-                      {b.tier}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={branchPage} pageSize={20} total={totalBranches} onPageChange={setBranchPage} />
-          </>
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h">
+              <span className="pm-dash-card-t text-[14px]">Branches</span>
+              <span className="pm-dash-bdg pm-dash-bdg-n">{totalBranches} total</span>
+            </div>
+            <div className="pm-dash-card-b-0 overflow-x-auto">
+              <table className="pm-dash-tbl">
+                <thead>
+                  <tr>
+                    <th className="pm-dash-tbl-th">Code</th>
+                    <th className="pm-dash-tbl-th">Name</th>
+                    <th className="pm-dash-tbl-th">City</th>
+                    <th className="pm-dash-tbl-th">Region</th>
+                    <th className="pm-dash-tbl-th">Tier</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {branches.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="pm-dash-tbl-td text-center py-8">No branches found.</td>
+                    </tr>
+                  )}
+                  {paginatedBranches.map((b) => (
+                    <tr key={b.id}>
+                      <td className="pm-dash-tbl-td font-mono text-white">{b.code}</td>
+                      <td className="pm-dash-tbl-td text-white font-medium">{b.name}</td>
+                      <td className="pm-dash-tbl-td">{b.city ?? "—"}</td>
+                      <td className="pm-dash-tbl-td">{b.region ?? "—"}</td>
+                      <td className="pm-dash-tbl-td">
+                        <span className={`pm-dash-bdg ${
+                          b.tier === "flagship"
+                            ? "pm-dash-bdg-y"
+                            : b.tier === "express"
+                              ? "pm-dash-bdg-b"
+                              : "pm-dash-bdg-n"
+                        }`}>
+                          {b.tier}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination page={branchPage} pageSize={20} total={totalBranches} onPageChange={setBranchPage} />
+          </div>
         );
 
       case "categories":
         return (
-          <>
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="text-gray-5 font-mono border-b border-[#252525]">
-                <th className="text-left px-4 py-3 font-normal">Category</th>
-                <th className="text-left px-4 py-3 font-normal">Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categories.length === 0 && (
-                <tr>
-                  <td colSpan={2} className="text-center py-8 text-gray-5">No categories found.</td>
-                </tr>
-              )}
-              {paginatedCategories.map((c) => (
-                <tr key={c.id} className="border-b border-[#1E1E1E] last:border-0">
-                  <td className="px-4 py-2.5 text-white">{c.name}</td>
-                  <td className="px-4 py-2.5 text-gray-4">{c.description ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={categoryPage} pageSize={20} total={totalCategories} onPageChange={setCategoryPage} />
-          </>
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h">
+              <span className="pm-dash-card-t text-[14px]">Categories</span>
+              <span className="pm-dash-bdg pm-dash-bdg-n">{totalCategories} total</span>
+            </div>
+            <div className="pm-dash-card-b-0 overflow-x-auto">
+              <table className="pm-dash-tbl">
+                <thead>
+                  <tr>
+                    <th className="pm-dash-tbl-th">Category</th>
+                    <th className="pm-dash-tbl-th">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="pm-dash-tbl-td text-center py-8">No categories found.</td>
+                    </tr>
+                  )}
+                  {paginatedCategories.map((c) => (
+                    <tr key={c.id}>
+                      <td className="pm-dash-tbl-td text-white font-medium">{c.name}</td>
+                      <td className="pm-dash-tbl-td">{c.description ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination page={categoryPage} pageSize={20} total={totalCategories} onPageChange={setCategoryPage} />
+          </div>
         );
 
       case "manufacturers":
         return (
-          <>
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="text-gray-5 font-mono border-b border-[#252525]">
-                <th className="text-left px-4 py-3 font-normal">Manufacturer</th>
-                <th className="text-left px-4 py-3 font-normal">Code</th>
-              </tr>
-            </thead>
-            <tbody>
-              {manufacturers.length === 0 && (
-                <tr>
-                  <td colSpan={2} className="text-center py-8 text-gray-5">No manufacturers found.</td>
-                </tr>
-              )}
-              {paginatedManufacturers.map((m) => (
-                <tr key={m.id} className="border-b border-[#1E1E1E] last:border-0">
-                  <td className="px-4 py-2.5 text-white">{m.name}</td>
-                  <td className="px-4 py-2.5 text-gray-4 font-mono">{m.code ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={manufacturerPage} pageSize={20} total={totalManufacturers} onPageChange={setManufacturerPage} />
-          </>
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h">
+              <span className="pm-dash-card-t text-[14px]">Manufacturers</span>
+              <span className="pm-dash-bdg pm-dash-bdg-n">{totalManufacturers} total</span>
+            </div>
+            <div className="pm-dash-card-b-0 overflow-x-auto">
+              <table className="pm-dash-tbl">
+                <thead>
+                  <tr>
+                    <th className="pm-dash-tbl-th">Manufacturer</th>
+                    <th className="pm-dash-tbl-th">Code</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {manufacturers.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="pm-dash-tbl-td text-center py-8">No manufacturers found.</td>
+                    </tr>
+                  )}
+                  {paginatedManufacturers.map((m) => (
+                    <tr key={m.id}>
+                      <td className="pm-dash-tbl-td text-white font-medium">{m.name}</td>
+                      <td className="pm-dash-tbl-td font-mono">{m.code ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination page={manufacturerPage} pageSize={20} total={totalManufacturers} onPageChange={setManufacturerPage} />
+          </div>
         );
 
       case "products":
         return (
-          <div className="p-8 text-center text-[12px] text-gray-5">
-            <Package className="w-8 h-8 mx-auto mb-2 text-gray-5" />
-            <p>
-              <strong className="text-white">{productCount.toLocaleString()}</strong> products loaded.
-            </p>
-            <p className="mt-1">Search and filter functionality coming soon.</p>
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h">
+              <span className="pm-dash-card-t text-[14px]">Products</span>
+              <span className="pm-dash-bdg pm-dash-bdg-n">{totalProducts} total</span>
+            </div>
+            <div className="pm-dash-card-b-0 overflow-x-auto">
+              <table className="pm-dash-tbl">
+                <thead>
+                  <tr>
+                    <th className="pm-dash-tbl-th">Stock Code</th>
+                    <th className="pm-dash-tbl-th">Name</th>
+                    <th className="pm-dash-tbl-th">Category</th>
+                    <th className="pm-dash-tbl-th">Manufacturer</th>
+                    <th className="pm-dash-tbl-th">Sub-Category</th>
+                    <th className="pm-dash-tbl-th">UoM</th>
+                    <th className="pm-dash-tbl-th">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="pm-dash-tbl-td text-center py-8">No products found.</td>
+                    </tr>
+                  )}
+                  {paginatedProducts.map((p) => (
+                    <tr key={p.id}>
+                      <td className="pm-dash-tbl-td font-mono text-white">{p.stock_code}</td>
+                      <td className="pm-dash-tbl-td text-white font-medium">{p.name}</td>
+                      <td className="pm-dash-tbl-td">{p.category_name ?? "—"}</td>
+                      <td className="pm-dash-tbl-td">{p.manufacturer_name ?? "—"}</td>
+                      <td className="pm-dash-tbl-td">{p.sub_category ?? "—"}</td>
+                      <td className="pm-dash-tbl-td font-mono">{p.unit_of_measure}</td>
+                      <td className="pm-dash-tbl-td">
+                        <span className={`pm-dash-bdg ${p.active ? "pm-dash-bdg-g" : "pm-dash-bdg-r"}`}>
+                          {p.active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination page={productPage} pageSize={20} total={totalProducts} onPageChange={setProductPage} />
           </div>
         );
     }
@@ -194,8 +257,30 @@ export default function DimensionsPage() {
         subtitle="Manage branches, categories, manufacturers, and products"
       />
 
-      {/* Tabs */}
-      <div className="flex gap-1 mt-5 border-b border-[#252525]">
+      {/* ── KPI row ── */}
+      {!loading && (
+        <div className="pm-dash-krow pm-dash-krow-4">
+          <div className="pm-dash-kcard">
+            <div className="pm-dash-kn">{branches.length}</div>
+            <div className="pm-dash-kl">Branches</div>
+          </div>
+          <div className="pm-dash-kcard">
+            <div className="pm-dash-kn">{categories.length}</div>
+            <div className="pm-dash-kl">Categories</div>
+          </div>
+          <div className="pm-dash-kcard">
+            <div className="pm-dash-kn">{manufacturers.length}</div>
+            <div className="pm-dash-kl">Manufacturers</div>
+          </div>
+          <div className="pm-dash-kcard">
+            <div className="pm-dash-kn">{products.length}</div>
+            <div className="pm-dash-kl">Products</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tabs ── */}
+      <div className="pm-dash-qa-strip">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -203,11 +288,7 @@ export default function DimensionsPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-3 text-[11px] font-medium border-b-2 transition-all cursor-pointer ${
-                isActive
-                  ? "border-yellow text-white"
-                  : "border-transparent text-gray-5 hover:text-gray-3"
-              }`}
+              className={`pm-dash-qa-btn ${isActive ? "text-yellow border-yellow/40" : ""}`}
             >
               <Icon className="w-3.5 h-3.5" />
               {tab.label}
@@ -216,10 +297,15 @@ export default function DimensionsPage() {
         })}
       </div>
 
+<<<<<<< HEAD
       {/* Table */}
       <div className="pm-dash-card overflow-hidden">
         {renderTable()}
       </div>
+=======
+      {/* ── Content ── */}
+      {renderTable()}
+>>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
     </div>
   );
 }

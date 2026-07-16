@@ -25,98 +25,7 @@ interface Project {
   deadline: string;
 }
 
-const projects: Project[] = [
-  {
-    id: "1",
-    name: "Brand Audit Q1",
-    client: "Unga Group",
-    type: "Research",
-    status: "active",
-    progress: 65,
-    value: "KES 380K",
-    deadline: "Mar 15, 2026",
-  },
-  {
-    id: "2",
-    name: "Out-of-Home Campaign",
-    client: "Unga Group",
-    type: "Campaign",
-    status: "active",
-    progress: 40,
-    value: "KES 1.2M",
-    deadline: "Apr 30, 2026",
-  },
-  {
-    id: "3",
-    name: "Safaricom Research Study",
-    client: "Safaricom",
-    type: "Research",
-    status: "review",
-    progress: 90,
-    value: "KES 890K",
-    deadline: "Feb 28, 2026",
-  },
-  {
-    id: "4",
-    name: "Java House Brand Refresh",
-    client: "Java House",
-    type: "Branding",
-    status: "active",
-    progress: 30,
-    value: "KES 1.5M",
-    deadline: "May 15, 2026",
-  },
-  {
-    id: "5",
-    name: "Naivas Billboard Network",
-    client: "Naivas",
-    type: "Rental",
-    status: "active",
-    progress: 75,
-    value: "KES 620K",
-    deadline: "Ongoing",
-  },
-  {
-    id: "6",
-    name: "P&G Product Launch Event",
-    client: "P&G East Africa",
-    type: "Event",
-    status: "confirmed",
-    progress: 20,
-    value: "KES 2.1M",
-    deadline: "Jun 1, 2026",
-  },
-  {
-    id: "7",
-    name: "Twiga Brand Strategy",
-    client: "Twiga Foods",
-    type: "Branding",
-    status: "draft",
-    progress: 10,
-    value: "KES 450K",
-    deadline: "Jul 1, 2026",
-  },
-  {
-    id: "8",
-    name: "Kenchic Campaign Rollout",
-    client: "Kenchic",
-    type: "Campaign",
-    status: "active",
-    progress: 55,
-    value: "KES 680K",
-    deadline: "Apr 15, 2026",
-  },
-  {
-    id: "9",
-    name: "Haco Retail Activation",
-    client: "Haco Industries",
-    type: "Campaign",
-    status: "review",
-    progress: 85,
-    value: "KES 340K",
-    deadline: "Mar 1, 2026",
-  },
-];
+
 
 const typeFilters = [
   "All",
@@ -153,7 +62,9 @@ export default function ProjectsPage() {
   const [activeStatus, setActiveStatus] = useState("All Statuses");
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [data, setData] = useState<Project[]>(projects);
+  const [data, setData] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -170,7 +81,7 @@ export default function ProjectsPage() {
           query = query.eq("assigned_to", userId);
         }
         const { data: dbProjects, error } = await query.order("created_at", { ascending: false });
-        if (error || !dbProjects) return;
+        if (error || !dbProjects) throw new Error(error?.message || "Failed to load projects");
         if (dbProjects.length === 0) {
           if (role === "crm_staff" && !cancelled) setData([]);
           return;
@@ -182,11 +93,12 @@ export default function ProjectsPage() {
           type: p.type || "Research",
           status: (["active", "review", "draft", "confirmed"].includes(p.status) ? p.status : "draft") as Project["status"],
           progress: p.progress || 0,
-          value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+          value: p.value ? `KES ${((p.value ?? 0) / 1000).toFixed(0)}K` : "KES —",
           deadline: fmtDeadline(p.deadline),
         }));
         if (!cancelled) setData(mapped);
-      } catch { /* silent fallback to hardcoded */ }
+      } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load projects"); }
+      finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -216,7 +128,7 @@ export default function ProjectsPage() {
         type: p.type || "Research",
         status: (["active", "review", "draft", "confirmed"].includes(p.status) ? p.status : "draft") as Project["status"],
         progress: p.progress || 0,
-        value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+        value: p.value ? `KES ${((p.value ?? 0) / 1000).toFixed(0)}K` : "KES —",
         deadline: fmtDeadline(p.deadline),
       }));
       setData(mapped);
@@ -243,9 +155,15 @@ export default function ProjectsPage() {
 
   return (
     <div className="page-content">
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">Loading projects…</div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-20 text-red text-[13px]">{error}</div>
+      ) : (
+      <>
       <PageHeader
         title="Projects"
-        subtitle={`${filtered.length} of ${projects.length} projects`}
+        subtitle={`${filtered.length} of ${data.length} projects`}
         actions={
           <>
             <Button variant="secondary" size="sm" onClick={handleExport}>
@@ -326,6 +244,8 @@ export default function ProjectsPage() {
       <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
 
       <NewProjectModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={refreshProjects} />
+      </>
+      )}
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 
+export const dynamic = "force-dynamic";
+
 const ALLOWED_PATCH_FIELDS = new Set([
   "name", "type", "url", "cloudinary_public_id", "size",
   "visible_to_client", "project_id", "client_id",

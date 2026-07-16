@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, startTransition } from "react";
-import { Plus, CheckCircle2, Circle, Clock } from "lucide-react";
+import { Plus, CheckCircle2, Circle, Clock, AlertTriangle } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
@@ -19,136 +19,15 @@ interface Task {
   assignee: string;
   assigneeInitials: string;
   dueDate: string;
-  status: "todo" | "in-progress" | "done";
+  status: "todo" | "in_progress" | "done" | "blocked";
   priority: "high" | "medium" | "low";
 }
 
-const tasks: Task[] = [
-  {
-    id: "1",
-    name: "Finalize media plan",
-    project: "Out-of-Home Campaign",
-    assignee: "Brian Mwangi",
-    assigneeInitials: "BM",
-    dueDate: "Feb 5, 2026",
-    status: "done",
-    priority: "high",
-  },
-  {
-    id: "2",
-    name: "Approve creative concepts",
-    project: "Out-of-Home Campaign",
-    assignee: "Alice Wanjiku",
-    assigneeInitials: "AW",
-    dueDate: "Feb 12, 2026",
-    status: "done",
-    priority: "high",
-  },
-  {
-    id: "3",
-    name: "Conduct site surveys — Nairobi",
-    project: "Out-of-Home Campaign",
-    assignee: "James Kamau",
-    assigneeInitials: "JK",
-    dueDate: "Feb 20, 2026",
-    status: "in-progress",
-    priority: "high",
-  },
-  {
-    id: "4",
-    name: "Draft research questionnaire",
-    project: "Safaricom Research Study",
-    assignee: "Alice Wanjiku",
-    assigneeInitials: "AW",
-    dueDate: "Feb 18, 2026",
-    status: "in-progress",
-    priority: "medium",
-  },
-  {
-    id: "5",
-    name: "Brand identity presentation v2",
-    project: "Java House Brand Refresh",
-    assignee: "Brian Mwangi",
-    assigneeInitials: "BM",
-    dueDate: "Feb 25, 2026",
-    status: "in-progress",
-    priority: "medium",
-  },
-  {
-    id: "6",
-    name: "Secure billboard permits",
-    project: "Out-of-Home Campaign",
-    assignee: "James Kamau",
-    assigneeInitials: "JK",
-    dueDate: "Mar 5, 2026",
-    status: "todo",
-    priority: "high",
-  },
-  {
-    id: "7",
-    name: "Vendor negotiation — printing",
-    project: "Out-of-Home Campaign",
-    assignee: "Brian Mwangi",
-    assigneeInitials: "BM",
-    dueDate: "Mar 10, 2026",
-    status: "todo",
-    priority: "medium",
-  },
-  {
-    id: "8",
-    name: "Recruit field researchers",
-    project: "Safaricom Research Study",
-    assignee: "James Kamau",
-    assigneeInitials: "JK",
-    dueDate: "Feb 22, 2026",
-    status: "todo",
-    priority: "medium",
-  },
-  {
-    id: "9",
-    name: "Venue scouting report",
-    project: "P&G Product Launch Event",
-    assignee: "Alice Wanjiku",
-    assigneeInitials: "AW",
-    dueDate: "Mar 15, 2026",
-    status: "todo",
-    priority: "low",
-  },
-  {
-    id: "10",
-    name: "Naivas site mapping — Phase 2",
-    project: "Naivas Billboard Network",
-    assignee: "James Kamau",
-    assigneeInitials: "JK",
-    dueDate: "Mar 20, 2026",
-    status: "todo",
-    priority: "low",
-  },
-  {
-    id: "11",
-    name: "Client feedback review",
-    project: "Haco Retail Activation",
-    assignee: "Alice Wanjiku",
-    assigneeInitials: "AW",
-    dueDate: "Feb 28, 2026",
-    status: "in-progress",
-    priority: "high",
-  },
-  {
-    id: "12",
-    name: "Submit campaign brief to client",
-    project: "Out-of-Home Campaign",
-    assignee: "Alice Wanjiku",
-    assigneeInitials: "AW",
-    dueDate: "Feb 14, 2026",
-    status: "todo",
-    priority: "medium",
-  },
-];
+
 
 const statusGroups = [
   {
-    key: "in-progress" as const,
+    key: "in_progress" as const,
     label: "In Progress",
     icon: <Clock size={13} className="text-yellow" />,
   },
@@ -161,6 +40,11 @@ const statusGroups = [
     key: "done" as const,
     label: "Done",
     icon: <CheckCircle2 size={13} className="text-green" />,
+  },
+  {
+    key: "blocked" as const,
+    label: "Blocked",
+    icon: <AlertTriangle size={13} className="text-red" />,
   },
 ];
 
@@ -179,7 +63,9 @@ export default function TasksPage() {
   const [activeProject, setActiveProject] = useState("All Projects");
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [data, setData] = useState<Task[]>(tasks);
+  const [data, setData] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -198,11 +84,12 @@ export default function TasksPage() {
           assignee: t.assigned_to || "Unassigned",
           assigneeInitials: uuidInitials(t.assigned_to || ""),
           dueDate: t.due_date ? new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
-          status: (["todo", "in-progress", "done"].includes(t.status) ? t.status : "todo") as Task["status"],
+          status: (t.status === "in_progress" || t.status === "done" || t.status === "blocked" ? t.status : "todo") as Task["status"],
           priority: (["high", "medium", "low"].includes(t.priority) ? t.priority : "medium") as Task["priority"],
         }));
         setData(mapped);
-      } catch { /* silent fallback to hardcoded */ }
+      } catch (e) { setError(e instanceof Error ? e.message : "Failed to load tasks"); }
+      finally { setLoading(false); }
     })();
   }, []);
 
@@ -224,9 +111,15 @@ export default function TasksPage() {
 
   return (
     <div className="page-content">
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">Loading tasks…</div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-20 text-red text-[13px]">{error}</div>
+      ) : (
+      <>
       <PageHeader
         title="Tasks"
-        subtitle={`${data.length} tasks · ${data.filter((t) => t.status === "in-progress").length} in progress`}
+        subtitle={`${data.length} tasks · ${data.filter((t) => t.status === "in_progress").length} in progress`}
         actions={
           <Button
             variant="primary"
@@ -276,7 +169,7 @@ export default function TasksPage() {
                     className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
                       task.status === "done"
                         ? "border-green bg-green"
-                        : task.status === "in-progress"
+                        : task.status === "in_progress"
                           ? "border-yellow"
                           : "border-[#444]"
                     }`}
@@ -318,6 +211,8 @@ export default function TasksPage() {
       <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
 
       <NewTaskModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      </>
+      )}
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const supabase = await getAuthenticatedClient();
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const validTypes = ["per_store_sales", "chain_wide_sales", "inventory"];
+    const validTypes = ["per_store_sales", "chain_wide_sales", "inventory", "sales_transactions", "stock_movements", "supplier_details", "pricing", "product_master", "supplier_products"];
     if (!validTypes.includes(file_type)) {
       return NextResponse.json(
         { error: `file_type must be one of: ${validTypes.join(", ")}` },
@@ -88,6 +90,29 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: sanitizeError(error) },
         { status: 500 },
+      );
+    }
+
+    // Capture Grand Total data for branch summary (if provided)
+    const { grand_total } = body;
+    if (grand_total && data && data.branch_id && data.period_id) {
+      // Get supplier name from request body
+      const supplierName = body.supplier_name ?? null;
+
+      await supabase.from("analytics_fact_branch_summary").upsert(
+        {
+          upload_id: data.id,
+          branch_id: data.branch_id,
+          period_id: data.period_id,
+          supplier_name: supplierName,
+          total_quantity: grand_total.quantity ?? 0,
+          total_weight_tonnes: grand_total.weight ?? 0,
+          total_amount: grand_total.total ?? 0,
+        },
+        {
+          onConflict: "branch_id,period_id,supplier_name",
+          ignoreDuplicates: false,
+        }
       );
     }
 

@@ -1,0 +1,741 @@
+"use client";
+
+import React, { useState, useEffect, startTransition } from "react";
+import {
+  BarChart3,
+  TrendingDown,
+  Award,
+  Tag,
+  MapPin,
+  DollarSign,
+  Trophy,
+  AlertTriangle,
+  Loader2,
+  FileText,
+  Eye,
+} from "lucide-react";
+import PageHeader from "@/components/layout/page-header";
+
+/* ── Types ────────────────────────────────────────────────────── */
+
+interface CompetitorRank {
+  manufacturer: string;
+  total_sales: number;
+  total_units: number;
+  share: number;
+  is_client: boolean;
+  rank: number;
+}
+
+interface CategoryPerf {
+  category: string;
+  total_sales: number;
+  total_units: number;
+  avg_unit_price: number;
+  product_count: number;
+}
+
+interface BranchSales {
+  branch_id: string;
+  branch_name: string;
+  branch_code: string;
+  total_amount: number;
+  quantity: number;
+}
+
+interface ProductPerf {
+  name: string;
+  stock_code: string;
+  category: string;
+  total_revenue: number;
+  total_qty: number;
+  avg_price: number;
+}
+
+interface PricingPoint {
+  product: string;
+  stock_code: string;
+  branch: string;
+  selling_price: number;
+  standard_cost: number;
+  margin_pct: number;
+}
+
+interface SavedReport {
+  id: string;
+  name: string;
+  report_type: string;
+  config: Record<string, unknown>;
+  generated_data: Record<string, unknown>;
+  visible_to_client: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AnalyticsResponse {
+  competitors: CompetitorRank[];
+  categories: CategoryPerf[];
+  branches: BranchSales[];
+  topProducts: ProductPerf[];
+  bottomProducts: ProductPerf[];
+  pricing: PricingPoint[];
+  dashboardColor: string;
+  summary: {
+    totalSales: number;
+    totalUnits: number;
+    totalInventoryValue: number;
+    totalProducts: number;
+  };
+  error?: string;
+}
+
+/* ── Color system ─────────────────────────────────────────────── */
+
+const RANK_COLORS = {
+  gold: "#c98500",
+  silver: "#898781",
+  bronze: "#a07840",
+  gray: "#c3c2b7",
+  faded: "#d3d1c7",
+};
+
+function competitorColor(rank: number, isClient: boolean, clientColor: string): string {
+  if (isClient) return clientColor;
+  if (rank === 1) return RANK_COLORS.gold;
+  if (rank === 2) return RANK_COLORS.silver;
+  if (rank === 3) return RANK_COLORS.bronze;
+  return RANK_COLORS.faded;
+}
+
+/* ── Helpers ──────────────────────────────────────────────────── */
+
+function fmt(n: number | null | undefined): string {
+  const v = n ?? 0;
+  if (v >= 1_000_000) return `KES ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `KES ${(v / 1_000).toFixed(0)}K`;
+  return `KES ${Math.round(v).toLocaleString()}`;
+}
+
+function fmtNum(n: number | null | undefined): string {
+  return Math.round(n ?? 0).toLocaleString("en-GB");
+}
+
+function fmtPct(n: number | null | undefined): string {
+  return `${(n ?? 0).toFixed(1)}%`;
+}
+
+/* ── SVG Bar Chart Components ─────────────────────────────────── */
+
+function HorizontalBar({ value, max, color, height = 18 }: { value: number; max: number; color: string; height?: number }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  return (
+    <div className="w-full rounded overflow-hidden" style={{ height, background: "#1A1A1A" }}>
+      <div
+        className="h-full rounded transition-all duration-500"
+        style={{ width: `${pct}%`, background: color }}
+      />
+    </div>
+  );
+}
+
+function DonutChart({ segments, size = 140, strokeWidth = 16 }: {
+  segments: { value: number; color: string }[];
+  size?: number;
+  strokeWidth?: number;
+}) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  if (total === 0) return null;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  // Pre-compute offsets outside of render mapping
+  const offsets = segments.reduce<number[]>((acc, seg) => {
+    const prev = acc.length > 0 ? acc[acc.length - 1] : 0;
+    acc.push(prev + seg.value);
+    return acc;
+  }, []);
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {segments.map((seg, i) => {
+        const pct = seg.value / total;
+        const dash = circumference * pct;
+        const dashOffset = circumference * (1 - offsets[i] / total);
+        return (
+          <circle
+            key={i}
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${dash} ${circumference - dash}`}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="butt"
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ── Main Component ───────────────────────────────────────────── */
+
+export default function PortalAnalyticsPage() {
+  const [tab, setTab] = useState<"overview" | "reports">("overview");
+  const [data, setData] = useState<AnalyticsResponse | null>(null);
+  const [reports, setReports] = useState<SavedReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [analyticsRes, reportsRes] = await Promise.all([
+          fetch("/api/portal/analytics"),
+          fetch("/api/portal/analytics/reports"),
+        ]);
+        const analyticsData = await analyticsRes.json();
+        const reportsData = await reportsRes.json();
+
+        startTransition(() => {
+          if (analyticsData.error) {
+            setError(analyticsData.error);
+          } else {
+            setData(analyticsData);
+          }
+          setReports(reportsData.reports || []);
+          setLoading(false);
+        });
+      } catch {
+        startTransition(() => {
+          setError("Failed to load analytics data");
+          setLoading(false);
+        });
+      }
+    };
+    fetchData();
+  }, []);
+
+  /* ── Loading / Error states ───────────────────────────────── */
+  if (loading) {
+    return (
+      <div className="page-content">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-teal" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-content">
+        <PageHeader title="Analytics" subtitle="Market intelligence and performance insights" />
+        <div className="pm-dash-card p-6">
+          <div className="flex items-center gap-3 text-red">
+            <AlertTriangle className="w-5 h-5" />
+            <div>
+              <div className="font-display text-[14px] font-semibold">Unable to load analytics</div>
+              <div className="text-[12px] text-gray-4 mt-1">{error}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const hasData = data && (data.competitors.length > 0 || data.categories.length > 0);
+  const clientColor = data?.dashboardColor || "#0F6E56";
+
+  /* ── Empty state ──────────────────────────────────────────── */
+  if (!hasData) {
+    return (
+      <div className="page-content">
+        <PageHeader title="Analytics" subtitle="Market intelligence and performance insights" />
+        <div className="pm-dash-card p-8 text-center">
+          <BarChart3 size={40} className="mx-auto mb-4 text-gray-5 opacity-30" />
+          <div className="font-display text-[14px] font-semibold mb-2">No Analytics Data Yet</div>
+          <div className="text-[12px] text-gray-4 max-w-md mx-auto">
+            Your account manager will share analytics insights here once data is approved for your view.
+            This includes market share, competitor analysis, and product performance.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const s = data!.summary;
+  const competitors = data!.competitors;
+  const categories = data!.categories;
+  const branches = data!.branches;
+  const topProducts = data!.topProducts;
+  const bottomProducts = data!.bottomProducts;
+  const pricing = data!.pricing;
+
+  const clientComp = competitors.find((c) => c.is_client);
+  const maxSales = Math.max(...competitors.map((c) => c.total_sales), 1);
+  const maxBranchSales = Math.max(...branches.map((b) => b.total_amount), 1);
+  const avgMargin = pricing.length > 0
+    ? pricing.reduce((sum, p) => sum + p.margin_pct, 0) / pricing.length
+    : 0;
+
+  const activeReport = selectedReport ? reports.find((r) => r.id === selectedReport) : null;
+
+  return (
+    <div className="page-content">
+      <PageHeader
+        title="Analytics"
+        subtitle={`${competitors.length} competitors tracked · ${categories.length} categories · ${branches.length} branches`}
+      />
+
+      {/* ── Tab bar ──────────────────────────────────────── */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setTab("overview")}
+          className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+            tab === "overview"
+              ? "bg-teal text-white"
+              : "bg-black-3 border border-[#252525] text-gray-4 hover:text-white"
+          }`}
+        >
+          <BarChart3 size={13} className="inline mr-1.5" />
+          Live Analytics
+        </button>
+        <button
+          onClick={() => setTab("reports")}
+          className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+            tab === "reports"
+              ? "bg-teal text-white"
+              : "bg-black-3 border border-[#252525] text-gray-4 hover:text-white"
+          }`}
+        >
+          <FileText size={13} className="inline mr-1.5" />
+          Reports
+          {reports.length > 0 && (
+            <span className="ml-1.5 bg-white/10 text-[10px] px-1.5 py-0.5 rounded-full">{reports.length}</span>
+          )}
+        </button>
+      </div>
+
+      {/* ═══ LIVE ANALYTICS TAB ═══════════════════════════════ */}
+      {tab === "overview" && (
+        <>
+          {/* ── KPI Summary Row ─────────────────────────── */}
+          <div className="pm-dash-krow pm-dash-krow-4 mb-6">
+            <div className="pm-dash-kcard">
+              <div className="pm-dash-kn">{fmt(s.totalSales)}</div>
+              <div className="pm-dash-kl">Total Revenue</div>
+              <div className="pm-dash-ksub">{fmtNum(s.totalUnits)} units sold</div>
+            </div>
+            <div className="pm-dash-kcard grn">
+              <div className="pm-dash-kn grn">{clientComp ? fmtPct(clientComp.share) : "—"}</div>
+              <div className="pm-dash-kl">Market Share</div>
+              <div className="pm-dash-ksub">
+                {clientComp ? `Rank #${clientComp.rank} of ${competitors.length}` : "Not ranked"}
+              </div>
+            </div>
+            <div className="pm-dash-kcard blu">
+              <div className="pm-dash-kn blu">{fmtNum(s.totalProducts)}</div>
+              <div className="pm-dash-kl">Products</div>
+              <div className="pm-dash-ksub">{categories.length} categories</div>
+            </div>
+            <div className="pm-dash-kcard red">
+              <div className="pm-dash-kn red">{fmtPct(avgMargin)}</div>
+              <div className="pm-dash-kl">Avg Margin</div>
+              <div className="pm-dash-ksub">{pricing.length} price points</div>
+            </div>
+          </div>
+
+          {/* ── Competitor Leaderboard + Category Share ─── */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+            {/* Leaderboard - 3 cols */}
+            <div className="lg:col-span-3 pm-dash-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Trophy size={14} className="text-yellow" />
+                  <span className="font-display text-[13px] font-semibold">Market Share Leaderboard</span>
+                </div>
+                {clientComp && (
+                  <span
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: `${clientColor}22`, color: clientColor }}
+                  >
+                    You: #{clientComp.rank}
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                {competitors.slice(0, 8).map((comp) => {
+                  const color = competitorColor(comp.rank, comp.is_client, clientColor);
+                  return (
+                    <div key={comp.manufacturer} className="flex items-center gap-3">
+                      <span className="text-[10px] font-mono text-gray-5 w-4 text-right shrink-0">
+                        {comp.rank}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span
+                            className="text-[12px] truncate font-medium"
+                            style={{ color: comp.is_client ? clientColor : "#e5e5e5" }}
+                          >
+                            {comp.manufacturer}
+                            {comp.is_client && (
+                              <span className="ml-1 text-[9px] opacity-60">(you)</span>
+                            )}
+                          </span>
+                          <span className="text-[11px] text-gray-4 shrink-0 ml-2">
+                            {fmt(comp.total_sales)} · {fmtPct(comp.share)}
+                          </span>
+                        </div>
+                        <HorizontalBar value={comp.total_sales} max={maxSales} color={color} height={14} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-[#1A1A1A] text-[10px] text-gray-5">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.gold }} />
+                  1st
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.silver }} />
+                  2nd
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.bronze }} />
+                  3rd
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: clientColor }} />
+                  You
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.faded }} />
+                  Others
+                </span>
+              </div>
+            </div>
+
+            {/* Category Share Donut - 2 cols */}
+            <div className="lg:col-span-2 pm-dash-card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Tag size={14} className="text-teal" />
+                <span className="font-display text-[13px] font-semibold">Category Share</span>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <DonutChart
+                    segments={categories.map((cat, i) => ({
+                      value: cat.total_sales,
+                      color: i === 0 ? RANK_COLORS.gold
+                        : i === 1 ? RANK_COLORS.silver
+                        : i === 2 ? RANK_COLORS.bronze
+                        : i < 5 ? RANK_COLORS.gray
+                        : RANK_COLORS.faded,
+                    }))}
+                    size={150}
+                    strokeWidth={20}
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-[18px] font-display font-bold text-white">
+                      {categories.length}
+                    </span>
+                    <span className="text-[10px] text-gray-5">categories</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 mt-4">
+                {categories.slice(0, 6).map((cat, i) => {
+                  const color = i === 0 ? RANK_COLORS.gold
+                    : i === 1 ? RANK_COLORS.silver
+                    : i === 2 ? RANK_COLORS.bronze
+                    : RANK_COLORS.faded;
+                  return (
+                    <div key={cat.category} className="flex items-center justify-between text-[11px]">
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: color }} />
+                        <span className="truncate text-gray-3">{cat.category}</span>
+                      </span>
+                      <span className="text-gray-5 shrink-0 ml-2">
+                        {fmt(cat.total_sales)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Branch Performance + Pricing ────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Branch breakdown */}
+            <div className="pm-dash-card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin size={14} className="text-teal" />
+                <span className="font-display text-[13px] font-semibold">Branch Performance</span>
+              </div>
+
+              <div className="space-y-2">
+                {branches.slice(0, 10).map((branch) => (
+                  <div key={branch.branch_id} className="flex items-center gap-3">
+                    <div className="w-20 min-w-0 shrink-0">
+                      <span className="text-[11px] text-gray-4 truncate block">{branch.branch_name}</span>
+                    </div>
+                    <div className="flex-1">
+                      <HorizontalBar
+                        value={branch.total_amount}
+                        max={maxBranchSales}
+                        color={clientColor}
+                        height={14}
+                      />
+                    </div>
+                    <span className="text-[11px] text-gray-4 shrink-0 w-16 text-right">
+                      {fmt(branch.total_amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Price positioning */}
+            <div className="pm-dash-card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <DollarSign size={14} className="text-yellow" />
+                <span className="font-display text-[13px] font-semibold">Price Positioning</span>
+              </div>
+
+              <div className="space-y-2">
+                {pricing.slice(0, 10).map((p, i) => {
+                  const maxPrice = Math.max(...pricing.map((x) => x.selling_price), 1);
+                  const marginColor = p.margin_pct > avgMargin
+                    ? "#10b981" : p.margin_pct < avgMargin * 0.5
+                    ? "#ef4444" : "#eab308";
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="w-24 min-w-0 shrink-0">
+                        <span className="text-[11px] text-gray-4 truncate block">{p.product}</span>
+                        <span className="text-[9px] text-gray-5 font-mono">{p.branch}</span>
+                      </div>
+                      <div className="flex-1">
+                        <HorizontalBar
+                          value={p.selling_price}
+                          max={maxPrice}
+                          color={marginColor}
+                          height={10}
+                        />
+                      </div>
+                      <div className="text-right shrink-0 w-20">
+                        <span className="text-[11px] text-gray-3 block">{fmt(p.selling_price)}</span>
+                        <span className="text-[9px] block" style={{ color: marginColor }}>
+                          {fmtPct(p.margin_pct)} margin
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Avg margin reference */}
+              <div className="mt-3 pt-3 border-t border-[#1A1A1A] flex items-center gap-2 text-[10px] text-gray-5">
+                <span className="w-3 h-0.5 rounded" style={{ background: "#eab308" }} />
+                Category avg margin: {fmtPct(avgMargin)}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Top / Bottom Products ───────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Top products */}
+            <div className="pm-dash-card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Award size={14} className="text-emerald-400" />
+                <span className="font-display text-[13px] font-semibold">Top Products</span>
+              </div>
+
+              <div className="space-y-2">
+                {topProducts.map((prod, i) => (
+                  <div key={prod.stock_code || i} className="flex items-center gap-3">
+                    <span className="text-[10px] font-mono text-gray-5 w-4 text-right shrink-0">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[12px] text-gray-3 truncate font-medium">{prod.name}</span>
+                        <span className="text-[11px] text-gray-4 shrink-0 ml-2">{fmt(prod.total_revenue)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-5">
+                        <span>{fmtNum(prod.total_qty)} units</span>
+                        <span>·</span>
+                        <span>{prod.category}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom products */}
+            <div className="pm-dash-card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingDown size={14} className="text-orange" />
+                <span className="font-display text-[13px] font-semibold">Underperforming Products</span>
+              </div>
+
+              <div className="space-y-2">
+                {bottomProducts.map((prod, i) => (
+                  <div key={prod.stock_code || i} className="flex items-center gap-3">
+                    <span className="text-[10px] font-mono text-gray-5 w-4 text-right shrink-0">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[12px] text-gray-3 truncate font-medium">{prod.name}</span>
+                        <span className="text-[11px] text-gray-4 shrink-0 ml-2">{fmt(prod.total_revenue)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-5">
+                        <span>{fmtNum(prod.total_qty)} units</span>
+                        <span>·</span>
+                        <span>{prod.category}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {bottomProducts.length === 0 && (
+                  <div className="text-center py-4 text-[12px] text-gray-5">No underperforming products</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Category Performance Detail ─────────────── */}
+          <div className="pm-dash-card p-5 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 size={14} className="text-teal" />
+              <span className="font-display text-[13px] font-semibold">Category Performance</span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#1A1A1A]">
+                    {["Category", "Revenue", "Units", "Avg Price", "Products", "Share"].map((h) => (
+                      <th key={h} className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-3 py-2">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((cat) => {
+                    const share = s.totalSales > 0 ? (cat.total_sales / s.totalSales) * 100 : 0;
+                    return (
+                      <tr key={cat.category} className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors">
+                        <td className="px-3 py-2.5 text-[12px] font-semibold text-gray-3">{cat.category}</td>
+                        <td className="px-3 py-2.5 text-[12px] font-display font-bold" style={{ color: clientColor }}>
+                          {fmt(cat.total_sales)}
+                        </td>
+                        <td className="px-3 py-2.5 text-[12px] text-gray-4">{fmtNum(cat.total_units)}</td>
+                        <td className="px-3 py-2.5 text-[12px] text-gray-4">{fmt(cat.avg_unit_price)}</td>
+                        <td className="px-3 py-2.5 text-[12px] text-gray-4">{cat.product_count}</td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 rounded bg-[#1A1A1A] overflow-hidden">
+                              <div
+                                className="h-full rounded"
+                                style={{ width: `${share}%`, background: clientColor }}
+                              />
+                            </div>
+                            <span className="text-[11px] text-gray-4">{fmtPct(share)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ═══ REPORTS TAB ═══════════════════════════════════════ */}
+      {tab === "reports" && (
+        <>
+          {reports.length === 0 ? (
+            <div className="pm-dash-card p-8 text-center">
+              <FileText size={40} className="mx-auto mb-4 text-gray-5 opacity-30" />
+              <div className="font-display text-[14px] font-semibold mb-2">No Reports Published</div>
+              <div className="text-[12px] text-gray-4 max-w-md mx-auto">
+                Your account manager will publish analytics reports here once they are ready for your review.
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Report selector */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+                {reports.map((report) => (
+                  <button
+                    key={report.id}
+                    onClick={() => setSelectedReport(selectedReport === report.id ? null : report.id)}
+                    className={`pm-dash-card p-4 text-left transition-all cursor-pointer ${
+                      selectedReport === report.id
+                        ? "border-teal ring-1 ring-teal/30"
+                        : "hover:border-[#333]"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <FileText size={16} className="text-teal shrink-0" />
+                      <Eye size={12} className="text-gray-5" />
+                    </div>
+                    <div className="font-display text-[13px] font-semibold mb-1">{report.name}</div>
+                    <div className="text-[11px] text-gray-5 capitalize">
+                      {report.report_type.replace(/_/g, " ")}
+                    </div>
+                    <div className="text-[10px] text-gray-5 mt-2">
+                      Updated {new Date(report.updated_at).toLocaleDateString()}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Selected report detail */}
+              {activeReport && (
+                <div className="pm-dash-card p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <div className="font-display text-[15px] font-semibold">{activeReport.name}</div>
+                      <div className="text-[11px] text-gray-5 capitalize mt-0.5">
+                        {activeReport.report_type.replace(/_/g, " ")} · Generated {new Date(activeReport.updated_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {activeReport.generated_data && Object.keys(activeReport.generated_data).length > 0 ? (
+                    <div className="text-[12px] text-gray-4">
+                      <pre className="bg-[#0A0A0A] rounded p-4 overflow-auto max-h-96 font-mono text-[11px]">
+                        {JSON.stringify(activeReport.generated_data, null, 2)}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-[12px] text-gray-5">
+                      This report has been saved but does not yet contain generated data.
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

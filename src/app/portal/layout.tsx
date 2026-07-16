@@ -9,6 +9,7 @@ import {
   MessageSquare,
   CreditCard,
   Calendar,
+  BarChart3,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { getRoleLabel } from "@/lib/roles";
@@ -23,6 +24,7 @@ const portalNavItems: DashboardNavItem[] = [
   { icon: MessageSquare, label: "Messages", href: "/portal/messages", badge: "2" },
   { icon: CreditCard, label: "Invoices", href: "/portal/invoices" },
   { icon: Calendar, label: "Bookings", href: "/portal/bookings" },
+  { icon: BarChart3, label: "Analytics", href: "/portal/analytics" },
 ];
 
 export default function PortalLayout({

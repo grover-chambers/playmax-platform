@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, startTransition } from "react";
+import React, { useState, useEffect, useCallback, startTransition } from "react";
 import Pagination, { usePagination } from "@/components/ui/pagination";
-import { Plus, Mail, UserCheck, UserX, Loader2 } from "lucide-react";
+import { Plus, Mail, UserCheck, UserX, Loader2, Users } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
@@ -20,9 +20,18 @@ const roleFilters = [
   "finance",
 ];
 
+const roleBadgeMap: Record<string, string> = {
+  super_admin: "pm-dash-bdg-g",
+  cms_admin: "pm-dash-bdg-b",
+  crm_admin: "pm-dash-bdg-y",
+  crm_staff: "pm-dash-bdg-n",
+  finance: "pm-dash-bdg-b",
+};
+
 export default function StaffManagementPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [page, setPage] = useState(1);
@@ -34,71 +43,27 @@ export default function StaffManagementPage() {
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState("");
 
-  async function loadStaff() {
-    const supabase = createClient();
+  const loadStaff = useCallback(async () => {
     try {
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-
-      const demoStaff: StaffMember[] = [
-        {
-          id: "1",
-          email: currentUser?.email || "admin@marketlink.co.ke",
-          name: currentUser?.user_metadata?.name || "Current User",
-          role: (currentUser?.user_metadata?.role as UserRole) || "super_admin",
-          status: "active",
-          createdAt: "2026-01-15",
-        },
-        {
-          id: "2",
-          email: "brian@marketlink.co.ke",
-          name: "Brian Mwangi",
-          role: "crm_admin",
-          status: "active",
-          createdAt: "2026-01-20",
-        },
-        {
-          id: "3",
-          email: "amina@marketlink.co.ke",
-          name: "Amina Mohamed",
-          role: "crm_staff",
-          status: "active",
-          createdAt: "2026-02-01",
-        },
-        {
-          id: "4",
-          email: "joy@marketlink.co.ke",
-          name: "Joy Kariuki",
-          role: "cms_admin",
-          status: "active",
-          createdAt: "2026-02-15",
-        },
-        {
-          id: "5",
-          email: "finance@marketlink.co.ke",
-          name: "Peter Odhiambo",
-          role: "finance",
-          status: "inactive",
-          createdAt: "2026-03-01",
-        },
-      ];
-
-      setStaff(demoStaff);
+      setError("");
+      const res = await fetch("/api/staff");
+      if (!res.ok) throw new Error("Failed to fetch staff");
+      const data = await res.json();
+      setStaff(data.staff ?? []);
       setPage(1);
     } catch {
+      setError("Could not load staff. Try refreshing.");
       setStaff([]);
     }
-  }
+  }, []);
 
-  // Load initial staff data
   useEffect(() => {
     const init = async () => {
       await loadStaff();
       startTransition(() => setLoading(false));
     };
     init();
-  }, []);
+  }, [loadStaff]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +73,6 @@ export default function StaffManagementPage() {
 
     try {
       const supabase = createClient();
-      // Use Supabase Admin API to create user with role metadata
       const { error } = await supabase.auth.admin.inviteUserByEmail(
         inviteEmail,
         {
@@ -136,7 +100,8 @@ export default function StaffManagementPage() {
     }
   };
 
-  function toggleStatus(member: StaffMember) {
+  async function toggleStatus(member: StaffMember) {
+    // TODO: wire to a real PATCH /api/staff/:id endpoint
     setStaff((prev) =>
       prev.map((m) =>
         m.id === member.id
@@ -158,12 +123,13 @@ export default function StaffManagementPage() {
   });
 
   const { paginated, total } = usePagination(filtered, page, 20);
+  const activeCount = staff.filter((s) => s.status === "active").length;
 
   return (
     <div className="page-content">
       <PageHeader
         title="Staff Management"
-        subtitle={`${staff.filter((s) => s.status === "active").length} active · ${staff.length} total`}
+        subtitle={`${activeCount} active · ${staff.length} total`}
         actions={
           <Button
             variant="primary"
@@ -175,6 +141,41 @@ export default function StaffManagementPage() {
         }
       />
 
+      {/* ── KPI row ────────────────────────────────────── */}
+      <div className="pm-dash-krow pm-dash-krow-4">
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kl pm-dash-kl-icon">
+            <Users size={14} />
+            Total Staff
+          </div>
+          <div className="pm-dash-kn">{loading ? "…" : staff.length}</div>
+        </div>
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kl pm-dash-kl-icon">
+            <UserCheck size={14} />
+            Active
+          </div>
+          <div className="pm-dash-kn grn">{loading ? "…" : activeCount}</div>
+        </div>
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kl pm-dash-kl-icon">
+            <UserX size={14} />
+            Inactive
+          </div>
+          <div className="pm-dash-kn red">{loading ? "…" : staff.length - activeCount}</div>
+        </div>
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kl pm-dash-kl-icon">
+            <Mail size={14} />
+            Roles Used
+          </div>
+          <div className="pm-dash-kn blu">
+            {loading ? "…" : new Set(staff.map((s) => s.role)).size}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Filter bar ─────────────────────────────────── */}
       <div className="flex items-center gap-3 border-b border-[#1E1E1E]">
         <SearchBox
           placeholder="Search staff…"
@@ -195,11 +196,11 @@ export default function StaffManagementPage() {
         </div>
       </div>
 
-      {/* Invite modal */}
+      {/* ── Invite modal ───────────────────────────────── */}
       {showInvite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-black-2 border border-[#333] rounded-xl p-6 w-full max-w-md mx-4 shadow-lg">
-            <h3 className="font-display text-[16px] font-bold mb-1">
+          <div className="pm-dash-card w-full max-w-md mx-4 p-6 shadow-lg">
+            <h3 className="pm-dash-card-t mb-1">
               Invite Staff Member
             </h3>
             <p className="text-[11px] text-gray-5 mb-5">
@@ -207,12 +208,12 @@ export default function StaffManagementPage() {
             </p>
 
             {inviteError && (
-              <div className="bg-red/10 border border-red/20 text-red text-[12px] px-4 py-2.5 rounded mb-4">
+              <div className="pm-dash-bdg pm-dash-bdg-r w-full text-left px-4 py-2.5 rounded mb-4">
                 {inviteError}
               </div>
             )}
             {inviteSuccess && (
-              <div className="bg-green/10 border border-green/20 text-green text-[12px] px-4 py-2.5 rounded mb-4">
+              <div className="pm-dash-bdg pm-dash-bdg-g w-full text-left px-4 py-2.5 rounded mb-4">
                 {inviteSuccess}
               </div>
             )}
@@ -296,22 +297,26 @@ export default function StaffManagementPage() {
         </div>
       )}
 
-      {/* Staff table */}
+      {/* ── Staff table ────────────────────────────────── */}
       {loading ? (
         <div className="flex items-center justify-center py-16 text-gray-5">
           <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading staff...
         </div>
+      ) : error ? (
+        <div className="pm-dash-card p-8 text-center">
+          <p className="text-[13px] text-[var(--pm-red)] mb-3">{error}</p>
+          <Button variant="primary" size="sm" onClick={loadStaff}>
+            Retry
+          </Button>
+        </div>
       ) : (
-        <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
-          <table className="w-full">
+        <div className="pm-dash-card overflow-hidden">
+          <table className="pm-dash-tbl w-full">
             <thead>
-              <tr className="border-b border-[#1A1A1A]">
+              <tr className="pm-dash-tbl-th">
                 {["Name", "Email", "Role", "Status", "Joined", "Actions"].map(
                   (h) => (
-                    <th
-                      key={h}
-                      className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
-                    >
+                    <th key={h} className="pm-dash-tbl-th">
                       {h}
                     </th>
                   ),
@@ -320,53 +325,51 @@ export default function StaffManagementPage() {
             </thead>
             <tbody>
               {paginated.map((member) => (
-                <tr
-                  key={member.id}
-                  className="border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors"
-                >
-                  <td className="px-4 py-3">
+                <tr key={member.id} className="pm-dash-tbl-td">
+                  <td className="pm-dash-tbl-td">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-yellow/15 text-yellow flex items-center justify-center font-display text-[11px] font-bold">
+                      <div className="w-8 h-8 rounded-full bg-[rgba(15,118,110,0.15)] text-[var(--pm-teal)] flex items-center justify-center font-display text-[11px] font-bold">
                         {member.name
                           .split(" ")
                           .map((n: string) => n[0])
                           .join("")
-                          .slice(0, 2)}
+                          .slice(0, 2)
+                          .toUpperCase()}
                       </div>
-                      <span className="font-display text-[13px] font-semibold text-white">
+                      <span className="pm-dash-staff-name">
                         {member.name}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-[12px] text-gray-4 font-mono">
+                  <td className="pm-dash-tbl-td font-mono text-[11px] text-gray-4">
                     {member.email}
                   </td>
-                  <td className="px-4 py-3">
-                    <span className="intent-tag text-[9px]">
+                  <td className="pm-dash-tbl-td">
+                    <span className={`pm-dash-bdg ${roleBadgeMap[member.role] || "pm-dash-bdg-n"}`}>
                       {ROLE_LABELS[member.role] || member.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="pm-dash-tbl-td">
                     <span
-                      className={`badge ${
+                      className={`pm-dash-bdg ${
                         member.status === "active"
-                          ? "badge-available"
-                          : "badge-draft"
+                          ? "pm-dash-bdg-g"
+                          : "pm-dash-bdg-n"
                       }`}
                     >
                       {member.status === "active" ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[11px] text-gray-5 font-mono">
+                  <td className="pm-dash-tbl-td text-[11px] text-gray-5 font-mono">
                     {member.createdAt}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="pm-dash-tbl-td">
                     <button
                       onClick={() => toggleStatus(member)}
-                      className={`btn-sm !py-1 !px-2.5 text-[10px] ${
+                      className={`pm-dash-qa-btn !py-1 !px-2.5 text-[10px] ${
                         member.status === "active"
-                          ? "hover:!bg-red/10 hover:!text-red"
-                          : "hover:!bg-green/10 hover:!text-green"
+                          ? "hover:!text-[var(--pm-red)]"
+                          : "hover:!text-[var(--pm-green)]"
                       }`}
                       title={
                         member.status === "active" ? "Deactivate" : "Activate"

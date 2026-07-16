@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const supabase = await getAuthenticatedClient();
@@ -39,6 +41,26 @@ export async function POST(request: Request) {
       case "competitor_comparison":
         return NextResponse.json(
           await queryCompetitorComparison(supabase, mainPeriods, category),
+        );
+      case "inventory_summary":
+        return NextResponse.json(
+          await queryInventorySummary(supabase, category, branch),
+        );
+      case "pricing_analysis":
+        return NextResponse.json(
+          await queryPricingAnalysis(supabase, mainPeriods, category, branch),
+        );
+      case "stock_movements":
+        return NextResponse.json(
+          await queryStockMovements(supabase, category, branch),
+        );
+      case "supplier_performance":
+        return NextResponse.json(
+          await querySupplierPerformance(supabase),
+        );
+      case "custom_query":
+        return NextResponse.json(
+          await executeCustomQuery(supabase, body),
         );
       default:
         return NextResponse.json(
@@ -335,4 +357,345 @@ async function queryCompetitorComparison(
     .sort((a: { total_sales: number }, b: { total_sales: number }) => b.total_sales - a.total_sales);
 
   return { manufacturers };
+}
+
+// ── Inventory Summary ──────────────────────────────────────────
+async function queryInventorySummary(
+  supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>,
+  category?: string,
+  branch?: string,
+) {
+  let query = supabase
+    .from("analytics_fact_inventory")
+    .select("product_id, branch_id, quantity_on_hand, unit_cost, total_value, snapshot_date")
+    .order("snapshot_date", { ascending: false });
+
+  if (branch) query = query.eq("branch_id", branch);
+
+  const { data: invRows } = await query;
+  if (!invRows || invRows.length === 0) return { items: [], totals: { total_value: 0, total_units: 0, product_count: 0 } };
+
+  // Get latest snapshot per product
+  const latestByProduct = new Map<string, typeof invRows[0]>();
+  for (const row of invRows) {
+    const pid = row.product_id as string;
+    if (!latestByProduct.has(pid)) latestByProduct.set(pid, row);
+  }
+
+  const productIds = [...latestByProduct.keys()];
+  const { data: products } = await supabase
+    .from("analytics_products")
+    .select("id, stock_code, name, category_id, sub_category")
+    .in("id", productIds);
+
+  let filteredProducts = products ?? [];
+  if (category) {
+    const { data: catRows } = await supabase
+      .from("analytics_categories")
+      .select("id")
+      .ilike("name", `%${category}%`);
+    if (catRows && catRows.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => p.category_id === catRows[0].id);
+    }
+  }
+
+  const catIds = [...new Set(filteredProducts.map((p) => p.category_id as string).filter(Boolean))];
+  const { data: cats } = catIds.length > 0
+    ? await supabase.from("analytics_categories").select("id, name").in("id", catIds)
+    : { data: [] };
+  const catMap = new Map((cats ?? []).map((c) => [c.id as string, c.name as string]));
+
+  const items = filteredProducts
+    .map((prod) => {
+      const inv = latestByProduct.get(prod.id as string);
+      if (!inv) return null;
+      return {
+        product: prod.name,
+        stock_code: prod.stock_code,
+        category: catMap.get(prod.category_id as string) ?? "Unknown",
+        sub_category: prod.sub_category || "",
+        quantity_on_hand: inv.quantity_on_hand,
+        unit_cost: inv.unit_cost,
+        total_value: inv.total_value,
+        last_updated: inv.snapshot_date,
+      };
+    })
+    .filter(Boolean);
+
+  const totals = {
+    total_value: items.reduce((s, i) => s + ((i?.total_value as number) ?? 0), 0),
+    total_units: items.reduce((s, i) => s + ((i?.quantity_on_hand as number) ?? 0), 0),
+    product_count: items.length,
+  };
+
+  return { items, totals };
+}
+
+// ── Pricing Analysis ──────────────────────────────────────────
+async function queryPricingAnalysis(
+  supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>,
+  mainPeriods: { id: string }[],
+  category?: string,
+  branch?: string,
+) {
+  const periodIds = mainPeriods.map((p) => p.id);
+
+  let query = supabase
+    .from("analytics_fact_pricing")
+    .select("product_id, branch_id, standard_cost, selling_price, unit_cost, unit_price, effective_date, tier, discount_pct")
+    .order("effective_date", { ascending: false });
+
+  if (branch) query = query.eq("branch_id", branch);
+  if (periodIds.length > 0) query = query.in("period_id", periodIds);
+
+  const { data: pricingRows } = await query;
+  if (!pricingRows || pricingRows.length === 0) return { items: [], summary: {} };
+
+  const productIds = [...new Set(pricingRows.map((r) => r.product_id as string))];
+  const { data: products } = await supabase
+    .from("analytics_products")
+    .select("id, stock_code, name, category_id")
+    .in("id", productIds);
+
+  let filteredProducts = products ?? [];
+  if (category) {
+    const { data: catRows } = await supabase
+      .from("analytics_categories")
+      .select("id")
+      .ilike("name", `%${category}%`);
+    if (catRows && catRows.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => p.category_id === catRows[0].id);
+    }
+  }
+
+  const prodMap = new Map(filteredProducts.map((p) => [p.id as string, p]));
+  const catIds = [...new Set(filteredProducts.map((p) => p.category_id as string).filter(Boolean))];
+  const { data: cats } = catIds.length > 0
+    ? await supabase.from("analytics_categories").select("id, name").in("id", catIds)
+    : { data: [] };
+  const catMap = new Map((cats ?? []).map((c) => [c.id as string, c.name as string]));
+
+  const items = pricingRows
+    .filter((r) => prodMap.has(r.product_id as string))
+    .map((r) => {
+      const prod = prodMap.get(r.product_id as string)!;
+      const cost = (r.standard_cost as number) ?? (r.unit_cost as number) ?? 0;
+      const price = (r.selling_price as number) ?? (r.unit_price as number) ?? 0;
+      const margin = cost > 0 && price > 0 ? ((price - cost) / price) * 100 : 0;
+      return {
+        product: prod.name,
+        stock_code: prod.stock_code,
+        category: catMap.get(prod.category_id as string) ?? "Unknown",
+        standard_cost: cost,
+        selling_price: price,
+        margin_pct: Math.round(margin * 100) / 100,
+        tier: r.tier,
+        discount_pct: r.discount_pct,
+        effective_date: r.effective_date,
+      };
+    });
+
+  const avgMargin = items.length > 0
+    ? items.reduce((s, i) => s + i.margin_pct, 0) / items.length
+    : 0;
+
+  return {
+    items,
+    summary: {
+      total_products: items.length,
+      avg_margin: Math.round(avgMargin * 100) / 100,
+      avg_cost: items.length > 0 ? items.reduce((s, i) => s + i.standard_cost, 0) / items.length : 0,
+      avg_price: items.length > 0 ? items.reduce((s, i) => s + i.selling_price, 0) / items.length : 0,
+    },
+  };
+}
+
+// ── Stock Movements ───────────────────────────────────────────
+async function queryStockMovements(
+  supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>,
+  category?: string,
+  branch?: string,
+) {
+  let query = supabase
+    .from("analytics_fact_stock_movements")
+    .select("id, movement_date, product_id, branch_id, supplier_id, movement_type, quantity, unit_cost, total_cost, reference_number, batch_number")
+    .order("movement_date", { ascending: false })
+    .limit(500);
+
+  if (branch) query = query.eq("branch_id", branch);
+
+  const { data: movements } = await query;
+  if (!movements || movements.length === 0) return { movements: [], summary: {} };
+
+  const productIds = [...new Set(movements.map((m) => m.product_id as string))];
+  const { data: products } = await supabase
+    .from("analytics_products")
+    .select("id, stock_code, name, category_id")
+    .in("id", productIds);
+
+  let filteredProducts = products ?? [];
+  if (category) {
+    const { data: catRows } = await supabase
+      .from("analytics_categories")
+      .select("id")
+      .ilike("name", `%${category}%`);
+    if (catRows && catRows.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => p.category_id === catRows[0].id);
+    }
+  }
+
+  const prodMap = new Map(filteredProducts.map((p) => [p.id as string, p]));
+  const supplierIds = [...new Set(movements.map((m) => m.supplier_id as string).filter(Boolean))];
+  const { data: suppliers } = supplierIds.length > 0
+    ? await supabase.from("analytics_suppliers").select("id, name").in("id", supplierIds)
+    : { data: [] };
+  const supMap = new Map((suppliers ?? []).map((s) => [s.id as string, s.name as string]));
+
+  const enriched = movements
+    .filter((m) => prodMap.has(m.product_id as string))
+    .map((m) => {
+      const prod = prodMap.get(m.product_id as string)!;
+      return {
+        date: m.movement_date,
+        product: prod.name,
+        stock_code: prod.stock_code,
+        supplier: supMap.get(m.supplier_id as string) || "—",
+        type: m.movement_type,
+        quantity: m.quantity,
+        unit_cost: m.unit_cost,
+        total_cost: m.total_cost,
+        reference: m.reference_number,
+        batch: m.batch_number,
+      };
+    });
+
+  // Summary by movement type
+  const byType = new Map<string, { count: number; quantity: number; cost: number }>();
+  for (const m of enriched) {
+    const existing = byType.get(m.type) ?? { count: 0, quantity: 0, cost: 0 };
+    existing.count += 1;
+    existing.quantity += (m.quantity as number) ?? 0;
+    existing.cost += (m.total_cost as number) ?? 0;
+    byType.set(m.type, existing);
+  }
+
+  return {
+    movements: enriched,
+    summary: {
+      total_movements: enriched.length,
+      by_type: Object.fromEntries(byType),
+    },
+  };
+}
+
+// ── Supplier Performance ───────────────────────────────────────
+async function querySupplierPerformance(
+  supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>,
+) {
+  // Get suppliers with their product counts and sales
+  const { data: suppliers } = await supabase
+    .from("analytics_suppliers")
+    .select("id, name, code, payment_terms, lead_time_days, active")
+    .eq("active", true)
+    .order("name");
+
+  if (!suppliers || suppliers.length === 0) return { suppliers: [] };
+
+  const supIds = suppliers.map((s) => s.id as string);
+
+  // Get pricing data per supplier (to count products and compute avg cost)
+  const { data: pricingRows } = await supabase
+    .from("analytics_fact_pricing")
+    .select("supplier_id, product_id, unit_cost, selling_price")
+    .in("supplier_id", supIds);
+
+  // Get stock movements per supplier
+  const { data: movements } = await supabase
+    .from("analytics_fact_stock_movements")
+    .select("supplier_id, movement_type, quantity, total_cost")
+    .in("supplier_id", supIds);
+
+  const supData = suppliers.map((sup) => {
+    const sid = sup.id as string;
+    const pricing = (pricingRows ?? []).filter((r) => r.supplier_id === sid);
+    const mvs = (movements ?? []).filter((m) => m.supplier_id === sid);
+    const productIds = [...new Set(pricing.map((p) => p.product_id as string))];
+    const avgCost = pricing.length > 0
+      ? pricing.reduce((s, p) => s + ((p.unit_cost as number) ?? 0), 0) / pricing.length
+      : 0;
+    const totalInbound = mvs
+      .filter((m) => m.movement_type === "in")
+      .reduce((s, m) => s + ((m.quantity as number) ?? 0), 0);
+    const totalValue = mvs
+      .filter((m) => m.movement_type === "in")
+      .reduce((s, m) => s + ((m.total_cost as number) ?? 0), 0);
+
+    return {
+      name: sup.name,
+      code: sup.code,
+      payment_terms: sup.payment_terms,
+      lead_time_days: sup.lead_time_days,
+      product_count: productIds.length,
+      avg_cost: Math.round(avgCost * 100) / 100,
+      total_inbound_quantity: totalInbound,
+      total_inbound_value: totalValue,
+      total_movements: mvs.length,
+    };
+  });
+
+  return { suppliers: supData };
+}
+
+// ── Custom Query ───────────────────────────────────────────────
+// Allows admin to select fields, filters, grouping from a flexible config
+async function executeCustomQuery(
+  supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>,
+  body: {
+    fact_table?: string;
+    fields?: string[];
+    filters?: Record<string, unknown>;
+    group_by?: string;
+    order_by?: string;
+    limit?: number;
+  },
+) {
+  const allowedTables: Record<string, string> = {
+    sales: "analytics_fact_sales",
+    inventory: "analytics_fact_inventory",
+    pricing: "analytics_fact_pricing",
+    stock_movements: "analytics_fact_stock_movements",
+  };
+
+  const table = allowedTables[body.fact_table ?? ""];
+  if (!table) {
+    return { error: `Invalid fact_table. Allowed: ${Object.keys(allowedTables).join(", ")}` };
+  }
+
+  const fields = body.fields?.length ? body.fields.join(", ") : "*";
+  const limit = Math.min(body.limit ?? 100, 500);
+
+  let query = supabase.from(table).select(fields).limit(limit);
+
+  // Apply simple equality filters
+  if (body.filters) {
+    for (const [key, value] of Object.entries(body.filters)) {
+      if (value !== null && value !== undefined && value !== "") {
+        query = query.eq(key, value);
+      }
+    }
+  }
+
+  if (body.order_by) {
+    const desc = body.order_by.startsWith("-");
+    const col = desc ? body.order_by.slice(1) : body.order_by;
+    query = query.order(col, { ascending: !desc });
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { rows: data ?? [], count: (data ?? []).length, table };
 }
