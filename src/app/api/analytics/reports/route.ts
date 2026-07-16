@@ -14,7 +14,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("analytics_saved_reports")
-      .select("*")
+      .select("*, client:clients(id, name, company)")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, report_type, config } = body;
+    const { name, report_type, config, client_id, visible_to_client, generated_data } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -60,6 +60,9 @@ export async function POST(request: Request) {
         name,
         report_type: report_type || "market_share",
         config: config || {},
+        client_id: client_id || null,
+        visible_to_client: visible_to_client ?? false,
+        generated_data: generated_data || {},
         created_by: currentUser.id,
       })
       .select()
@@ -76,6 +79,53 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Failed to save report" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!isAdmin(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { id, client_id, visible_to_client, generated_data, name } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (client_id !== undefined) updates.client_id = client_id;
+    if (visible_to_client !== undefined) updates.visible_to_client = visible_to_client;
+    if (generated_data !== undefined) updates.generated_data = generated_data;
+    if (name !== undefined) updates.name = name;
+
+    const { data, error } = await supabase
+      .from("analytics_saved_reports")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { error: sanitizeError(error) },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ report: data });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to update report" },
       { status: 500 },
     );
   }
