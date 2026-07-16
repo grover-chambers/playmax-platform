@@ -73,7 +73,7 @@ export async function GET() {
           email: u.email ?? "",
           name: u.user_metadata?.name ?? u.email?.split("@")[0] ?? "Unknown",
           role,
-          status: (u.banned_at ? "inactive" : "active") as "active" | "inactive",
+          status: ((u as unknown as Record<string, unknown>).banned_at ? "inactive" : "active") as "active" | "inactive",
           createdAt: u.created_at
             ? new Date(u.created_at).toISOString().slice(0, 10)
             : "",

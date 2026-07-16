@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS public.org_settings (
   updated_at timestamptz DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS set_org_settings_updated_at ON public.org_settings;
 CREATE TRIGGER set_org_settings_updated_at
   BEFORE UPDATE ON public.org_settings
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
