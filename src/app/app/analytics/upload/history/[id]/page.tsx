@@ -198,7 +198,7 @@ export default function UploadDetailPage({
                 ) : (
                   <RefreshCw className="w-3.5 h-3.5 mr-1" />
                 )}
-                {upload.status === "imported" ? "Re-import" : "Import to Fact Tables"}
+                "Re-import"
               </Button>
             )}
             <Button

@@ -94,13 +94,7 @@ export async function POST(request: Request) {
     // Capture Grand Total data for branch summary (if provided)
     const { grand_total } = body;
     if (grand_total && data && data.branch_id && data.period_id) {
-      const { data: supplierMeta } = await supabase
-        .from("analytics_staging_uploads")
-        .select("metadata")
-        .eq("id", data.id)
-        .single();
-
-      // Get supplier name from metadata or request body
+      // Get supplier name from request body
       const supplierName = body.supplier_name ?? null;
 
       await supabase.from("analytics_fact_branch_summary").upsert(
