@@ -160,7 +160,7 @@ export default function StaffManagementPage() {
   const { paginated, total } = usePagination(filtered, page, 20);
 
   return (
-    <div>
+    <div className="page-content">
       <PageHeader
         title="Staff Management"
         subtitle={`${staff.filter((s) => s.status === "active").length} active · ${staff.length} total`}
@@ -175,7 +175,7 @@ export default function StaffManagementPage() {
         }
       />
 
-      <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1E1E1E]">
+      <div className="flex items-center gap-3 border-b border-[#1E1E1E]">
         <SearchBox
           placeholder="Search staff…"
           value={search}
@@ -260,21 +260,25 @@ export default function StaffManagementPage() {
                 </p>
               </div>
               <div className="flex gap-3 pt-2">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => {
                     setShowInvite(false);
                     setInviteError("");
                     setInviteSuccess("");
                   }}
-                  className="btn-secondary flex-1 justify-center text-[12px]"
+                  className="flex-1 justify-center text-[12px]"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="sm"
                   disabled={inviting}
-                  className="btn-sm-primary flex-1 justify-center text-[12px] disabled:opacity-60"
+                  className="flex-1 justify-center text-[12px]"
                 >
                   {inviting ? (
                     <>
@@ -285,7 +289,7 @@ export default function StaffManagementPage() {
                       <Mail className="w-3 h-3" /> Send Invite
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -293,102 +297,100 @@ export default function StaffManagementPage() {
       )}
 
       {/* Staff table */}
-      <div className="px-7 py-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-16 text-gray-5">
-            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading staff...
-          </div>
-        ) : (
-          <div className="bg-black-2 border border-[#252525] rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#1A1A1A]">
-                  {["Name", "Email", "Role", "Status", "Joined", "Actions"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {paginated.map((member) => (
-                  <tr
-                    key={member.id}
-                    className="border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-yellow/15 text-yellow flex items-center justify-center font-display text-[11px] font-bold">
-                          {member.name
-                            .split(" ")
-                            .map((n: string) => n[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </div>
-                        <span className="font-display text-[13px] font-semibold text-white">
-                          {member.name}
-                        </span>
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-gray-5">
+          <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading staff...
+        </div>
+      ) : (
+        <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#1A1A1A]">
+                {["Name", "Email", "Role", "Status", "Joined", "Actions"].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {paginated.map((member) => (
+                <tr
+                  key={member.id}
+                  className="border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors"
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-yellow/15 text-yellow flex items-center justify-center font-display text-[11px] font-bold">
+                        {member.name
+                          .split(" ")
+                          .map((n: string) => n[0])
+                          .join("")
+                          .slice(0, 2)}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-[12px] text-gray-4 font-mono">
-                      {member.email}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="intent-tag text-[9px]">
-                        {ROLE_LABELS[member.role] || member.role}
+                      <span className="font-display text-[13px] font-semibold text-white">
+                        {member.name}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`badge ${
-                          member.status === "active"
-                            ? "badge-available"
-                            : "badge-draft"
-                        }`}
-                      >
-                        {member.status === "active" ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[11px] text-gray-5 font-mono">
-                      {member.createdAt}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleStatus(member)}
-                        className={`btn-sm !py-1 !px-2.5 text-[10px] ${
-                          member.status === "active"
-                            ? "hover:!bg-red/10 hover:!text-red"
-                            : "hover:!bg-green/10 hover:!text-green"
-                        }`}
-                        title={
-                          member.status === "active" ? "Deactivate" : "Activate"
-                        }
-                      >
-                        {member.status === "active" ? (
-                          <UserX className="w-3 h-3" />
-                        ) : (
-                          <UserCheck className="w-3 h-3" />
-                        )}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <div className="py-12 text-center text-[13px] text-gray-5">
-                No staff match your search or filter.
-              </div>
-            )}
-            <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
-          </div>
-        )}
-      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-[12px] text-gray-4 font-mono">
+                    {member.email}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="intent-tag text-[9px]">
+                      {ROLE_LABELS[member.role] || member.role}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`badge ${
+                        member.status === "active"
+                          ? "badge-available"
+                          : "badge-draft"
+                      }`}
+                    >
+                      {member.status === "active" ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-[11px] text-gray-5 font-mono">
+                    {member.createdAt}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => toggleStatus(member)}
+                      className={`btn-sm !py-1 !px-2.5 text-[10px] ${
+                        member.status === "active"
+                          ? "hover:!bg-red/10 hover:!text-red"
+                          : "hover:!bg-green/10 hover:!text-green"
+                      }`}
+                      title={
+                        member.status === "active" ? "Deactivate" : "Activate"
+                      }
+                    >
+                      {member.status === "active" ? (
+                        <UserX className="w-3 h-3" />
+                      ) : (
+                        <UserCheck className="w-3 h-3" />
+                      )}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <div className="py-12 text-center text-[13px] text-gray-5">
+              No staff match your search or filter.
+            </div>
+          )}
+          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
+        </div>
+      )}
     </div>
   );
 }

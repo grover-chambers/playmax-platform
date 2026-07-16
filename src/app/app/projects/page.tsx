@@ -8,7 +8,6 @@ import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
 import StatusBadge from "@/components/ui/status-badge";
-import Card from "@/components/ui/card";
 import ProgressBar from "@/components/ui/progress-bar";
 import NewProjectModal from "@/components/modals/new-project-modal";
 import { downloadCSV } from "@/lib/export-utils";
@@ -243,7 +242,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div>
+    <div className="page-content">
       <PageHeader
         title="Projects"
         subtitle={`${filtered.length} of ${projects.length} projects`}
@@ -262,7 +261,7 @@ export default function ProjectsPage() {
           </>
         }
       />
-      <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1E1E1E]">
+      <div className="px-7 py-3 flex items-center gap-3 border-b border-white/5">
         <SearchBox placeholder="Search projects…" className="w-56" onChange={(val) => setSearch(val)} />
         <div className="flex items-center gap-1.5 ml-2">
           {typeFilters.map((filter) => (
@@ -288,10 +287,10 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      <div className="px-7 py-5 grid grid-cols-3 gap-4">
+      <div className="py-5 grid grid-cols-3 gap-4">
         {paginated.map((project) => (
           <Link key={project.id} href={`/workspace/${project.id}`}>
-            <Card className="p-4">
+            <div className="pm-dash-card pm-dash-card-b-0">
               <div className="flex items-center justify-between mb-2.5">
                 <span className="font-display text-[13px] font-semibold text-white leading-tight">
                   {project.name}
@@ -311,7 +310,7 @@ export default function ProjectsPage() {
                 {project.client}
               </div>
               <ProgressBar value={project.progress} />
-              <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#1E1E1E]">
+              <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-white/5">
                 <span className="text-[10px] text-gray-5">
                   {project.deadline}
                 </span>
@@ -319,7 +318,7 @@ export default function ProjectsPage() {
                   {project.value}
                 </span>
               </div>
-            </Card>
+            </div>
           </Link>
         ))}
       </div>

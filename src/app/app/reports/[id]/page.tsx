@@ -123,11 +123,11 @@ export default function ReportDetailPage({
 
   const { paginated, total } = usePagination(report?.metrics || [], page, 20);
 
-  if (loading) return <div className="p-6 text-[12px] text-gray-5">Loading…</div>;
+  if (loading) return <div className="page-content text-[12px] text-gray-5">Loading…</div>;
   if (!report) return null;
 
   return (
-    <div className="p-6">
+    <div className="page-content">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -165,54 +165,56 @@ export default function ReportDetailPage({
         </div>
       </div>
 
-      {/* Metrics grid */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[13px] font-semibold text-white flex items-center gap-2">
+      {/* Metrics card */}
+      <div className="pm-dash-card">
+        <div className="pm-dash-card-h">
+          <div className="flex items-center gap-2">
             <BarChart3 size={14} className="text-yellow" />
-            Metrics
-          </h2>
+            <h2 className="pm-dash-card-t">Metrics</h2>
+          </div>
           <Button variant="secondary" size="sm" onClick={() => setShowAddMetric(true)}>
             <Plus size={12} />
             Add Metric
           </Button>
         </div>
 
-        {(report.metrics || []).length === 0 ? (
-          <div className="text-[12px] text-gray-5 py-8 text-center border border-dashed border-[#1e1e1e] rounded-lg">
-            No metrics yet. Add your first metric to track report data.
-          </div>
-        ) : (
-          <div className="grid grid-cols-4 gap-3">
-            {paginated.map((m) => (
-              <div
-                key={m.id}
-                className="bg-[#0D0D0D] border border-[#1E1E1E] rounded-lg p-4 relative group"
-              >
-                <button
-                  onClick={() => deleteMetric(m.metric_key)}
-                  className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-red/10 text-red transition-all"
+        <div className="pm-dash-card-b">
+          {(report.metrics || []).length === 0 ? (
+            <div className="text-[12px] text-gray-5 py-8 text-center border border-dashed border-[#1e1e1e] rounded-lg">
+              No metrics yet. Add your first metric to track report data.
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-3">
+              {paginated.map((m) => (
+                <div
+                  key={m.id}
+                  className="bg-[#0D0D0D] border border-[#1E1E1E] rounded-lg p-4 relative group"
                 >
-                  <Trash2 size={11} />
-                </button>
-                <div className="text-[10px] text-gray-5 uppercase tracking-wider font-mono mb-1">
-                  {m.metric_label}
+                  <button
+                    onClick={() => deleteMetric(m.metric_key)}
+                    className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-red/10 text-red transition-all"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                  <div className="text-[10px] text-gray-5 uppercase tracking-wider font-mono mb-1">
+                    {m.metric_label}
+                  </div>
+                  <div className="text-[22px] font-display font-bold text-white">
+                    {m.unit === "KES"
+                      ? `KES ${(m.metric_value / 1000).toFixed(0)}K`
+                      : m.unit === "%"
+                        ? `${m.metric_value}%`
+                        : m.metric_value}
+                  </div>
+                  <div className="text-[9px] text-gray-5 font-mono mt-1">
+                    {m.unit} &middot; {m.chart_type}
+                  </div>
                 </div>
-                <div className="text-[22px] font-display font-bold text-white">
-                  {m.unit === "KES"
-                    ? `KES ${(m.metric_value / 1000).toFixed(0)}K`
-                    : m.unit === "%"
-                      ? `${m.metric_value}%`
-                      : m.metric_value}
-                </div>
-                <div className="text-[9px] text-gray-5 font-mono mt-1">
-                  {m.unit} &middot; {m.chart_type}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
+              ))}
+            </div>
+          )}
+          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
+        </div>
       </div>
 
       {/* Add Metric Modal */}

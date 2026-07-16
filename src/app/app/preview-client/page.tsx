@@ -77,7 +77,7 @@ export default function PreviewClientPage() {
             }`}
           >
             <div
-              className={`bg-black border border-[#1e1e1e] rounded-lg ${
+              className={`pm-dash-card ${
                 viewMode === "mobile"
                   ? "w-[375px] min-h-[700px]"
                   : "w-full max-w-4xl"
@@ -120,7 +120,7 @@ export default function PreviewClientPage() {
                     { label: "Completed", value: "7", color: "text-green" },
                     { label: "Unread Messages", value: "2", color: "text-blue" },
                   ].map((kpi) => (
-                    <div key={kpi.label} className="bg-black-2 border border-[#252525] rounded-lg p-3">
+                    <div key={kpi.label} className="pm-dash-card p-3">
                       <div className={`font-display text-[20px] font-bold ${kpi.color}`}>
                         {kpi.value}
                       </div>
@@ -130,7 +130,7 @@ export default function PreviewClientPage() {
                 </div>
 
                 {/* Recent reports */}
-                <div className="bg-black-2 border border-[#252525] rounded-lg p-4">
+                <div className="pm-dash-card p-4">
                   <h3 className="text-[12px] font-semibold mb-3">
                     Recent Reports & Deliverables
                   </h3>
@@ -167,7 +167,7 @@ export default function PreviewClientPage() {
                 </div>
 
                 {/* Recent invoices */}
-                <div className="bg-black-2 border border-[#252525] rounded-lg p-4">
+                <div className="pm-dash-card p-4">
                   <h3 className="text-[12px] font-semibold mb-3">Invoices</h3>
                   {[
                     { inv: "INV-2026-004", amount: "KES 580,000", status: "Pending" },
@@ -195,7 +195,7 @@ export default function PreviewClientPage() {
                 </div>
 
                 {/* Messages preview */}
-                <div className="bg-black-2 border border-[#252525] rounded-lg p-4">
+                <div className="pm-dash-card p-4">
                   <h3 className="text-[12px] font-semibold mb-3">
                     Messages from your team
                   </h3>
@@ -236,7 +236,7 @@ export default function PreviewClientPage() {
         </div>
       ) : (
         /* ── Client Selection ── */
-        <div className="p-6">
+        <div className="page-content">
           <PageHeader
             title="Preview Client Portal"
             subtitle="Select a client account to preview their exact portal view"
@@ -265,7 +265,7 @@ export default function PreviewClientPage() {
               <button
                 key={client.id}
                 onClick={() => setPreviewing(client.name)}
-                className="bg-black-2 border border-[#252525] rounded-lg p-5 text-left hover:border-yellow/50 transition-colors cursor-pointer group"
+                className="pm-dash-card p-5 text-left hover:border-yellow/50 transition-colors cursor-pointer group"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">

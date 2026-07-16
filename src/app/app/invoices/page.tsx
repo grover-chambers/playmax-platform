@@ -214,7 +214,7 @@ export default function InvoicesPage() {
   };
 
   return (
-    <div>
+    <div className="page-content">
       <PageHeader
         title="Invoices"
         subtitle={`${invoices.length} invoices · KES ${invoices
@@ -257,9 +257,8 @@ export default function InvoicesPage() {
         }
       />
 
-      <div className="p-6">
         {/* Table */}
-        <div className="bg-black-2 border border-[#252525] rounded-lg overflow-hidden">
+        <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#1A1A1A]">
@@ -345,7 +344,6 @@ export default function InvoicesPage() {
         </div>
 
         <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
-      </div>
 
       {/* ── New Invoice Modal ── */}
       <Modal
@@ -453,7 +451,7 @@ export default function InvoicesPage() {
           </div>
 
           {/* Running total */}
-          <div className="bg-black-3 rounded px-3 py-2.5 space-y-1">
+          <div className="pm-dash-card px-3 py-2.5 space-y-1">
             <div className="flex justify-between text-[11px] text-gray-4">
               <span>Subtotal</span>
               <span className="font-mono">

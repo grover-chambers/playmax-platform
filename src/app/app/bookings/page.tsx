@@ -3,6 +3,7 @@
 import { useState, useEffect, startTransition } from "react";
 import { format, parseISO } from "date-fns";
 import { Plus } from "lucide-react";
+import PageHeader from "@/components/layout/page-header";
 import FilterPill from "@/components/ui/filter-pill";
 import StatusBadge from "@/components/ui/status-badge";
 import Button from "@/components/ui/button";
@@ -44,37 +45,35 @@ export default function BookingsPage() {
   const { paginated, total } = usePagination(filtered, page, 20);
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="font-display text-[18px] font-bold">Bookings</h1>
-          <p className="text-[11px] text-gray-5 mt-0.5">
-            {filtered.length} booking{filtered.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-1.5">
-            {statusFilters.map((f) => (
-              <FilterPill
-                key={f}
-                active={statusFilter === f}
-                onClick={() => setStatusFilter(f)}
-              >
-                {f === "All" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-              </FilterPill>
-            ))}
-          </div>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setModalOpen(true)}
-          >
-            <Plus className="w-3.5 h-3.5 mr-1.5" /> New Booking
-          </Button>
-        </div>
-      </div>
+    <div className="page-content">
+      <PageHeader
+        title="Bookings"
+        subtitle={`${filtered.length} booking${filtered.length !== 1 ? "s" : ""}`}
+        actions={
+          <>
+            <div className="flex gap-1.5">
+              {statusFilters.map((f) => (
+                <FilterPill
+                  key={f}
+                  active={statusFilter === f}
+                  onClick={() => setStatusFilter(f)}
+                >
+                  {f === "All" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+                </FilterPill>
+              ))}
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setModalOpen(true)}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> New Booking
+            </Button>
+          </>
+        }
+      />
 
-      <div className="bg-black-2 border border-[#252525] rounded-lg overflow-hidden">
+      <div className="pm-dash-card pm-dash-card-b-0">
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#1A1A1A]">
@@ -121,7 +120,7 @@ export default function BookingsPage() {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <div className="py-12 text-center text-[13px] text-gray-5">
+          <div className="pm-dash-card-b py-12 text-center text-[13px] text-gray-5">
             No bookings match the selected filter.
           </div>
         )}

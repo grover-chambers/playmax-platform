@@ -324,7 +324,7 @@ export default function AuditLogPage() {
   }
 
   return (
-    <div>
+    <div className="page-content">
       {/* ── Header ── */}
       <PageHeader
         title="Audit Log"
@@ -337,7 +337,7 @@ export default function AuditLogPage() {
       />
 
       {/* ── Filter Bar ── */}
-      <div className="flex items-center gap-3 px-7 py-3 border-b border-[#1E1E1E]">
+      <div className="flex items-center gap-3 border-b border-[#1E1E1E]">
         {/* Date from */}
         <input
           type="date"
@@ -385,91 +385,89 @@ export default function AuditLogPage() {
       </div>
 
       {/* ── Audit Table ── */}
-      <div className="px-7 py-4">
-        <div className="bg-black-2 border border-[#252525] rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#1A1A1A]">
-                {["Timestamp", "User", "Action", "Target", "Details"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
-                    >
-                      {h}
-                    </th>
-                  ),
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length > 0 ? (
-                paginated.map((entry) => {
-                  const badge =
-                    actionBadgeConfig[entry.action] ?? actionBadgeConfig.Create;
-                  return (
-                    <tr
-                      key={entry.id}
-                      className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors"
-                    >
-                      {/* Timestamp */}
-                      <td className="px-4 py-3 text-[11px] text-gray-4 font-mono whitespace-nowrap">
-                        {formatTimestamp(entry.timestamp)}
-                      </td>
-
-                      {/* User */}
-                      <td className="px-4 py-3">
-                        <div className="text-[12px] font-medium text-white">
-                          {entry.user}
-                        </div>
-                        <div className="text-[10px] text-gray-5 font-mono mt-0.5">
-                          {entry.userEmail}
-                        </div>
-                      </td>
-
-                      {/* Action */}
-                      <td className="px-4 py-3">
-                        <StatusBadge
-                          variant={badge.variant}
-                          className={badge.className}
-                        >
-                          {entry.action}
-                        </StatusBadge>
-                      </td>
-
-                      {/* Target */}
-                      <td className="px-4 py-3">
-                        <span className="text-[12px] text-gray-3">
-                          {entry.target}
-                        </span>
-                      </td>
-
-                      {/* Details */}
-                      <td className="px-4 py-3 max-w-70">
-                        <p
-                          className="text-[11px] text-gray-4 leading-relaxed truncate"
-                          title={entry.details}
-                        >
-                          {entry.details}
-                        </p>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="py-16 text-center text-[13px] text-gray-5"
+      <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#1A1A1A]">
+              {["Timestamp", "User", "Action", "Target", "Details"].map(
+                (h) => (
+                  <th
+                    key={h}
+                    className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
                   >
-                    No audit entries match your filters.
-                  </td>
-                </tr>
+                    {h}
+                  </th>
+                ),
               )}
-            </tbody>
-          </table>
-          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
-        </div>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length > 0 ? (
+              paginated.map((entry) => {
+                const badge =
+                  actionBadgeConfig[entry.action] ?? actionBadgeConfig.Create;
+                return (
+                  <tr
+                    key={entry.id}
+                    className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors"
+                  >
+                    {/* Timestamp */}
+                    <td className="px-4 py-3 text-[11px] text-gray-4 font-mono whitespace-nowrap">
+                      {formatTimestamp(entry.timestamp)}
+                    </td>
+
+                    {/* User */}
+                    <td className="px-4 py-3">
+                      <div className="text-[12px] font-medium text-white">
+                        {entry.user}
+                      </div>
+                      <div className="text-[10px] text-gray-5 font-mono mt-0.5">
+                        {entry.userEmail}
+                      </div>
+                    </td>
+
+                    {/* Action */}
+                    <td className="px-4 py-3">
+                      <StatusBadge
+                        variant={badge.variant}
+                        className={badge.className}
+                      >
+                        {entry.action}
+                      </StatusBadge>
+                    </td>
+
+                    {/* Target */}
+                    <td className="px-4 py-3">
+                      <span className="text-[12px] text-gray-3">
+                        {entry.target}
+                      </span>
+                    </td>
+
+                    {/* Details */}
+                    <td className="px-4 py-3 max-w-70">
+                      <p
+                        className="text-[11px] text-gray-4 leading-relaxed truncate"
+                        title={entry.details}
+                      >
+                        {entry.details}
+                      </p>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="py-16 text-center text-[13px] text-gray-5"
+                >
+                  No audit entries match your filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
     </div>
   );

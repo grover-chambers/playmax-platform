@@ -79,7 +79,7 @@ export default function BillingPage() {
   const { paginated, total } = usePagination(billingHistory, page, 20);
 
   return (
-    <div>
+    <div className="page-content">
       {/* ── Page header ── */}
       <PageHeader
         title="Billing & SaaS License"
@@ -96,9 +96,9 @@ export default function BillingPage() {
         }
       />
 
-      <div className="px-7 py-5 space-y-6">
+      <div className="space-y-6">
         {/* ── Current Plan Card ── */}
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-5">
+        <div className="pm-dash-card p-5">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-yellow/15 text-yellow flex items-center justify-center">
@@ -152,7 +152,7 @@ export default function BillingPage() {
         </div>
 
         {/* ── Payment Method Card ── */}
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-5">
+        <div className="pm-dash-card p-5">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green/15 text-green flex items-center justify-center">
@@ -205,7 +205,7 @@ export default function BillingPage() {
             </button>
           </div>
 
-          <div className="bg-black-2 border border-[#1e1e1e] rounded-lg overflow-hidden">
+          <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#1e1e1e]">

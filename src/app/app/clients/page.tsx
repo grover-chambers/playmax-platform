@@ -205,7 +205,7 @@ export default function ClientsPage() {
   }
 
   return (
-    <div>
+    <div className="page-content">
       <NewClientModal open={modalOpen} onClose={() => setModalOpen(false)} />
       <PageHeader
         title="Clients"
@@ -260,7 +260,7 @@ export default function ClientsPage() {
       </div>
 
       {view === "list" ? (
-        <div className="px-7 py-4">
+        <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="text-[10px] font-mono text-gray-5 uppercase tracking-wider border-b border-[#1E1E1E]">
@@ -328,7 +328,7 @@ export default function ClientsPage() {
         <div className="px-7 py-5 grid grid-cols-3 gap-4">
           {paginated.map((client) => (
             <Link key={client.id} href={`/app/clients/${client.id}`}>
-              <div className="bg-[#0D0D0D] border border-[#252525] rounded-lg p-4 hover:border-yellow transition-colors cursor-pointer">
+              <div className="pm-dash-card p-4 hover:border-yellow transition-colors cursor-pointer">
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-display text-[13px] font-semibold">
                     {client.company}

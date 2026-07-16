@@ -87,7 +87,7 @@ export default function WhatsAppTemplatesPage() {
   const { paginated, total } = usePagination(templates, page, 20);
 
   return (
-    <div>
+    <div className="page-content">
       {/* ── Header ──────────────────────────────────── */}
       <PageHeader
         title="WhatsApp Templates"
@@ -100,8 +100,8 @@ export default function WhatsAppTemplatesPage() {
       />
 
       {/* ── KPI Strip ───────────────────────────────── */}
-      <div className="px-7 py-4 grid grid-cols-4 gap-4">
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg px-5 py-4">
+      <div className="grid grid-cols-4 gap-4 mb-4 mt-4">
+        <div className="pm-dash-card px-5 py-4">
           <div className="text-green text-[22px] font-display font-bold">
             {approvedCount}
           </div>
@@ -110,7 +110,7 @@ export default function WhatsAppTemplatesPage() {
           </div>
         </div>
 
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg px-5 py-4">
+        <div className="pm-dash-card px-5 py-4">
           <div className="text-yellow text-[22px] font-display font-bold">
             {pendingCount}
           </div>
@@ -119,7 +119,7 @@ export default function WhatsAppTemplatesPage() {
           </div>
         </div>
 
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg px-5 py-4">
+        <div className="pm-dash-card px-5 py-4">
           <div className="text-red text-[22px] font-display font-bold">
             {rejectedCount}
           </div>
@@ -128,7 +128,7 @@ export default function WhatsAppTemplatesPage() {
           </div>
         </div>
 
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg px-5 py-4">
+        <div className="pm-dash-card px-5 py-4">
           <div className="text-white text-[22px] font-display font-bold">
             {totalSentThisMonth.toLocaleString()}
           </div>
@@ -139,149 +139,149 @@ export default function WhatsAppTemplatesPage() {
       </div>
 
       {/* ── Templates Table ─────────────────────────── */}
-      <div className="px-7 py-2">
-        <div className="bg-black-2 border border-[#252525] rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#1A1A1A]">
-                {[
-                  "Template Name",
-                  "Category",
-                  "Status",
-                  "Last Submitted",
-                  "Actions",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.map((tmpl) => (
-                <tr
-                  key={tmpl.id}
-                  className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors"
+      <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#1A1A1A]">
+              {[
+                "Template Name",
+                "Category",
+                "Status",
+                "Last Submitted",
+                "Actions",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
                 >
-                  {/* Name */}
-                  <td className="px-4 py-3">
-                    <span className="font-display text-[13px] font-semibold text-white">
-                      {tmpl.name}
-                    </span>
-                  </td>
-
-                  {/* Category */}
-                  <td className="px-4 py-3">
-                    <span className="intent-tag text-[9px]">
-                      {tmpl.category}
-                    </span>
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-4 py-3">
-                    <StatusBadge
-                      variant={STATUS_BADGE_MAP[tmpl.status]}
-                      className={
-                        tmpl.status === "Rejected"
-                          ? "text-red! border-red/20! bg-red/10!"
-                          : ""
-                      }
-                    >
-                      {tmpl.status}
-                    </StatusBadge>
-                  </td>
-
-                  {/* Last submitted */}
-                  <td className="px-4 py-3 text-[11px] text-gray-5 font-mono">
-                    {tmpl.lastSubmitted}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="btn-sm py-1! px-2.5! text-[10px] hover:bg-yellow/10! hover:text-yellow!"
-                        title="Sync status with WhatsApp"
-                        onClick={() => router.push("/app/admin/whatsapp")}
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                      </button>
-                      <button
-                        className="btn-sm py-1! px-2.5! text-[10px] hover:bg-white/10!"
-                        title="View template details"
-                        onClick={() => router.push("/app/admin/whatsapp")}
-                      >
-                        <Eye className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                  {h}
+                </th>
               ))}
-            </tbody>
-          </table>
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.map((tmpl) => (
+              <tr
+                key={tmpl.id}
+                className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors"
+              >
+                {/* Name */}
+                <td className="px-4 py-3">
+                  <span className="font-display text-[13px] font-semibold text-white">
+                    {tmpl.name}
+                  </span>
+                </td>
 
-          {templates.length === 0 && (
-            <div className="py-12 text-center text-[13px] text-gray-5">
-              No templates found.
-            </div>
-          )}
-          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
-        </div>
+                {/* Category */}
+                <td className="px-4 py-3">
+                  <span className="intent-tag text-[9px]">
+                    {tmpl.category}
+                  </span>
+                </td>
+
+                {/* Status */}
+                <td className="px-4 py-3">
+                  <StatusBadge
+                    variant={STATUS_BADGE_MAP[tmpl.status]}
+                    className={
+                      tmpl.status === "Rejected"
+                        ? "text-red! border-red/20! bg-red/10!"
+                        : ""
+                    }
+                  >
+                    {tmpl.status}
+                  </StatusBadge>
+                </td>
+
+                {/* Last submitted */}
+                <td className="px-4 py-3 text-[11px] text-gray-5 font-mono">
+                  {tmpl.lastSubmitted}
+                </td>
+
+                {/* Actions */}
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="py-1! px-2.5! text-[10px] hover:bg-yellow/10! hover:text-yellow!"
+                      title="Sync status with WhatsApp"
+                      onClick={() => router.push("/app/admin/whatsapp")}
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="py-1! px-2.5! text-[10px] hover:bg-white/10!"
+                      title="View template details"
+                      onClick={() => router.push("/app/admin/whatsapp")}
+                    >
+                      <Eye className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {templates.length === 0 && (
+          <div className="py-12 text-center text-[13px] text-gray-5">
+            No templates found.
+          </div>
+        )}
+        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
 
       {/* ── API Connection Status ───────────────────── */}
-      <div className="px-7 py-4 pb-10">
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg px-6 py-5">
-          <h3 className="font-display text-[15px] font-bold mb-4">
-            API Connection Status
-          </h3>
+      <div className="pm-dash-card px-6 py-5 mt-4 mb-8">
+        <h3 className="font-display text-[15px] font-bold mb-4">
+          API Connection Status
+        </h3>
 
-          <div className="space-y-3">
-            {/* WABA ID (masked) */}
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-gray-5 font-mono">WABA ID</span>
-              <span className="text-[12px] text-gray-4 font-mono">
-                {wabaIdHidden ? "••••••••••" : "1234567890"}
-                <button
-                  onClick={() => setWabaIdHidden((prev) => !prev)}
-                  className="ml-2 text-[10px] text-yellow hover:underline"
-                >
-                  {wabaIdHidden ? "Show" : "Hide"}
-                </button>
-              </span>
-            </div>
-
-            {/* Phone Number ID */}
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-gray-5 font-mono">
-                Phone Number ID
-              </span>
-              <span className="text-[12px] text-gray-4 font-mono">
-                +254712345678
-              </span>
-            </div>
-
-            {/* Business Account Status */}
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-gray-5 font-mono">
-                Business Account Status
-              </span>
-              <span className="badge badge-active">Connected</span>
-            </div>
+        <div className="space-y-3">
+          {/* WABA ID (masked) */}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-gray-5 font-mono">WABA ID</span>
+            <span className="text-[12px] text-gray-4 font-mono">
+              {wabaIdHidden ? "••••••••••" : "1234567890"}
+              <button
+                onClick={() => setWabaIdHidden((prev) => !prev)}
+                className="ml-2 text-[10px] text-yellow hover:underline"
+              >
+                {wabaIdHidden ? "Show" : "Hide"}
+              </button>
+            </span>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 mt-5 pt-4 border-t border-[#1e1e1e]">
-            <Button variant="secondary" size="sm" onClick={() => setConfirmAction("rotate")}>
-              <RotateCcw className="w-3 h-3 mr-1" /> Rotate API Key
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setConfirmAction("reconnect")}>
-              <Link className="w-3 h-3 mr-1" /> Reconnect
-            </Button>
+          {/* Phone Number ID */}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-gray-5 font-mono">
+              Phone Number ID
+            </span>
+            <span className="text-[12px] text-gray-4 font-mono">
+              +254712345678
+            </span>
           </div>
+
+          {/* Business Account Status */}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-gray-5 font-mono">
+              Business Account Status
+            </span>
+            <span className="badge badge-active">Connected</span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 mt-5 pt-4 border-t border-[#1e1e1e]">
+          <Button variant="secondary" size="sm" onClick={() => setConfirmAction("rotate")}>
+            <RotateCcw className="w-3 h-3 mr-1" /> Rotate API Key
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setConfirmAction("reconnect")}>
+            <Link className="w-3 h-3 mr-1" /> Reconnect
+          </Button>
         </div>
       </div>
 

@@ -223,7 +223,7 @@ export default function TasksPage() {
   }));
 
   return (
-    <div>
+    <div className="page-content">
       <PageHeader
         title="Tasks"
         subtitle={`${data.length} tasks · ${data.filter((t) => t.status === "in-progress").length} in progress`}
@@ -237,7 +237,7 @@ export default function TasksPage() {
           </Button>
         }
       />
-      <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1E1E1E]">
+      <div className="px-7 py-3 flex items-center gap-3 border-b border-white/5">
         <SearchBox placeholder="Search tasks…" className="w-56" value={search} onChange={(val) => setSearch(val)} />
         <div className="flex items-center gap-1.5 ml-2 flex-wrap">
           {buildProjectFilters(data).map((filter) => (
@@ -252,23 +252,25 @@ export default function TasksPage() {
         </div>
       </div>
 
-      <div className="p-7 space-y-6">
+      <div className="space-y-6">
         {grouped.map((group) => (
-          <div key={group.key}>
-            <div className="flex items-center gap-2 mb-3">
-              {group.icon}
-              <span className="font-display text-[12px] font-semibold text-white">
-                {group.label}
-              </span>
-              <span className="font-mono text-[9px] bg-black-4 text-gray-4 px-1.5 py-[2px] rounded-full">
-                {group.tasks.length}
-              </span>
+          <div key={group.key} className="pm-dash-card">
+            <div className="pm-dash-card-h">
+              <div className="flex items-center gap-2">
+                {group.icon}
+                <span className="pm-dash-card-t">
+                  {group.label}
+                </span>
+                <span className="font-mono text-[9px] bg-black-4 text-gray-4 px-1.5 py-[2px] rounded-full">
+                  {group.tasks.length}
+                </span>
+              </div>
             </div>
-            <div className="space-y-1.5">
+            <div className="pm-dash-card-b space-y-1.5">
               {group.tasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center gap-4 bg-[#0D0D0D] border border-[#1E1E1E] rounded-md px-4 py-3 hover:border-[#333] transition-colors"
+                  className="flex items-center gap-4 px-4 py-3 hover:border-[#333] transition-colors"
                 >
                   <div
                     className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${

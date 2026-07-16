@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, startTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
@@ -11,6 +12,7 @@ import {
   XCircle,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
+import Button from "@/components/ui/button";
 import Pagination, { usePagination } from "@/components/ui/pagination";
 
 interface Article {
@@ -24,6 +26,7 @@ interface Article {
 }
 
 export default function ArticlesListPage() {
+  const router = useRouter();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -52,7 +55,7 @@ export default function ArticlesListPage() {
         subtitle="Manage blog posts and insights published on the public website."
       />
 
-      <div style={{ padding: "0 22px 22px" }}>
+      <div className="page-content">
         <div
           className="mb-6 flex items-center justify-between"
           style={{ padding: "0 4px" }}
@@ -63,17 +66,10 @@ export default function ArticlesListPage() {
           >
             {articles.length} article{articles.length !== 1 ? "s" : ""}
           </span>
-          <Link
-            href="/app/content/articles/new"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-semibold font-display rounded-lg transition-colors no-underline"
-            style={{
-              background: "var(--pm-yellow)",
-              color: "var(--pm-black)",
-            }}
-          >
+          <Button variant="primary" size="sm" onClick={() => router.push("/app/content/articles/new")}>
             <Plus className="w-3.5 h-3.5" />
             New Article
-          </Link>
+          </Button>
         </div>
 
         {loading ? (
@@ -99,11 +95,7 @@ export default function ArticlesListPage() {
             {paginated.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center gap-4 px-5 py-4 rounded-lg transition-colors"
-                style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}
+                className="pm-dash-card flex items-center gap-4 px-5 py-4"
               >
                 <FileText
                   className="w-5 h-5 flex-shrink-0"
