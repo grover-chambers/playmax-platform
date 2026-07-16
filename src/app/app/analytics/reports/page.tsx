@@ -510,7 +510,7 @@ export default function MarketShareReport() {
                           />
                         </div>
                         <span className="w-[60px] text-[11px] text-white font-mono text-right flex-shrink-0">
-                          {r.share.toFixed(1)}%
+                          {(r.share ?? 0).toFixed(1)}%
                         </span>
                       </div>
                     );
@@ -555,7 +555,7 @@ export default function MarketShareReport() {
                               className="absolute right-0 top-1/2 -translate-y-1/2 h-3 rounded-sm bg-yellow/30"
                               style={{ width: `${(r.share / maxShare) * 60}px` }}
                             />
-                            <span className="relative z-10 px-2 text-white">{r.share.toFixed(1)}%</span>
+                            <span className="relative z-10 px-2 text-white">{(r.share ?? 0).toFixed(1)}%</span>
                           </div>
                         </td>
                         <td className="pm-dash-tbl-td text-right">
@@ -708,7 +708,7 @@ export default function MarketShareReport() {
                           />
                         </div>
                         <span className="w-[60px] text-[11px] text-white font-mono text-right flex-shrink-0">
-                          {r.share.toFixed(1)}%
+                          {(r.share ?? 0).toFixed(1)}%
                         </span>
                       </div>
                     );
@@ -740,7 +740,7 @@ export default function MarketShareReport() {
                       <td className="pm-dash-tbl-td text-white font-medium">{r.manufacturer}</td>
                       <td className="pm-dash-tbl-td text-right text-white font-mono">{formatKES(r.total_sales)}</td>
                       <td className="pm-dash-tbl-td text-right font-mono">{r.total_units.toLocaleString()}</td>
-                      <td className="pm-dash-tbl-td text-right font-mono">{r.share.toFixed(1)}%</td>
+                      <td className="pm-dash-tbl-td text-right font-mono">{(r.share ?? 0).toFixed(1)}%</td>
                       <td className="pm-dash-tbl-td text-right font-mono">{r.product_count}</td>
                       <td className="pm-dash-tbl-td text-right font-mono">{formatKES(r.avg_unit_price)}</td>
                     </tr>
@@ -873,7 +873,7 @@ export default function MarketShareReport() {
               <div className="pm-dash-kl">Products priced</div>
             </div>
             <div className="pm-dash-kcard">
-              <div className="pm-dash-kn grn">{pricingData.summary.avg_margin.toFixed(1)}%</div>
+              <div className="pm-dash-kn grn">{(pricingData?.summary?.avg_margin ?? 0).toFixed(1)}%</div>
               <div className="pm-dash-kl">Avg margin</div>
             </div>
             <div className="pm-dash-kcard">
@@ -908,7 +908,7 @@ export default function MarketShareReport() {
                         />
                       </div>
                       <span className={`w-[60px] text-[11px] font-mono text-right flex-shrink-0 ${r.margin_pct >= 0 ? "text-white" : "text-red"}`}>
-                        {r.margin_pct.toFixed(1)}%
+                        {(r.margin_pct ?? 0).toFixed(1)}%
                       </span>
                     </div>
                   );
@@ -952,7 +952,7 @@ export default function MarketShareReport() {
                         <span className={`pm-dash-bdg ${
                           r.margin_pct >= 20 ? "pm-dash-bdg-g" : r.margin_pct >= 10 ? "pm-dash-bdg-y" : "pm-dash-bdg-r"
                         }`}>
-                          {r.margin_pct.toFixed(1)}%
+                          {(r.margin_pct ?? 0).toFixed(1)}%
                         </span>
                       </td>
                       <td className="pm-dash-tbl-td text-right font-mono">
