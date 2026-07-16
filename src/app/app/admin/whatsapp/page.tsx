@@ -1,155 +1,165 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Pagination, { usePagination } from "@/components/ui/pagination";
 import { useRouter } from "next/navigation";
-import { Plus, RefreshCw, Eye, RotateCcw, Link } from "lucide-react";
+import { Plus, RefreshCw, Eye, RotateCcw, Link, Loader2 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import ConfirmActionModal from "@/components/modals/confirm-action-modal";
 import Button from "@/components/ui/button";
 import StatusBadge from "@/components/ui/status-badge";
+import { createClient } from "@/lib/supabase/browser";
 
-/* ── Types ─────────────────────────────────────────── */
-
-type TemplateCategory = "Marketing" | "Utility" | "Authentication";
-
-type TemplateStatus = "Approved" | "Pending" | "Rejected";
+/* ── Types ─────────────────────────────────────────────── */
 
 interface WhatsAppTemplate {
   id: string;
   name: string;
-  category: TemplateCategory;
-  status: TemplateStatus;
-  lastSubmitted: string;
+  type: string;
+  content: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-/* ── Sample Data ───────────────────────────────────── */
+type TemplateDisplayStatus = "Approved" | "Pending" | "Rejected";
 
-const sampleTemplates: WhatsAppTemplate[] = [
-  {
-    id: "1",
-    name: "welcome_greeting",
-    category: "Marketing",
-    status: "Approved",
-    lastSubmitted: "2026-06-28",
-  },
-  {
-    id: "2",
-    name: "lead_acknowledgement",
-    category: "Utility",
-    status: "Approved",
-    lastSubmitted: "2026-06-25",
-  },
-  {
-    id: "3",
-    name: "invoice_reminder",
-    category: "Utility",
-    status: "Approved",
-    lastSubmitted: "2026-06-20",
-  },
-  {
-    id: "4",
-    name: "booking_confirmation",
-    category: "Marketing",
-    status: "Pending",
-    lastSubmitted: "2026-07-01",
-  },
-  {
-    id: "5",
-    name: "report_ready_notification",
-    category: "Marketing",
-    status: "Rejected",
-    lastSubmitted: "2026-06-15",
-  },
-];
+const STATUS_BADGE_MAP: Record<TemplateDisplayStatus, "active" | "review" | "draft"> = {
+  Approved: "active",
+  Pending: "review",
+  Rejected: "draft",
+};
 
-const STATUS_BADGE_MAP: Record<TemplateStatus, "active" | "review" | "draft"> =
-  {
-    Approved: "active",
-    Pending: "review",
-    Rejected: "draft",
-  };
-
-/* ── Page ──────────────────────────────────────────── */
+/* ── Page ──────────────────────────────────────────────── */
 
 export default function WhatsAppTemplatesPage() {
   const router = useRouter();
-  const [templates] = useState<WhatsAppTemplate[]>(sampleTemplates);
+  const [templates, setTemplates] = useState<WhatsAppTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [wabaIdHidden, setWabaIdHidden] = useState(true);
   const [confirmAction, setConfirmAction] = useState<"rotate" | "reconnect" | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
-  const approvedCount = templates.filter((t) => t.status === "Approved").length;
-  const pendingCount = templates.filter((t) => t.status === "Pending").length;
-  const rejectedCount = templates.filter((t) => t.status === "Rejected").length;
-  const totalSentThisMonth = 1248; // simulated
+  /* ── Load templates from Supabase ────────────────────── */
 
-  const { paginated, total } = usePagination(templates, page, 20);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("templates")
+          .select("*")
+          .eq("type", "whatsapp")
+          .order("updated_at", { ascending: false });
+
+        if (error) throw error;
+        if (!cancelled) setTemplates(data ?? []);
+      } catch {
+        if (!cancelled) setTemplates([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  /* ── Derived data ────────────────────────────────────── */
+
+  // For templates without a status field, infer from existence of content
+  const getStatus = (t: WhatsAppTemplate): TemplateDisplayStatus => {
+    if (t.content && t.content.length > 10) return "Approved";
+    return "Pending";
+  };
+
+  const approvedCount = templates.filter((t) => getStatus(t) === "Approved").length;
+  const pendingCount = templates.filter((t) => getStatus(t) === "Pending").length;
+  const rejectedCount = templates.filter((t) => getStatus(t) === "Rejected").length;
+
+  const displayTemplates = templates.map((t) => ({
+    ...t,
+    displayStatus: getStatus(t),
+    lastSubmitted: t.updated_at ? new Date(t.updated_at).toISOString().split("T")[0] : "—",
+  }));
+
+  const { paginated, total } = usePagination(displayTemplates, page, 20);
+
+  /* ── Sync handler (placeholder) ──────────────────────── */
+
+  const handleSync = async () => {
+    setSyncing(true);
+    // In production, this would call a server action to sync with WhatsApp API
+    await new Promise((r) => setTimeout(r, 1500));
+    setSyncing(false);
+    setRefreshKey(k => k + 1);
+  };
+
+  /* ── Loading state ───────────────────────────────────── */
+
+  if (loading) {
+    return (
+      <div className="page-content">
+        <PageHeader title="WhatsApp Templates" subtitle="Loading…" />
+        <div className="flex items-center justify-center py-24 text-gray-5">
+          <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading templates…
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Render ──────────────────────────────────────────── */
 
   return (
     <div className="page-content">
-      {/* ── Header ──────────────────────────────────── */}
+      {/* Header */}
       <PageHeader
         title="WhatsApp Templates"
         subtitle={`${templates.length} template${templates.length !== 1 ? "s" : ""}`}
         actions={
-          <Button variant="primary" size="sm" onClick={() => router.push("/app/admin/whatsapp/submit")}>
-            <Plus size={12} className="mr-1" /> Submit New Template
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={handleSync} disabled={syncing}>
+              <RefreshCw className={`w-3 h-3 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing…" : "Sync Status"}
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => router.push("/app/admin/whatsapp/submit")}
+            >
+              <Plus size={12} className="mr-1" /> Submit New Template
+            </Button>
+          </div>
         }
       />
 
-      {/* ── KPI Strip ───────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-4 mb-4 mt-4">
-        <div className="pm-dash-card px-5 py-4">
-          <div className="text-green text-[22px] font-display font-bold">
-            {approvedCount}
-          </div>
-          <div className="text-[11px] text-gray-5 font-mono mt-0.5">
-            Approved Templates
-          </div>
+      {/* KPI Strip */}
+      <div className="pm-dash-krow pm-dash-krow-4 mb-6 mt-4">
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kn grn">{approvedCount}</div>
+          <div className="pm-dash-kl">Approved Templates</div>
         </div>
-
-        <div className="pm-dash-card px-5 py-4">
-          <div className="text-yellow text-[22px] font-display font-bold">
-            {pendingCount}
-          </div>
-          <div className="text-[11px] text-gray-5 font-mono mt-0.5">
-            Pending Review
-          </div>
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kn">{pendingCount}</div>
+          <div className="pm-dash-kl">Pending Review</div>
         </div>
-
-        <div className="pm-dash-card px-5 py-4">
-          <div className="text-red text-[22px] font-display font-bold">
-            {rejectedCount}
-          </div>
-          <div className="text-[11px] text-gray-5 font-mono mt-0.5">
-            Rejected
-          </div>
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kn red">{rejectedCount}</div>
+          <div className="pm-dash-kl">Rejected</div>
         </div>
-
-        <div className="pm-dash-card px-5 py-4">
-          <div className="text-white text-[22px] font-display font-bold">
-            {totalSentThisMonth.toLocaleString()}
-          </div>
-          <div className="text-[11px] text-gray-5 font-mono mt-0.5">
-            Total Sent This Month
-          </div>
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kn">{templates.length}</div>
+          <div className="pm-dash-kl">Total Templates</div>
         </div>
       </div>
 
-      {/* ── Templates Table ─────────────────────────── */}
+      {/* Templates Table */}
       <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#1A1A1A]">
-              {[
-                "Template Name",
-                "Category",
-                "Status",
-                "Last Submitted",
-                "Actions",
-              ].map((h) => (
+              {["Template Name", "Type", "Status", "Last Updated", "Actions"].map((h) => (
                 <th
                   key={h}
                   className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
@@ -165,40 +175,29 @@ export default function WhatsAppTemplatesPage() {
                 key={tmpl.id}
                 className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors"
               >
-                {/* Name */}
                 <td className="px-4 py-3">
-                  <span className="font-display text-[13px] font-semibold text-white">
+                  <span className="font-display text-[13px] font-semibold">
                     {tmpl.name}
                   </span>
                 </td>
-
-                {/* Category */}
                 <td className="px-4 py-3">
-                  <span className="intent-tag text-[9px]">
-                    {tmpl.category}
-                  </span>
+                  <span className="intent-tag text-[9px]">{tmpl.type}</span>
                 </td>
-
-                {/* Status */}
                 <td className="px-4 py-3">
                   <StatusBadge
-                    variant={STATUS_BADGE_MAP[tmpl.status]}
+                    variant={STATUS_BADGE_MAP[tmpl.displayStatus]}
                     className={
-                      tmpl.status === "Rejected"
+                      tmpl.displayStatus === "Rejected"
                         ? "text-red! border-red/20! bg-red/10!"
                         : ""
                     }
                   >
-                    {tmpl.status}
+                    {tmpl.displayStatus}
                   </StatusBadge>
                 </td>
-
-                {/* Last submitted */}
                 <td className="px-4 py-3 text-[11px] text-gray-5 font-mono">
                   {tmpl.lastSubmitted}
                 </td>
-
-                {/* Actions */}
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Button
@@ -206,16 +205,16 @@ export default function WhatsAppTemplatesPage() {
                       size="sm"
                       className="py-1! px-2.5! text-[10px] hover:bg-yellow/10! hover:text-yellow!"
                       title="Sync status with WhatsApp"
-                      onClick={() => router.push("/app/admin/whatsapp")}
+                      onClick={handleSync}
                     >
-                      <RefreshCw className="w-3 h-3" />
+                      <RefreshCw className={`w-3 h-3 ${syncing ? "animate-spin" : ""}`} />
                     </Button>
                     <Button
                       variant="secondary"
                       size="sm"
                       className="py-1! px-2.5! text-[10px] hover:bg-white/10!"
                       title="View template details"
-                      onClick={() => router.push("/app/admin/whatsapp")}
+                      onClick={() => router.push("/app/admin/whatsapp/submit")}
                     >
                       <Eye className="w-3 h-3" />
                     </Button>
@@ -228,24 +227,23 @@ export default function WhatsAppTemplatesPage() {
 
         {templates.length === 0 && (
           <div className="py-12 text-center text-[13px] text-gray-5">
-            No templates found.
+            No WhatsApp templates yet. Submit your first template to get started.
           </div>
         )}
         <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
 
-      {/* ── API Connection Status ───────────────────── */}
+      {/* API Connection Status */}
       <div className="pm-dash-card px-6 py-5 mt-4 mb-8">
         <h3 className="font-display text-[15px] font-bold mb-4">
           API Connection Status
         </h3>
 
         <div className="space-y-3">
-          {/* WABA ID (masked) */}
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-gray-5 font-mono">WABA ID</span>
-            <span className="text-[12px] text-gray-4 font-mono">
-              {wabaIdHidden ? "••••••••••" : "1234567890"}
+            <span className="text-[12px] font-mono">
+              {wabaIdHidden ? "••••••••••" : "Not configured"}
               <button
                 onClick={() => setWabaIdHidden((prev) => !prev)}
                 className="ml-2 text-[10px] text-yellow hover:underline"
@@ -255,22 +253,16 @@ export default function WhatsAppTemplatesPage() {
             </span>
           </div>
 
-          {/* Phone Number ID */}
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-5 font-mono">
-              Phone Number ID
-            </span>
-            <span className="text-[12px] text-gray-4 font-mono">
-              +254712345678
+            <span className="text-[11px] text-gray-5 font-mono">Phone Number</span>
+            <span className="text-[12px] font-mono text-gray-5">
+              Configure in Settings → Integrations
             </span>
           </div>
 
-          {/* Business Account Status */}
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-5 font-mono">
-              Business Account Status
-            </span>
-            <span className="badge badge-active">Connected</span>
+            <span className="text-[11px] text-gray-5 font-mono">Business Account Status</span>
+            <span className="pm-dash-bdg pm-dash-bdg-n">Not Connected</span>
           </div>
         </div>
 
@@ -283,6 +275,11 @@ export default function WhatsAppTemplatesPage() {
             <Link className="w-3 h-3 mr-1" /> Reconnect
           </Button>
         </div>
+
+        <p className="text-[10px] text-gray-5 mt-4 leading-relaxed">
+          WhatsApp Business API integration is not yet active. Configure your WABA credentials
+          in Settings → Integrations to enable template submission and messaging.
+        </p>
       </div>
 
       <ConfirmActionModal

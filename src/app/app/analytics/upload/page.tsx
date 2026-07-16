@@ -19,7 +19,7 @@ import PageHeader from "@/components/layout/page-header";
 import * as XLSX from "xlsx";
 
 // ── Types ────────────────────────────────────────────────────────
-type UploadFormat = "per_store_sales" | "chain_wide_sales" | "inventory";
+type UploadFormat = "per_store_sales" | "chain_wide_sales" | "inventory" | "sales_transactions" | "stock_movements" | "supplier_details" | "pricing";
 type UploadStep =
   | "select"
   | "confirm_details"
@@ -75,28 +75,59 @@ const STORE_NAME_TO_BRANCH: Record<string, string> = {
   "HQ": "HQ",
   "ENGINEER": "ENG",
 };
-const formatOptions: { value: UploadFormat; label: string; desc: string }[] = [
+const formatOptions: { value: UploadFormat; label: string; desc: string; periodRequired: boolean }[] = [
   {
     value: "per_store_sales",
     label: "Per-store sales report",
     desc: "Single category × single store (e.g. Maize Flour — Nakuru)",
+    periodRequired: true,
   },
   {
     value: "chain_wide_sales",
     label: "Chain-wide summary",
     desc: "All products, all stores aggregated (e.g. sales_of_products_by_date)",
+    periodRequired: true,
+  },
+  {
+    value: "sales_transactions",
+    label: "Detailed sales transactions",
+    desc: "Line-item sales with customer, discount, tax details",
+    periodRequired: true,
   },
   {
     value: "inventory",
     label: "Product inventory",
     desc: "Product master with stock levels (e.g. inventory-items)",
+    periodRequired: false,
+  },
+  {
+    value: "stock_movements",
+    label: "Stock movements",
+    desc: "Stock in/out/adjustment records with dates and references",
+    periodRequired: false,
+  },
+  {
+    value: "supplier_details",
+    label: "Supplier details",
+    desc: "Supplier master data — names, contacts, payment terms",
+    periodRequired: false,
+  },
+  {
+    value: "pricing",
+    label: "Price list",
+    desc: "Product pricing tiers, costs, and discount schedules",
+    periodRequired: false,
   },
 ];
 
 const REQUIRED_FIELDS: Record<UploadFormat, string[]> = {
   per_store_sales: ["stock_code", "quantity", "total"],
   chain_wide_sales: ["stock_code", "quantity", "total"],
+  sales_transactions: ["stock_code", "quantity", "total"],
   inventory: ["stock_code", "quantity"],
+  stock_movements: ["stock_code", "quantity"],
+  supplier_details: ["supplier_name"],
+  pricing: ["stock_code", "unit_price"],
 };
 
 const FIELD_DEFINITIONS: Record<
@@ -143,6 +174,101 @@ const FIELD_DEFINITIONS: Record<
     required: false,
     description: "Product sub-category",
   },
+  supplier_name: {
+    label: "Supplier Name",
+    required: true,
+    description: "Supplier company name",
+  },
+  supplier_code: {
+    label: "Supplier Code",
+    required: false,
+    description: "Internal supplier reference",
+  },
+  contact_person: {
+    label: "Contact Person",
+    required: false,
+    description: "Primary contact name",
+  },
+  phone: {
+    label: "Phone",
+    required: false,
+    description: "Contact phone number",
+  },
+  email: {
+    label: "Email",
+    required: false,
+    description: "Contact email address",
+  },
+  payment_terms: {
+    label: "Payment Terms",
+    required: false,
+    description: "Payment terms (e.g. Net 30, COD)",
+  },
+  lead_time_days: {
+    label: "Lead Time (days)",
+    required: false,
+    description: "Average delivery lead time in days",
+  },
+  movement_type: {
+    label: "Movement Type",
+    required: false,
+    description: "in, out, adjustment, transfer, or return",
+  },
+  movement_date: {
+    label: "Movement Date",
+    required: false,
+    description: "Date of stock movement",
+  },
+  reference_number: {
+    label: "Reference Number",
+    required: false,
+    description: "PO, GRN, or internal reference",
+  },
+  batch_number: {
+    label: "Batch Number",
+    required: false,
+    description: "Batch or lot number",
+  },
+  expiry_date: {
+    label: "Expiry Date",
+    required: false,
+    description: "Product expiry date",
+  },
+  tier: {
+    label: "Pricing Tier",
+    required: false,
+    description: "standard, wholesale, retail, etc.",
+  },
+  effective_date: {
+    label: "Effective Date",
+    required: false,
+    description: "Date when price takes effect",
+  },
+  discount_pct: {
+    label: "Discount %",
+    required: false,
+    description: "Discount percentage",
+  },
+  sale_date: {
+    label: "Sale Date",
+    required: false,
+    description: "Date of the transaction",
+  },
+  customer: {
+    label: "Customer",
+    required: false,
+    description: "Customer or buyer name",
+  },
+  tax: {
+    label: "Tax (KES)",
+    required: false,
+    description: "Tax amount",
+  },
+  payment_method: {
+    label: "Payment Method",
+    required: false,
+    description: "Cash, M-Pesa, Card, etc.",
+  },
 };
 
 const KNOWN_COLUMN_SIGNALS = [
@@ -171,6 +297,25 @@ const KNOWN_COLUMN_SIGNALS = [
   "weight (t)",
   "sub category",
   "subcategory",
+  "supplier",
+  "vendor",
+  "contact",
+  "phone",
+  "email",
+  "payment terms",
+  "lead time",
+  "movement type",
+  "movement date",
+  "reference",
+  "batch",
+  "expiry",
+  "tier",
+  "effective date",
+  "discount",
+  "customer",
+  "tax",
+  "vat",
+  "payment method",
 ];
 
 // ── Sheet parsing helpers ────────────────────────────────────────
@@ -365,6 +510,9 @@ export default function AnalyticsUploadPage() {
   // Selections for confirm_details
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const currentFormat = formatOptions.find((f) => f.value === format);
+  const periodRequired = currentFormat?.periodRequired ?? false;
+
   const [selectedPeriodId, setSelectedPeriodId] = useState("");
 
   const requiredFields = useMemo(
@@ -373,7 +521,10 @@ export default function AnalyticsUploadPage() {
   );
 
   const needsBranch =
-    format === "per_store_sales" || format === "inventory";
+    format === "per_store_sales" ||
+    format === "inventory" ||
+    format === "stock_movements" ||
+    format === "sales_transactions";
 
   // ── Dimensions loading ────────────────────────────────────────
 
@@ -413,7 +564,7 @@ export default function AnalyticsUploadPage() {
       setDimensionsLoaded(true);
 
       if (pers.length === 0) {
-        setDimensionsError("No periods found in the database. Create periods in Analytics Settings first.");
+        setDimensionsError("No periods found. You can select 'No period' for reference data, or create periods in Analytics Settings.");
       }
 
       if (metadata) autoMatchDimensions(metadata, brs, cats);
@@ -457,6 +608,25 @@ export default function AnalyticsUploadPage() {
     unit_cost: string;
     weight_tonnes: string;
     sub_category: string;
+    supplier_name: string;
+    supplier_code: string;
+    contact_person: string;
+    phone: string;
+    email: string;
+    payment_terms: string;
+    lead_time_days: string;
+    movement_type: string;
+    movement_date: string;
+    reference_number: string;
+    batch_number: string;
+    expiry_date: string;
+    tier: string;
+    effective_date: string;
+    discount_pct: string;
+    sale_date: string;
+    customer: string;
+    tax: string;
+    payment_method: string;
     status: "ok" | "error";
     message: string;
     raw: Record<string, unknown>;
@@ -478,6 +648,25 @@ export default function AnalyticsUploadPage() {
         unit_cost: "",
         weight_tonnes: "",
         sub_category: "",
+        supplier_name: "",
+        supplier_code: "",
+        contact_person: "",
+        phone: "",
+        email: "",
+        payment_terms: "",
+        lead_time_days: "",
+        movement_type: "",
+        movement_date: "",
+        reference_number: "",
+        batch_number: "",
+        expiry_date: "",
+        tier: "",
+        effective_date: "",
+        discount_pct: "",
+        sale_date: "",
+        customer: "",
+        tax: "",
+        payment_method: "",
         status: "error",
         message: "",
         raw: raw,
@@ -635,21 +824,23 @@ export default function AnalyticsUploadPage() {
       );
       return;
     }
-    if (!selectedPeriodId) {
-      alert("Period is required. Please select a period before continuing.");
+    if (periodRequired && !selectedPeriodId) {
+      alert("Period is required for sales data. Please select or create a period.");
       return;
     }
 
     setConfirming(true);
 
     try {
+      // If period is "no_period", send null
+      const effectivePeriodId = selectedPeriodId === "no_period" ? null : selectedPeriodId || null;
       const uploadRes = await fetch("/api/analytics/uploads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           filename: file.name,
           file_type: format,
-          period_id: selectedPeriodId || null,
+          period_id: effectivePeriodId,
           branch_id: selectedBranchId || null,
           category_id: selectedCategoryId || null,
         }),
@@ -740,6 +931,112 @@ export default function AnalyticsUploadPage() {
           )
         )
           autoMap[h] = "sub_category";
+        else if (
+          ["supplier", "supplier name", "supplier_name", "vendor", "vendor name"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "supplier_name";
+        else if (
+          ["supplier code", "supplier_code", "vendor code"].includes(lower)
+        )
+          autoMap[h] = "supplier_code";
+        else if (
+          ["contact", "contact person", "contact_name", "contact_person"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "contact_person";
+        else if (
+          ["phone", "telephone", "mobile", "tel"].includes(lower)
+        )
+          autoMap[h] = "phone";
+        else if (
+          ["email", "e-mail", "mail"].includes(lower)
+        )
+          autoMap[h] = "email";
+        else if (
+          ["payment terms", "payment_terms", "terms", "pay terms"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "payment_terms";
+        else if (
+          ["lead time", "lead_time", "lead time days", "lead_time_days", "delivery days"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "lead_time_days";
+        else if (
+          ["movement type", "movement_type", "type", "txn type", "transaction type"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "movement_type";
+        else if (
+          ["movement date", "movement_date", "date", "txn date", "transaction date"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "movement_date";
+        else if (
+          ["reference", "reference number", "reference_number", "ref no", "grn", "po number", "po"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "reference_number";
+        else if (
+          ["batch", "batch number", "batch_number", "lot", "lot number"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "batch_number";
+        else if (
+          ["expiry", "expiry date", "expiry_date", "exp date", "exp"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "expiry_date";
+        else if (
+          ["tier", "pricing tier", "price tier", "level"].includes(lower)
+        )
+          autoMap[h] = "tier";
+        else if (
+          ["effective date", "effective_date", "valid from", "start date", "valid_from"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "effective_date";
+        else if (
+          ["discount", "discount %", "discount_pct", "disc %", "reduction"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "discount_pct";
+        else if (
+          ["sale date", "sale_date", "transaction date", "txn date"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "sale_date";
+        else if (
+          ["customer", "client", "buyer", "customer name", "customer_name"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "customer";
+        else if (
+          ["tax", "vat", "tax amount", "tax_amount", "vat amount"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "tax";
+        else if (
+          ["payment method", "payment_method", "pay method", "payment type"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "payment_method";
       });
 
       setColumnMap(autoMap);
@@ -1082,7 +1379,7 @@ export default function AnalyticsUploadPage() {
                   variant="primary"
                   size="sm"
                   onClick={confirmDetailsAndCreateUpload}
-                  disabled={!selectedPeriodId || confirming}
+                  disabled={(periodRequired && !selectedPeriodId) || confirming}
                 >
                   {confirming ? (
                     <>
@@ -1217,6 +1514,9 @@ export default function AnalyticsUploadPage() {
                         className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
                       >
                         <option value="">— Select period —</option>
+                        {!periodRequired && (
+                          <option value="no_period">No period — reference data</option>
+                        )}
                         {periods.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.label} ({p.start_date} — {p.end_date})
@@ -1248,10 +1548,17 @@ export default function AnalyticsUploadPage() {
                   across all stores).
                 </p>
               )}
-              {!selectedPeriodId && (
+              {!periodRequired && !selectedPeriodId && (
+                <p className="text-[10px] text-gray-5 mt-2">
+                  <AlertCircle className="w-3 h-3 inline mr-1" /> This format
+                  doesn&apos;t require a period — select &quot;No period&quot; if this is
+                  reference data.
+                </p>
+              )}
+              {periodRequired && !selectedPeriodId && (
                 <p className="text-[10px] text-yellow mt-2">
                   <AlertCircle className="w-3 h-3 inline mr-1" /> Period is
-                  required — select a period before continuing.
+                  required for sales data — select a period or create one below.
                 </p>
               )}
             </div>

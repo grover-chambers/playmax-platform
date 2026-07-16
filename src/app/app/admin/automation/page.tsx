@@ -1,124 +1,128 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Zap,
   ToggleLeft,
   ToggleRight,
   History,
+  Loader2,
 } from "lucide-react";
 import Button from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import StatusBadge from "@/components/ui/status-badge";
 import Pagination, { usePagination } from "@/components/ui/pagination";
+import { createClient } from "@/lib/supabase/browser";
+
+/* ── Types ─────────────────────────────────────────────── */
 
 interface AutomationRule {
   id: string;
   name: string;
-  trigger: string;
-  action: string;
+  type: string;
   enabled: boolean;
-  runCount: number;
-  lastTriggered: string | null;
-  status: "active" | "paused" | "error";
+  config: Record<string, unknown>;
+  last_triggered_at: string | null;
+  created_at: string;
 }
 
-const initialRules: AutomationRule[] = [
-  {
-    id: "a1",
-    name: "New lead WhatsApp acknowledgement",
-    trigger: "New lead created",
-    action: "Send WhatsApp template + assign round-robin",
-    enabled: true,
-    runCount: 47,
-    lastTriggered: "2 min ago",
-    status: "active",
-  },
-  {
-    id: "a2",
-    name: "48-hour no-reply follow-up task",
-    trigger: "No reply from lead for 48h",
-    action: "Create high-priority task for assigned staff",
-    enabled: true,
-    runCount: 12,
-    lastTriggered: "1h ago",
-    status: "active",
-  },
-  {
-    id: "a3",
-    name: "Booking confirmed → send invoice",
-    trigger: "Booking status → confirmed",
-    action: "Generate draft invoice + notify finance",
-    enabled: true,
-    runCount: 8,
-    lastTriggered: "3h ago",
-    status: "active",
-  },
-  {
-    id: "a4",
-    name: "Milestone due reminder",
-    trigger: "Project milestone due in 3 days",
-    action: "Send email + in-app notification to project lead",
-    enabled: false,
-    runCount: 23,
-    lastTriggered: "2 days ago",
-    status: "paused",
-  },
-  {
-    id: "a5",
-    name: "Stale lead alert (>10 days)",
-    trigger: "Lead status unchanged for 10+ days",
-    action: "Notify CRM admin + move to stale pipeline stage",
-    enabled: true,
-    runCount: 5,
-    lastTriggered: "1 day ago",
-    status: "active",
-  },
-  {
-    id: "a6",
-    name: "Research report published → client notify",
-    trigger: "Research report visible_to_client toggled ON",
-    action: "Send WhatsApp + email to client with portal link",
-    enabled: true,
-    runCount: 3,
-    lastTriggered: "5 days ago",
-    status: "active",
-  },
-  {
-    id: "a7",
-    name: "Invoice overdue escalation",
-    trigger: "Invoice 7 days past due",
-    action: "Send reminder WhatsApp + escalate to finance",
-    enabled: false,
-    runCount: 0,
-    lastTriggered: null,
-    status: "paused",
-  },
-];
+/* ── Helpers ───────────────────────────────────────────── */
+
+function timeAgo(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+/* ── Page ──────────────────────────────────────────────── */
 
 export default function AutomationPage() {
-  const [rules, setRules] = useState<AutomationRule[]>(initialRules);
+  const [rules, setRules] = useState<AutomationRule[]>([]);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [showNewRule, setShowNewRule] = useState(false);
   const [showLog, setShowLog] = useState(false);
 
-  const toggleRule = (id: string) => {
-    setPage(1);
+  /* ── Load automations from Supabase ──────────────────── */
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("automations")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        if (!cancelled) setRules(data ?? []);
+      } catch {
+        if (!cancelled) setRules([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  /* ── Toggle rule enabled/disabled ────────────────────── */
+
+  const toggleRule = async (id: string, currentEnabled: boolean) => {
+    const newEnabled = !currentEnabled;
+
+    // Optimistic update
     setRules((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              enabled: !r.enabled,
-              status: r.enabled ? ("paused" as const) : ("active" as const),
-            }
-          : r,
-      ),
+      prev.map((r) => (r.id === id ? { ...r, enabled: newEnabled } : r))
     );
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("automations")
+        .update({ enabled: newEnabled })
+        .eq("id", id);
+
+      if (error) throw error;
+    } catch {
+      // Revert on failure
+      setRules((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, enabled: currentEnabled } : r))
+      );
+    }
   };
 
+  /* ── Derived data ────────────────────────────────────── */
+
+  const activeCount = rules.filter((r) => r.enabled).length;
+  const pausedCount = rules.filter((r) => !r.enabled).length;
   const { paginated, total } = usePagination(rules, page, 20);
+
+  /* ── Loading state ───────────────────────────────────── */
+
+  if (loading) {
+    return (
+      <div className="page-content">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="font-display text-[18px] font-bold">Automation Rules</h1>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-24 text-gray-5">
+          <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading automations…
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Render ──────────────────────────────────────────── */
 
   return (
     <div className="page-content">
@@ -127,23 +131,15 @@ export default function AutomationPage() {
         <div>
           <h1 className="font-display text-[18px] font-bold">Automation Rules</h1>
           <p className="text-[11px] text-gray-5 mt-0.5">
-            {rules.filter((r) => r.enabled).length} active · {rules.length} total
+            {activeCount} active · {rules.length} total
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowLog(true)}
-          >
+          <Button variant="secondary" size="sm" onClick={() => setShowLog(true)}>
             <History className="w-3.5 h-3.5" />
             Run log
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setShowNewRule(true)}
-          >
+          <Button variant="primary" size="sm" onClick={() => setShowNewRule(true)}>
             <Plus className="w-3.5 h-3.5" />
             New rule
           </Button>
@@ -151,102 +147,113 @@ export default function AutomationPage() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-4">
-          <div className="font-display text-[24px] font-bold text-yellow">
-            {rules.filter((r) => r.enabled).length}
-          </div>
-          <div className="text-[11px] text-gray-4 mt-1">Active rules</div>
+      <div className="pm-dash-krow pm-dash-krow-4 mb-6">
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kn">{activeCount}</div>
+          <div className="pm-dash-kl">Active rules</div>
         </div>
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-4">
-          <div className="font-display text-[24px] font-bold text-green">
-            {rules.reduce((sum, r) => sum + r.runCount, 0)}
-          </div>
-          <div className="text-[11px] text-gray-4 mt-1">Total triggers</div>
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kn grn">{rules.length}</div>
+          <div className="pm-dash-kl">Total rules</div>
         </div>
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-4">
-          <div className="font-display text-[24px] font-bold text-blue">
-            {rules.filter((r) => r.status === "paused").length}
-          </div>
-          <div className="text-[11px] text-gray-4 mt-1">Paused</div>
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kn blu">{pausedCount}</div>
+          <div className="pm-dash-kl">Paused</div>
         </div>
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-4">
-          <div className="font-display text-[24px] font-bold text-red">
-            {rules.filter((r) => r.status === "error").length}
-          </div>
-          <div className="text-[11px] text-gray-4 mt-1">Errors</div>
+        <div className="pm-dash-kcard">
+          <div className="pm-dash-kn red">0</div>
+          <div className="pm-dash-kl">Errors</div>
         </div>
       </div>
 
       {/* Rules list */}
-      <div className="bg-black-2 border border-[#1e1e1e] rounded-lg overflow-hidden">
-        <div className="grid grid-cols-[1fr_1.5fr_80px_100px_80px] gap-3 px-5 py-3 border-b border-[#1e1e1e] text-[10px] font-mono text-gray-5 uppercase tracking-wider">
-          <span>Rule</span>
-          <span>Trigger → Action</span>
-          <span className="text-center">Runs</span>
-          <span className="text-center">Last triggered</span>
-          <span className="text-center">Status</span>
-        </div>
-        {paginated.map((rule) => (
-          <div
-            key={rule.id}
-            className="grid grid-cols-[1fr_1.5fr_80px_100px_80px] gap-3 px-5 py-4 border-b border-[#111] hover:bg-white/[.02] transition-colors items-center"
-          >
-            <div>
-              <div className="text-[13px] font-medium">{rule.name}</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-yellow bg-yellow/10 px-2 py-0.5 rounded-full border border-yellow/20 whitespace-nowrap">
-                {rule.trigger}
-              </span>
-              <span className="text-gray-5 text-[10px]">→</span>
-              <span className="text-[11px] text-gray-3">
-                {rule.action}
-              </span>
-            </div>
-            <div className="text-center font-mono text-[12px] text-gray-3">
-              {rule.runCount}
-            </div>
-            <div className="text-center text-[11px] text-gray-5">
-              {rule.lastTriggered || "—"}
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={() => toggleRule(rule.id)}
-                className="cursor-pointer bg-transparent border-none"
-                title={rule.enabled ? "Pause rule" : "Enable rule"}
-              >
-                {rule.enabled ? (
-                  <ToggleRight className="w-5 h-5 text-green" />
-                ) : (
-                  <ToggleLeft className="w-5 h-5 text-gray-5" />
-                )}
-              </button>
-              <StatusBadge
-                variant={
-                  rule.status === "active"
-                    ? "active"
-                    : rule.status === "paused"
-                      ? "review"
-                      : "draft"
-                }
-              >
-                {rule.status}
-              </StatusBadge>
-            </div>
-          </div>
-        ))}
+      <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#1A1A1A]">
+              {["Rule", "Type", "Status", "Last Triggered", "Toggle"].map((h) => (
+                <th
+                  key={h}
+                  className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-12 text-center text-[13px] text-gray-5">
+                  No automation rules yet. Create your first rule to get started.
+                </td>
+              </tr>
+            ) : (
+              paginated.map((rule) => (
+                <tr
+                  key={rule.id}
+                  className="border-b border-[#1A1A1A] hover:bg-white/[.02] transition-colors items-center"
+                >
+                  <td className="px-4 py-3">
+                    <div className="text-[13px] font-medium">{rule.name}</div>
+                    {rule.config && Object.keys(rule.config).length > 0 && (
+                      <div className="text-[10px] text-gray-5 mt-0.5 font-mono">
+                        {rule.config.trigger && (
+                          <span className="pm-dash-bdg pm-dash-bdg-y text-[8px] mr-1">
+                            {String(rule.config.trigger)}
+                          </span>
+                        )}
+                        {rule.config.action && (
+                          <>
+                            <span className="text-gray-5 mx-1">→</span>
+                            <span className="text-[10px] text-gray-4">
+                              {String(rule.config.action)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="pm-dash-bdg pm-dash-bdg-n text-[9px]">{rule.type}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge
+                      variant={rule.enabled ? "active" : "review"}
+                    >
+                      {rule.enabled ? "active" : "paused"}
+                    </StatusBadge>
+                  </td>
+                  <td className="px-4 py-3 text-[11px] text-gray-5 font-mono">
+                    {timeAgo(rule.last_triggered_at)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => toggleRule(rule.id, rule.enabled)}
+                      className="cursor-pointer bg-transparent border-none"
+                      title={rule.enabled ? "Pause rule" : "Enable rule"}
+                    >
+                      {rule.enabled ? (
+                        <ToggleRight className="w-5 h-5 text-green" />
+                      ) : (
+                        <ToggleLeft className="w-5 h-5 text-gray-5" />
+                      )}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
-      <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
 
-      {/* ── New Rule Modal ── */}
+      {/* ── New Rule Modal ──────────────────────────────── */}
       <Modal open={showNewRule} onClose={() => setShowNewRule(false)} title="New Automation Rule">
         <div className="w-full max-w-lg mx-auto">
-          <div className="bg-black-2 border border-[#1e1e1e] rounded-lg">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e1e]">
-              <h2 className="font-display text-[15px] font-bold">
-                New Automation Rule
-              </h2>
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h flex items-center justify-between">
+              <h2 className="font-display text-[15px] font-bold">New Automation Rule</h2>
               <button
                 onClick={() => setShowNewRule(false)}
                 className="text-gray-5 hover:text-white bg-transparent border-none cursor-pointer text-lg"
@@ -254,7 +261,7 @@ export default function AutomationPage() {
                 ✕
               </button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="space-y-4">
               <div>
                 <label className="form-label">Rule name</label>
                 <input
@@ -264,42 +271,26 @@ export default function AutomationPage() {
                 />
               </div>
               <div>
-                <label className="form-label">Trigger</label>
+                <label className="form-label">Type</label>
                 <select className="form-select">
-                  <option>New lead created</option>
-                  <option>Lead status changed</option>
-                  <option>No reply for 48 hours</option>
-                  <option>Booking confirmed</option>
-                  <option>Milestone due in 3 days</option>
-                  <option>Lead stale for 10+ days</option>
-                  <option>Research report published</option>
-                  <option>Invoice overdue</option>
-                </select>
-              </div>
-              <div>
-                <label className="form-label">Action</label>
-                <select className="form-select">
-                  <option>Send WhatsApp template</option>
-                  <option>Send email notification</option>
-                  <option>Create task</option>
-                  <option>Assign staff (round-robin)</option>
-                  <option>Generate invoice</option>
-                  <option>Move pipeline stage</option>
-                  <option>Notify CRM admin</option>
+                  <option value="notification">Notification</option>
+                  <option value="assignment">Assignment</option>
+                  <option value="reminder">Reminder</option>
+                  <option value="follow_up">Follow-up</option>
+                  <option value="escalation">Escalation</option>
                 </select>
               </div>
               <div className="flex gap-3 justify-end pt-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowNewRule(false)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setShowNewRule(false)}>
                   Cancel
                 </Button>
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => setShowNewRule(false)}
+                  onClick={async () => {
+                    // TODO: Collect form values and insert into automations table
+                    setShowNewRule(false);
+                  }}
                 >
                   <Zap className="w-3.5 h-3.5" />
                   Create rule
@@ -310,14 +301,12 @@ export default function AutomationPage() {
         </div>
       </Modal>
 
-      {/* ── Run Log Modal ── */}
+      {/* ── Run Log Modal ───────────────────────────────── */}
       <Modal open={showLog} onClose={() => setShowLog(false)} title="Trigger Log">
         <div className="w-full max-w-lg mx-auto">
-          <div className="bg-black-2 border border-[#1e1e1e] rounded-lg">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e1e]">
-              <h2 className="font-display text-[15px] font-bold">
-                Trigger Log
-              </h2>
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h flex items-center justify-between">
+              <h2 className="font-display text-[15px] font-bold">Trigger Log</h2>
               <button
                 onClick={() => setShowLog(false)}
                 className="text-gray-5 hover:text-white bg-transparent border-none cursor-pointer text-lg"
@@ -325,73 +314,34 @@ export default function AutomationPage() {
                 ✕
               </button>
             </div>
-            <div className="p-5">
-              <div className="space-y-3">
-                {[
-                  {
-                    rule: "New lead WhatsApp acknowledgement",
-                    time: "2 min ago",
-                    result: "success" as const,
-                    detail: "Sent template to +254712345678",
-                  },
-                  {
-                    rule: "48-hour no-reply follow-up",
-                    time: "1h ago",
-                    result: "success" as const,
-                    detail: "Task created → assigned to Amina",
-                  },
-                  {
-                    rule: "Booking confirmed → invoice",
-                    time: "3h ago",
-                    result: "success" as const,
-                    detail: "Draft INV-2026-009 generated",
-                  },
-                  {
-                    rule: "Stale lead alert",
-                    time: "1 day ago",
-                    result: "success" as const,
-                    detail: "Kevian Kenya moved to stale",
-                  },
-                  {
-                    rule: "Invoice overdue escalation",
-                    time: "2 days ago",
-                    result: "failed" as const,
-                    detail:
-                      "Rule is paused — escalation skipped (logged)",
-                  },
-                ].map((entry, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-3 p-3 bg-black-3 rounded"
-                  >
-                    <div
-                      className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                        entry.result === "success"
-                          ? "bg-green"
-                          : "bg-red"
-                      }`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-medium">
-                        {entry.rule}
+            <div>
+              {rules.filter((r) => r.last_triggered_at).length === 0 ? (
+                <div className="py-8 text-center text-[13px] text-gray-5">
+                  No trigger history yet. Rules will log activity when they execute.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {rules
+                    .filter((r) => r.last_triggered_at)
+                    .slice(0, 10)
+                    .map((rule) => (
+                      <div key={rule.id} className="pm-dash-feed-item">
+                        <div className={`pm-dash-feed-dot ${rule.enabled ? "g" : "y"}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="pm-dash-feed-text text-[12px] font-medium">
+                            {rule.name}
+                          </div>
+                          <div className="pm-dash-feed-time text-[10px] font-mono mt-0.5">
+                            {timeAgo(rule.last_triggered_at)}
+                          </div>
+                        </div>
+                        <StatusBadge variant={rule.enabled ? "active" : "review"}>
+                          {rule.enabled ? "success" : "skipped"}
+                        </StatusBadge>
                       </div>
-                      <div className="text-[11px] text-gray-5 mt-0.5">
-                        {entry.detail}
-                      </div>
-                      <div className="text-[10px] text-gray-5 font-mono mt-1">
-                        {entry.time}
-                      </div>
-                    </div>
-                    <StatusBadge
-                      variant={
-                        entry.result === "success" ? "active" : "draft"
-                      }
-                    >
-                      {entry.result}
-                    </StatusBadge>
-                  </div>
-                ))}
-              </div>
+                    ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

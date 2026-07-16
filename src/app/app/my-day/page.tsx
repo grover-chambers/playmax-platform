@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, startTransition } from "react";
+import React, { useState, useEffect, useMemo, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -21,12 +21,13 @@ import Pagination, { usePagination } from "@/components/ui/pagination";
 
 /* ── Data ──────────────────────────────────────────────── */
 
-const defaultKpis = [
-  { value: "—", label: "Tasks due today", sub: "Loading…", cardClass: "red", valueClass: "red" },
-  { value: "—", label: "Unread messages", sub: "Loading…", cardClass: "blu", valueClass: "blu" },
-  { value: "—", label: "My open leads", sub: "Loading…", cardClass: "", valueClass: "" },
-  { value: "—", label: "Deals closed this month", sub: "Loading…", cardClass: "grn", valueClass: "grn" },
-];
+interface Kpi {
+  value: string;
+  label: string;
+  sub: string;
+  cardClass: string;
+  valueClass: string;
+}
 
 interface Task {
   id: string;
@@ -53,6 +54,7 @@ interface Lead {
   intent: string;
   stage: string;
   contact: string;
+  contactStale: boolean;
 }
 
 interface Conversation {
@@ -66,6 +68,14 @@ interface Project {
   name: string;
   type: string;
   progress: number;
+}
+
+/* ── Helpers ───────────────────────────────────────────── */
+
+function projColor(progress: number) {
+  if (progress >= 70) return "bg-green-500";
+  if (progress >= 40) return "bg-yellow-500";
+  return "bg-gray-500";
 }
 
 /* ── Components ────────────────────────────────────────── */
@@ -106,10 +116,16 @@ export default function MyDayPage() {
   const [myLeads, setMyLeads] = useState<Lead[]>([]);
   const [myConversations, setMyConversations] = useState<Conversation[]>([]);
   const [myProjects, setMyProjects] = useState<Project[]>([]);
-  const [myKpis, setMyKpis] = useState(defaultKpis);
   const [loading, setLoading] = useState(true);
   const [leadsPage, setLeadsPage] = useState(1);
   const [convPage, setConvPage] = useState(1);
+  const [rawCounts, setRawCounts] = useState({
+    tasksDueToday: 0,
+    overdue: 0,
+    unreadMessages: 0,
+    activeProjects: 0,
+    pendingApprovals: 0,
+  });
   const { user } = useUser();
 
   useEffect(() => {
@@ -119,13 +135,17 @@ export default function MyDayPage() {
       supabase.from("tasks").select("title, status, priority, due_date").order("priority", { ascending: true }),
       supabase.from("leads").select("company, intent, status, created_at").order("created_at", { ascending: false }),
       supabase.from("conversations").select("id, contact_name, last_message_at, status").order("last_message_at", { ascending: false }),
-      supabase.from("projects").select("name, type, progress").order("updated_at", { ascending: false }).limit(3),
+      supabase.from("projects").select("name, type, progress, status").order("updated_at", { ascending: false }).limit(3),
     ]).then(([tasksRes, leadsRes, convsRes, projsRes]) => {
       if (cancelled) return;
       const dbTasks = tasksRes.status === "fulfilled" ? tasksRes.value.data : null;
       const dbLeads = leadsRes.status === "fulfilled" ? leadsRes.value.data : null;
       const dbConvs = convsRes.status === "fulfilled" ? convsRes.value.data : null;
       const dbProjects = projsRes.status === "fulfilled" ? projsRes.value.data : null;
+
+      let tasksDueToday = 0;
+      let overdue = 0;
+      let pendingApprovals = 0;
 
       if (dbTasks && dbTasks.length > 0) {
         const now = new Date();
@@ -141,10 +161,9 @@ export default function MyDayPage() {
           done: t.status === "done",
           meta: t.due_date ? `Due ${new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "No due date",
         })));
-        const overdue = dbTasks.filter((t: { due_date?: string; status?: string }) => t.due_date && new Date(t.due_date) < now && t.status !== "done").length;
-        setMyKpis(prev => prev.map(k =>
-          k.label === "Tasks due today" ? { ...k, value: String(dueTasks.filter((t: { status?: string }) => t.status !== "done").length || 0), sub: `${overdue} overdue` } : k
-        ));
+        overdue = dbTasks.filter((t: { due_date?: string; status?: string }) => t.due_date && new Date(t.due_date) < now && t.status !== "done").length;
+        tasksDueToday = dueTasks.filter((t: { status?: string }) => t.status !== "done").length || 0;
+        pendingApprovals = dbTasks.filter((t: { status?: string }) => t.status === "todo" || t.status === "in_progress").length || 0;
       }
 
       if (dbLeads && dbLeads.length > 0) {
@@ -153,15 +172,11 @@ export default function MyDayPage() {
           intent: l.intent || "General",
           stage: l.status ? l.status.charAt(0).toUpperCase() + l.status.slice(1) : "New",
           contact: l.created_at ? formatTimeAgo(l.created_at) : "—",
+          contactStale: l.created_at ? formatTimeAgo(l.created_at) === "12d ago" : false,
         })));
-        const openCount = dbLeads.filter((l: { status?: string }) => !["won", "lost"].includes(l.status || "")).length;
-        const wonCount = dbLeads.filter((l: { status?: string }) => l.status === "won").length;
-        setMyKpis(prev => prev.map(k =>
-          k.label === "My open leads" ? { ...k, value: String(openCount || 0) } :
-          k.label === "Deals closed this month" ? { ...k, value: String(wonCount || 0) } : k
-        ));
       }
 
+      let unreadMessages = 0;
       if (dbConvs && dbConvs.length > 0) {
         setMyConversations(dbConvs.map((c: { contact_name?: string; last_message_at?: string; status?: string }) => ({
           name: c.contact_name || "Unknown",
@@ -169,17 +184,21 @@ export default function MyDayPage() {
           time: c.last_message_at ? formatTimeAgo(c.last_message_at) : "—",
           unread: false,
         })));
-        setMyKpis(prev => prev.map(k =>
-          k.label === "Unread messages" ? { ...k, value: String(dbConvs.length), sub: `${dbConvs.length} conversations` } : k
-        ));
+        unreadMessages = dbConvs.length;
       }
 
+      let activeProjects = 0;
       if (dbProjects && dbProjects.length > 0) {
         setMyProjects(dbProjects.map((p: { name: string; type?: string; progress?: number }) => ({
           name: p.name,
           type: p.type || "Project",
           progress: p.progress || 0,
         })));
+        activeProjects = dbProjects.filter((p: { status?: string }) => p.status === "in_progress").length || dbProjects.length;
+      }
+
+      if (!cancelled) {
+        setRawCounts({ tasksDueToday, overdue, unreadMessages, activeProjects, pendingApprovals });
       }
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -187,6 +206,15 @@ export default function MyDayPage() {
 
   useEffect(() => { startTransition(() => { setLeadsPage(1); }); }, [myLeads]);
   useEffect(() => { startTransition(() => { setConvPage(1); }); }, [myConversations]);
+
+  const userName = (user?.user_metadata?.name as string) || user?.email?.split("@")[0] || "there";
+
+  const myKpis: Kpi[] = useMemo(() => [
+    { value: String(rawCounts.tasksDueToday), label: "Tasks due today", sub: `${rawCounts.overdue} overdue`, cardClass: "red", valueClass: "red" },
+    { value: String(rawCounts.unreadMessages), label: "Unread messages", sub: `${rawCounts.unreadMessages} conversations`, cardClass: "blu", valueClass: "blu" },
+    { value: String(rawCounts.activeProjects), label: "Active projects", sub: "In progress", cardClass: "", valueClass: "" },
+    { value: String(rawCounts.pendingApprovals), label: "Pending approvals", sub: "Awaiting review", cardClass: "grn", valueClass: "grn" },
+  ], [rawCounts]);
 
   const { paginated: paginatedLeads, total: totalLeads } = usePagination(myLeads, leadsPage, 20);
   const { paginated: paginatedConvs, total: totalConvs } = usePagination(myConversations, convPage, 20);
@@ -199,8 +227,8 @@ export default function MyDayPage() {
       <>
       <NewTaskModal open={showNewTask} onClose={() => setShowNewTask(false)} />
       <PageHeader
-        title="My Day"
-        subtitle={`${myKpis[0].value} tasks due · ${myKpis[1].value} unread messages · ${myKpis[2].value} active leads`}
+        title={`Good morning, ${userName}`}
+        subtitle={`${myKpis[0].value} tasks due · ${myKpis[1].value} unread messages · ${myKpis[2].value} active projects`}
       />
 
       {/* ── Alerts ──────────────────────────────── */}
@@ -226,15 +254,7 @@ export default function MyDayPage() {
       </div>
 
       {/* ── Two-column grid ─────────────────────── */}
-      <div
-        className="px-7 pb-7"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr",
-          gap: "16px",
-          alignItems: "start",
-        }}
-      >
+      <div className="px-7 pb-7 grid grid-cols-[2fr_1fr] gap-4 items-start">
         {/* ════ LEFT COLUMN ════════════════════════ */}
         <div className="space-y-4">
           {/* ── Today's Tasks ──────────────────── */}
@@ -243,8 +263,7 @@ export default function MyDayPage() {
               <span className="pm-dash-card-t">
                 <CheckCircle2
                   size={13}
-                  className="inline-block mr-1.5 text-yellow"
-                  style={{ marginTop: -2 }}
+                  className="inline-block mr-1.5 text-yellow -mt-0.5"
                 />
                 Today&apos;s tasks
               </span>
@@ -253,6 +272,9 @@ export default function MyDayPage() {
               </Button>
             </div>
             <div className="pm-dash-card-b">
+              {myTasks.length === 0 && (
+                <div className="text-[12px] text-gray-5 py-4 text-center">No tasks due today — enjoy the calm.</div>
+              )}
               {myTasks.map((task) => (
                 <div key={task.id} className="pm-dash-task">
                   <TaskCheckbox done={task.done} />
@@ -280,8 +302,7 @@ export default function MyDayPage() {
               <span className="pm-dash-card-t">
                 <Target
                   size={13}
-                  className="inline-block mr-1.5 text-yellow"
-                  style={{ marginTop: -2 }}
+                  className="inline-block mr-1.5 text-yellow -mt-0.5"
                 />
                 My leads
               </span>
@@ -290,14 +311,7 @@ export default function MyDayPage() {
               </Button>
             </div>
             <div className="pm-dash-card-b-0">
-              <div
-                className="pm-dash-inv-head"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1.5fr 1fr 1fr 1fr",
-                  gap: "8px",
-                }}
-              >
+              <div className="pm-dash-inv-head">
                 <span>Company</span>
                 <span>Intent</span>
                 <span>Stage</span>
@@ -307,15 +321,6 @@ export default function MyDayPage() {
                 <div
                   key={lead.company}
                   className="pm-dash-inv-row"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1.5fr 1fr 1fr 1fr",
-                    gap: "8px",
-                    alignItems: "center",
-                    padding: "9px 14px",
-                    borderBottom: "1px solid #111",
-                    fontSize: "12px",
-                  }}
                 >
                   <span className="pm-dash-inv-client">{lead.company}</span>
                   <span>
@@ -323,17 +328,10 @@ export default function MyDayPage() {
                       {lead.intent}
                     </span>
                   </span>
-                  <span style={{ color: "var(--pm-gray-3)" }}>
+                  <span className="text-gray-400">
                     {lead.stage}
                   </span>
-                  <span
-                    style={{
-                      color:
-                        lead.contact === "12d ago"
-                          ? "var(--pm-red)"
-                          : "var(--pm-gray-5)",
-                    }}
-                  >
+                  <span className={lead.contactStale ? "text-red-400" : "text-gray-500"}>
                     {lead.contact}
                   </span>
                 </div>
@@ -351,31 +349,18 @@ export default function MyDayPage() {
               <span className="pm-dash-card-t">
                 <MessageSquare
                   size={13}
-                  className="inline-block mr-1.5 text-yellow"
-                  style={{ marginTop: -2 }}
+                  className="inline-block mr-1.5 text-yellow -mt-0.5"
                 />
                 My conversations
               </span>
-              <span
-                className="pm-dash-bdg pm-dash-bdg-r"
-                style={{ fontSize: "10px" }}
-              >
+              <span className="pm-dash-bdg pm-dash-bdg-r text-[10px]">
                 2 unread
               </span>
             </div>
             <div className="pm-dash-card-b">
               {paginatedConvs.map((conv) => (
                 <div key={conv.name} className="pm-dash-msg-prev">
-                  <div
-                    className="user-avatar"
-                    style={{
-                      width: 30,
-                      height: 30,
-                      fontSize: 10,
-                      flexShrink: 0,
-                      marginTop: 1,
-                    }}
-                  >
+                  <div className="user-avatar">
                     {conv.name
                       .split(" ")
                       .map((n) => n[0])
@@ -385,29 +370,18 @@ export default function MyDayPage() {
                   <div className="pm-dash-mp-body">
                     <div className="pm-dash-mp-name">
                       {conv.unread && (
-                        <span
-                          className="inline-block w-1.5 h-1.5 rounded-full bg-yellow mr-1.5"
-                          style={{ verticalAlign: "middle" }}
-                        />
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow mr-1.5 align-middle" />
                       )}
                       {conv.name}
                     </div>
                     <div className="pm-dash-mp-text">{conv.text}</div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 9,
-                        color: "var(--pm-gray-5)",
-                        marginTop: 3,
-                      }}
-                    >
+                    <div className="font-mono text-[9px] text-gray-500 mt-0.5">
                       {conv.time}
                     </div>
                   </div>
                   <ChevronRight
                     size={12}
-                    className="text-gray-5 shrink-0"
-                    style={{ marginTop: 4 }}
+                    className="text-gray-500 shrink-0 mt-1"
                   />
                 </div>
               ))}
@@ -421,8 +395,7 @@ export default function MyDayPage() {
               <span className="pm-dash-card-t">
                 <FolderKanban
                   size={13}
-                  className="inline-block mr-1.5 text-yellow"
-                  style={{ marginTop: -2 }}
+                  className="inline-block mr-1.5 text-yellow -mt-0.5"
                 />
                 My projects
               </span>
@@ -430,36 +403,17 @@ export default function MyDayPage() {
             <div className="pm-dash-card-b">
               {myProjects.map((proj) => (
                 <div key={proj.name} className="pm-dash-li">
-                  <div
-                    className="pm-dash-li-dot"
-                    style={{
-                      background:
-                        proj.progress >= 70
-                          ? "var(--pm-green)"
-                          : proj.progress >= 40
-                            ? "var(--pm-yellow)"
-                            : "var(--pm-gray-5)",
-                    }}
-                  />
+                  <div className={`pm-dash-li-dot ${projColor(proj.progress)}`} />
                   <div className="pm-dash-li-body">
                     <div className="pm-dash-li-title">{proj.name}</div>
                     <div className="pm-dash-li-meta">{proj.type}</div>
                     <div className="pm-dash-prog-wrap">
                       <div className="pm-dash-prog-track">
                         <div
-                          className="pm-dash-prog-fill"
-                          style={{
-                            width: `${proj.progress}%`,
-                            background:
-                              proj.progress >= 70
-                                ? "var(--pm-green)"
-                                : proj.progress >= 40
-                                  ? "var(--pm-yellow)"
-                                  : "var(--pm-gray-5)",
-                          }}
+                          className={`pm-dash-prog-fill ${projColor(proj.progress)} w-[${proj.progress}%]`}
                         />
                       </div>
-                      <div className="pm-dash-prog-lbl">
+                      <div className="pm-dash-prog-lbl flex justify-between">
                         <span>{proj.progress}%</span>
                         <span>On track</span>
                       </div>
