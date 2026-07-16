@@ -19,7 +19,7 @@ import PageHeader from "@/components/layout/page-header";
 import * as XLSX from "xlsx";
 
 // ── Types ────────────────────────────────────────────────────────
-type UploadFormat = "per_store_sales" | "chain_wide_sales" | "inventory" | "sales_transactions" | "stock_movements" | "supplier_details" | "pricing";
+type UploadFormat = "per_store_sales" | "chain_wide_sales" | "inventory" | "sales_transactions" | "stock_movements" | "supplier_details" | "pricing" | "product_master" | "supplier_products";
 type UploadStep =
   | "select"
   | "confirm_details"
@@ -118,6 +118,18 @@ const formatOptions: { value: UploadFormat; label: string; desc: string; periodR
     desc: "Product pricing tiers, costs, and discount schedules",
     periodRequired: false,
   },
+  {
+    value: "product_master",
+    label: "Product master catalog",
+    desc: "Stock codes, names, categories — auto-creates missing categories",
+    periodRequired: false,
+  },
+  {
+    value: "supplier_products",
+    label: "Supplier-product allocations",
+    desc: "Links suppliers to their products — auto-creates missing suppliers",
+    periodRequired: false,
+  },
 ];
 
 const REQUIRED_FIELDS: Record<UploadFormat, string[]> = {
@@ -128,6 +140,8 @@ const REQUIRED_FIELDS: Record<UploadFormat, string[]> = {
   stock_movements: ["stock_code", "quantity"],
   supplier_details: ["supplier_name"],
   pricing: ["stock_code", "unit_price"],
+  product_master: ["stock_code", "product_name"],
+  supplier_products: ["stock_code", "supplier_name"],
 };
 
 const FIELD_DEFINITIONS: Record<
@@ -931,6 +945,22 @@ export default function AnalyticsUploadPage() {
           )
         )
           autoMap[h] = "sub_category";
+        else if (
+          ["stock id code", "stock_id_code", "stock id"].includes(lower)
+        )
+          autoMap[h] = "stock_code";
+        else if (
+          ["title", "item description", "item_description"].includes(lower)
+        )
+          autoMap[h] = "product_name";
+        else if (
+          ["supplier code", "supplier_code"].includes(lower)
+        )
+          autoMap[h] = "supplier_code";
+        else if (
+          ["supplier name", "supplier_name", "supplier"].includes(lower)
+        )
+          autoMap[h] = "supplier_name";
         else if (
           ["supplier", "supplier name", "supplier_name", "vendor", "vendor name"].includes(
             lower,

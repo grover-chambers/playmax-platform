@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser || !isAdmin(currentUser)) {
+    if (!currentUser || !isAdmin(currentUser.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
