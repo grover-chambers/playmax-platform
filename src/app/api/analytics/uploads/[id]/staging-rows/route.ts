@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 
+export const dynamic = "force-dynamic";
+
 interface RouteContext {
   params: Promise<{ id: string }>;
 }

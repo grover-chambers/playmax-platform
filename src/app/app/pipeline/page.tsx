@@ -85,7 +85,7 @@ export default function PipelinePage() {
           type: p.type || "Research",
           status: p.status || "draft",
           progress: p.progress || 0,
-          value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+          value: p.value ? `KES ${((p.value ?? 0) / 1000).toFixed(0)}K` : "KES —",
           deadline: p.end_date
             ? new Date(p.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
             : "—",
@@ -118,7 +118,7 @@ export default function PipelinePage() {
         type: p.type || "Research",
         status: p.status || "draft",
         progress: p.progress || 0,
-        value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+        value: p.value ? `KES ${((p.value ?? 0) / 1000).toFixed(0)}K` : "KES —",
         deadline: p.end_date
           ? new Date(p.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
           : "—",
@@ -234,7 +234,7 @@ export default function PipelinePage() {
                 ? `KES ${(
                     projects
                       .filter((p) => p.status === "completed")
-                      .reduce((sum, p) => sum + (parseInt(p.value.replace(/[^0-9]/g, "")) || 0), 0) / 1000
+                      .reduce((sum, p) => sum + (parseInt((p.value ?? "0").replace(/[^0-9]/g, "")) || 0), 0) / 1000
                   ).toFixed(0)}K`
                 : "—"}
             </div>
@@ -304,7 +304,7 @@ export default function PipelinePage() {
                     const staff = p.client || "Unassigned";
                     const existing = staffMap.get(staff) || { progress: 0, projects: 0, closedValue: 0 };
                     existing.projects += 1;
-                    if (p.status === "completed") existing.closedValue += parseInt(p.value.replace(/[^0-9]/g, "")) || 0;
+                    if (p.status === "completed") existing.closedValue += parseInt((p.value ?? "0").replace(/[^0-9]/g, "")) || 0;
                     existing.progress = Math.max(existing.progress, p.progress);
                     staffMap.set(staff, existing);
                   });

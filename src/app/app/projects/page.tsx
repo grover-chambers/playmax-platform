@@ -93,7 +93,7 @@ export default function ProjectsPage() {
           type: p.type || "Research",
           status: (["active", "review", "draft", "confirmed"].includes(p.status) ? p.status : "draft") as Project["status"],
           progress: p.progress || 0,
-          value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+          value: p.value ? `KES ${((p.value ?? 0) / 1000).toFixed(0)}K` : "KES —",
           deadline: fmtDeadline(p.deadline),
         }));
         if (!cancelled) setData(mapped);
@@ -128,7 +128,7 @@ export default function ProjectsPage() {
         type: p.type || "Research",
         status: (["active", "review", "draft", "confirmed"].includes(p.status) ? p.status : "draft") as Project["status"],
         progress: p.progress || 0,
-        value: p.value ? `KES ${(p.value / 1000).toFixed(0)}K` : "KES —",
+        value: p.value ? `KES ${((p.value ?? 0) / 1000).toFixed(0)}K` : "KES —",
         deadline: fmtDeadline(p.deadline),
       }));
       setData(mapped);

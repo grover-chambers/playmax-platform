@@ -154,8 +154,9 @@ function formatDate(dateStr: string | null): string {
 
 function formatCurrency(amount: number | null): string {
   if (amount == null) return "—";
-  if (amount >= 1_000_000) return `KES ${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `KES ${(amount / 1_000).toFixed(0)}K`;
+  const num = amount ?? 0;
+  if (num >= 1_000_000) return `KES ${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `KES ${(num / 1_000).toFixed(0)}K`;
   return `KES ${amount.toLocaleString()}`;
 }
 

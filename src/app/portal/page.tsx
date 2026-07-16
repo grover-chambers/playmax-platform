@@ -119,10 +119,11 @@ function buildActivityFeed(
   return items.slice(0, 8);
 }
 
-function formatCurrency(amount: number): string {
-  if (amount >= 1_000_000) return `KES ${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `KES ${(amount / 1_000).toFixed(0)}K`;
-  return `KES ${amount.toLocaleString()}`;
+function formatCurrency(amount: number | null | undefined): string {
+  const num = amount ?? 0;
+  if (num >= 1_000_000) return `KES ${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `KES ${(num / 1_000).toFixed(0)}K`;
+  return `KES ${num.toLocaleString()}`;
 }
 
 function getGreeting(): string {

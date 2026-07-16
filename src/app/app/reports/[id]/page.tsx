@@ -201,7 +201,7 @@ export default function ReportDetailPage({
                   </div>
                   <div className="text-[22px] font-display font-bold text-white">
                     {m.unit === "KES"
-                      ? `KES ${(m.metric_value / 1000).toFixed(0)}K`
+                      ? `KES ${((m.metric_value ?? 0) / 1000).toFixed(0)}K`
                       : m.unit === "%"
                         ? `${m.metric_value}%`
                         : m.metric_value}

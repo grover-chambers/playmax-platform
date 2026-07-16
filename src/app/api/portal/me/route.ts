@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { getPortalClient } from "@/lib/portal";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const supabase = await getAuthenticatedClient();

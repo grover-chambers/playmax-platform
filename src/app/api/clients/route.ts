@@ -3,6 +3,8 @@ import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/
 import { sanitizeError } from "@/lib/errors";
 import { onboardClient } from "@/lib/onboarding";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const supabase = await getAuthenticatedClient();

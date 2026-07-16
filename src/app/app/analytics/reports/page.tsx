@@ -116,18 +116,21 @@ const tabsWithCategory: ReportTab[] = [
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
-function formatKES(n: number) {
-  if (n >= 1_000_000) return `KES ${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `KES ${(n / 1_000).toFixed(0)}K`;
-  return `KES ${n.toLocaleString()}`;
+function formatKES(n: number | null | undefined) {
+  const num = n ?? 0;
+  if (num >= 1_000_000) return `KES ${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `KES ${(num / 1_000).toFixed(0)}K`;
+  return `KES ${num.toLocaleString()}`;
 }
 
-function growthBadge(current: number, prev: number) {
-  if (prev === 0) return { icon: Minus, bdg: "pm-dash-bdg-n", label: "n/a" };
-  const pct = ((current - prev) / prev) * 100;
-  if (pct > 3) return { icon: TrendingUp, bdg: "pm-dash-bdg-g", label: `+${pct.toFixed(1)}%` };
-  if (pct < -3) return { icon: TrendingDown, bdg: "pm-dash-bdg-r", label: `${pct.toFixed(1)}%` };
-  return { icon: Minus, bdg: "pm-dash-bdg-y", label: `${pct.toFixed(1)}%` };
+function growthBadge(current: number | null | undefined, prev: number | null | undefined) {
+  const c = current ?? 0;
+  const p = prev ?? 0;
+  if (p === 0) return { icon: Minus, bdg: "pm-dash-bdg-n", label: "n/a" };
+  const pct = ((c - p) / p) * 100;
+  if (pct > 3) return { icon: TrendingUp, bdg: "pm-dash-bdg-g", label: `+${(pct ?? 0).toFixed(1)}%` };
+  if (pct < -3) return { icon: TrendingDown, bdg: "pm-dash-bdg-r", label: `${(pct ?? 0).toFixed(1)}%` };
+  return { icon: Minus, bdg: "pm-dash-bdg-y", label: `${(pct ?? 0).toFixed(1)}%` };
 }
 
 function movementBadge(type: string) {
@@ -987,7 +990,7 @@ export default function MarketShareReport() {
               <div className="pm-dash-kn">{stockData.summary.total_movements}</div>
               <div className="pm-dash-kl">Total movements</div>
             </div>
-            {Object.entries(stockData.summary.by_type).map(([type, data]) => (
+            {Object.entries(stockData.summary.by_type ?? {}).map(([type, data]) => (
               <div className="pm-dash-kcard" key={type}>
                 <div className={`pm-dash-kn ${type === "in" ? "grn" : type === "out" ? "red" : ""}`}>
                   {data.quantity.toLocaleString()}
@@ -1007,8 +1010,8 @@ export default function MarketShareReport() {
             </div>
             <div className="pm-dash-card-b">
               <div className="space-y-2.5">
-                {Object.entries(stockData.summary.by_type).map(([type, data]) => {
-                  const maxQty = Math.max(...Object.values(stockData.summary.by_type).map((d) => d.quantity), 1);
+                {Object.entries(stockData.summary.by_type ?? {}).map(([type, data]) => {
+                  const maxQty = Math.max(...Object.values(stockData.summary.by_type ?? {}).map((d) => d.quantity), 1);
                   const pct = (data.quantity / maxQty) * 100;
                   return (
                     <div key={type} className="flex items-center gap-3">

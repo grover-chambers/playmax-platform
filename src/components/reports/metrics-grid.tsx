@@ -25,11 +25,12 @@ interface MetricsGridProps {
   projectId?: string;
 }
 
-function formatValue(value: number, unit: string): string {
-  if (unit === "KES") return `KES ${(value / 1000).toFixed(0)}K`;
-  if (unit === "%") return `${value}%`;
-  if (unit === "count") return String(Math.round(value));
-  return `${value}${unit ? ` ${unit}` : ""}`;
+function formatValue(value: number | null | undefined, unit: string): string {
+  const num = value ?? 0;
+  if (unit === "KES") return `KES ${(num / 1000).toFixed(0)}K`;
+  if (unit === "%") return `${num}%`;
+  if (unit === "count") return String(Math.round(num));
+  return `${num}${unit ? ` ${unit}` : ""}`;
 }
 
 function chartTypeClass(chartType: string): string {

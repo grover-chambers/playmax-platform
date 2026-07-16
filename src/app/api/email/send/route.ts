@@ -6,6 +6,8 @@ import { ResetPasswordEmail } from "@/emails/reset-password";
 import { NotificationEmail } from "@/emails/notification";
 import { sanitizeError } from "@/lib/errors";
 
+export const dynamic = "force-dynamic";
+
 const EMAIL_TYPES = {
   onboarding: OnboardingEmail,
   reset_password: ResetPasswordEmail,

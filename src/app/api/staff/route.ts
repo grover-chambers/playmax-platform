@@ -9,6 +9,8 @@ import {
 import { sanitizeError } from "@/lib/errors";
 import type { StaffMember, UserRole } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 const STAFF_ROLES = [
   "super_admin",
   "cms_admin",

@@ -245,7 +245,7 @@ export function useStaffPerformance() {
           role: getRole(name),
           progress: Math.min(100, Math.round((data.value / 1000000) * 100)),
           leads: data.leads,
-          closedValue: `KES ${(data.value / 1000).toFixed(0)}K`,
+          closedValue: `KES ${((data.value ?? 0) / 1000).toFixed(0)}K`,
         }));
 
         setStaff(staffArray);

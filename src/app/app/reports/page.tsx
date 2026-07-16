@@ -187,7 +187,7 @@ export default function ReportsPage() {
                       className="flex-1 flex flex-col items-center gap-1"
                     >
                       <span className="text-[9px] font-mono text-yellow">
-                        KES {(m.value / 1000).toFixed(0)}K
+                        KES {((m.value ?? 0) / 1000).toFixed(0)}K
                       </span>
                       <div
                         className="w-full rounded-t-sm"
