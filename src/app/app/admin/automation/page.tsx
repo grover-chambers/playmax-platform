@@ -198,7 +198,7 @@ export default function AutomationPage() {
                     <div className="text-[13px] font-medium">{rule.name}</div>
                     {rule.config && Object.keys(rule.config).length > 0 && (
                       <div className="text-[10px] text-gray-5 mt-0.5 font-mono">
-                        {rule.config.trigger && (
+                        {typeof rule.config.trigger === "string" && rule.config.trigger && (
                           <span className="pm-dash-bdg pm-dash-bdg-y text-[8px] mr-1">
                             {String(rule.config.trigger)}
                           </span>
