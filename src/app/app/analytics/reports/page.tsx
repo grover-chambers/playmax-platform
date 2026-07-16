@@ -336,7 +336,7 @@ export default function MarketShareReport() {
           </div>
 
           {/* Bar chart */}
-          <div className="bg-black-3 border border-[#252525] rounded-lg p-5 mb-5">
+          <div className="pm-dash-card pm-dash-card-b mb-5">
             <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-4">
               Branch market share
             </h3>
@@ -369,7 +369,7 @@ export default function MarketShareReport() {
           </div>
 
           {/* Data table */}
-          <div className="bg-black-3 border border-[#252525] rounded-lg overflow-hidden">
+          <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="text-gray-5 font-mono border-b border-[#252525]">
@@ -450,7 +450,7 @@ export default function MarketShareReport() {
           </div>
 
           {/* Bar chart */}
-          <div className="bg-black-3 border border-[#252525] rounded-lg p-5 mb-5">
+          <div className="pm-dash-card pm-dash-card-b mb-5">
             <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-4">
               Category sales
             </h3>
@@ -481,7 +481,7 @@ export default function MarketShareReport() {
           </div>
 
           {/* Data table */}
-          <div className="bg-black-3 border border-[#252525] rounded-lg overflow-hidden">
+          <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="text-gray-5 font-mono border-b border-[#252525]">
@@ -536,7 +536,7 @@ export default function MarketShareReport() {
           </div>
 
           {/* Bar chart */}
-          <div className="bg-black-3 border border-[#252525] rounded-lg p-5 mb-5">
+          <div className="pm-dash-card pm-dash-card-b mb-5">
             <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-4">
               Manufacturer market share
             </h3>
@@ -567,7 +567,7 @@ export default function MarketShareReport() {
           </div>
 
           {/* Data table */}
-          <div className="bg-black-3 border border-[#252525] rounded-lg overflow-hidden">
+          <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="text-gray-5 font-mono border-b border-[#252525]">

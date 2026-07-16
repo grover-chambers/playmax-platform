@@ -54,7 +54,7 @@ export default function PortalSettingsPage() {
             <Link
               key={section.label}
               href={section.href}
-              className="flex items-center gap-4 px-5 py-4 bg-black-2 border border-[#252525] rounded-lg hover:border-yellow/20 transition-colors group no-underline"
+              className="flex items-center gap-4 pm-dash-card pm-dash-card-b hover:border-yellow/20 transition-colors group no-underline"
             >
               <div className="w-10 h-10 rounded-lg bg-yellow/10 border border-yellow/20 flex items-center justify-center flex-shrink-0">
                 <Icon size={18} className="text-yellow" />

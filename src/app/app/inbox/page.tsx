@@ -42,7 +42,7 @@ export default function InboxPage() {
 
   return (
     <div className="flex h-full">
-      <div className="w-[300px] border-r border-[#1A1A1A] bg-black flex flex-col flex-shrink-0">
+      <div className="w-[300px] border-r border-[#1A1A1A] pm-dash-card pm-dash-card-b-0 flex flex-col flex-shrink-0">
         <div className="px-4 py-4 border-b border-[#1A1A1A]">
           <h1 className="font-display text-[15px] font-bold mb-3">Inbox</h1>
           <SearchBox
@@ -75,11 +75,13 @@ export default function InboxPage() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {activeConv ? (
-          <ConversationPanel
-            conversation={activeConv}
-            messages={activeMessages}
-            onSendMessage={handleSendMessage}
-          />
+          <div className="pm-dash-card flex-1">
+            <ConversationPanel
+              conversation={activeConv}
+              messages={activeMessages}
+              onSendMessage={handleSendMessage}
+            />
+          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center text-[13px] text-gray-5">
             Select a conversation

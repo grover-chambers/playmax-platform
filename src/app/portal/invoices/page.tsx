@@ -69,11 +69,11 @@ export default function PortalInvoicesPage() {
       </div>
 
       {invoices.length === 0 ? (
-        <div className="bg-black-2 border border-[#252525] rounded-lg p-8 text-center text-[13px] text-gray-4">
+        <div className="pm-dash-card pm-dash-card-b text-center text-[13px] text-gray-4">
           No invoices yet
         </div>
       ) : (
-        <div className="bg-black-2 border border-[#252525] rounded-lg overflow-hidden">
+        <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#1A1A1A]">

@@ -49,7 +49,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <div>
+    <div className="page-content">
       <PageHeader title="Settings" subtitle="System configuration & team management" />
 
       <div className="border-b border-[#1E1E1E] flex">
@@ -68,7 +68,7 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      <div className="px-7 py-6 bg-[#0D0D0D] min-h-[calc(100vh-140px)]">
+      <div className="px-7 py-6 pm-dash-card min-h-[calc(100vh-140px)]">
         {activeTab === "General" && (
           <div className="max-w-xl space-y-5">
             <Input label="Agency Name" value={agencyName} onChange={(e) => setAgencyName(e.target.value)} />
@@ -91,7 +91,7 @@ export default function SettingsPage() {
             {teamMembers.map((member) => (
               <div
                 key={member.name}
-                className="flex items-center justify-between bg-black-3 border border-[#252525] rounded-sm px-4 py-3"
+                className="flex items-center justify-between pm-dash-card px-4 py-3"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-yellow/15 text-yellow flex items-center justify-center font-display text-[11px] font-bold">
@@ -124,7 +124,7 @@ export default function SettingsPage() {
             {automations.map((automation) => (
               <div
                 key={automation.id}
-                className="flex items-center justify-between bg-black-3 border border-[#252525] rounded-sm px-4 py-4"
+                className="flex items-center justify-between pm-dash-card px-4 py-4"
               >
                 <div className="flex-1 mr-4">
                   <p className="font-display text-[13px] font-semibold text-white">{automation.label}</p>
@@ -156,7 +156,7 @@ export default function SettingsPage() {
             {templates.map((template) => (
               <div
                 key={template.name}
-                className="flex items-center justify-between bg-black-3 border border-[#252525] rounded-sm px-4 py-3"
+                className="flex items-center justify-between pm-dash-card px-4 py-3"
               >
                 <div className="flex items-center gap-4 flex-1">
                   <p className="font-display text-[13px] font-semibold text-white">{template.name}</p>
@@ -178,7 +178,7 @@ export default function SettingsPage() {
             {integrations.map((integration) => (
               <div
                 key={integration.name}
-                className="flex items-center justify-between bg-black-3 border border-[#252525] rounded-sm px-4 py-4"
+                className="flex items-center justify-between pm-dash-card px-4 py-4"
               >
                 <div className="flex items-center gap-3">
                   <p className="font-display text-[13px] font-semibold text-white">{integration.name}</p>

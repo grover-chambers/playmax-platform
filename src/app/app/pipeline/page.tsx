@@ -187,7 +187,7 @@ export default function PipelinePage() {
   }
 
   return (
-    <div>
+    <div className="page-content">
       <PageHeader
         title="Project Pipeline"
         subtitle={`${totalProjects} projects in pipeline`}

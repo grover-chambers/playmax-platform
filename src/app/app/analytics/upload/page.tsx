@@ -939,7 +939,7 @@ export default function AnalyticsUploadPage() {
         {/* Step 1: Format + File Selection                        */}
         {/* ════════════════════════════════════════════════════════ */}
         {(step === "select" || step === "confirm_details") && (
-          <div className="mb-6 p-4 bg-black-3 border border-[#252525] rounded-lg">
+          <div className="pm-dash-card mb-6 p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="font-mono text-[10px] text-gray-5 uppercase tracking-wider block mb-2">
@@ -955,9 +955,9 @@ export default function AnalyticsUploadPage() {
                       className={`text-left p-3 rounded-lg border transition-all cursor-pointer ${
                         format === opt.value
                           ? "border-yellow bg-yellow/5"
-                          : "border-[#252525] bg-black-3 hover:border-[#3A3A3A]"
-                      }`}
-                      disabled={step === "confirm_details"}
+                          : "border-[#252525] bg-transparent hover:border-[#3A3A3A]"
+                        }`}
+                        disabled={step === "confirm_details"}
                     >
                       <div className="font-display text-[11px] font-semibold text-white">
                         {opt.label}
@@ -987,7 +987,7 @@ export default function AnalyticsUploadPage() {
                     className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
                       dragOver
                         ? "border-yellow bg-yellow/5"
-                        : "border-[#252525] bg-black-3 hover:border-[#3A3A3A]"
+                        : "border-[#252525] bg-transparent hover:border-[#3A3A3A]"
                     }`}
                   >
                     <Upload className="w-8 h-8 mx-auto mb-3 text-gray-5" />
@@ -1004,7 +1004,7 @@ export default function AnalyticsUploadPage() {
                     />
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between bg-black-3 border border-[#252525] rounded-lg px-4 py-3">
+                  <div className="flex items-center justify-between pm-dash-card px-4 py-3">
                     <div className="flex items-center gap-3">
                       <FileSpreadsheet className="w-5 h-5 text-green" />
                       <div>
@@ -1101,7 +1101,7 @@ export default function AnalyticsUploadPage() {
 
             {/* Detected metadata */}
             {detectedMeta && (
-              <div className="p-4 bg-black-3 border border-[#252525] rounded-lg mb-4">
+              <div className="pm-dash-card pm-dash-card-b mb-4">
                 <h4 className="font-display text-[11px] font-semibold text-white mb-3">
                   Detected from File
                 </h4>
@@ -1142,7 +1142,7 @@ export default function AnalyticsUploadPage() {
             )}
 
             {/* Dimension selections */}
-            <div className="p-4 bg-black-3 border border-[#252525] rounded-lg">
+            <div className="pm-dash-card pm-dash-card-b">
               <h4 className="font-display text-[11px] font-semibold text-white mb-3">
                 Assign Dimensions
               </h4>
@@ -1293,7 +1293,7 @@ export default function AnalyticsUploadPage() {
                 <ArrowRight className="w-3.5 h-3.5 mr-1" /> Map Columns
               </Button>
             </div>
-            <div className="border border-[#252525] rounded-lg bg-black-3 overflow-hidden max-h-96 overflow-auto">
+            <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden max-h-96 overflow-auto">
               <table className="w-full text-[10px]">
                 <thead>
                   <tr className="text-gray-5 font-mono border-b border-[#252525] sticky top-0 bg-black-3">
@@ -1368,7 +1368,7 @@ export default function AnalyticsUploadPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Source columns */}
-              <div className="border border-[#252525] rounded-lg bg-black-3 p-4 max-h-96 overflow-auto">
+              <div className="pm-dash-card pm-dash-card-b max-h-96 overflow-auto">
                 <h4 className="font-display text-[12px] font-semibold text-white mb-3">
                   Your Columns ({rawHeaders.length})
                 </h4>
@@ -1415,7 +1415,7 @@ export default function AnalyticsUploadPage() {
               </div>
 
               {/* Required fields checklist */}
-              <div className="border border-[#252525] rounded-lg bg-black-3 p-4 max-h-96 overflow-auto">
+              <div className="pm-dash-card pm-dash-card-b max-h-96 overflow-auto">
                 <h4 className="font-display text-[12px] font-semibold text-white mb-3">
                   Required Fields Checklist
                 </h4>
@@ -1519,7 +1519,7 @@ export default function AnalyticsUploadPage() {
               </div>
             </div>
 
-            <div className="border border-[#252525] rounded-lg bg-black-3 overflow-hidden">
+            <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
               <div className="overflow-x-auto max-h-96">
                 <table className="w-full text-[10px]">
                   <thead>
@@ -1616,7 +1616,7 @@ export default function AnalyticsUploadPage() {
         {/* Step 6: Import Result                                  */}
         {/* ════════════════════════════════════════════════════════ */}
         {step === "done" && importResult && (
-          <div className="border border-[#252525] rounded-lg bg-black-3 p-6">
+          <div className="pm-dash-card p-6">
             {importResult.errors.length === 0 ? (
               <div className="flex items-center gap-3 text-green">
                 <CheckCircle className="w-6 h-6" />

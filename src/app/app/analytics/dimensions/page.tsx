@@ -217,7 +217,7 @@ export default function DimensionsPage() {
       </div>
 
       {/* Table */}
-      <div className="border border-[#252525] border-t-0 rounded-b-lg bg-black-3 overflow-hidden">
+      <div className="pm-dash-card overflow-hidden">
         {renderTable()}
       </div>
     </div>

@@ -6,7 +6,6 @@ import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import StatusBadge from "@/components/ui/status-badge";
-import Card from "@/components/ui/card";
 import Avatar from "@/components/ui/avatar";
 import ProgressBar from "@/components/ui/progress-bar";
 import DocumentList from "@/components/documents/document-list";
@@ -197,7 +196,7 @@ export default function ProjectDetailPage() {
   const p = project;
 
   return (
-    <div>
+    <div className="page-content">
       <PageHeader
         title={p.name}
         subtitle={`${p.client} · ${p.type} · Due ${p.deadline}`}
@@ -213,8 +212,8 @@ export default function ProjectDetailPage() {
         }
       />
 
-      <div className="px-7 py-4 grid grid-cols-4 gap-4 border-b border-[#1E1E1E]">
-        <div className="flex items-center gap-3">
+      <div className="pm-dash-krow pm-dash-krow-4 px-7 py-4 border-b border-[#1E1E1E]">
+        <div className="pm-dash-kcard flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-black-4 flex items-center justify-center">
             <Calendar size={15} className="text-yellow" />
           </div>
@@ -227,7 +226,7 @@ export default function ProjectDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="pm-dash-kcard flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-black-4 flex items-center justify-center">
             <DollarSign size={15} className="text-yellow" />
           </div>
@@ -240,7 +239,7 @@ export default function ProjectDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="pm-dash-kcard flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-black-4 flex items-center justify-center">
             <Users size={15} className="text-yellow" />
           </div>
@@ -263,7 +262,7 @@ export default function ProjectDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="pm-dash-kcard flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-black-4 flex items-center justify-center">
             <FileText size={15} className="text-yellow" />
           </div>
@@ -294,11 +293,11 @@ export default function ProjectDetailPage() {
         ))}
       </div>
 
-      <div className="p-7">
+      <div className="pm-dash-card pm-dash-card-b">
         {activeTab === "overview" && (
           <div className="grid grid-cols-3 gap-5">
             <div className="col-span-2 space-y-5">
-              <Card hover={false} className="p-5">
+              <div className="pm-dash-card p-5">
                 <h3 className="font-display text-[13px] font-semibold mb-4">
                   Deliverables
                 </h3>
@@ -326,8 +325,8 @@ export default function ProjectDetailPage() {
                     </div>
                   ))}
                 </div>
-              </Card>
-              <Card hover={false} className="p-5">
+              </div>
+              <div className="pm-dash-card p-5">
                 <h3 className="font-display text-[13px] font-semibold mb-4">
                   Progress
                 </h3>
@@ -335,10 +334,10 @@ export default function ProjectDetailPage() {
                 <div className="mt-4 text-[11px] text-gray-5">
                   Budget utilization: {p.spent} of {p.budget}
                 </div>
-              </Card>
+              </div>
             </div>
             <div className="space-y-5">
-              <Card hover={false} className="p-5">
+              <div className="pm-dash-card p-5">
                 <h3 className="font-display text-[13px] font-semibold mb-4">
                   Details
                 </h3>
@@ -379,13 +378,13 @@ export default function ProjectDetailPage() {
                     </span>
                   </div>
                 </div>
-              </Card>
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === "deliverables" && (
-          <Card hover={false} className="p-5">
+          <div className="pm-dash-card p-5">
             <div className="space-y-3">
               {p.deliverables.map((d) => (
                 <div
@@ -407,11 +406,11 @@ export default function ProjectDetailPage() {
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         )}
 
         {activeTab === "communications" && (
-          <Card hover={false} className="p-5">
+          <div className="pm-dash-card p-5">
             <div className="space-y-4">
               {p.communications.map((c, i) => (
                 <div
@@ -435,11 +434,11 @@ export default function ProjectDetailPage() {
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         )}
 
         {activeTab === "tasks" && (
-          <Card hover={false} className="p-5">
+          <div className="pm-dash-card p-5">
             <div className="space-y-2">
               {p.tasks.map((t, i) => (
                 <div
@@ -471,17 +470,17 @@ export default function ProjectDetailPage() {
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         )}
 
         {activeTab === "documents" && (
-          <Card hover={false} className="p-5">
+          <div className="pm-dash-card p-5">
             <div className="flex items-center justify-between mb-4">
               <span className="text-[12px] font-semibold text-white">Project Documents</span>
               <DocumentUpload projectId={p.id} clientId={p.client} onUploaded={() => {}} />
             </div>
             <DocumentList projectId={p.id} canManage={true} />
-          </Card>
+          </div>
         )}
       </div>
     </div>

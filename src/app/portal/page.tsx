@@ -147,7 +147,7 @@ export default function PortalOverviewPage() {
   const firstName = client?.name?.split(" ")[0] || "there";
 
   return (
-    <div>
+    <div className="page-content portal-page">
       {/* ── Welcome strip ──────────────────────────── */}
       <div className="pm-dash-welcome">
         <div>

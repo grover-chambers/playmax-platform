@@ -229,7 +229,7 @@ export default function ResearchPage() {
   return (
     <div className="flex h-full">
       {/* ── LEFT PANEL: Research List ─────────────────── */}
-      <div className="w-[420px] border-r border-[#1E1E1E] bg-black flex flex-col flex-shrink-0">
+      <div className="w-[420px] border-r border-[#1E1E1E] pm-dash-card pm-dash-card-b-0 flex flex-col flex-shrink-0">
         <PageHeader
           title="Research & Data"
           subtitle="12 active projects · 5 pending review"
@@ -368,7 +368,7 @@ export default function ResearchPage() {
       </div>
 
       {/* ── RIGHT PANEL: Research Detail ──────────────── */}
-      <div className="flex-1 bg-[#0D0D0D] overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pm-dash-card">
         {selected && (
           <div>
             {/* Detail Header */}
@@ -394,11 +394,11 @@ export default function ResearchPage() {
 
             <div className="px-7 py-5 space-y-6">
               {/* KPI Big Row */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="pm-dash-krow grid grid-cols-2 gap-4">
                 {selected.kpis.map((kpi) => (
                   <div
                     key={kpi.label}
-                    className="bg-black-3 border border-[#252525] rounded-lg p-5"
+                    className="pm-dash-kcard"
                   >
                     <div className="font-display text-[28px] font-bold text-yellow leading-none">
                       {kpi.value}
@@ -421,7 +421,7 @@ export default function ResearchPage() {
               </div>
 
               {/* Reports & Deliverables */}
-              <div>
+              <div className="pm-dash-card pm-dash-card-b">
                 <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-3">
                   Reports &amp; Deliverables
                 </h3>
@@ -433,7 +433,7 @@ export default function ResearchPage() {
                     return (
                       <div
                         key={report.name}
-                        className="flex items-center justify-between bg-black-3 border border-[#252525] rounded-md px-4 py-3"
+                        className="flex items-center justify-between pm-dash-card px-4 py-3"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <span className="text-[16px] flex-shrink-0">

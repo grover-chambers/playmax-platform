@@ -6,7 +6,6 @@ import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
 import Avatar from "@/components/ui/avatar";
 import StatusBadge from "@/components/ui/status-badge";
-import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
 import Pagination, { usePagination } from "@/components/ui/pagination";
 
@@ -161,7 +160,7 @@ export default function ClientDetailPage() {
   const { paginated: paginatedActivity, total: totalActivity } = usePagination(c.activity, activityPage, 20);
 
   return (
-    <div>
+    <div className="page-content">
       <PageHeader
         title={c.company}
         subtitle={`${c.industry} · Client since ${c.since}`}
@@ -195,11 +194,11 @@ export default function ClientDetailPage() {
         ))}
       </div>
 
-      <div className="p-7">
+      <div className="pm-dash-card pm-dash-card-b">
         {activeTab === "overview" && (
           <div className="grid grid-cols-3 gap-5">
             <div className="col-span-2 space-y-5">
-              <Card hover={false} className="p-5">
+              <div className="pm-dash-card p-5">
                 <h3 className="font-display text-[13px] font-semibold mb-4">
                   Company Info
                 </h3>
@@ -223,8 +222,8 @@ export default function ClientDetailPage() {
                     <span className="text-[12px] text-gray-3">{c.phone}</span>
                   </div>
                 </div>
-              </Card>
-              <Card hover={false} className="p-5">
+              </div>
+              <div className="pm-dash-card p-5">
                 <h3 className="font-display text-[13px] font-semibold mb-4">
                   Active Projects
                 </h3>
@@ -251,8 +250,8 @@ export default function ClientDetailPage() {
                     </div>
                   ))}
                 </div>
-              </Card>
-              <Card hover={false} className="p-5">
+              </div>
+              <div className="pm-dash-card p-5">
                 <h3 className="font-display text-[13px] font-semibold mb-4">
                   Recent Communications
                 </h3>
@@ -276,10 +275,10 @@ export default function ClientDetailPage() {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </div>
             <div className="space-y-5">
-              <Card hover={false} className="p-5">
+              <div className="pm-dash-card p-5">
                 <h3 className="font-display text-[13px] font-semibold mb-4">
                   Account Details
                 </h3>
@@ -320,8 +319,8 @@ export default function ClientDetailPage() {
                     </span>
                   </div>
                 </div>
-              </Card>
-              <Card hover={false} className="p-5">
+              </div>
+              <div className="pm-dash-card p-5">
                 <h3 className="font-display text-[13px] font-semibold mb-4">
                   Recent Invoices
                 </h3>
@@ -350,7 +349,7 @@ export default function ClientDetailPage() {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </div>
           </div>
         )}
@@ -358,7 +357,7 @@ export default function ClientDetailPage() {
         {activeTab === "projects" && (
           <div className="grid grid-cols-2 gap-4">
             {c.projects.map((p) => (
-              <Card key={p.name} className="p-5">
+              <div key={p.name} className="pm-dash-card p-5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-display text-[13px] font-semibold">
                     {p.name}
@@ -374,13 +373,13 @@ export default function ClientDetailPage() {
                     {p.value}
                   </span>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         )}
 
         {activeTab === "communications" && (
-          <Card hover={false} className="p-5">
+          <div className="pm-dash-card p-5">
             <div className="space-y-4">
               {c.communications.map((comm, i) => (
                 <div
@@ -404,11 +403,11 @@ export default function ClientDetailPage() {
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         )}
 
         {activeTab === "invoices" && (
-          <Card hover={false} className="p-5">
+          <div className="pm-dash-card p-5">
             <table className="w-full">
               <thead>
                 <tr className="text-[10px] font-mono text-gray-5 uppercase tracking-wider border-b border-[#1E1E1E]">
@@ -446,11 +445,11 @@ export default function ClientDetailPage() {
               </tbody>
             </table>
             <Pagination page={invoicePage} pageSize={20} total={totalInvoices} onPageChange={setInvoicePage} />
-          </Card>
+          </div>
         )}
 
         {activeTab === "activity" && (
-          <Card hover={false} className="p-5">
+          <div className="pm-dash-card p-5">
             <div className="space-y-0">
               {paginatedActivity.map((a, i) => (
                 <div
@@ -477,7 +476,7 @@ export default function ClientDetailPage() {
               ))}
             </div>
             <Pagination page={activityPage} pageSize={20} total={totalActivity} onPageChange={setActivityPage} />
-          </Card>
+          </div>
         )}
       </div>
     </div>

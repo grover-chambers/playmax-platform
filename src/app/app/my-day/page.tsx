@@ -306,7 +306,7 @@ export default function MyDayPage() {
   const { paginated: paginatedConvs, total: totalConvs } = usePagination(myConversations, convPage, 20);
 
   return (
-    <div>
+    <div className="page-content">
       <NewTaskModal open={showNewTask} onClose={() => setShowNewTask(false)} />
       <PageHeader
         title="My Day"

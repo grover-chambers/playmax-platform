@@ -151,26 +151,26 @@ export default function AutomationPage() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-4">
+      <div className="pm-dash-krow pm-dash-krow-4 mb-6">
+        <div className="pm-dash-kcard">
           <div className="font-display text-[24px] font-bold text-yellow">
             {rules.filter((r) => r.enabled).length}
           </div>
           <div className="text-[11px] text-gray-4 mt-1">Active rules</div>
         </div>
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-4">
+        <div className="pm-dash-kcard">
           <div className="font-display text-[24px] font-bold text-green">
             {rules.reduce((sum, r) => sum + r.runCount, 0)}
           </div>
           <div className="text-[11px] text-gray-4 mt-1">Total triggers</div>
         </div>
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-4">
+        <div className="pm-dash-kcard">
           <div className="font-display text-[24px] font-bold text-blue">
             {rules.filter((r) => r.status === "paused").length}
           </div>
           <div className="text-[11px] text-gray-4 mt-1">Paused</div>
         </div>
-        <div className="bg-black-2 border border-[#1e1e1e] rounded-lg p-4">
+        <div className="pm-dash-kcard">
           <div className="font-display text-[24px] font-bold text-red">
             {rules.filter((r) => r.status === "error").length}
           </div>
@@ -179,7 +179,7 @@ export default function AutomationPage() {
       </div>
 
       {/* Rules list */}
-      <div className="bg-black-2 border border-[#1e1e1e] rounded-lg overflow-hidden">
+      <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
         <div className="grid grid-cols-[1fr_1.5fr_80px_100px_80px] gap-3 px-5 py-3 border-b border-[#1e1e1e] text-[10px] font-mono text-gray-5 uppercase tracking-wider">
           <span>Rule</span>
           <span>Trigger → Action</span>

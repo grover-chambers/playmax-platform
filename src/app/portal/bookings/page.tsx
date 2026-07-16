@@ -67,7 +67,7 @@ export default function PortalBookingsPage() {
       </div>
 
       {bookings.length === 0 ? (
-        <div className="bg-black-2 border border-[#252525] rounded-lg p-8 text-center text-[13px] text-gray-4">
+        <div className="pm-dash-card pm-dash-card-b text-center text-[13px] text-gray-4">
           No bookings yet
         </div>
       ) : (
@@ -75,7 +75,7 @@ export default function PortalBookingsPage() {
           {bookings.map((b) => (
             <div
               key={b.id}
-              className="bg-black-2 border border-[#252525] rounded-lg px-6 py-5 flex items-start justify-between gap-4"
+              className="pm-dash-card pm-dash-card-b flex items-start justify-between gap-4"
             >
               <div className="flex items-start gap-4 flex-1 min-w-0">
                 <div className="w-12 h-12 rounded-lg bg-black-3 border border-[#2A2A2A] flex items-center justify-center flex-shrink-0">

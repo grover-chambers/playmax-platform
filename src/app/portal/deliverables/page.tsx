@@ -62,7 +62,7 @@ export default function PortalDeliverablesPage() {
       </div>
 
       {deliverables.length === 0 ? (
-        <div className="bg-black-2 border border-[#252525] rounded-lg p-8 text-center text-[13px] text-gray-4">
+        <div className="pm-dash-card pm-dash-card-b text-center text-[13px] text-gray-4">
           No deliverables available yet
         </div>
       ) : (
@@ -72,7 +72,7 @@ export default function PortalDeliverablesPage() {
             return (
               <div
                 key={d.id}
-                className="bg-black-3 border border-black-4 rounded-lg px-5 py-5 flex items-start justify-between"
+                className="pm-dash-card pm-dash-card-b flex items-start justify-between"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-yellow/10 border border-yellow/20 flex items-center justify-center flex-shrink-0">

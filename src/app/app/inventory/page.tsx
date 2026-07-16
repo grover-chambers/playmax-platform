@@ -115,7 +115,7 @@ export default function InventoryPage() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 bg-[#0D0D0D]">
+        <div className="flex-1 overflow-y-auto pm-dash-card pm-dash-card-b">
           <div className="text-[11px] text-gray-5 mb-4">
             Showing {filtered.length} of {sampleInventory.length} sites
           </div>
@@ -137,10 +137,12 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      <InventoryDetailPanel
-        item={activeItem}
-        onBook={() => setShowBookingModal(true)}
-      />
+      <div className="pm-dash-card">
+        <InventoryDetailPanel
+          item={activeItem}
+          onBook={() => setShowBookingModal(true)}
+        />
+      </div>
 
       {showBookingModal && (
         <BookingModal
