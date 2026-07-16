@@ -203,7 +203,7 @@ export default function AutomationPage() {
                             {String(rule.config.trigger)}
                           </span>
                         )}
-                        {rule.config.action && (
+                        {typeof rule.config.action === "string" && rule.config.action && (
                           <>
                             <span className="text-gray-5 mx-1">→</span>
                             <span className="text-[10px] text-gray-4">
