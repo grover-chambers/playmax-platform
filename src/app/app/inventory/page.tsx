@@ -182,38 +182,6 @@ export default function InventoryPage() {
             {mode === "list" && <List className="w-3.5 h-3.5" />}
             {mode === "map" && <MapPin className="w-3.5 h-3.5" />}
           </button>
-<<<<<<< HEAD
-        </div>
-
-        <div className="flex-1 overflow-y-auto pm-dash-card pm-dash-card-b">
-          <div className="text-[11px] text-gray-5 mb-4">
-            Showing {filtered.length} of {sampleInventory.length} sites
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {filtered.map((item) => (
-              <InventoryCardFull
-                key={item.id}
-                item={item}
-                isActive={item.id === selectedItem}
-                onClick={() => setSelectedItem(item.id)}
-              />
-            ))}
-          </div>
-          {filtered.length === 0 && (
-            <div className="py-16 text-center text-[13px] text-gray-5">
-              No inventory matches your current filters.
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="pm-dash-card">
-        <InventoryDetailPanel
-          item={activeItem}
-          onBook={() => setShowBookingModal(true)}
-        />
-      </div>
-=======
         ))}
       </div>
 
@@ -223,7 +191,7 @@ export default function InventoryPage() {
         value={search}
         onChange={setSearch}
       />
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
 
       <div className="flex gap-1.5">
         {typeFilters.map((f) => (

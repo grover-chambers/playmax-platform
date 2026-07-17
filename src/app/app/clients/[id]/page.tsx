@@ -15,11 +15,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import PageHeader from "@/components/layout/page-header";
 import Avatar from "@/components/ui/avatar";
-<<<<<<< HEAD
-import StatusBadge from "@/components/ui/status-badge";
-import Button from "@/components/ui/button";
-=======
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
 import Pagination, { usePagination } from "@/components/ui/pagination";
 import { createClient } from "@/lib/supabase/browser";
 import { formatTimeAgo } from "@/lib/utils";
@@ -366,58 +362,6 @@ export default function ClientDetailPage() {
         ))}
       </div>
 
-<<<<<<< HEAD
-      <div className="pm-dash-card pm-dash-card-b">
-        {activeTab === "overview" && (
-          <div className="grid grid-cols-3 gap-5">
-            <div className="col-span-2 space-y-5">
-              <div className="pm-dash-card p-5">
-                <h3 className="font-display text-[13px] font-semibold mb-4">
-                  Company Info
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2.5">
-                    <MapPin size={13} className="text-gray-5" />
-                    <span className="text-[12px] text-gray-3">
-                      {c.location}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <Globe size={13} className="text-gray-5" />
-                    <span className="text-[12px] text-gray-3">{c.website}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <Mail size={13} className="text-gray-5" />
-                    <span className="text-[12px] text-gray-3">{c.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <Phone size={13} className="text-gray-5" />
-                    <span className="text-[12px] text-gray-3">{c.phone}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="pm-dash-card p-5">
-                <h3 className="font-display text-[13px] font-semibold mb-4">
-                  Active Projects
-                </h3>
-                <div className="space-y-3">
-                  {c.projects.map((p) => (
-                    <div
-                      key={p.name}
-                      className="flex items-center justify-between py-2 border-b border-[#1E1E1E] last:border-0"
-                    >
-                      <div>
-                        <div className="text-[12px] font-semibold text-white">
-                          {p.name}
-                        </div>
-                        <div className="text-[10px] text-gray-5 mt-0.5">
-                          {p.type} · Due {p.deadline}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-display text-[11px] font-bold text-yellow">
-                          {p.value}
-=======
       <div className="p-7">
         {/* ═══════════════════════════════════════════ OVERVIEW ═══════ */}
         {activeTab === "overview" && (
@@ -497,24 +441,12 @@ export default function ClientDetailPage() {
                         <Phone size={13} className="text-gray-5" />
                         <span className="text-[12px] text-gray-3">
                           {c.phone || "—"}
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
-<<<<<<< HEAD
-              </div>
-              <div className="pm-dash-card p-5">
-                <h3 className="font-display text-[13px] font-semibold mb-4">
-                  Recent Communications
-                </h3>
-                <div className="space-y-3">
-                  {c.communications.map((comm, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between py-2 border-b border-[#1E1E1E] last:border-0"
-=======
 
                 {/* Active Projects */}
                 <div className="pm-dash-card">
@@ -527,7 +459,7 @@ export default function ClientDetailPage() {
                         setActiveTab("projects");
                       }}
                       className="text-[10px] text-yellow hover:underline"
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
                     >
                       View all
                     </Link>
@@ -552,200 +484,7 @@ export default function ClientDetailPage() {
                           </div>
                         ))}
                       </div>
-<<<<<<< HEAD
-                      <span className="text-[10px] text-gray-5">
-                        {comm.date}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="space-y-5">
-              <div className="pm-dash-card p-5">
-                <h3 className="font-display text-[13px] font-semibold mb-4">
-                  Account Details
-                </h3>
-                <div className="space-y-3.5">
-                  <div>
-                    <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-0.5">
-                      Status
-                    </div>
-                    <StatusBadge variant={c.status}>{c.status}</StatusBadge>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-0.5">
-                      Account Owner
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Avatar
-                        initials={c.ownerInitials}
-                        variant="yellow"
-                        size="sm"
-                      />
-                      <span className="text-[12px] text-gray-3">{c.owner}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-0.5">
-                      Total Value
-                    </div>
-                    <span className="font-display text-[18px] font-bold text-yellow">
-                      {c.totalValue}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-0.5">
-                      Active Projects
-                    </div>
-                    <span className="font-display text-[18px] font-bold text-white">
-                      {c.activeProjects}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="pm-dash-card p-5">
-                <h3 className="font-display text-[13px] font-semibold mb-4">
-                  Recent Invoices
-                </h3>
-                <div className="space-y-3">
-                  {c.invoices.map((inv) => (
-                    <div
-                      key={inv.id}
-                      className="flex items-center justify-between py-1.5"
-                    >
-                      <div>
-                        <div className="text-[11px] text-gray-3">{inv.id}</div>
-                        <div className="text-[10px] text-gray-5">
-                          {inv.date}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[11px] font-semibold text-white">
-                          {inv.amount}
-                        </div>
-                        <div
-                          className={`text-[9px] font-mono font-bold ${inv.status === "Paid" ? "text-green" : inv.status === "Overdue" ? "text-red" : "text-yellow"}`}
-                        >
-                          {inv.status}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {activeTab === "projects" && (
-          <div className="grid grid-cols-2 gap-4">
-            {c.projects.map((p) => (
-              <div key={p.name} className="pm-dash-card p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-display text-[13px] font-semibold">
-                    {p.name}
-                  </span>
-                  <StatusBadge variant={p.status}>{p.status}</StatusBadge>
-                </div>
-                <div className="text-[11px] text-gray-5 mb-3">{p.type}</div>
-                <div className="flex items-center justify-between pt-2 border-t border-[#1E1E1E]">
-                  <span className="text-[11px] text-gray-5">
-                    Due {p.deadline}
-                  </span>
-                  <span className="font-display text-[11px] font-bold text-yellow">
-                    {p.value}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === "communications" && (
-          <div className="pm-dash-card p-5">
-            <div className="space-y-4">
-              {c.communications.map((comm, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-4 py-3 border-b border-[#1E1E1E] last:border-0"
-                >
-                  <div className="w-8 h-8 rounded-full bg-black-4 flex items-center justify-center text-[10px] font-mono text-yellow flex-shrink-0">
-                    {comm.type[0]}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-[12px] text-white font-semibold">
-                      {comm.subject}
-                    </div>
-                    <div className="text-[10px] text-gray-5 mt-0.5">
-                      {comm.with_}
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-gray-5 flex-shrink-0">
-                    {comm.date}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === "invoices" && (
-          <div className="pm-dash-card p-5">
-            <table className="w-full">
-              <thead>
-                <tr className="text-[10px] font-mono text-gray-5 uppercase tracking-wider border-b border-[#1E1E1E]">
-                  <th className="text-left py-2.5 font-medium">Invoice</th>
-                  <th className="text-left py-2.5 font-medium">Date</th>
-                  <th className="text-right py-2.5 font-medium">Amount</th>
-                  <th className="text-right py-2.5 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedInvoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-[#1A1A1A]">
-                    <td className="py-3 text-[12px] text-white font-semibold">
-                      {inv.id}
-                    </td>
-                    <td className="py-3 text-[12px] text-gray-4">{inv.date}</td>
-                    <td className="py-3 text-right font-display text-[12px] font-semibold text-yellow">
-                      {inv.amount}
-                    </td>
-                    <td className="py-3 text-right">
-                      <span
-                        className={`font-mono text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                          inv.status === "Paid"
-                            ? "bg-green/10 text-green border-green/20"
-                            : inv.status === "Overdue"
-                              ? "bg-red/10 text-red border-red/20"
-                              : "bg-yellow/10 text-yellow border-yellow/20"
-                        }`}
-                      >
-                        {inv.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <Pagination page={invoicePage} pageSize={20} total={totalInvoices} onPageChange={setInvoicePage} />
-          </div>
-        )}
-
-        {activeTab === "activity" && (
-          <div className="pm-dash-card p-5">
-            <div className="space-y-0">
-              {paginatedActivity.map((a, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 py-3 border-b border-[#1E1E1E] last:border-0"
-                >
-                  <div className="flex flex-col items-center mt-1">
-                    <div className="w-2 h-2 rounded-full bg-yellow flex-shrink-0" />
-                    {i < paginatedActivity.length - 1 && (
-                      <div className="w-px h-full bg-[#1E1E1E] mt-1" />
-=======
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
                     )}
                   </div>
                 </div>
@@ -884,9 +623,6 @@ export default function ClientDetailPage() {
                 </div>
               </div>
             </div>
-<<<<<<< HEAD
-            <Pagination page={activityPage} pageSize={20} total={totalActivity} onPageChange={setActivityPage} />
-=======
           </>
         )}
 
@@ -1089,7 +825,7 @@ export default function ClientDetailPage() {
                 />
               </div>
             )}
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
           </div>
         )}
       </div>

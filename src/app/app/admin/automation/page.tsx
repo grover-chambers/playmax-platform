@@ -149,30 +149,6 @@ export default function AutomationPage() {
       {/* KPI strip */}
       <div className="pm-dash-krow pm-dash-krow-4 mb-6">
         <div className="pm-dash-kcard">
-<<<<<<< HEAD
-          <div className="font-display text-[24px] font-bold text-yellow">
-            {rules.filter((r) => r.enabled).length}
-          </div>
-          <div className="text-[11px] text-gray-4 mt-1">Active rules</div>
-        </div>
-        <div className="pm-dash-kcard">
-          <div className="font-display text-[24px] font-bold text-green">
-            {rules.reduce((sum, r) => sum + r.runCount, 0)}
-          </div>
-          <div className="text-[11px] text-gray-4 mt-1">Total triggers</div>
-        </div>
-        <div className="pm-dash-kcard">
-          <div className="font-display text-[24px] font-bold text-blue">
-            {rules.filter((r) => r.status === "paused").length}
-          </div>
-          <div className="text-[11px] text-gray-4 mt-1">Paused</div>
-        </div>
-        <div className="pm-dash-kcard">
-          <div className="font-display text-[24px] font-bold text-red">
-            {rules.filter((r) => r.status === "error").length}
-          </div>
-          <div className="text-[11px] text-gray-4 mt-1">Errors</div>
-=======
           <div className="pm-dash-kn">{activeCount}</div>
           <div className="pm-dash-kl">Active rules</div>
         </div>
@@ -187,70 +163,12 @@ export default function AutomationPage() {
         <div className="pm-dash-kcard">
           <div className="pm-dash-kn red">0</div>
           <div className="pm-dash-kl">Errors</div>
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
         </div>
       </div>
 
       {/* Rules list */}
       <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
-<<<<<<< HEAD
-        <div className="grid grid-cols-[1fr_1.5fr_80px_100px_80px] gap-3 px-5 py-3 border-b border-[#1e1e1e] text-[10px] font-mono text-gray-5 uppercase tracking-wider">
-          <span>Rule</span>
-          <span>Trigger → Action</span>
-          <span className="text-center">Runs</span>
-          <span className="text-center">Last triggered</span>
-          <span className="text-center">Status</span>
-        </div>
-        {paginated.map((rule) => (
-          <div
-            key={rule.id}
-            className="grid grid-cols-[1fr_1.5fr_80px_100px_80px] gap-3 px-5 py-4 border-b border-[#111] hover:bg-white/[.02] transition-colors items-center"
-          >
-            <div>
-              <div className="text-[13px] font-medium">{rule.name}</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-yellow bg-yellow/10 px-2 py-0.5 rounded-full border border-yellow/20 whitespace-nowrap">
-                {rule.trigger}
-              </span>
-              <span className="text-gray-5 text-[10px]">→</span>
-              <span className="text-[11px] text-gray-3">
-                {rule.action}
-              </span>
-            </div>
-            <div className="text-center font-mono text-[12px] text-gray-3">
-              {rule.runCount}
-            </div>
-            <div className="text-center text-[11px] text-gray-5">
-              {rule.lastTriggered || "—"}
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={() => toggleRule(rule.id)}
-                className="cursor-pointer bg-transparent border-none"
-                title={rule.enabled ? "Pause rule" : "Enable rule"}
-              >
-                {rule.enabled ? (
-                  <ToggleRight className="w-5 h-5 text-green" />
-                ) : (
-                  <ToggleLeft className="w-5 h-5 text-gray-5" />
-                )}
-              </button>
-              <StatusBadge
-                variant={
-                  rule.status === "active"
-                    ? "active"
-                    : rule.status === "paused"
-                      ? "review"
-                      : "draft"
-                }
-              >
-                {rule.status}
-              </StatusBadge>
-            </div>
-          </div>
-        ))}
-=======
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#1A1A1A]">
@@ -329,7 +247,7 @@ export default function AutomationPage() {
           </tbody>
         </table>
         <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
       </div>
 
       {/* ── New Rule Modal ──────────────────────────────── */}

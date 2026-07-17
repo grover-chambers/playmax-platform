@@ -186,16 +186,11 @@ export default function InboxPage() {
 
   /* ── Render ──────────────────────────────────────── */
   return (
-<<<<<<< HEAD
-    <div className="flex h-full">
-      <div className="w-[300px] border-r border-[#1A1A1A] pm-dash-card pm-dash-card-b-0 flex flex-col flex-shrink-0">
-        <div className="px-4 py-4 border-b border-[#1A1A1A]">
-=======
     <div className="page-content flex h-full">
       {/* ── Left panel: conversations ──────────────── */}
       <div className="pm-dash-card w-[300px] flex flex-col flex-shrink-0 overflow-hidden mr-4">
         <div className="px-4 py-4 border-b border-[rgba(255,255,255,0.04)]">
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
           <h1 className="font-display text-[15px] font-bold mb-3">Inbox</h1>
           <SearchBox
             placeholder="Search conversations..."
@@ -235,11 +230,6 @@ export default function InboxPage() {
         </div>
       </div>
 
-<<<<<<< HEAD
-      <div className="flex-1 flex flex-col min-w-0">
-        {activeConv ? (
-          <div className="pm-dash-card flex-1">
-=======
       {/* ── Right panel: conversation detail ────────── */}
       <div className="pm-dash-card flex-1 flex flex-col min-w-0 overflow-hidden">
         {loadingConvs && !activeConv ? (
@@ -253,17 +243,14 @@ export default function InboxPage() {
                 Loading messages…
               </div>
             )}
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
             <ConversationPanel
               conversation={activeConv}
               messages={activeMessages}
               onSendMessage={handleSendMessage}
             />
-<<<<<<< HEAD
-          </div>
-=======
           </>
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
         ) : (
           <div className="flex-1 flex items-center justify-center text-[13px] text-gray-5">
             Select a conversation

@@ -297,15 +297,9 @@ export default function DimensionsPage() {
         })}
       </div>
 
-<<<<<<< HEAD
-      {/* Table */}
-      <div className="pm-dash-card overflow-hidden">
-        {renderTable()}
-      </div>
-=======
       {/* ── Content ── */}
       {renderTable()}
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
     </div>
   );
 }

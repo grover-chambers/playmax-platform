@@ -491,30 +491,6 @@ export default function MarketShareReport() {
           </div>
 
           {/* Bar chart */}
-<<<<<<< HEAD
-          <div className="pm-dash-card pm-dash-card-b mb-5">
-            <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-4">
-              Branch market share
-            </h3>
-            <div className="space-y-2.5">
-              {marketData.branches
-                .sort((a, b) => b.share - a.share)
-                .map((r) => {
-                  const pct = (r.share / maxShare) * 100;
-                  const barColor = r.rank <= 3 ? "bg-yellow" : "bg-white/10";
-                  const barBorder = r.rank <= 3 ? "" : "border border-white/5";
-
-                  return (
-                    <div key={r.branch_code} className="flex items-center gap-3">
-                      <span className="w-[160px] text-[11px] text-gray-3 text-right truncate flex-shrink-0">
-                        {r.branch}
-                      </span>
-                      <div className="flex-1 h-5 bg-black-2 rounded-sm overflow-hidden relative">
-                        <div
-                          className={`h-full rounded-sm transition-all ${barColor} ${barBorder}`}
-                          style={{ width: `${pct}%` }}
-                        />
-=======
           <div className="pm-dash-card mb-5">
             <div className="pm-dash-card-h">
               <span className="pm-dash-card-t text-[14px]">Branch market share</span>
@@ -539,7 +515,7 @@ export default function MarketShareReport() {
                         <span className="w-[60px] text-[11px] text-white font-mono text-right flex-shrink-0">
                           {(r.share ?? 0).toFixed(1)}%
                         </span>
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
                       </div>
                     );
                   })}
@@ -548,21 +524,6 @@ export default function MarketShareReport() {
           </div>
 
           {/* Data table */}
-<<<<<<< HEAD
-          <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="text-gray-5 font-mono border-b border-[#252525]">
-                  <th className="text-left px-4 py-3 font-normal">Rank</th>
-                  <th className="text-left px-4 py-3 font-normal">Branch</th>
-                  <th className="text-right px-4 py-3 font-normal">Sales (KES)</th>
-                  <th className="text-right px-4 py-3 font-normal">Share %</th>
-                  <th className="text-right px-4 py-3 font-normal">vs Previous</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedMarket.map((r) => {
-=======
           <div className="pm-dash-card">
             <div className="pm-dash-card-b-0 overflow-x-auto">
               <table className="pm-dash-tbl">
@@ -577,7 +538,7 @@ export default function MarketShareReport() {
                 </thead>
                 <tbody>
                   {paginatedMarket.map((r) => {
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
                     const badge = growthBadge(r.sales, r.prev_sales);
                     const BadgeIcon = badge.icon;
                     return (
@@ -641,18 +602,6 @@ export default function MarketShareReport() {
           </div>
 
           {/* Bar chart */}
-<<<<<<< HEAD
-          <div className="pm-dash-card pm-dash-card-b mb-5">
-            <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-4">
-              Category sales
-            </h3>
-            <div className="space-y-2.5">
-              {categoryData
-                .sort((a, b) => b.total_sales - a.total_sales)
-                .map((r) => {
-                  const maxCat = Math.max(...categoryData.map((c) => c.total_sales), 1);
-                  const pct = (r.total_sales / maxCat) * 100;
-=======
           <div className="pm-dash-card mb-5">
             <div className="pm-dash-card-h">
               <span className="pm-dash-card-t text-[14px]">Category sales</span>
@@ -845,7 +794,7 @@ export default function MarketShareReport() {
                 {sortedInventory.slice(0, 15).map((r) => {
                   const maxVal = Math.max(...sortedInventory.map((i) => i.total_value), 1);
                   const pct = (r.total_value / maxVal) * 100;
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
                   return (
                     <div key={r.stock_code} className="flex items-center gap-3">
                       <span className="w-[160px] text-[11px] text-gray-3 text-right truncate flex-shrink-0">
@@ -868,27 +817,11 @@ export default function MarketShareReport() {
           </div>
 
           {/* Data table */}
-<<<<<<< HEAD
-          <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="text-gray-5 font-mono border-b border-[#252525]">
-                  <th className="text-left px-4 py-3 font-normal">Category</th>
-                  <th className="text-right px-4 py-3 font-normal">Sales (KES)</th>
-                  <th className="text-right px-4 py-3 font-normal">Units</th>
-                  <th className="text-right px-4 py-3 font-normal">Avg Price</th>
-                  <th className="text-right px-4 py-3 font-normal">Products</th>
-                  <th className="text-right px-4 py-3 font-normal">vs Previous</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categoryData.length === 0 && (
-=======
           <div className="pm-dash-card">
             <div className="pm-dash-card-b-0 overflow-x-auto">
               <table className="pm-dash-tbl">
                 <thead>
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
                   <tr>
                     <th className="pm-dash-tbl-th">Stock Code</th>
                     <th className="pm-dash-tbl-th">Product</th>
@@ -940,19 +873,6 @@ export default function MarketShareReport() {
             <p className="text-[11px] text-gray-5 mt-1">Cost, price, and margin data per product</p>
           </div>
 
-<<<<<<< HEAD
-          {/* Bar chart */}
-          <div className="pm-dash-card pm-dash-card-b mb-5">
-            <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-4">
-              Manufacturer market share
-            </h3>
-            <div className="space-y-2.5">
-              {competitorData
-                .sort((a, b) => b.share - a.share)
-                .map((r) => {
-                  const maxComp = Math.max(...competitorData.map((c) => c.share), 1);
-                  const pct = (r.share / maxComp) * 100;
-=======
           {/* KPI row */}
           <div className="pm-dash-krow pm-dash-krow-4">
             <div className="pm-dash-kcard">
@@ -983,7 +903,7 @@ export default function MarketShareReport() {
                 {sortedPricing.slice(0, 15).map((r) => {
                   const maxMargin = Math.max(...sortedPricing.map((p) => Math.abs(p.margin_pct)), 1);
                   const pct = (Math.abs(r.margin_pct) / maxMargin) * 100;
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
                   return (
                     <div key={r.stock_code} className="flex items-center gap-3">
                       <span className="w-[160px] text-[11px] text-gray-3 text-right truncate flex-shrink-0">
@@ -1006,27 +926,11 @@ export default function MarketShareReport() {
           </div>
 
           {/* Data table */}
-<<<<<<< HEAD
-          <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="text-gray-5 font-mono border-b border-[#252525]">
-                  <th className="text-left px-4 py-3 font-normal">Manufacturer</th>
-                  <th className="text-right px-4 py-3 font-normal">Sales (KES)</th>
-                  <th className="text-right px-4 py-3 font-normal">Units</th>
-                  <th className="text-right px-4 py-3 font-normal">Share %</th>
-                  <th className="text-right px-4 py-3 font-normal">Products</th>
-                  <th className="text-right px-4 py-3 font-normal">Avg Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {competitorData.length === 0 && (
-=======
           <div className="pm-dash-card">
             <div className="pm-dash-card-b-0 overflow-x-auto">
               <table className="pm-dash-tbl">
                 <thead>
->>>>>>> 8726d9e4931e010174f6e1fba5b8f6c05e70902c
+
                   <tr>
                     <th className="pm-dash-tbl-th">Stock Code</th>
                     <th className="pm-dash-tbl-th">Product</th>
