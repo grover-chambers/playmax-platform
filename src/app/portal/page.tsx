@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { usePortalClient } from "@/components/portal/portal-provider";
 import DocumentList from "@/components/documents/document-list";
+import PageHeader from "@/components/layout/page-header";
 import ResearchFindingsCards from "@/components/portal/research-findings-cards";
 import MilestoneTimeline from "@/components/portal/milestone-timeline";
 
@@ -203,20 +204,25 @@ export default function PortalOverviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-teal" />
+      <div className="page-content">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-teal" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="pm-dash-card p-6">
-        <div className="flex items-center gap-3 text-red">
-          <AlertTriangle className="w-5 h-5" />
-          <div>
-            <div className="font-display text-[14px] font-semibold">Unable to load dashboard</div>
-            <div className="text-[12px] text-gray-4 mt-1">{error}</div>
+      <div className="page-content">
+        <PageHeader title="Overview" subtitle="Your engagement summary" />
+        <div className="pm-dash-card p-6">
+          <div className="flex items-center gap-3 text-red">
+            <AlertTriangle className="w-5 h-5" />
+            <div>
+              <div className="font-display text-[14px] font-semibold">Unable to load dashboard</div>
+              <div className="text-[12px] text-gray-4 mt-1">{error}</div>
+            </div>
           </div>
         </div>
       </div>

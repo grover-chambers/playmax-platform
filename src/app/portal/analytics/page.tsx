@@ -255,12 +255,154 @@ export default function PortalAnalyticsPage() {
     return (
       <div className="page-content">
         <PageHeader title="Analytics" subtitle="Market intelligence and performance insights" />
-        <div className="pm-dash-card p-8 text-center">
-          <BarChart3 size={40} className="mx-auto mb-4 text-gray-5 opacity-30" />
-          <div className="font-display text-[14px] font-semibold mb-2">No Analytics Data Yet</div>
-          <div className="text-[12px] text-gray-4 max-w-md mx-auto">
-            Your account manager will share analytics insights here once data is approved for your view.
-            This includes market share, competitor analysis, and product performance.
+        
+        <div className="pm-dash-alert pm-dash-alert-b mb-6">
+          <BarChart3 size={14} />
+          <span>Analytics data will appear here once your account manager uploads supplier performance data and approves it for your view.</span>
+        </div>
+
+        {/* ── Placeholder KPI row ────────────────────────── */}
+        <div className="pm-dash-krow pm-dash-krow-4 mb-6">
+          {[
+            { label: "Total Revenue", sub: "from supplier sales data", color: "" },
+            { label: "Market Share", sub: "your competitive position", color: "grn" },
+            { label: "Products", sub: "tracked across categories", color: "blu" },
+            { label: "Avg Margin", sub: "pricing intelligence", color: "red" },
+          ].map((kpi) => (
+            <div key={kpi.label} className="pm-dash-kcard" style={{ opacity: 0.5 }}>
+              <div className={`pm-dash-kn ${kpi.color}`}>—</div>
+              <div className="pm-dash-kl">{kpi.label}</div>
+              <div className="pm-dash-ksub">{kpi.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Placeholder chart cards ─────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+          {/* Leaderboard placeholder */}
+          <div className="lg:col-span-3 pm-dash-card p-5" style={{ opacity: 0.5 }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy size={14} className="text-yellow" />
+              <span className="font-display text-[13px] font-semibold">Market Share Leaderboard</span>
+            </div>
+            <div className="space-y-3">
+              {["Rank 1 — competitor", "Rank 2 — competitor", "Rank 3 — you", "Rank 4 — competitor", "Rank 5 — competitor"].map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-[10px] font-mono text-gray-5 w-4 text-right">{i + 1}</span>
+                  <div className="flex-1">
+                    <div className="h-2 w-full rounded bg-[#1A1A1A] overflow-hidden">
+                      <div className="h-full rounded bg-gray-5" style={{ width: `${90 - i * 15}%` }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 text-center text-[11px] text-gray-5">Waiting for competitor sales data</div>
+          </div>
+
+          {/* Category share placeholder */}
+          <div className="lg:col-span-2 pm-dash-card p-5" style={{ opacity: 0.5 }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Tag size={14} className="text-teal" />
+              <span className="font-display text-[13px] font-semibold">Category Share</span>
+            </div>
+            <div className="flex flex-col items-center justify-center py-6">
+              <div className="w-24 h-24 rounded-full border-4 border-[#1A1A1A] border-t-gray-5" />
+              <div className="mt-3 text-center text-[11px] text-gray-5">Waiting for category data</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Branch performance placeholder */}
+          <div className="pm-dash-card p-5" style={{ opacity: 0.5 }}>
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin size={14} className="text-orange" />
+              <span className="font-display text-[13px] font-semibold">Branch Performance</span>
+            </div>
+            <div className="space-y-2">
+              {["Branch A", "Branch B", "Branch C"].map((b) => (
+                <div key={b} className="flex items-center gap-2">
+                  <span className="text-[11px] text-gray-5 w-16">{b}</span>
+                  <div className="flex-1 h-2 rounded bg-[#1A1A1A]">
+                    <div className="h-full rounded bg-gray-5 w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-center text-[11px] text-gray-5">Waiting for branch sales data</div>
+          </div>
+
+          {/* Pricing placeholder */}
+          <div className="pm-dash-card p-5" style={{ opacity: 0.5 }}>
+            <div className="flex items-center gap-2 mb-4">
+              <DollarSign size={14} className="text-yellow" />
+              <span className="font-display text-[13px] font-semibold">Price Positioning</span>
+            </div>
+            <div className="space-y-2">
+              {["Product A", "Product B", "Product C"].map((p) => (
+                <div key={p} className="flex items-center gap-2">
+                  <span className="text-[11px] text-gray-5 w-16">{p}</span>
+                  <div className="flex-1 h-2 rounded bg-[#1A1A1A]">
+                    <div className="h-full rounded bg-gray-5 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-center text-[11px] text-gray-5">Waiting for pricing data</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Top products placeholder */}
+          <div className="pm-dash-card p-5" style={{ opacity: 0.5 }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Award size={14} className="text-emerald-400" />
+              <span className="font-display text-[13px] font-semibold">Top Products</span>
+            </div>
+            <div className="space-y-2">
+              {["Product A — KES 1.2M", "Product B — KES 890K", "Product C — KES 640K"].map((p) => (
+                <div key={p} className="text-[12px] text-gray-5">{p}</div>
+              ))}
+            </div>
+            <div className="mt-3 text-center text-[11px] text-gray-5">Waiting for product performance data</div>
+          </div>
+
+          {/* Underperforming placeholder */}
+          <div className="pm-dash-card p-5" style={{ opacity: 0.5 }}>
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingDown size={14} className="text-orange" />
+              <span className="font-display text-[13px] font-semibold">Underperforming Products</span>
+            </div>
+            <div className="space-y-2">
+              {["Product X — KES 45K", "Product Y — KES 22K", "Product Z — KES 12K"].map((p) => (
+                <div key={p} className="text-[12px] text-gray-5">{p}</div>
+              ))}
+            </div>
+            <div className="mt-3 text-center text-[11px] text-gray-5">Waiting for product performance data</div>
+          </div>
+        </div>
+
+        {/* ── What you'll get ──────────────────────────── */}
+        <div className="pm-dash-card p-5">
+          <div className="font-display text-[13px] font-semibold mb-3">What Analytics Will Show</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[
+              { icon: <Trophy size={14} className="text-yellow" />, title: "Market Share", desc: "Your competitive position across all branches" },
+              { icon: <Tag size={14} className="text-teal" />, title: "Category Performance", desc: "Revenue and volume breakdown by product category" },
+              { icon: <MapPin size={14} className="text-orange" />, title: "Branch Analysis", desc: "Sales performance by location" },
+              { icon: <DollarSign size={14} className="text-yellow" />, title: "Price Positioning", desc: "Margin analysis across your product range" },
+              { icon: <Award size={14} className="text-emerald-400" />, title: "Product Rankings", desc: "Top and underperforming products" },
+              { icon: <BarChart3 size={14} className="text-teal" />, title: "Trend Analysis", desc: "Period-over-period growth tracking" },
+            ].map((item) => (
+              <div key={item.title} className="flex items-start gap-3 p-3 rounded-lg bg-[#0A0A0A] border border-[#1A1A1A]">
+                <div className="mt-0.5">{item.icon}</div>
+                <div>
+                  <div className="text-[12px] font-semibold text-gray-3">{item.title}</div>
+                  <div className="text-[10px] text-gray-5 mt-0.5">{item.desc}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

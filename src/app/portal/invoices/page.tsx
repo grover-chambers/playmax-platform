@@ -3,6 +3,7 @@
 import React, { useState, useEffect, startTransition } from "react";
 import StatusBadge from "@/components/ui/status-badge";
 import InvoicePDF from "@/components/pdf/InvoicePDF";
+import PageHeader from "@/components/layout/page-header";
 import { Loader2, Download, Smartphone } from "lucide-react";
 
 interface Invoice {
@@ -92,13 +93,11 @@ export default function PortalInvoicesPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="font-display text-xl font-bold">Invoices</h1>
-        <p className="text-xs text-gray-4 mt-0.5">
-          {invoices.length} invoice{invoices.length !== 1 ? "s" : ""}
-        </p>
-      </div>
+    <div className="page-content">
+      <PageHeader
+        title="Invoices"
+        subtitle={`${invoices.length} invoice${invoices.length !== 1 ? "s" : ""}`}
+      />
 
       {paymentMsg && (
         <div className={`mb-4 px-4 py-3 rounded-lg text-[12px] ${

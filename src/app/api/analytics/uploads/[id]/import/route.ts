@@ -127,7 +127,7 @@ export async function POST(_request: Request, context: RouteContext) {
                 ? row.quantity * row.unit_price
                 : 0;
 
-          await supabase.from("analytics_fact_sales").upsert(
+          const { error: salesErr } = await supabase.from("analytics_fact_sales").upsert(
             {
               period_id: upload.period_id,
               branch_id: branchId || "00000000-0000-0000-0000-000000000000",
@@ -144,10 +144,14 @@ export async function POST(_request: Request, context: RouteContext) {
               ignoreDuplicates: false,
             },
           );
+          if (salesErr) {
+            errors.push("Row " + row.row_number + ": sales upsert failed: " + salesErr.message);
+            continue;
+          }
 
           // Also populate pricing fact table (per_store_sales only)
           if (upload.file_type === "per_store_sales" && (row.unit_cost || row.unit_price || row.weight_tonnes)) {
-            await supabase.from("analytics_fact_pricing").upsert(
+            const { error: pricingErr } = await supabase.from("analytics_fact_pricing").upsert(
               {
                 period_id: upload.period_id,
                 product_id: productId,
@@ -161,6 +165,10 @@ export async function POST(_request: Request, context: RouteContext) {
                 ignoreDuplicates: false,
               },
             );
+            if (pricingErr) {
+              errors.push("Row " + row.row_number + ": pricing upsert failed: " + pricingErr.message);
+              continue;
+            }
           }
 
           imported.push(row.row_number);
@@ -195,7 +203,7 @@ export async function POST(_request: Request, context: RouteContext) {
           }
           if (!productId) { skipped.push(row.row_number); continue; }
 
-          await supabase.from("analytics_fact_inventory").upsert(
+          const { error: invErr } = await supabase.from("analytics_fact_inventory").upsert(
             {
               snapshot_date: new Date().toISOString().split("T")[0],
               product_id: productId,
@@ -206,6 +214,10 @@ export async function POST(_request: Request, context: RouteContext) {
             },
             { onConflict: "snapshot_date,product_id,branch_id" }
           );
+          if (invErr) {
+            errors.push("Row " + row.row_number + ": inventory upsert failed: " + invErr.message);
+            continue;
+          }
           imported.push(row.row_number);
         } catch (e) {
           errors.push(`Row ${row.row_number}: ${e instanceof Error ? e.message : "Unknown error"}`);
@@ -241,7 +253,7 @@ export async function POST(_request: Request, context: RouteContext) {
           }
 
           // Upsert product
-          await supabase.from("analytics_products").upsert(
+          const { error: prodErr } = await supabase.from("analytics_products").upsert(
             {
               stock_code: row.stock_code,
               name: row.product_name || row.stock_code,
@@ -251,6 +263,10 @@ export async function POST(_request: Request, context: RouteContext) {
             },
             { onConflict: "stock_code" }
           );
+          if (prodErr) {
+            errors.push("Row " + row.row_number + ": product upsert failed: " + prodErr.message);
+            continue;
+          }
           imported.push(row.row_number);
         } catch (e) {
           errors.push(`Row ${row.row_number}: ${e instanceof Error ? e.message : "Unknown error"}`);
@@ -329,7 +345,7 @@ export async function POST(_request: Request, context: RouteContext) {
           if (!productId) { skipped.push(row.row_number); continue; }
 
           // Create junction link
-          await supabase.from("analytics_supplier_products").upsert(
+          const { error: supProdErr } = await supabase.from("analytics_supplier_products").upsert(
             {
               supplier_id: supplierId,
               product_id: productId,
@@ -337,6 +353,10 @@ export async function POST(_request: Request, context: RouteContext) {
             },
             { onConflict: "supplier_id,product_id" }
           );
+          if (supProdErr) {
+            errors.push("Row " + row.row_number + ": supplier-product link failed: " + supProdErr.message);
+            continue;
+          }
           imported.push(row.row_number);
         } catch (e) {
           errors.push(`Row ${row.row_number}: ${e instanceof Error ? e.message : "Unknown error"}`);

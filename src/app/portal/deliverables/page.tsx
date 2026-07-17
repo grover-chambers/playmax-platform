@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, startTransition } from "react";
 import Button from "@/components/ui/button";
+import PageHeader from "@/components/layout/page-header";
 import { FileText, Presentation, BarChart3, Image, Download, Loader2, ThumbsUp, ThumbsDown } from "lucide-react";
 
 interface Deliverable {
@@ -83,13 +84,11 @@ export default function PortalDeliverablesPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="font-display text-xl font-bold">Deliverables</h1>
-        <p className="text-xs text-gray-4 mt-0.5">
-          {deliverables.length} file{deliverables.length !== 1 ? "s" : ""} across your projects
-        </p>
-      </div>
+    <div className="page-content">
+      <PageHeader
+        title="Deliverables"
+        subtitle={`${deliverables.length} file${deliverables.length !== 1 ? "s" : ""} across your projects`}
+      />
 
       {deliverables.length === 0 ? (
         <div className="pm-dash-card pm-dash-card-b text-center text-[13px] text-gray-4">

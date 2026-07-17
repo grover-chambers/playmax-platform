@@ -3,6 +3,7 @@
 import React, { useState, useEffect, startTransition } from "react";
 import StatusBadge from "@/components/ui/status-badge";
 import BookingDetailDrawer from "@/components/portal/booking-detail-drawer";
+import PageHeader from "@/components/layout/page-header";
 import { Calendar, MapPin, Clock, Loader2 } from "lucide-react";
 
 interface Booking {
@@ -57,13 +58,11 @@ export default function PortalBookingsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="font-display text-xl font-bold">My Bookings</h1>
-        <p className="text-xs text-gray-4 mt-0.5">
-          {bookings.length} booking{bookings.length !== 1 ? "s" : ""}
-        </p>
-      </div>
+    <div className="page-content">
+      <PageHeader
+        title="Bookings"
+        subtitle={`${bookings.length} booking${bookings.length !== 1 ? "s" : ""}`}
+      />
 
       {bookings.length === 0 ? (
         <div className="pm-dash-card pm-dash-card-b text-center text-[13px] text-gray-4">
