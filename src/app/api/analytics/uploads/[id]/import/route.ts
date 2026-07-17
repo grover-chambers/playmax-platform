@@ -127,11 +127,27 @@ export async function POST(_request: Request, context: RouteContext) {
                 ? row.quantity * row.unit_price
                 : 0;
 
+          // Resolve category + subcategory from product
+          let salesCategoryId = upload.category_id;
+          let salesSubCategoryId: string | null = null;
+          if (!salesCategoryId && productId) {
+            const { data: prodInfo } = await supabase
+              .from("analytics_products")
+              .select("category_id, sub_category_id")
+              .eq("id", productId)
+              .single();
+            if (prodInfo) {
+              salesCategoryId = prodInfo.category_id || salesCategoryId;
+              salesSubCategoryId = prodInfo.sub_category_id || null;
+            }
+          }
+
           const { error: salesErr } = await supabase.from("analytics_fact_sales").upsert(
             {
               period_id: upload.period_id,
               branch_id: branchId || "00000000-0000-0000-0000-000000000000",
-              category_id: upload.category_id,
+              category_id: salesCategoryId,
+              sub_category_id: salesSubCategoryId,
               product_id: productId,
               quantity: row.quantity ?? 0,
               weight_tonnes: row.weight_tonnes ?? 0,
@@ -156,6 +172,8 @@ export async function POST(_request: Request, context: RouteContext) {
                 period_id: upload.period_id,
                 product_id: productId,
                 branch_id: branchId || null,
+                category_id: salesCategoryId,
+                sub_category_id: salesSubCategoryId,
                 standard_cost: row.unit_cost ?? null,
                 selling_price: row.unit_price ?? null,
                 weight_tonnes: row.weight_tonnes ?? null,
@@ -203,12 +221,29 @@ export async function POST(_request: Request, context: RouteContext) {
           }
           if (!productId) { skipped.push(row.row_number); continue; }
 
+          // Resolve category from product
+          let invCategoryId: string | null = null;
+          let invSubCategoryId: string | null = null;
+          if (productId) {
+            const { data: prodCat } = await supabase
+              .from("analytics_products")
+              .select("category_id, sub_category_id")
+              .eq("id", productId)
+              .single();
+            if (prodCat) {
+              invCategoryId = prodCat.category_id || null;
+              invSubCategoryId = prodCat.sub_category_id || null;
+            }
+          }
+
           const { error: invErr } = await supabase.from("analytics_fact_inventory").upsert(
             {
               snapshot_date: new Date().toISOString().split("T")[0],
               product_id: productId,
               branch_id: upload.branch_id,
               supplier_id: upload.supplier_id || null,
+              category_id: invCategoryId,
+              sub_category_id: invSubCategoryId,
               quantity_on_hand: row.quantity ?? 0,
               unit_cost: row.unit_cost ? parseFloat(String(row.unit_cost).replace(/[^\d.-]/g, "")) : null,
             },
@@ -231,9 +266,9 @@ export async function POST(_request: Request, context: RouteContext) {
         try {
           if (!row.stock_code) { skipped.push(row.row_number); continue; }
 
-          // Auto-create category if provided and doesn't exist
+          // Auto-create category if provided
           let categoryId: string | null = null;
-          const categoryName = row.sub_category || row.category_name;
+          const categoryName = row.category_name || row.sub_category;
           if (categoryName) {
             const { data: existingCat } = await supabase
               .from("analytics_categories")
@@ -252,12 +287,35 @@ export async function POST(_request: Request, context: RouteContext) {
             }
           }
 
+          // Auto-create subcategory if provided and category exists
+          let subCategoryId: string | null = null;
+          const subCatName = row.sub_category_name || row.sub_category;
+          if (subCatName && categoryId) {
+            const { data: existingSub } = await supabase
+              .from("analytics_subcategories")
+              .select("id")
+              .eq("category_id", categoryId)
+              .ilike("name", subCatName.trim())
+              .single();
+            if (existingSub) {
+              subCategoryId = existingSub.id;
+            } else {
+              const { data: newSub } = await supabase
+                .from("analytics_subcategories")
+                .insert({ category_id: categoryId, name: subCatName.trim().toUpperCase() })
+                .select("id")
+                .single();
+              subCategoryId = newSub?.id ?? null;
+            }
+          }
+
           // Upsert product
           const { error: prodErr } = await supabase.from("analytics_products").upsert(
             {
               stock_code: row.stock_code,
               name: row.product_name || row.stock_code,
               category_id: categoryId,
+              sub_category_id: subCategoryId,
               sub_category: row.sub_category || null,
               pack_size: row.pack_size || null,
             },
