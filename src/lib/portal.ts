@@ -23,7 +23,7 @@ export async function getPortalClient(
     .from("clients")
     .select("id, name, email, company, industry, phone, status, created_at")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return null;
   return data;

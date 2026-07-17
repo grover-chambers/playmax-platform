@@ -29,6 +29,10 @@ export async function GET(request: Request) {
         .select("*")
         .order("name"),
       supabase
+        .from("analytics_subcategories")
+        .select("id, category_id, name")
+        .order("name"),
+      supabase
         .from("analytics_manufacturers")
         .select("*")
         .order("name"),
@@ -37,7 +41,7 @@ export async function GET(request: Request) {
         .select("id", { count: "exact", head: true }),
     ];
 
-    const [branchesRes, categoriesRes, manufacturersRes, productCountRes] =
+    const [branchesRes, categoriesRes, subcategoriesRes, manufacturersRes, productCountRes] =
       await Promise.all(baseQueries);
 
     if (branchesRes.error)
@@ -59,6 +63,7 @@ export async function GET(request: Request) {
     const result: Record<string, unknown> = {
       branches: branchesRes.data ?? [],
       categories: categoriesRes.data ?? [],
+      subcategories: subcategoriesRes.data ?? [],
       manufacturers: manufacturersRes.data ?? [],
       productCount: productCountRes.count ?? 0,
     };

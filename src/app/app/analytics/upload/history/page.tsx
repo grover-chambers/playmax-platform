@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle, AlertCircle, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertCircle, Trash2, Loader2, RefreshCw } from "lucide-react";
 import Button from "@/components/ui/button";
 import PageHeader from "@/components/layout/page-header";
 import Pagination, { usePagination } from "@/components/ui/pagination";
@@ -91,7 +91,7 @@ export default function UploadHistoryPage() {
                 </tr>
               )}
               {paginated.map((u) => (
-                <tr key={u.id} className="border-b border-[#1E1E1E] last:border-0">
+                <tr key={u.id} className="border-b border-[#1E1E1E] last:border-0 cursor-pointer hover:bg-white/2 transition-colors" onClick={() => router.push("/app/analytics/upload/history/" + u.id)}>
                   <td className="px-4 py-2.5 text-white font-medium truncate max-w-[200px]">{u.filename}</td>
                   <td className="px-4 py-2.5 text-gray-4">
                     {new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
@@ -105,14 +105,23 @@ export default function UploadHistoryPage() {
                       <CheckCircle className="w-3.5 h-3.5 inline text-green" />
                     ) : u.status === "failed" ? (
                       <AlertCircle className="w-3.5 h-3.5 inline text-red" />
+                    ) : u.status === "parsed" ? (
+                      <span className="text-yellow font-mono text-[10px]">parsed</span>
                     ) : (
-                      <span className="text-gray-5 font-mono">{u.status}</span>
+                      <span className="text-gray-5 font-mono text-[10px]">{u.status}</span>
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-center">
-                    {(u.status === "failed" || u.status === "uploaded") && (
+                    <div className="flex items-center gap-1 justify-center">
                       <button
-                        onClick={() => handleDelete(u.id)}
+                        onClick={(e) => { e.stopPropagation(); router.push("/app/analytics/upload/history/" + u.id); }}
+                        className="p-1.5 hover:bg-white/5 rounded cursor-pointer"
+                        title="View details"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-gray-5 hover:text-teal" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(u.id); }}
                         disabled={deleting === u.id}
                         className="p-1.5 hover:bg-white/5 rounded cursor-pointer disabled:opacity-50"
                         title="Delete upload"
@@ -123,7 +132,7 @@ export default function UploadHistoryPage() {
                           <Trash2 className="w-3.5 h-3.5 text-gray-5 hover:text-red" />
                         )}
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}

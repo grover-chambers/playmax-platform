@@ -61,14 +61,13 @@ export async function POST(
       return NextResponse.json({ error: sanitizeError(paymentError) }, { status: 500 });
     }
 
-    // In production this would call the actual M-Pesa STK Push API
-    // For now we simulate a successful initiation
-    return NextResponse.json({
-      success: true,
-      message: "M-Pesa STK Push sent to your phone. Please check for the payment prompt and enter your PIN.",
-      reference: `MP-${Date.now().toString(36).toUpperCase()}`,
-    });
-  } catch {
+    // M-Pesa STK Push not yet implemented
+    return NextResponse.json(
+      { error: "Online payment not yet available. Please contact support for payment instructions." },
+      { status: 501 },
+    );
+  } catch (err) {
+    console.error("M-Pesa payment initiation failed:", err);
     return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
   }
 }

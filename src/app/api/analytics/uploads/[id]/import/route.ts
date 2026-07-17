@@ -75,6 +75,39 @@ export async function POST(_request: Request, context: RouteContext) {
       );
     }
 
+    // Pre-check: query existing fact data to report what's already imported
+    const alreadyImported: number[] = [];
+    if (upload.period_id) {
+      const stockCodes = rows.map(function(r) { return r.stock_code; }).filter(Boolean);
+      if (stockCodes.length > 0) {
+        const { data: existingProducts } = await supabase
+          .from("analytics_products")
+          .select("id, stock_code")
+          .in("stock_code", stockCodes);
+
+        if (existingProducts && existingProducts.length > 0) {
+          const productIds = existingProducts.map(function(p) { return p.id; });
+          const { data: existingSales } = await supabase
+            .from("analytics_fact_sales")
+            .select("product_id")
+            .eq("period_id", upload.period_id)
+            .in("product_id", productIds);
+
+          if (existingSales && existingSales.length > 0) {
+            const existingProductIds = new Set(existingSales.map(function(s) { return s.product_id; }));
+            const codeToRow = new Map();
+            rows.forEach(function(r) { codeToRow.set(r.stock_code, r); });
+            existingProducts.forEach(function(p) {
+              if (existingProductIds.has(p.id)) {
+                const row = codeToRow.get(p.stock_code);
+                if (row) alreadyImported.push(row.row_number);
+              }
+            });
+          }
+        }
+      }
+    }
+
     const imported: number[] = [];
     const skipped: number[] = [];
     const errors: string[] = [];
@@ -142,51 +175,85 @@ export async function POST(_request: Request, context: RouteContext) {
             }
           }
 
-          const { error: salesErr } = await supabase.from("analytics_fact_sales").upsert(
-            {
-              period_id: upload.period_id,
-              branch_id: branchId || "00000000-0000-0000-0000-000000000000",
-              category_id: salesCategoryId,
-              sub_category_id: salesSubCategoryId,
-              product_id: productId,
-              quantity: row.quantity ?? 0,
-              weight_tonnes: row.weight_tonnes ?? 0,
-              unit_price: row.unit_price ?? null,
-              total_amount: totalAmount,
-              cost_amount: row.unit_cost ? row.quantity * row.unit_cost : 0,
-            },
-            {
-              onConflict: "period_id,branch_id,product_id",
-              ignoreDuplicates: false,
-            },
-          );
-          if (salesErr) {
-            errors.push("Row " + row.row_number + ": sales upsert failed: " + salesErr.message);
-            continue;
+          // Check for existing sales row (no UNIQUE constraint reliance)
+          const branchVal = branchId || "00000000-0000-0000-0000-000000000000";
+          const salesFields = {
+            period_id: upload.period_id,
+            branch_id: branchVal,
+            category_id: salesCategoryId,
+            sub_category_id: salesSubCategoryId,
+            product_id: productId,
+            quantity: row.quantity ?? 0,
+            weight_tonnes: row.weight_tonnes ?? 0,
+            unit_price: row.unit_price ?? null,
+            total_amount: totalAmount,
+            cost_amount: row.unit_cost ? row.quantity * row.unit_cost : 0,
+          };
+          const { data: existingSale } = await supabase
+            .from("analytics_fact_sales")
+            .select("id")
+            .eq("period_id", upload.period_id)
+            .eq("branch_id", branchVal)
+            .eq("product_id", productId)
+            .maybeSingle();
+          if (existingSale) {
+            const { error: salesErr } = await supabase
+              .from("analytics_fact_sales")
+              .update(salesFields)
+              .eq("id", existingSale.id);
+            if (salesErr) {
+              errors.push("Row " + row.row_number + ": sales update failed: " + salesErr.message);
+              continue;
+            }
+          } else {
+            const { error: salesErr } = await supabase
+              .from("analytics_fact_sales")
+              .insert(salesFields);
+            if (salesErr) {
+              errors.push("Row " + row.row_number + ": sales insert failed: " + salesErr.message);
+              continue;
+            }
           }
 
           // Also populate pricing fact table (per_store_sales only)
           if (upload.file_type === "per_store_sales" && (row.unit_cost || row.unit_price || row.weight_tonnes)) {
-            const { error: pricingErr } = await supabase.from("analytics_fact_pricing").upsert(
-              {
+            // Check for existing pricing row
+              const pricingBranchVal = branchId || null;
+              const pricingFields = {
                 period_id: upload.period_id,
                 product_id: productId,
-                branch_id: branchId || null,
+                branch_id: pricingBranchVal,
                 category_id: salesCategoryId,
                 sub_category_id: salesSubCategoryId,
                 standard_cost: row.unit_cost ?? null,
                 selling_price: row.unit_price ?? null,
                 weight_tonnes: row.weight_tonnes ?? null,
-              },
-              {
-                onConflict: "period_id,product_id,branch_id",
-                ignoreDuplicates: false,
-              },
-            );
-            if (pricingErr) {
-              errors.push("Row " + row.row_number + ": pricing upsert failed: " + pricingErr.message);
-              continue;
-            }
+              };
+              const { data: existingPricing } = await supabase
+                .from("analytics_fact_pricing")
+                .select("id")
+                .eq("period_id", upload.period_id)
+                .eq("product_id", productId)
+                .eq("branch_id", pricingBranchVal)
+                .maybeSingle();
+              if (existingPricing) {
+                const { error: pricingErr } = await supabase
+                  .from("analytics_fact_pricing")
+                  .update(pricingFields)
+                  .eq("id", existingPricing.id);
+                if (pricingErr) {
+                  errors.push("Row " + row.row_number + ": pricing update failed: " + pricingErr.message);
+                  continue;
+                }
+              } else {
+                const { error: pricingErr } = await supabase
+                  .from("analytics_fact_pricing")
+                  .insert(pricingFields);
+                if (pricingErr) {
+                  errors.push("Row " + row.row_number + ": pricing insert failed: " + pricingErr.message);
+                  continue;
+                }
+              }
           }
 
           imported.push(row.row_number);
@@ -236,22 +303,42 @@ export async function POST(_request: Request, context: RouteContext) {
             }
           }
 
-          const { error: invErr } = await supabase.from("analytics_fact_inventory").upsert(
-            {
-              snapshot_date: new Date().toISOString().split("T")[0],
-              product_id: productId,
-              branch_id: upload.branch_id,
-              supplier_id: upload.supplier_id || null,
-              category_id: invCategoryId,
-              sub_category_id: invSubCategoryId,
-              quantity_on_hand: row.quantity ?? 0,
-              unit_cost: row.unit_cost ? parseFloat(String(row.unit_cost).replace(/[^\d.-]/g, "")) : null,
-            },
-            { onConflict: "snapshot_date,product_id,branch_id" }
-          );
-          if (invErr) {
-            errors.push("Row " + row.row_number + ": inventory upsert failed: " + invErr.message);
-            continue;
+          // Check for existing inventory row
+          const invSnapDate = new Date().toISOString().split("T")[0];
+          const invFields = {
+            snapshot_date: invSnapDate,
+            product_id: productId,
+            branch_id: upload.branch_id,
+            supplier_id: upload.supplier_id || null,
+            category_id: invCategoryId,
+            sub_category_id: invSubCategoryId,
+            quantity_on_hand: row.quantity ?? 0,
+            unit_cost: row.unit_cost ? parseFloat(String(row.unit_cost).replace(/[^\d.-]/g, "")) : null,
+          };
+          const { data: existingInv } = await supabase
+            .from("analytics_fact_inventory")
+            .select("id")
+            .eq("snapshot_date", invSnapDate)
+            .eq("product_id", productId)
+            .eq("branch_id", upload.branch_id)
+            .maybeSingle();
+          if (existingInv) {
+            const { error: invErr } = await supabase
+              .from("analytics_fact_inventory")
+              .update(invFields)
+              .eq("id", existingInv.id);
+            if (invErr) {
+              errors.push("Row " + row.row_number + ": inventory update failed: " + invErr.message);
+              continue;
+            }
+          } else {
+            const { error: invErr } = await supabase
+              .from("analytics_fact_inventory")
+              .insert(invFields);
+            if (invErr) {
+              errors.push("Row " + row.row_number + ": inventory insert failed: " + invErr.message);
+              continue;
+            }
           }
           imported.push(row.row_number);
         } catch (e) {
@@ -310,20 +397,42 @@ export async function POST(_request: Request, context: RouteContext) {
           }
 
           // Upsert product
-          const { error: prodErr } = await supabase.from("analytics_products").upsert(
-            {
-              stock_code: row.stock_code,
-              name: row.product_name || row.stock_code,
-              category_id: categoryId,
-              sub_category_id: subCategoryId,
-              sub_category: row.sub_category || null,
-              pack_size: row.pack_size || null,
-            },
-            { onConflict: "stock_code" }
-          );
-          if (prodErr) {
-            errors.push("Row " + row.row_number + ": product upsert failed: " + prodErr.message);
-            continue;
+          // Check for existing product
+          const { data: existingProdCheck } = await supabase
+            .from("analytics_products")
+            .select("id")
+            .eq("stock_code", row.stock_code)
+            .maybeSingle();
+          if (existingProdCheck) {
+            const { error: prodErr } = await supabase
+              .from("analytics_products")
+              .update({
+                name: row.product_name || row.stock_code,
+                category_id: categoryId,
+                sub_category_id: subCategoryId,
+                sub_category: row.sub_category || null,
+                pack_size: row.pack_size || null,
+              })
+              .eq("id", existingProdCheck.id);
+            if (prodErr) {
+              errors.push("Row " + row.row_number + ": product update failed: " + prodErr.message);
+              continue;
+            }
+          } else {
+            const { error: prodErr } = await supabase
+              .from("analytics_products")
+              .insert({
+                stock_code: row.stock_code,
+                name: row.product_name || row.stock_code,
+                category_id: categoryId,
+                sub_category_id: subCategoryId,
+                sub_category: row.sub_category || null,
+                pack_size: row.pack_size || null,
+              });
+            if (prodErr) {
+              errors.push("Row " + row.row_number + ": product insert failed: " + prodErr.message);
+              continue;
+            }
           }
           imported.push(row.row_number);
         } catch (e) {
@@ -403,18 +512,155 @@ export async function POST(_request: Request, context: RouteContext) {
           if (!productId) { skipped.push(row.row_number); continue; }
 
           // Create junction link
-          const { error: supProdErr } = await supabase.from("analytics_supplier_products").upsert(
-            {
-              supplier_id: supplierId,
-              product_id: productId,
-              pack_size: row.pack_size || null,
-            },
-            { onConflict: "supplier_id,product_id" }
-          );
-          if (supProdErr) {
-            errors.push("Row " + row.row_number + ": supplier-product link failed: " + supProdErr.message);
-            continue;
+          // Check for existing supplier-product link
+          const { data: existingSupProd } = await supabase
+            .from("analytics_supplier_products")
+            .select("id")
+            .eq("supplier_id", supplierId)
+            .eq("product_id", productId)
+            .maybeSingle();
+          if (existingSupProd) {
+            const { error: supProdErr } = await supabase
+              .from("analytics_supplier_products")
+              .update({ pack_size: row.pack_size || null })
+              .eq("id", existingSupProd.id);
+            if (supProdErr) {
+              errors.push("Row " + row.row_number + ": supplier-product update failed: " + supProdErr.message);
+              continue;
+            }
+          } else {
+            const { error: supProdErr } = await supabase
+              .from("analytics_supplier_products")
+              .insert({
+                supplier_id: supplierId,
+                product_id: productId,
+                pack_size: row.pack_size || null,
+              });
+            if (supProdErr) {
+              errors.push("Row " + row.row_number + ": supplier-product insert failed: " + supProdErr.message);
+              continue;
+            }
           }
+          imported.push(row.row_number);
+        } catch (e) {
+          errors.push(`Row ${row.row_number}: ${e instanceof Error ? e.message : "Unknown error"}`);
+        }
+      }
+    }
+
+    // For item_list_master → upsert products + supplier links (reference data)
+    if (upload.file_type === "item_list_master") {
+      for (const row of rows) {
+        try {
+          if (!row.stock_code || !row.product_name) { skipped.push(row.row_number); continue; }
+
+          // Resolve category
+          let categoryId: string | null = null;
+          if (row.category) {
+            const { data: existingCat } = await supabase
+              .from("analytics_categories")
+              .select("id")
+              .ilike("name", row.category.trim())
+              .single();
+            if (existingCat) {
+              categoryId = existingCat.id;
+            }
+          }
+
+          // Resolve sub-category
+          let subCategoryId: string | null = null;
+          if (row.sub_category && categoryId) {
+            const { data: existingSub } = await supabase
+              .from("analytics_subcategories")
+              .select("id")
+              .eq("category_id", categoryId)
+              .ilike("name", row.sub_category.trim())
+              .single();
+            if (existingSub) {
+              subCategoryId = existingSub.id;
+            } else {
+              // Create new sub-category
+              const { data: newSub } = await supabase
+                .from("analytics_subcategories")
+                .insert({ category_id: categoryId, name: row.sub_category.trim().toUpperCase() })
+                .select("id")
+                .single();
+              subCategoryId = newSub?.id ?? null;
+            }
+          }
+
+          // Upsert product
+          const { data: existingProdCheck } = await supabase
+            .from("analytics_products")
+            .select("id")
+            .eq("stock_code", row.stock_code)
+            .maybeSingle();
+
+          let productId: string | null = null;
+          if (existingProdCheck) {
+            const { error: prodErr } = await supabase
+              .from("analytics_products")
+              .update({
+                name: row.product_name,
+                category_id: categoryId,
+                sub_category_id: subCategoryId,
+                sub_category: row.sub_category || null,
+              })
+              .eq("id", existingProdCheck.id);
+            if (prodErr) {
+              errors.push("Row " + row.row_number + ": product update failed: " + prodErr.message);
+              continue;
+            }
+            productId = existingProdCheck.id;
+          } else {
+            const { error: prodErr, data: newProd } = await supabase
+              .from("analytics_products")
+              .insert({
+                stock_code: row.stock_code,
+                name: row.product_name,
+                category_id: categoryId,
+                sub_category_id: subCategoryId,
+                sub_category: row.sub_category || null,
+              })
+              .select("id")
+              .single();
+            if (prodErr) {
+              errors.push("Row " + row.row_number + ": product insert failed: " + prodErr.message);
+              continue;
+            }
+            productId = newProd?.id ?? null;
+          }
+
+          // Link to suppliers (Suppliers column may contain multiple names)
+          if (productId && row.suppliers) {
+            const supplierNames = String(row.suppliers)
+              .split(/[,;|]/)
+              .map((s) => s.trim())
+              .filter(Boolean);
+            for (const supName of supplierNames) {
+              const { data: existingSup } = await supabase
+                .from("analytics_suppliers")
+                .select("id")
+                .ilike("name", supName)
+                .single();
+              if (existingSup) {
+                const { data: existingLink } = await supabase
+                  .from("analytics_supplier_products")
+                  .select("id")
+                  .eq("supplier_id", existingSup.id)
+                  .eq("product_id", productId)
+                  .maybeSingle();
+                if (!existingLink) {
+                  await supabase
+                    .from("analytics_supplier_products")
+                    .insert({ supplier_id: existingSup.id, product_id: productId })
+                    .select()
+                    .single();
+                }
+              }
+            }
+          }
+
           imported.push(row.row_number);
         } catch (e) {
           errors.push(`Row ${row.row_number}: ${e instanceof Error ? e.message : "Unknown error"}`);
@@ -436,6 +682,7 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({
       imported: imported.length,
       skipped: skipped.length + skippedDueToMissing,
+      alreadyImported: alreadyImported.length,
       errors,
       status,
     });

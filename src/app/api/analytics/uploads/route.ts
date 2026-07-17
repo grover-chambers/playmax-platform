@@ -88,6 +88,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
+      console.error("Supabase insert error:", error);
       return NextResponse.json(
         { error: sanitizeError(error) },
         { status: 500 },
@@ -128,7 +129,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ upload: data }, { status: 201 });
-  } catch {
+  } catch (err: unknown) {
+    console.error("Upload API error:", err);
     return NextResponse.json(
       { error: "Failed to create upload" },
       { status: 500 },

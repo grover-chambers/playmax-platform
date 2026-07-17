@@ -6,7 +6,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "Demo123!";
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD;
 
 const DEMO_ACCOUNTS: Record<
   string,
@@ -45,7 +45,16 @@ const DEMO_ACCOUNTS: Record<
 };
 
 export async function POST(request: NextRequest) {
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.ENABLE_DEMO_LOGIN !== "true"
+  ) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   try {
+    if (!DEMO_PASSWORD) {
+      return NextResponse.json({ error: "DEMO_PASSWORD not configured" }, { status: 500 });
+    }
     const { role } = await request.json();
     const account = DEMO_ACCOUNTS[role];
     if (!account) {

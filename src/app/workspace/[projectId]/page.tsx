@@ -71,17 +71,11 @@ function initials(name: string): string {
 }
 
 const NOTE_COLORS = ["#FCD34D", "#60A5FA", "#34D399", "#F472B6", "#A78BFA"];
-const MOCK_TEAM: TeamMember[] = [
-  { name: "Brian Mwangi", initials: "BM", role: "Project Lead" },
-  { name: "Alice Wanjiku", initials: "AW", role: "Designer" },
-  { name: "James Kamau", initials: "JK", role: "Researcher" },
-];
 
-const MOCK_MESSAGES: ChatMessage[] = [
-  { id: "1", author: "Brian Mwangi", text: "Client approved the creative direction.", time: "09:42" },
-  { id: "2", author: "Alice Wanjiku", text: "Updating the moodboard with new references.", time: "10:15" },
-  { id: "3", author: "James Kamau", text: "Competitor analysis doc is ready in Docs.", time: "11:00" },
-];
+// TODO(playmax): Project team members & chat require new tables (project_members, project_messages)
+// Currently gated with Coming Soon banner. Remove mock data when tables are created.
+const MOCK_TEAM: TeamMember[] = [];
+const MOCK_MESSAGES: ChatMessage[] = [];
 
 export default function WorkspacePage({
   params,
@@ -414,7 +408,12 @@ export default function WorkspacePage({
         </div>
 
         {/* Panel tabs */}
-        <div className="flex border-b border-[#1E1E1E]">
+                {/* Coming Soon banner */}
+                <div className="p-3 mb-2 rounded-lg bg-yellow/10 border border-yellow/30 text-yellow flex items-center gap-2">
+                  <span className="text-[11px] font-mono">⚠ COMING SOON</span>
+                  <span className="text-[11px] text-gray-5 ml-auto">Team & Chat tabs require project_members / project_messages tables</span>
+                </div>
+                <div className="flex border-b border-[#1E1E1E]">
           {[
             { key: "team" as RightTab, label: "Team", icon: Users },
             { key: "tasks" as RightTab, label: "Tasks", icon: CheckSquare },

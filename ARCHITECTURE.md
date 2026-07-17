@@ -829,7 +829,7 @@ client      → rows where visible_to_client = true
 
 | Detail | Value |
 |--------|-------|
-| API Key | `re_9jctTuKd_8tkdePSP7nwpNHmKAFEgkT2y` (live) |
+| API Key | `re_... (set via RESEND_API_KEY env var, gitignored)` (live) |
 | SDK | `resend` npm package |
 | Templates | 3 React Email components (onboarding, reset-password, notification) |
 | Domain | Falls back to `resend.dev` if `RESEND_DOMAIN` not set |

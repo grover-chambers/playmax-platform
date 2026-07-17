@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Download,
@@ -85,6 +85,21 @@ interface SupplierRow {
   total_movements: number;
 }
 
+interface AnalyticsSubcategory {
+  id: string;
+  category_id: string;
+  name: string;
+}
+
+interface AnalyticsBranch {
+  id: string;
+  code: string;
+  name: string;
+  city: string | null;
+  region: string | null;
+  tier: string;
+}
+
 /* ── Tab config ─────────────────────────────────────────────── */
 
 const reportTabs: { key: ReportTab; label: string; icon: React.ElementType }[] = [
@@ -153,6 +168,10 @@ export default function MarketShareReport() {
   /* ── Filter state ── */
   const [activeTab, setActiveTab] = useState<ReportTab>("market_share");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [subcategories, setSubcategories] = useState<AnalyticsSubcategory[]>([]);
+  const [branches, setBranches] = useState<AnalyticsBranch[]>([]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState("");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [compareStart, setCompareStart] = useState("");
@@ -185,9 +204,21 @@ export default function MarketShareReport() {
   useEffect(() => {
     fetch("/api/analytics/dimensions")
       .then((r) => r.json())
-      .then((d) => setCategories(d.categories ?? []))
+      .then((d) => {
+        setCategories(d.categories ?? []);
+        setSubcategories(d.subcategories ?? []);
+        setBranches(d.branches ?? []);
+      })
       .catch(() => {});
   }, []);
+
+  /* ── Filtered sub-categories ── */
+  const filteredSubcategories = useMemo(() => {
+    if (!selectedCategory) return subcategories;
+    const cat = categories.find((c) => c.name === selectedCategory);
+    if (!cat) return subcategories;
+    return subcategories.filter((sc) => sc.category_id === cat.id);
+  }, [selectedCategory, categories, subcategories]);
 
   /* ── Run query ── */
   const runQuery = useCallback(async () => {
@@ -198,6 +229,8 @@ export default function MarketShareReport() {
       if (selectedCategory && tabsWithCategory.includes(activeTab)) {
         body.category = selectedCategory;
       }
+      if (selectedSubCategory) body.sub_category = selectedSubCategory;
+      if (selectedBranch) body.branch = selectedBranch;
       if (periodStart && tabsNeedingPeriod.includes(activeTab)) body.period_start = periodStart;
       if (periodEnd && tabsNeedingPeriod.includes(activeTab)) body.period_end = periodEnd;
       if (compareStart) body.compare_start = compareStart;
@@ -250,7 +283,7 @@ export default function MarketShareReport() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, selectedCategory, periodStart, periodEnd, compareStart, compareEnd]);
+  }, [activeTab, selectedCategory, selectedSubCategory, selectedBranch, periodStart, periodEnd, compareStart, compareEnd]);
 
   /* ── Pagination ── */
   const branchesForTable = marketData ? [...marketData.branches].sort((a, b) => a.rank - b.rank) : [];
@@ -273,6 +306,8 @@ export default function MarketShareReport() {
     try {
       const config: Record<string, unknown> = {};
       if (selectedCategory) config.category = selectedCategory;
+      if (selectedSubCategory) config.sub_category = selectedSubCategory;
+      if (selectedBranch) config.branch = selectedBranch;
       if (periodStart) config.period_start = periodStart;
       if (periodEnd) config.period_end = periodEnd;
       if (compareStart) config.compare_start = compareStart;
@@ -358,7 +393,7 @@ export default function MarketShareReport() {
             </label>
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => { setSelectedCategory(e.target.value); setSelectedSubCategory(""); }}
               className="bg-black-3 border border-white/6 rounded-md px-3 py-1.5 text-[12px] text-white font-mono outline-none cursor-pointer"
             >
               <option value="">All categories</option>
@@ -368,6 +403,42 @@ export default function MarketShareReport() {
             </select>
           </div>
         )}
+
+        {/* Sub-Category selector — only when category is selected */}
+        {tabsWithCategory.includes(activeTab) && selectedCategory && filteredSubcategories.length > 0 && (
+          <div>
+            <label className="font-mono text-[9px] text-gray-5 uppercase tracking-wider block mb-1">
+              Sub-Category
+            </label>
+            <select
+              value={selectedSubCategory}
+              onChange={(e) => setSelectedSubCategory(e.target.value)}
+              className="bg-black-3 border border-white/6 rounded-md px-3 py-1.5 text-[12px] text-white font-mono outline-none cursor-pointer"
+            >
+              <option value="">All sub-categories</option>
+              {filteredSubcategories.map((sc) => (
+                <option key={sc.id} value={sc.name}>{sc.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Branch selector */}
+        <div>
+          <label className="font-mono text-[9px] text-gray-5 uppercase tracking-wider block mb-1">
+            Branch
+          </label>
+          <select
+            value={selectedBranch}
+            onChange={(e) => setSelectedBranch(e.target.value)}
+            className="bg-black-3 border border-white/6 rounded-md px-3 py-1.5 text-[12px] text-white font-mono outline-none cursor-pointer"
+          >
+            <option value="">All branches</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+            ))}
+          </select>
+        </div>
 
         {/* Period dates — only for reports that need them */}
         {tabsNeedingPeriod.includes(activeTab) && (

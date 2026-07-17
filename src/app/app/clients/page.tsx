@@ -42,18 +42,18 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const supabase = createClient();
-        const { data: dbClients, error } = await supabase
-          .from("clients")
-          .select("*")
-          .order("updated_at", { ascending: false });
-        if (error || !dbClients || dbClients.length === 0) return;
-        const mapped: Client[] = dbClients.map((c) => {
-          const ownerName = c.assigned_to?.split("@")[0]?.replace(".", " ")?.replace(/\b\w/g, (l: string) => l.toUpperCase()) || "Unassigned";
-          const initials = ownerName === "Unassigned" ? "UA" : ownerName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
-          return {
+      (async () => {
+        try {
+          const supabase = createClient();
+          const { data: dbClients, error } = await supabase
+            .from("clients")
+            .select("*, profiles!clients_assigned_to_fkey(full_name)")
+            .order("updated_at", { ascending: false });
+          if (error || !dbClients || dbClients.length === 0) return;
+          const mapped: Client[] = dbClients.map((c) => {
+            const ownerName = c.profiles?.full_name || "Unassigned";
+            const initials = ownerName === "Unassigned" ? "UA" : ownerName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+            return {
             id: c.id,
             company: c.name || c.company,
             industry: c.industry || "—",

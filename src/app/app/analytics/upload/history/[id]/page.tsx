@@ -72,6 +72,7 @@ export default function UploadDetailPage({
   const [importResult, setImportResult] = useState<{
     imported: number;
     skipped: number;
+    alreadyImported: number;
     errors: string[];
   } | null>(null);
   const [page, setPage] = useState(1);
@@ -112,7 +113,9 @@ export default function UploadDetailPage({
   const handleReimport = async () => {
     if (!upload) return;
     if (upload.status === "imported") {
-      if (!confirm("This upload was already imported. Re-importing will overwrite existing data. Continue?")) return;
+      if (!confirm("This upload was already imported. Re-importing will check for existing data and only add new rows. Continue?")) return;
+    } else {
+      if (!confirm("Import this data into fact tables?")) return;
     }
     setReimporting(true);
     setImportResult(null);
@@ -123,6 +126,7 @@ export default function UploadDetailPage({
       setImportResult({
         imported: data.imported ?? 0,
         skipped: data.skipped ?? 0,
+        alreadyImported: data.alreadyImported ?? 0,
         errors: data.errors ?? [],
       });
       // Refresh upload status
@@ -135,6 +139,7 @@ export default function UploadDetailPage({
       setImportResult({
         imported: 0,
         skipped: 0,
+        alreadyImported: 0,
         errors: [e instanceof Error ? e.message : "Import failed"],
       });
     } finally {
@@ -186,8 +191,7 @@ export default function UploadDetailPage({
               <ArrowLeft className="w-3.5 h-3.5 mr-1" />
               Back
             </Button>
-            {(upload.status === "uploaded" || upload.status === "parsed" || upload.status === "failed") && (
-              <Button
+            <Button
                 variant="primary"
                 size="sm"
                 onClick={handleReimport}
@@ -198,9 +202,8 @@ export default function UploadDetailPage({
                 ) : (
                   <RefreshCw className="w-3.5 h-3.5 mr-1" />
                 )}
-                {"Re-import"}
+                {upload.status === "imported" ? "Re-import" : "Import to Fact Tables"}
               </Button>
-            )}
             <Button
               variant="secondary"
               size="sm"
@@ -230,6 +233,7 @@ export default function UploadDetailPage({
               <CheckCircle className="w-4 h-4" />
               <span className="text-[12px] font-medium">
                 Import successful — {importResult.imported} rows imported
+                {importResult.alreadyImported > 0 && `, ${importResult.alreadyImported} already in database`}
                 {importResult.skipped > 0 && `, ${importResult.skipped} skipped`}
               </span>
             </div>
@@ -238,7 +242,7 @@ export default function UploadDetailPage({
               <div className="flex items-center gap-2 mb-2">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-[12px] font-medium">
-                  Import completed with errors — {importResult.imported} imported, {importResult.errors.length} errors
+                  Import completed with errors — {importResult.imported} imported, {importResult.alreadyImported} already in database, {importResult.errors.length} errors
                 </span>
               </div>
               <div className="max-h-40 overflow-y-auto">
@@ -260,8 +264,10 @@ export default function UploadDetailPage({
               <CheckCircle className="w-3 h-3 text-green" />
             ) : upload.status === "failed" ? (
               <AlertCircle className="w-3 h-3 text-red" />
+            ) : upload.status === "parsed" ? (
+              <RefreshCw className="w-3 h-3 text-yellow" />
             ) : null}
-            {upload.status}
+            <span className="capitalize">{upload.status.replace(/_/g, " ")}</span>
           </div>
         </div>
         <div className="pm-dash-card pm-dash-card-b">

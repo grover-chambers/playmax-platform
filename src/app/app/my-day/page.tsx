@@ -218,7 +218,7 @@ export default function MyDayPage() {
           const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
           const dueTasks = dbTasks.filter(t => {
             if (t.due_date && new Date(t.due_date) <= todayEnd) return true;
-            return t.status === "in-progress" || t.status === "todo";
+            return t.status === "in_progress" || t.status === "todo";
           });
           setMyTasks(dueTasks.slice(0, 5).map(t => ({
             id: Math.random().toString(36).slice(2),
@@ -258,28 +258,61 @@ export default function MyDayPage() {
         }
       } catch { /* fallback */ }
     })();
-    (async () => {
-      try {
-        const supabase = createClient();
-        const { data: dbConvs } = await supabase
-          .from("conversations")
-          .select("contact_name, last_message, updated_at, unread")
-          .order("updated_at", { ascending: false })
-          ;
-        if (dbConvs && dbConvs.length > 0) {
-          const unreadCount = dbConvs.filter(c => c.unread).length;
-          setMyConversations(dbConvs.map(c => ({
-            name: c.contact_name || "Unknown",
-            text: c.last_message || "—",
-            time: formatTimeAgo(c.updated_at),
-            unread: !!c.unread,
-          })));
-          setMyKpis(prev => prev.map(k =>
-            k.label === "Unread messages" ? { ...k, value: String(unreadCount || 0), sub: `${unreadCount} unread` } : k
-          ));
-        }
-      } catch { /* fallback */ }
-    })();
+        (async () => {
+          try {
+            const supabase = createClient();
+            const { data: dbConvs } = await supabase
+              .from("conversations")
+              .select("id, contact_name, last_message_at, channel, status")
+              .order("last_message_at", { ascending: false });
+            if (dbConvs && dbConvs.length > 0) {
+              // Get latest message for each conversation
+              const convIds = dbConvs.map(c => c.id);
+              const { data: latestMsgs } = await supabase
+                .from("messages")
+                .select("conversation_id, text, direction, created_at")
+                .in("conversation_id", convIds)
+                .order("created_at", { ascending: false });
+          
+              const latestMsgMap = new Map();
+              latestMsgs?.forEach(m => {
+                if (!latestMsgMap.has(m.conversation_id)) {
+                  latestMsgMap.set(m.conversation_id, m);
+                }
+              });
+          
+              // Get unread counts (inbound messages not read)
+              const { data: unreadCounts } = await supabase
+                .from("messages")
+                .select("conversation_id")
+                .in("conversation_id", convIds)
+                .eq("direction", "inbound");
+          
+              const unreadMap = new Map();
+              unreadCounts?.forEach(m => {
+                unreadMap.set(m.conversation_id, (unreadMap.get(m.conversation_id) || 0) + 1);
+              });
+          
+              setMyConversations(dbConvs.map(c => {
+                              const msg = latestMsgMap.get(c.id);
+                              const unreadCount = unreadMap.get(c.id) || 0;
+                              return {
+                                name: c.contact_name || "Unknown",
+                                text: msg?.text || "—",
+                                time: formatTimeAgo(c.last_message_at),
+                                unread: unreadCount > 0,
+                              };
+                            }));
+          
+              const totalUnread = Array.from(unreadMap.values()).reduce((a, b) => a + b, 0);
+              setMyKpis(prev => prev.map(k =>
+                k.label === "Unread messages" ? { ...k, value: String(totalUnread), sub: `${totalUnread} unread` } : k
+              ));
+            }
+          } catch (err) {
+            console.error("my-day conversations fetch failed:", err);
+          }
+        })();
     (async () => {
       try {
         const supabase = createClient();
