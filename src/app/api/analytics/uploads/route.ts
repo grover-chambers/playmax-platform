@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { filename, file_type, period_id, branch_id, category_id } = body;
+    const { filename, file_type, period_id, branch_id, category_id, sub_category_id } = body;
 
     if (!filename || !file_type) {
       return NextResponse.json(
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const validTypes = ["per_store_sales", "chain_wide_sales", "inventory", "sales_transactions", "stock_movements", "supplier_details", "pricing", "product_master", "supplier_products"];
+    const validTypes = ["per_store_sales", "chain_wide_sales", "inventory", "sales_transactions", "stock_movements", "supplier_details", "pricing", "product_master", "supplier_products", "item_list_master"];
     if (!validTypes.includes(file_type)) {
       return NextResponse.json(
         { error: `file_type must be one of: ${validTypes.join(", ")}` },
@@ -80,6 +80,7 @@ export async function POST(request: Request) {
         period_id: period_id || null,
         branch_id: branch_id || null,
         category_id: category_id || null,
+        sub_category_id: sub_category_id || null,
         status: "uploaded",
         uploaded_by: currentUser.id,
       })
@@ -96,24 +97,34 @@ export async function POST(request: Request) {
     // Capture Grand Total data for branch summary (if provided)
     const { grand_total } = body;
     if (grand_total && data && data.branch_id && data.period_id) {
-      // Get supplier name from request body
       const supplierName = body.supplier_name ?? null;
-
-      await supabase.from("analytics_fact_branch_summary").upsert(
-        {
-          upload_id: data.id,
-          branch_id: data.branch_id,
-          period_id: data.period_id,
-          supplier_name: supplierName,
-          total_quantity: grand_total.quantity ?? 0,
-          total_weight_tonnes: grand_total.weight ?? 0,
-          total_amount: grand_total.total ?? 0,
-        },
-        {
-          onConflict: "branch_id,period_id,supplier_name",
-          ignoreDuplicates: false,
-        }
-      );
+      const summaryFields = {
+        upload_id: data.id,
+        branch_id: data.branch_id,
+        period_id: data.period_id,
+        supplier_name: supplierName,
+        total_quantity: grand_total.quantity ?? 0,
+        total_weight_tonnes: grand_total.weight ?? 0,
+        total_amount: grand_total.total ?? 0,
+      };
+      // Check for existing summary row (no UNIQUE constraint reliance)
+      const { data: existingSummary } = await supabase
+        .from("analytics_fact_branch_summary")
+        .select("id")
+        .eq("branch_id", data.branch_id)
+        .eq("period_id", data.period_id)
+        .eq("supplier_name", supplierName)
+        .maybeSingle();
+      if (existingSummary) {
+        await supabase
+          .from("analytics_fact_branch_summary")
+          .update(summaryFields)
+          .eq("id", existingSummary.id);
+      } else {
+        await supabase
+          .from("analytics_fact_branch_summary")
+          .insert(summaryFields);
+      }
     }
 
     return NextResponse.json({ upload: data }, { status: 201 });
