@@ -3,6 +3,7 @@ import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
+export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
 
 interface RouteContext {
   params: Promise<{ id: string }>;
