@@ -12,10 +12,12 @@ import {
   User,
   BarChart3,
   Loader2,
+  Milestone,
 } from "lucide-react";
 import { usePortalClient } from "@/components/portal/portal-provider";
-import MetricsGrid from "@/components/reports/metrics-grid";
 import DocumentList from "@/components/documents/document-list";
+import ResearchFindingsCards from "@/components/portal/research-findings-cards";
+import MilestoneTimeline from "@/components/portal/milestone-timeline";
 
 interface KpiData {
   activeProjects: number;
@@ -59,7 +61,7 @@ interface Booking {
 
 interface ActivityItem {
   id: string;
-  type: "project" | "invoice" | "booking" | "deliverable";
+  type: "project" | "invoice" | "booking" | "deliverable" | "milestone";
   title: string;
   detail: string;
   date: string;
@@ -71,6 +73,7 @@ function buildActivityFeed(
   invoices: Invoice[],
   bookings: Booking[],
   kpis: KpiData | null,
+  milestones?: number,
 ): ActivityItem[] {
   const items: ActivityItem[] = [];
 
@@ -109,14 +112,23 @@ function buildActivityFeed(
       id: "deliverables",
       type: "deliverable",
       title: "New deliverables available",
-      detail: `${kpis.pendingDeliverables} file${kpis.pendingDeliverables > 1 ? "s" : ""} ready for download`,
+      detail: `${kpis.pendingDeliverables} file${kpis.pendingDeliverables > 1 ? "s" : ""} ready for review`,
       date: new Date().toISOString(),
       status: "available",
     });
   }
+  if (milestones && milestones > 0) {
+    items.push({
+      id: "milestones",
+      type: "milestone",
+      title: `${milestones} milestone${milestones > 1 ? "s" : ""} pending`,
+      detail: "Project milestones awaiting completion",
+      date: new Date().toISOString(),
+      status: "pending",
+    });
+  }
 
-  // Sort by most recent first (use creation order as tiebreaker)
-  return items.slice(0, 8);
+  return items.slice(0, 10);
 }
 
 function formatCurrency(amount: number | null | undefined): string {
@@ -126,11 +138,14 @@ function formatCurrency(amount: number | null | undefined): string {
   return `KES ${num.toLocaleString()}`;
 }
 
-function getGreeting(): string {
+function getGreeting(client: { industry?: string | null; name?: string | null } | null): string {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
+  const base = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+
+  if (client?.industry) {
+    return `${base}, ${client.name?.split(" ")[0] || "there"}. Welcome to your ${client.industry} dashboard.`;
+  }
+  return `${base}, ${client?.name?.split(" ")[0] || "there"}.`;
 }
 
 function statusBadgeClass(status: string): string {
@@ -143,6 +158,7 @@ function statusBadgeClass(status: string): string {
     case "pending":
       return "pm-dash-bdg-b";
     case "completed":
+    case "available":
       return "pm-dash-bdg-g";
     case "overdue":
     case "cancelled":
@@ -207,14 +223,12 @@ export default function PortalOverviewPage() {
     );
   }
 
-  const firstName = client?.name?.split(" ")[0] || "there";
-
   return (
     <div className="page-content portal-page">
-      {/* ── Welcome strip ──────────────────────────── */}
+      {/* ── Welcome strip (dynamic context) ─────────────── */}
       <div className="pm-dash-welcome">
         <div>
-          <h2>{getGreeting()}, {firstName}.</h2>
+          <h2>{getGreeting(client)}</h2>
           <p>
             {client?.company
               ? `Here's a summary of your engagements with ${client.company}.`
@@ -239,7 +253,7 @@ export default function PortalOverviewPage() {
         <div className="pm-dash-kcard grn">
           <div className="pm-dash-kn grn">{kpis?.pendingDeliverables ?? 0}</div>
           <div className="pm-dash-kl">Deliverables</div>
-          <div className="pm-dash-ksub">available</div>
+          <div className="pm-dash-ksub">ready for review</div>
         </div>
         <div className="pm-dash-kcard red">
           <div className="pm-dash-kn red">{formatCurrency(kpis?.outstandingAmount ?? 0)}</div>
@@ -279,7 +293,8 @@ export default function PortalOverviewPage() {
                 <div className={`pm-dash-feed-dot ${
                   item.type === "project" ? "b" :
                   item.type === "invoice" ? (item.status === "overdue" ? "r" : "y") :
-                  item.type === "booking" ? "g" : "g"
+                  item.type === "booking" ? "g" :
+                  item.type === "milestone" ? "g" : "g"
                 }`} />
                 <div className="flex-1 min-w-0">
                   <div className="pm-dash-feed-text">{item.title}</div>
@@ -333,7 +348,7 @@ export default function PortalOverviewPage() {
             </div>
           )}
 
-          {/* ── Research Reports ──────────────────── */}
+          {/* ── Research Findings Cards ──────────── */}
           <div className="pm-dash-card">
             <div className="pm-dash-card-h">
               <div className="flex items-center gap-2">
@@ -342,9 +357,27 @@ export default function PortalOverviewPage() {
               </div>
             </div>
             <div className="pm-dash-card-b">
-              <MetricsGrid clientId={client?.id} />
+              <ResearchFindingsCards clientId={client?.id} />
             </div>
           </div>
+
+          {/* ── Milestone Timeline ──────────────── */}
+          {recentProjects.length > 0 && (
+            <div className="pm-dash-card">
+              <div className="pm-dash-card-h">
+                <div className="flex items-center gap-2">
+                  <Milestone size={14} className="text-yellow" />
+                  <span className="pm-dash-card-t">Project Milestones</span>
+                </div>
+                <Link href="/portal/projects" className="text-[10px] text-teal hover:underline">
+                  View all →
+                </Link>
+              </div>
+              <div className="pm-dash-card-b">
+                <MilestoneTimeline projectId={recentProjects[0]?.id} />
+              </div>
+            </div>
+          )}
 
           {/* ── Documents ──────────────────────────── */}
           <div className="pm-dash-card">

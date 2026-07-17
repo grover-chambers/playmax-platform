@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { getPortalClient } from "@/lib/portal";
+import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -8,58 +9,45 @@ export async function GET() {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const client = await getPortalClient(supabase, currentUser.id);
-    if (!client) {
-      return NextResponse.json({ error: "No client account linked" }, { status: 404 });
-    }
+    if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
 
     return NextResponse.json({ client });
   } catch {
-    return NextResponse.json({ error: "Failed to fetch client" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch client data" }, { status: 500 });
   }
 }
 
-export async function PATCH(request: Request) {
+export async function PUT(req: Request) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const client = await getPortalClient(supabase, currentUser.id);
-    if (!client) {
-      return NextResponse.json({ error: "No client account linked" }, { status: 404 });
-    }
+    if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
 
-    const body = await request.json();
-    const updates: Record<string, unknown> = {};
+    const body = await req.json();
+    const allowedFields: Record<string, unknown> = {};
+    if (body.name) allowedFields.name = body.name;
+    if (body.email) allowedFields.email = body.email;
+    if (body.phone) allowedFields.phone = body.phone;
+    if (body.company) allowedFields.company = body.company;
 
-    if (typeof body.name === "string" && body.name.trim()) {
-      updates.name = body.name.trim();
-    }
-    if (typeof body.phone === "string") {
-      updates.phone = body.phone.trim() || null;
-    }
-
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(allowedFields).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
     const { error } = await supabase
       .from("clients")
-      .update(updates)
+      .update(allowedFields)
       .eq("id", client.id);
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }

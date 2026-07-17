@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, startTransition } from "react";
 import StatusBadge from "@/components/ui/status-badge";
+import BookingDetailDrawer from "@/components/portal/booking-detail-drawer";
 import { Calendar, MapPin, Clock, Loader2 } from "lucide-react";
 
 interface Booking {
@@ -20,12 +21,9 @@ function formatCurrency(amount: number): string {
 
 function mapStatus(status: string): "active" | "review" | "draft" {
   switch (status) {
-    case "confirmed":
-      return "active";
-    case "pending":
-      return "review";
-    default:
-      return "draft";
+    case "confirmed": return "active";
+    case "pending": return "review";
+    default: return "draft";
   }
 }
 
@@ -36,6 +34,7 @@ function formatDate(d: string): string {
 export default function PortalBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     fetch("/api/portal/bookings")
@@ -75,7 +74,8 @@ export default function PortalBookingsPage() {
           {bookings.map((b) => (
             <div
               key={b.id}
-              className="pm-dash-card pm-dash-card-b flex items-start justify-between gap-4"
+              onClick={() => setSelectedBooking(b)}
+              className="pm-dash-card pm-dash-card-b flex items-start justify-between gap-4 cursor-pointer hover:border-yellow/20 transition-colors"
             >
               <div className="flex items-start gap-4 flex-1 min-w-0">
                 <div className="w-12 h-12 rounded-lg bg-black-3 border border-[#2A2A2A] flex items-center justify-center flex-shrink-0">
@@ -114,6 +114,11 @@ export default function PortalBookingsPage() {
           ))}
         </div>
       )}
+
+      <BookingDetailDrawer
+        booking={selectedBooking}
+        onClose={() => setSelectedBooking(null)}
+      />
     </div>
   );
 }

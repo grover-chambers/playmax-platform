@@ -17,6 +17,7 @@ import type { UserRole } from "@/lib/types";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import type { DashboardNavItem } from "@/components/layout/dashboard-layout";
 import { PortalProvider } from "@/components/portal/portal-provider";
+import NotificationBell from "@/components/portal/notification-bell";
 
 const portalNavItems: DashboardNavItem[] = [
   { icon: Home, label: "Overview", href: "/portal" },
@@ -69,6 +70,7 @@ export default function PortalLayout({
   return (
     <DashboardLayout
       navItems={portalNavItems}
+      topBar={<NotificationBell />}
       user={{
         initials,
         name: user?.user_metadata?.name || user?.email || "Client",
