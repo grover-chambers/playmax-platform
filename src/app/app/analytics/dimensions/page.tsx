@@ -1,22 +1,24 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Store, Package, Building2, Tags, Loader2 } from "lucide-react";
+import { Store, Package, Building2, Tags, Loader2, Truck } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Pagination, { usePagination } from "@/components/ui/pagination";
 import type {
   AnalyticsBranch,
   AnalyticsCategory,
   AnalyticsManufacturer,
+  AnalyticsSupplier,
   AnalyticsProductWithJoins,
 } from "@/lib/analytics-types";
 
-type DimTab = "branches" | "categories" | "manufacturers" | "products";
+type DimTab = "branches" | "categories" | "manufacturers" | "suppliers" | "products";
 
 const tabs: { key: DimTab; label: string; icon: React.ElementType }[] = [
   { key: "branches", label: "Branches", icon: Store },
   { key: "categories", label: "Categories", icon: Tags },
   { key: "manufacturers", label: "Manufacturers", icon: Building2 },
+  { key: "suppliers", label: "Suppliers", icon: Truck },
   { key: "products", label: "Products", icon: Package },
 ];
 
@@ -25,10 +27,12 @@ export default function DimensionsPage() {
   const [branches, setBranches] = useState<AnalyticsBranch[]>([]);
   const [categories, setCategories] = useState<AnalyticsCategory[]>([]);
   const [manufacturers, setManufacturers] = useState<AnalyticsManufacturer[]>([]);
+  const [suppliers, setSuppliers] = useState<AnalyticsSupplier[]>([]);
   const [products, setProducts] = useState<AnalyticsProductWithJoins[]>([]);
   const [branchPage, setBranchPage] = useState(1);
   const [categoryPage, setCategoryPage] = useState(1);
   const [manufacturerPage, setManufacturerPage] = useState(1);
+  const [supplierPage, setSupplierPage] = useState(1);
   const [productPage, setProductPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +46,7 @@ export default function DimensionsPage() {
         setBranches(data.branches ?? []);
         setCategories(data.categories ?? []);
         setManufacturers(data.manufacturers ?? []);
+        setSuppliers(data.suppliers ?? []);
         setProducts(data.products ?? []);
         setBranchPage(1);
         setCategoryPage(1);
@@ -59,6 +64,7 @@ export default function DimensionsPage() {
   const { paginated: paginatedBranches, total: totalBranches } = usePagination(branches, branchPage, 20);
   const { paginated: paginatedCategories, total: totalCategories } = usePagination(categories, categoryPage, 20);
   const { paginated: paginatedManufacturers, total: totalManufacturers } = usePagination(manufacturers, manufacturerPage, 20);
+  const { paginated: paginatedSuppliers, total: totalSuppliers } = usePagination(suppliers, supplierPage, 20);
   const { paginated: paginatedProducts, total: totalProducts } = usePagination(products, productPage, 20);
 
   const renderTable = () => {
@@ -197,6 +203,46 @@ export default function DimensionsPage() {
               </table>
             </div>
             <Pagination page={manufacturerPage} pageSize={20} total={totalManufacturers} onPageChange={setManufacturerPage} />
+          </div>
+        );
+
+      case "suppliers":
+        return (
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h">
+              <span className="pm-dash-card-t text-[14px]">Suppliers</span>
+              <span className="pm-dash-bdg pm-dash-bdg-n">{totalSuppliers} total</span>
+            </div>
+            <div className="pm-dash-card-b-0 overflow-x-auto">
+              <table className="pm-dash-tbl">
+                <thead>
+                  <tr>
+                    <th className="pm-dash-tbl-th">Supplier</th>
+                    <th className="pm-dash-tbl-th">Code</th>
+                    <th className="pm-dash-tbl-th">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {suppliers.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="pm-dash-tbl-td text-center py-8">No suppliers found.</td>
+                    </tr>
+                  )}
+                  {paginatedSuppliers.map((s) => (
+                    <tr key={s.id}>
+                      <td className="pm-dash-tbl-td text-white font-medium">{s.name}</td>
+                      <td className="pm-dash-tbl-td font-mono">{s.code ?? "—"}</td>
+                      <td className="pm-dash-tbl-td">
+                        <span className={`pm-dash-bdg ${s.active ? "pm-dash-bdg-g" : "pm-dash-bdg-r"}`}>
+                          {s.active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination page={supplierPage} pageSize={20} total={totalSuppliers} onPageChange={setSupplierPage} />
           </div>
         );
 

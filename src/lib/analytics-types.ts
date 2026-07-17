@@ -42,6 +42,26 @@ export interface AnalyticsManufacturer {
   created_at: string;
 }
 
+export interface AnalyticsSupplier {
+  id: string;
+  name: string;
+  code: string | null;
+  contact_person: string | null;
+  email: string | null;
+  phone: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnalyticsSupplier {
+  id: string;
+  name: string;
+  code: string | null;
+  active: boolean;
+  created_at: string;
+}
+
 export interface AnalyticsProduct {
   id: string;
   stock_code: string;
