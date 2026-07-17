@@ -19,7 +19,7 @@ import PageHeader from "@/components/layout/page-header";
 import * as XLSX from "xlsx";
 
 // ── Types ────────────────────────────────────────────────────────
-type UploadFormat = "per_store_sales" | "chain_wide_sales" | "inventory" | "sales_transactions" | "stock_movements" | "supplier_details" | "pricing" | "product_master" | "supplier_products";
+type UploadFormat = "per_store_sales" | "chain_wide_sales" | "inventory" | "sales_transactions" | "stock_movements" | "supplier_details" | "pricing" | "product_master" | "supplier_products" | "item_list_master";
 type UploadStep =
   | "select"
   | "confirm_details"
@@ -49,6 +49,12 @@ interface Category {
   id: string;
   name: string;
   description: string | null;
+}
+
+interface Subcategory {
+  id: string;
+  category_id: string;
+  name: string;
 }
 
 interface Period {
@@ -131,6 +137,12 @@ const formatOptions: { value: UploadFormat; label: string; desc: string; periodR
     desc: "Links suppliers to their products — auto-creates missing suppliers",
     periodRequired: false,
   },
+  {
+    value: "item_list_master",
+    label: "Item List Report (Master)",
+    desc: "Full item catalog with category, sub-category, suppliers — reference data",
+    periodRequired: false,
+  },
 ];
 
 const REQUIRED_FIELDS: Record<UploadFormat, string[]> = {
@@ -143,6 +155,7 @@ const REQUIRED_FIELDS: Record<UploadFormat, string[]> = {
   pricing: ["stock_code", "unit_price"],
   product_master: ["stock_code", "product_name"],
   supplier_products: ["stock_code", "supplier_name"],
+  item_list_master: ["stock_code", "product_name", "category", "sub_category"],
 };
 
 const FIELD_DEFINITIONS: Record<
@@ -602,6 +615,7 @@ export default function AnalyticsUploadPage() {
   // Dimensions (lazy-loaded)
   const [branches, setBranches] = useState<Branch[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [dimensionsLoaded, setDimensionsLoaded] = useState(false);
   const periodAutoCreatedRef = useRef(false);
@@ -618,10 +632,19 @@ export default function AnalyticsUploadPage() {
   // Selections for confirm_details
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState("");
   const currentFormat = formatOptions.find((f) => f.value === format);
   const periodRequired = currentFormat?.periodRequired ?? false;
 
   const [selectedPeriodId, setSelectedPeriodId] = useState("");
+
+  // Filter subcategories by selected category
+  const filteredSubcategories = useMemo(
+    () => selectedCategoryId
+      ? subcategories.filter((sc) => sc.category_id === selectedCategoryId)
+      : subcategories,
+    [subcategories, selectedCategoryId],
+  );
 
   const requiredFields = useMemo(
     () => (format ? REQUIRED_FIELDS[format] : []),
@@ -664,10 +687,12 @@ export default function AnalyticsUploadPage() {
       const perData = await perRes.json();
       const brs: Branch[] = dimData.branches ?? [];
       const cats: Category[] = dimData.categories ?? [];
+      const subcats: Subcategory[] = dimData.subcategories ?? [];
       const pers: Period[] = perData.periods ?? [];
 
       setBranches(brs);
       setCategories(cats);
+      setSubcategories(subcats);
       setPeriods(pers);
       setDimensionsLoaded(true);
 
@@ -872,6 +897,7 @@ export default function AnalyticsUploadPage() {
     setImportResult(null);
     setSelectedBranchId("");
     setSelectedCategoryId("");
+    setSelectedSubCategoryId("");
     setSelectedPeriodId("");
     setDetectedMeta(null);
     detectedHeadersRef.current = [];
@@ -1003,6 +1029,7 @@ export default function AnalyticsUploadPage() {
           period_id: effectivePeriodId,
           branch_id: selectedBranchId || null,
           category_id: selectedCategoryId || null,
+          sub_category_id: selectedSubCategoryId || null,
           grand_total: grandTotalRef.current,
           supplier_name: detectedMeta?.supplier || null,
         }),
@@ -1637,7 +1664,7 @@ export default function AnalyticsUploadPage() {
               <h4 className="font-display text-[11px] font-semibold text-white mb-3">
                 Assign Dimensions
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Branch */}
                 <div>
                   <label className="font-mono text-[10px] text-gray-5 uppercase tracking-wider block mb-2">
@@ -1678,7 +1705,10 @@ export default function AnalyticsUploadPage() {
                   ) : (
                     <select
                       value={selectedCategoryId}
-                      onChange={(e) => setSelectedCategoryId(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedCategoryId(e.target.value);
+                        setSelectedSubCategoryId("");
+                      }}
                       className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
                     >
                       <option value="">— Select category —</option>
@@ -1688,6 +1718,35 @@ export default function AnalyticsUploadPage() {
                         </option>
                       ))}
                     </select>
+                  )}
+                </div>
+
+                {/* Sub-category */}
+                <div>
+                  <label className="font-mono text-[10px] text-gray-5 uppercase tracking-wider block mb-2">
+                    Sub-category
+                  </label>
+                  {dimensionsLoading ? (
+                    <div className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Loading...
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedSubCategoryId}
+                      onChange={(e) => setSelectedSubCategoryId(e.target.value)}
+                      className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
+                      disabled={!selectedCategoryId && filteredSubcategories.length === 0}
+                    >
+                      <option value="">— Select sub-category —</option>
+                      {filteredSubcategories.map((sc) => (
+                        <option key={sc.id} value={sc.id}>
+                          {sc.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {selectedCategoryId && filteredSubcategories.length === 0 && !dimensionsLoading && (
+                    <p className="text-[9px] text-gray-5 mt-1">No sub-categories for this category</p>
                   )}
                 </div>
 
