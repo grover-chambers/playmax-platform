@@ -1302,18 +1302,23 @@ export default function AnalyticsUploadPage() {
       raw_data: r.raw,
     }));
 
-    const res = await fetch(`/api/analytics/uploads/${uploadId}/staging-rows`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rows: rowsToStore }),
-    });
+    // Batch insert to avoid payload size limits (13k rows > 10MB)
+    const BATCH_SIZE = 1000;
+    for (let i = 0; i < rowsToStore.length; i += BATCH_SIZE) {
+      const batch = rowsToStore.slice(i, i + BATCH_SIZE);
+      const res = await fetch(`/api/analytics/uploads/${uploadId}/staging-rows`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: batch }),
+      });
 
-    if (!res.ok) {
-      const err = await res
-        .json()
-        .catch(() => ({ error: "Failed to store staging rows" }));
-      alert(err.error ?? "Failed to store staging rows");
-      return;
+      if (!res.ok) {
+        const err = await res
+          .json()
+          .catch(() => ({ error: `Failed to store staging rows (batch ${Math.floor(i / BATCH_SIZE) + 1})` }));
+        alert(err.error ?? "Failed to store staging rows");
+        return;
+      }
     }
 
     if (validRows.length < mappedRowsComputed.length) {
@@ -1323,7 +1328,7 @@ export default function AnalyticsUploadPage() {
     }
 
     setStep("mapped_preview");
-  };
+  };;
 
   // ── Import ────────────────────────────────────────────────────
 
