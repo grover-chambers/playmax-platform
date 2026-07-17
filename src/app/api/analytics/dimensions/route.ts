@@ -37,12 +37,23 @@ export async function GET(request: Request) {
         .select("*")
         .order("name"),
       supabase
+        .from("analytics_suppliers")
+        .select("*")
+        .eq("active", true)
+        .order("name"),
+      supabase
         .from("analytics_products")
         .select("id", { count: "exact", head: true }),
     ];
 
-    const [branchesRes, categoriesRes, subcategoriesRes, manufacturersRes, productCountRes] =
-      await Promise.all(baseQueries);
+    const [
+      branchesRes,
+      categoriesRes,
+      subcategoriesRes,
+      manufacturersRes,
+      suppliersRes,
+      productCountRes,
+    ] = await Promise.all(baseQueries);
 
     if (branchesRes.error)
       return NextResponse.json(
@@ -59,12 +70,18 @@ export async function GET(request: Request) {
         { error: sanitizeError(manufacturersRes.error) },
         { status: 500 },
       );
+    if (suppliersRes.error)
+      return NextResponse.json(
+        { error: sanitizeError(suppliersRes.error) },
+        { status: 500 },
+      );
 
     const result: Record<string, unknown> = {
       branches: branchesRes.data ?? [],
       categories: categoriesRes.data ?? [],
       subcategories: subcategoriesRes.data ?? [],
       manufacturers: manufacturersRes.data ?? [],
+      suppliers: suppliersRes.data ?? [],
       productCount: productCountRes.count ?? 0,
     };
 
