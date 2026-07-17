@@ -193,16 +193,21 @@ const FIELD_DEFINITIONS: Record<
     description: "Cost per unit",
   },
   weight_tonnes: {
-    label: "Weight (tonnes)",
-    required: false,
-    description: "Weight in tonnes",
-  },
-  sub_category: {
-    label: "Sub Category",
-    required: false,
-    description: "Product sub-category",
-  },
-  supplier_name: {
+      label: "Weight (tonnes)",
+      required: false,
+      description: "Weight in tonnes",
+    },
+    category: {
+      label: "Category",
+      required: false,
+      description: "Product category",
+    },
+    sub_category: {
+      label: "Sub Category",
+      required: false,
+      description: "Product sub-category",
+    },
+    supplier_name: {
     label: "Supplier Name",
     required: true,
     description: "Supplier company name",
@@ -1115,11 +1120,13 @@ export default function AnalyticsUploadPage() {
         )
           autoMap[h] = "weight_tonnes";
         else if (
-          ["sub category", "sub_category", "subcategory", "category"].includes(
+          ["sub category", "sub_category", "subcategory"].includes(
             lower,
           )
         )
           autoMap[h] = "sub_category";
+        else if (["category", "product group", "product class"].includes(lower))
+          autoMap[h] = "category";
         else if (
           ["stock id code", "stock_id_code", "stock id"].includes(lower)
         )
