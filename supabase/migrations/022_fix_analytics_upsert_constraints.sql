@@ -24,13 +24,13 @@ BEGIN
   END IF;
 END $$;
 
--- De-dupe analytics_fact_pricing
+-- De-dupe analytics_fact_pricing (handle NULL branch_id with IS NOT DISTINCT FROM)
 DELETE FROM analytics_fact_pricing a
 USING analytics_fact_pricing b
 WHERE a.id < b.id
   AND a.period_id = b.period_id
   AND a.product_id = b.product_id
-  AND COALESCE(a.branch_id, '') = COALESCE(b.branch_id, '');
+  AND a.branch_id IS NOT DISTINCT FROM b.branch_id;
 
 -- 2. UNIQUE on analytics_fact_pricing
 DO $$
@@ -45,13 +45,13 @@ BEGIN
   END IF;
 END $$;
 
--- De-dupe analytics_fact_inventory
+-- De-dupe analytics_fact_inventory (handle NULL branch_id)
 DELETE FROM analytics_fact_inventory a
 USING analytics_fact_inventory b
 WHERE a.id < b.id
   AND a.snapshot_date = b.snapshot_date
   AND a.product_id = b.product_id
-  AND COALESCE(a.branch_id, '') = COALESCE(b.branch_id, '');
+  AND a.branch_id IS NOT DISTINCT FROM b.branch_id;
 
 -- 3. UNIQUE on analytics_fact_inventory
 DO $$
