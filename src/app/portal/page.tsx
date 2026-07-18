@@ -62,11 +62,21 @@ interface Booking {
 
 interface ActivityItem {
   id: string;
-  type: "project" | "invoice" | "booking" | "deliverable" | "milestone";
+  type: "project" | "invoice" | "booking" | "deliverable" | "milestone" | "general";
   title: string;
   detail: string;
   date: string;
   status: string;
+}
+
+interface LoggedActivity {
+  id: string;
+  activity_type: string;
+  title: string;
+  description: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  created_at: string;
 }
 
 function buildActivityFeed(
@@ -74,6 +84,7 @@ function buildActivityFeed(
   invoices: Invoice[],
   bookings: Booking[],
   kpis: KpiData | null,
+  activityLog: LoggedActivity[],
   milestones?: number,
 ): ActivityItem[] {
   const items: ActivityItem[] = [];
@@ -108,6 +119,16 @@ function buildActivityFeed(
       status: b.status,
     });
   }
+  for (const log of activityLog) {
+    items.push({
+      id: `log-${log.id}`,
+      type: (log.activity_type.replace("_event", "") as ActivityItem["type"]) || "general",
+      title: log.title,
+      detail: log.description || log.activity_type.replace(/_/g, " "),
+      date: log.created_at,
+      status: "active",
+    });
+  }
   if (kpis && kpis.pendingDeliverables > 0) {
     items.push({
       id: "deliverables",
@@ -129,7 +150,7 @@ function buildActivityFeed(
     });
   }
 
-  return items.slice(0, 10);
+  return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
 }
 
 function formatCurrency(amount: number | null | undefined): string {
@@ -147,6 +168,17 @@ function getGreeting(client: { industry?: string | null; name?: string | null } 
     return `${base}, ${client.name?.split(" ")[0] || "there"}. Welcome to your ${client.industry} dashboard.`;
   }
   return `${base}, ${client?.name?.split(" ")[0] || "there"}.`;
+}
+
+function getSubtitle(client: { company?: string | null; industry?: string | null } | null, kpis: KpiData | null): string {
+  if (client?.company && kpis) {
+    const total = kpis.totalProjects + kpis.totalInvoices + kpis.totalBookings;
+    return `${client.company} · ${total} total engagement${total !== 1 ? "s" : ""} across projects, invoices, and bookings.`;
+  }
+  if (client?.company) {
+    return `Here's a summary of your engagements with ${client.company}.`;
+  }
+  return "Here's a summary of your active engagements with PlayMax.";
 }
 
 function statusBadgeClass(status: string): string {
@@ -175,22 +207,26 @@ export default function PortalOverviewPage() {
   const [recentProjects, setRecentProjects] = useState<Project[]>([]);
   const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
+  const [activityLog, setActivityLog] = useState<LoggedActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/portal/overview")
-      .then((r) => r.json())
-      .then((data) => {
+    Promise.all([
+      fetch("/api/portal/overview").then((r) => r.json()),
+      fetch("/api/portal/activity").then((r) => r.json()),
+    ])
+      .then(([overview, activity]) => {
         startTransition(() => {
-          if (data.error) {
-            setError(data.error);
+          if (overview.error) {
+            setError(overview.error);
           } else {
-            setKpis(data.kpis);
-            setRecentProjects(data.recentProjects || []);
-            setRecentInvoices(data.recentInvoices || []);
-            setRecentBookings(data.recentBookings || []);
+            setKpis(overview.kpis);
+            setRecentProjects(overview.recentProjects || []);
+            setRecentInvoices(overview.recentInvoices || []);
+            setRecentBookings(overview.recentBookings || []);
           }
+          setActivityLog(activity.activity || []);
           setLoading(false);
         });
       })
@@ -235,11 +271,7 @@ export default function PortalOverviewPage() {
       <div className="pm-dash-welcome">
         <div>
           <h2>{getGreeting(client)}</h2>
-          <p>
-            {client?.company
-              ? `Here's a summary of your engagements with ${client.company}.`
-              : "Here's a summary of your active engagements with PlayMax."}
-          </p>
+          <p>{getSubtitle(client, kpis)}</p>
         </div>
         <div className="flex items-center gap-3">
           <Sun size={18} className="text-yellow" />
@@ -291,10 +323,10 @@ export default function PortalOverviewPage() {
           </div>
         </div>
         <div className="pm-dash-card-b">
-          {buildActivityFeed(recentProjects, recentInvoices, recentBookings, kpis).length === 0 ? (
+          {buildActivityFeed(recentProjects, recentInvoices, recentBookings, kpis, activityLog).length === 0 ? (
             <div className="text-[12px] text-gray-4 py-3">No recent activity</div>
           ) : (
-            buildActivityFeed(recentProjects, recentInvoices, recentBookings, kpis).map((item) => (
+            buildActivityFeed(recentProjects, recentInvoices, recentBookings, kpis, activityLog).map((item) => (
               <div key={item.id} className="pm-dash-feed-item">
                 <div className={`pm-dash-feed-dot ${
                   item.type === "project" ? "b" :

@@ -19,6 +19,20 @@ interface ProfileData {
   company: string;
 }
 
+const NOTIF_KEYS: Record<string, string> = {
+  "Deliverable ready for review": "deliverable_review",
+  "Invoice sent or overdue": "invoice_overdue",
+  "Project milestone reached": "milestone_reached",
+  "New message from account manager": "new_message",
+};
+
+const DEFAULT_PREFS: Record<string, boolean> = {
+  deliverable_review: true,
+  invoice_overdue: true,
+  milestone_reached: true,
+  new_message: true,
+};
+
 export default function PortalSettingsPage() {
   const { client } = usePortalClient();
   const [profile, setProfile] = useState<ProfileData>({
@@ -27,7 +41,9 @@ export default function PortalSettingsPage() {
     phone: "",
     company: "",
   });
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>(DEFAULT_PREFS);
   const [saving, setSaving] = useState(false);
+  const [notifSaving, setNotifSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,14 +59,15 @@ export default function PortalSettingsPage() {
           phone: c?.phone || "",
           company: c?.company || "",
         });
+        if (c?.notification_prefs) {
+          setNotifPrefs({ ...DEFAULT_PREFS, ...c.notification_prefs });
+        }
         setLoading(false);
       });
     } catch {
       startTransition(() => setLoading(false));
     }
   }, []);
-
-  /* Profile initialized from client context or loaded via API */
 
   useEffect(() => {
     loadProfile();
@@ -75,6 +92,25 @@ export default function PortalSettingsPage() {
       startTransition(() => setSaveMsg({ type: "err", text: "Failed to save" }));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleNotifToggle = async (label: string, checked: boolean) => {
+    const key = NOTIF_KEYS[label];
+    if (!key) return;
+    const updated = { ...notifPrefs, [key]: checked };
+    setNotifPrefs(updated);
+    setNotifSaving(true);
+    try {
+      await fetch("/api/portal/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notification_prefs: updated }),
+      });
+    } catch {
+      setNotifPrefs(notifPrefs);
+    } finally {
+      setNotifSaving(false);
     }
   };
 
@@ -175,10 +211,10 @@ export default function PortalSettingsPage() {
         </div>
       </div>
 
-      {/* ── Notification Preferences (placeholder) ──── */}
+      {/* ── Notification Preferences ───────────────── */}
       <div className="pm-dash-card p-5 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Bell size={14} className="text-yellow" />
+          <Bell size={14} className={`text-yellow ${notifSaving ? "opacity-50" : ""}`} />
           <span className="font-display text-[13px] font-semibold">Notifications</span>
         </div>
 
@@ -188,28 +224,33 @@ export default function PortalSettingsPage() {
             { label: "Invoice sent or overdue", desc: "Email when invoice status changes" },
             { label: "Project milestone reached", desc: "Email when a milestone is completed" },
             { label: "New message from account manager", desc: "In-app notification for new messages" },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between py-2 border-b border-[#1A1A1A] last:border-0">
-              <div>
-                <div className="text-[12px] text-gray-3">{item.label}</div>
-                <div className="text-[10px] text-gray-5 mt-0.5">{item.desc}</div>
+          ].map((item) => {
+            const key = NOTIF_KEYS[item.label];
+            const checked = notifPrefs[key] ?? true;
+            return (
+              <div key={item.label} className="flex items-center justify-between py-2 border-b border-[#1A1A1A] last:border-0">
+                <div>
+                  <div className="text-[12px] text-gray-3">{item.label}</div>
+                  <div className="text-[10px] text-gray-5 mt-0.5">{item.desc}</div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => handleNotifToggle(item.label, e.target.checked)}
+                    className="sr-only peer"
+                    id={`notif-${key}`}
+                  />
+                  <label
+                    htmlFor={`notif-${key}`}
+                    className="w-9 h-5 bg-[#252525] rounded-full peer-checked:bg-teal transition-colors cursor-pointer block relative"
+                  >
+                    <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-gray-4 rounded-full peer-checked:bg-white transition-all peer-checked:translate-x-4" />
+                  </label>
+                </div>
               </div>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="sr-only peer"
-                  id={`notif-${item.label}`}
-                />
-                <label
-                  htmlFor={`notif-${item.label}`}
-                  className="w-9 h-5 bg-[#252525] rounded-full peer-checked:bg-teal transition-colors cursor-pointer block relative"
-                >
-                  <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-gray-4 rounded-full peer-checked:bg-white transition-all peer-checked:translate-x-4" />
-                </label>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="mt-3 text-[10px] text-gray-5">
