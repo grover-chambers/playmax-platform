@@ -1,79 +1,79 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationProps {
   page: number;
-  pageSize: number;
   total: number;
-  onPageChange: (page: number) => void;
+  limit?: number;
+  pageSize?: number;
+  onChange?: (page: number) => void;
+  onPageChange?: (page: number) => void;
 }
 
-export function usePagination<T>(data: T[], page: number, pageSize: number) {
-  const total = data.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const start = (page - 1) * pageSize;
-  const end = Math.min(start + pageSize, total);
-  const paginated = data.slice(start, end);
-  return { paginated, total, totalPages, start, end };
+export function usePagination<T>(items: T[], page: number, pageSize: number) {
+  return useMemo(() => {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize;
+    return {
+      paginated: items.slice(from, to),
+      total: items.length,
+    };
+  }, [items, page, pageSize]);
 }
 
-export default function Pagination({
-  page,
-  pageSize,
-  total,
-  onPageChange,
-}: PaginationProps) {
-  if (total <= pageSize) return null;
+export default function Pagination({ page, total, limit, pageSize, onChange, onPageChange }: PaginationProps) {
+  const size = limit ?? pageSize ?? 50;
+  const change = onChange ?? onPageChange ?? (() => {});
+  const totalPages = Math.max(1, Math.ceil(total / size));
+  if (totalPages <= 1) return null;
 
-  const totalPages = Math.ceil(total / pageSize);
-  const start = (page - 1) * pageSize + 1;
-  const end = Math.min(page * pageSize, total);
+  const pages: (number | "...")[] = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= page - 1 && i <= page + 1)) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== "...") {
+      pages.push("...");
+    }
+  }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--ws-border)]">
-      <span className="text-xs text-[var(--ws-text-muted)]">
-        Showing {start}–{end} of {total} records
-      </span>
+    <div className="flex items-center justify-between px-4 py-3 border-t border-[#1A1A1A]">
+      <div className="text-[11px] text-gray-5 font-mono">
+        {total} result{total !== 1 ? "s" : ""}
+      </div>
       <div className="flex items-center gap-1">
         <button
-          onClick={() => onPageChange(page - 1)}
+          onClick={() => change(page - 1)}
           disabled={page <= 1}
-          className="p-1.5 rounded-md hover:bg-[var(--ws-border)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 rounded hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" style={{ color: "var(--ws-text)" }} />
+          <ChevronLeft size={14} className="text-gray-4" />
         </button>
-        {Array.from({ length: totalPages }, (_, i) => i + 1)
-          .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-          .map((p, idx, arr) => (
-            <React.Fragment key={p}>
-              {idx > 0 && arr[idx - 1] !== p - 1 && (
-                <span className="px-1 text-xs" style={{ color: "var(--ws-text-muted)" }}>…</span>
-              )}
-              <button
-                onClick={() => onPageChange(p)}
-                className={`min-w-[28px] h-7 rounded-md text-xs font-medium transition-colors ${
-                  p === page
-                    ? "text-white"
-                    : "hover:bg-[var(--ws-border)]"
-                }`}
-                style={
-                  p === page
-                    ? { background: "var(--pm-teal)", color: "white" }
-                    : { color: "var(--ws-text)" }
-                }
-              >
-                {p}
-              </button>
-            </React.Fragment>
-          ))}
+        {pages.map((p, i) =>
+          p === "..." ? (
+            <span key={`e${i}`} className="px-1 text-[11px] text-gray-5">...</span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => change(p)}
+              className={`min-w-[28px] h-7 rounded text-[11px] font-mono transition-colors ${
+                p === page
+                  ? "bg-teal/20 text-teal font-semibold"
+                  : "text-gray-4 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              {p}
+            </button>
+          )
+        )}
         <button
-          onClick={() => onPageChange(page + 1)}
+          onClick={() => change(page + 1)}
           disabled={page >= totalPages}
-          className="p-1.5 rounded-md hover:bg-[var(--ws-border)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 rounded hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
-          <ChevronRight className="w-4 h-4" style={{ color: "var(--ws-text)" }} />
+          <ChevronRight size={14} className="text-gray-4" />
         </button>
       </div>
     </div>

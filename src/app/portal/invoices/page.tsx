@@ -4,6 +4,7 @@ import React, { useState, useEffect, startTransition } from "react";
 import StatusBadge from "@/components/ui/status-badge";
 import InvoicePDF from "@/components/pdf/InvoicePDF";
 import PageHeader from "@/components/layout/page-header";
+import Pagination from "@/components/ui/pagination";
 import { Loader2, Download, Smartphone } from "lucide-react";
 
 interface Invoice {
@@ -37,8 +38,12 @@ function formatDate(d: string | null): string {
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+const PAGE_LIMIT = 10;
+
 export default function PortalInvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
@@ -46,16 +51,17 @@ export default function PortalInvoicesPage() {
   const [paymentMsg, setPaymentMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/portal/invoices")
+    fetch(`/api/portal/invoices?page=${page}&limit=${PAGE_LIMIT}`)
       .then((r) => r.json())
-      .then(({ invoices: data }) => {
+      .then(({ invoices: data, total: t }) => {
         startTransition(() => {
           setInvoices(data || []);
+          setTotal(t ?? data?.length ?? 0);
           setLoading(false);
         });
       })
       .catch(() => startTransition(() => setLoading(false)));
-  }, []);
+  }, [page]);
 
   const canPay = (status: string) => ["draft", "sent", "overdue"].includes(status);
 
@@ -160,6 +166,7 @@ export default function PortalInvoicesPage() {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} total={total} limit={PAGE_LIMIT} onChange={setPage} />
         </div>
       )}
 
