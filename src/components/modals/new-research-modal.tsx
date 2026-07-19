@@ -1,34 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, startTransition } from "react";
 import Modal from "@/components/ui/modal";
 import Button from "@/components/ui/button";
 
 interface NewResearchModalProps {
   open: boolean;
   onClose: () => void;
+  onCreated: () => void;
 }
 
-const clients = ["Nairobi Tech Corp", "KCB Group", "Safaricom PLC", "EcoSave Energy", "MediCare Plus"];
+interface ClientOption {
+  id: string;
+  company_name: string;
+}
 
-export default function NewResearchModal({ open, onClose }: NewResearchModalProps) {
+export default function NewResearchModal({ open, onClose, onCreated }: NewResearchModalProps) {
   const [title, setTitle] = useState("");
-  const [client, setClient] = useState("");
+  const [clientId, setClientId] = useState("");
   const [type, setType] = useState("market_research");
+  const [value, setValue] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [loadingClients, setLoadingClients] = useState(true);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/clients")
+      .then((r) => r.json())
+      .then(({ data }) => {
+        startTransition(() => {
+          setClients(data || []);
+          setLoadingClients(false);
+        });
+      })
+      .catch(() => startTransition(() => setLoadingClients(false)));
+  }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim() || !client) return;
+    if (!title.trim() || !clientId) return;
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSubmitting(false);
-    onClose();
+    setError("");
+
+    try {
+      const res = await fetch("/api/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: clientId,
+          type,
+          title: title.trim(),
+          value: value ? parseFloat(value) : 0,
+          due_date: dueDate || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to create");
+        setSubmitting(false);
+        return;
+      }
+      setSubmitting(false);
+      onCreated();
+    } catch {
+      setError("Failed to create research project");
+      setSubmitting(false);
+    }
   }
 
   return (
     <Modal open={open} onClose={onClose} title="New Research Project">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="text-[11px] text-red bg-red/10 border border-red/20 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
         <div>
           <label className="block text-[11px] font-mono text-gray-5 uppercase tracking-wider mb-1.5">
             Project Title
@@ -38,6 +88,7 @@ export default function NewResearchModal({ open, onClose }: NewResearchModalProp
             placeholder="e.g. Q3 Market Sentiment Analysis"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            required
           />
         </div>
 
@@ -47,13 +98,14 @@ export default function NewResearchModal({ open, onClose }: NewResearchModalProp
           </label>
           <select
             className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white outline-none focus:border-yellow/40"
-            value={client}
-            onChange={(e) => setClient(e.target.value)}
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            required
           >
-            <option value="">Select client...</option>
+            <option value="">{loadingClients ? "Loading clients..." : "Select client..."}</option>
             {clients.map((c) => (
-              <option key={c} value={c}>
-                {c}
+              <option key={c.id} value={c.id}>
+                {c.company_name}
               </option>
             ))}
           </select>
@@ -66,9 +118,9 @@ export default function NewResearchModal({ open, onClose }: NewResearchModalProp
           <div className="flex gap-2 flex-wrap">
             {[
               { value: "market_research", label: "Market Research" },
-              { value: "competitor", label: "Competitor Analysis" },
-              { value: "consumer", label: "Consumer Insights" },
-              { value: "trend", label: "Trend Analysis" },
+              { value: "competitor_analysis", label: "Competitor Analysis" },
+              { value: "consumer_survey", label: "Consumer Insights" },
+              { value: "brand_audit", label: "Brand Audit" },
             ].map((t) => (
               <button
                 key={t.value}
@@ -83,6 +135,32 @@ export default function NewResearchModal({ open, onClose }: NewResearchModalProp
                 {t.label}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-mono text-gray-5 uppercase tracking-wider mb-1.5">
+              Value (KES)
+            </label>
+            <input
+              type="number"
+              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40"
+              placeholder="0"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-mono text-gray-5 uppercase tracking-wider mb-1.5">
+              Due Date
+            </label>
+            <input
+              type="date"
+              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white outline-none focus:border-yellow/40"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
           </div>
         </div>
 
