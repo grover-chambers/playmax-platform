@@ -101,14 +101,45 @@ export default function StaffManagementPage() {
   };
 
   async function toggleStatus(member: StaffMember) {
-    // TODO: wire to a real PATCH /api/staff/:id endpoint
+    const newStatus = member.status === "active" ? "inactive" : "active";
     setStaff((prev) =>
       prev.map((m) =>
-        m.id === member.id
-          ? { ...m, status: m.status === "active" ? "inactive" : "active" }
-          : m,
+        m.id === member.id ? { ...m, status: newStatus } : m,
       ),
     );
+    try {
+      await fetch(`/api/staff/${member.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch {
+      setStaff((prev) =>
+        prev.map((m) =>
+          m.id === member.id ? { ...m, status: member.status } : m,
+        ),
+      );
+    }
+  }
+
+  async function updateRole(member: StaffMember, newRole: string) {
+    const prevRole = member.role;
+    setStaff((prev) =>
+      prev.map((m) => (m.id === member.id ? { ...m, role: newRole as StaffMember["role"] } : m)),
+    );
+    try {
+      await fetch(`/api/staff/${member.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+    } catch {
+      setStaff((prev) =>
+        prev.map((m) =>
+          m.id === member.id ? { ...m, role: prevRole } : m,
+        ),
+      );
+    }
   }
 
   const filtered = staff.filter((m) => {
@@ -345,9 +376,20 @@ export default function StaffManagementPage() {
                     {member.email}
                   </td>
                   <td className="pm-dash-tbl-td">
-                    <span className={`pm-dash-bdg ${roleBadgeMap[member.role] || "pm-dash-bdg-n"}`}>
-                      {ROLE_LABELS[member.role] || member.role}
-                    </span>
+                    <select
+                      value={member.role}
+                      onChange={(e) => updateRole(member, e.target.value)}
+                      className={`pm-dash-bdg border-none cursor-pointer text-[10px] appearance-none px-2 py-0.5 rounded outline-none ${roleBadgeMap[member.role] || "pm-dash-bdg-n"}`}
+                      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5' fill='%23888'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center", paddingRight: "18px" }}
+                    >
+                      {Object.entries(ROLE_LABELS)
+                        .filter(([k]) => k !== "client")
+                        .map(([key, label]) => (
+                          <option key={key} value={key} className="bg-[#1A1A1A] text-gray-3">
+                            {label}
+                          </option>
+                        ))}
+                    </select>
                   </td>
                   <td className="pm-dash-tbl-td">
                     <span

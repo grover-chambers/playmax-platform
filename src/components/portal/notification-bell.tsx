@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, startTransition, useCallback } from "react";
 import Link from "next/link";
 import { Bell, CheckCheck, Loader2 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 interface Notification {
   id: string;
@@ -37,8 +38,23 @@ export default function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
+
+    // Realtime subscription for live notifications
+    const supabase = createClient();
+    const channel = supabase
+      .channel("notifications")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications" },
+        () => fetchNotifications(),
+      )
+      .subscribe();
+
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [fetchNotifications]);
 
   useEffect(() => {

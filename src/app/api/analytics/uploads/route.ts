@@ -4,6 +4,14 @@ import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+};
+
 export async function GET() {
   try {
     const supabase = await getAuthenticatedClient();

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, startTransition } from "react";
 import StatusBadge from "@/components/ui/status-badge";
 import PageHeader from "@/components/layout/page-header";
+import Pagination from "@/components/ui/pagination";
 import { Loader2 } from "lucide-react";
 
 interface Project {
@@ -39,21 +40,26 @@ function formatDate(d: string | null): string {
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+const PAGE_LIMIT = 10;
+
 export default function PortalProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/portal/projects")
+    fetch(`/api/portal/projects?page=${page}&limit=${PAGE_LIMIT}`)
       .then((r) => r.json())
-      .then(({ projects: data }) => {
+      .then(({ projects: data, total: t }) => {
         startTransition(() => {
           setProjects(data || []);
+          setTotal(t ?? data?.length ?? 0);
           setLoading(false);
         });
       })
       .catch(() => startTransition(() => setLoading(false)));
-  }, []);
+  }, [page]);
 
   if (loading) {
     return (
@@ -115,6 +121,7 @@ export default function PortalProjectsPage() {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} total={total} limit={PAGE_LIMIT} onChange={setPage} />
         </div>
       )}
     </div>

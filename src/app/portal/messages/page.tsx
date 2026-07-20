@@ -5,6 +5,7 @@ import { Send, Loader2 } from "lucide-react";
 import Avatar from "@/components/ui/avatar";
 import Button from "@/components/ui/button";
 import PageHeader from "@/components/layout/page-header";
+import { createClient } from "@/utils/supabase/client";
 
 
 interface Conversation {
@@ -61,6 +62,29 @@ export default function PortalMessagesPage() {
         });
       })
       .catch(() => startTransition(() => setLoadingMsgs(false)));
+
+    // Realtime subscription for live messages in this conversation
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`messages:${activeConvId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${activeConvId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          setMessages((prev) => [...prev, newMsg]);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [activeConvId]);
 
   useEffect(() => {

@@ -11,6 +11,7 @@ interface PortalClient {
   phone: string | null;
   status: string;
   created_at: string;
+  notification_prefs?: Record<string, boolean>;
 }
 
 interface PortalContextValue {

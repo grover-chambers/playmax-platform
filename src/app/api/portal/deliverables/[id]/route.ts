@@ -52,6 +52,16 @@ export async function PUT(
       return NextResponse.json({ error: sanitizeError(updateError) }, { status: 500 });
     }
 
+    // Log activity
+    await supabase.from("client_activity_log").insert({
+      client_id: client.id,
+      activity_type: "deliverable_event",
+      title: `Deliverable ${approval_status === "approved" ? "approved" : "changes requested"}`,
+      description: `"${deliverable.title}" was ${approval_status === "approved" ? "approved" : "sent back with feedback"} by the client.`,
+      entity_type: "deliverable",
+      entity_id: id,
+    }).maybeSingle();
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed to update deliverable" }, { status: 500 });

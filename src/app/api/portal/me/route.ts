@@ -35,6 +35,7 @@ export async function PUT(req: Request) {
     if (body.email) allowedFields.email = body.email;
     if (body.phone) allowedFields.phone = body.phone;
     if (body.company) allowedFields.company = body.company;
+    if (body.notification_prefs) allowedFields.notification_prefs = body.notification_prefs;
 
     if (Object.keys(allowedFields).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

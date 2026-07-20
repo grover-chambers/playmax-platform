@@ -15,10 +15,16 @@ import PageHeader from "@/components/layout/page-header";
 import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
 import InventoryCardFull from "@/components/inventory/inventory-card-full";
+import dynamic from "next/dynamic";
 import InventoryDetailPanel from "@/components/inventory/inventory-detail-panel";
 import BookingModal from "@/components/inventory/booking-modal";
 import { createClient } from "@/lib/supabase/browser";
 import { InventoryItem, Booking } from "@/lib/types";
+
+const InventoryMapView = dynamic(
+  () => import("@/components/inventory/inventory-map-view"),
+  { ssr: false, loading: () => <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">Loading map...</div> },
+);
 
 /* ── raw row shape returned by Supabase ──────────────── */
 interface RawInventoryRow {
@@ -385,17 +391,9 @@ export default function InventoryPage() {
                 </div>
               )}
 
-              {/* ── map view (placeholder) ─────────────── */}
+              {/* ── map view ─────────────────────────────── */}
               {viewMode === "map" && (
-                <div className="px-7 py-5 flex-1 flex items-center justify-center">
-                  <div className="pm-dash-card p-10 text-center">
-                    <MapPin className="w-12 h-12 text-gray-5 mx-auto mb-3" />
-                    <p className="text-[13px] text-gray-5">
-                      Map view coming soon. Switch to grid or list to browse
-                      inventory.
-                    </p>
-                  </div>
-                </div>
+                <InventoryMapView inventory={filtered} />
               )}
             </div>
 

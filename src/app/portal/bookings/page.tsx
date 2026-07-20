@@ -3,8 +3,10 @@
 import React, { useState, useEffect, startTransition } from "react";
 import StatusBadge from "@/components/ui/status-badge";
 import BookingDetailDrawer from "@/components/portal/booking-detail-drawer";
+import BookingsCalendar from "@/components/portal/bookings-calendar";
+import Pagination from "@/components/ui/pagination";
 import PageHeader from "@/components/layout/page-header";
-import { Calendar, MapPin, Clock, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Clock, Loader2, List, CalendarDays } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -32,22 +34,28 @@ function formatDate(d: string): string {
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+const PAGE_LIMIT = 20;
+
 export default function PortalBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
   useEffect(() => {
-    fetch("/api/portal/bookings")
+    fetch(`/api/portal/bookings?page=${page}&limit=${PAGE_LIMIT}`)
       .then((r) => r.json())
-      .then(({ bookings: data }) => {
+      .then(({ bookings: data, total: t }) => {
         startTransition(() => {
           setBookings(data || []);
+          setTotal(t ?? data?.length ?? 0);
           setLoading(false);
         });
       })
       .catch(() => startTransition(() => setLoading(false)));
-  }, []);
+  }, [page]);
 
   if (loading) {
     return (
@@ -62,7 +70,33 @@ export default function PortalBookingsPage() {
       <PageHeader
         title="Bookings"
         subtitle={`${bookings.length} booking${bookings.length !== 1 ? "s" : ""}`}
+        actions={
+          <div className="flex gap-1 bg-[#111] border border-[#252525] rounded p-0.5">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded transition-colors cursor-pointer ${
+                viewMode === "list" ? "bg-teal/10 text-teal" : "text-gray-5 hover:text-gray-3"
+              }`}
+            >
+              <List size={14} />
+            </button>
+            <button
+              onClick={() => setViewMode("calendar")}
+              className={`p-1.5 rounded transition-colors cursor-pointer ${
+                viewMode === "calendar" ? "bg-teal/10 text-teal" : "text-gray-5 hover:text-gray-3"
+              }`}
+            >
+              <CalendarDays size={14} />
+            </button>
+          </div>
+        }
       />
+
+      {viewMode === "calendar" && bookings.length > 0 && (
+        <div className="pm-dash-card p-5 mb-6">
+          <BookingsCalendar bookings={bookings} />
+        </div>
+      )}
 
       {bookings.length === 0 ? (
         <div className="pm-dash-card pm-dash-card-b text-center text-[13px] text-gray-4">
@@ -112,6 +146,10 @@ export default function PortalBookingsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {viewMode === "list" && !loading && bookings.length > 0 && (
+        <Pagination page={page} total={total} limit={PAGE_LIMIT} onChange={setPage} />
       )}
 
       <BookingDetailDrawer
