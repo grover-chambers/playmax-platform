@@ -354,7 +354,7 @@ async function queryCompetitorComparison(
 
   let salesQuery = supabase
       .from("analytics_fact_sales")
-      .select("product_id, total_amount, quantity, unit_price")
+      .select("product_id, total_amount, quantity, unit_price, supplier_id")
       .in("period_id", periodIds);
   if (branch) {
     salesQuery = salesQuery.eq("branch_id", branch);
@@ -366,7 +366,7 @@ async function queryCompetitorComparison(
   const productIds = [...new Set(sales.map((r) => r.product_id as string))];
   const { data: products } = await supabase
     .from("analytics_products")
-    .select("id, manufacturer_id, category_id")
+    .select("id, category_id")
     .in("id", productIds);
 
   const filters = await resolveCategoryFilters(supabase, category, sub_category);
@@ -378,33 +378,33 @@ async function queryCompetitorComparison(
   const productMap = new Map(filteredProducts.map((p) => [p.id as string, p]));
   const filteredSales = sales.filter((r) => productMap.has(r.product_id as string));
 
-  const mfgIds = [...new Set(filteredProducts.map((p) => p.manufacturer_id as string).filter(Boolean))];
-  const { data: mfgs } = mfgIds.length > 0
-    ? await supabase
-        .from("analytics_manufacturers")
-        .select("id, name")
-        .in("id", mfgIds)
-    : { data: [] };
-
-  const mfgMap = new Map((mfgs ?? []).map((m) => [m.id as string, m.name as string]));
+  // Option B: group by supplier_id directly from fact_sales (set via the supplier_products junction at ingest)
+  const supIds = [...new Set(filteredSales.map((r) => r.supplier_id as string).filter(Boolean))] as string[];
+  let supMap = new Map<string, string>();
+  if (supIds.length > 0) {
+    const { data: supRows } = await supabase
+      .from("analytics_suppliers")
+      .select("id, name")
+      .in("id", supIds);
+    supMap = new Map((supRows ?? []).map((s) => [s.id as string, s.name as string]));
+  }
 
   const grouped = new Map<string, { total: number; units: number; prices: number[]; products: Set<string> }>();
   for (const row of filteredSales) {
-      const prod = productMap.get(row.product_id as string);
-      const mfgId = prod?.manufacturer_id ?? "unknown";
-    const existing = grouped.get(mfgId) ?? { total: 0, units: 0, prices: [], products: new Set() };
+    const supId = (row.supplier_id as string) ?? "unknown";
+    const existing = grouped.get(supId) ?? { total: 0, units: 0, prices: [], products: new Set() };
     existing.total += (row.total_amount as number) ?? 0;
     existing.units += (row.quantity as number) ?? 0;
     if (row.unit_price) existing.prices.push(row.unit_price as number);
     existing.products.add(row.product_id as string);
-    grouped.set(mfgId, existing);
+    grouped.set(supId, existing);
   }
 
   const grandTotal = Array.from(grouped.values()).reduce((sum, g) => sum + g.total, 0);
 
   const manufacturers = Array.from(grouped.entries())
-    .map(([mfgId, data]) => ({
-      manufacturer: mfgMap.get(mfgId) ?? "Unknown",
+    .map(([supId, data]) => ({
+      manufacturer: supMap.get(supId) ?? "Unknown",
       total_sales: data.total,
       total_units: data.units,
       share: grandTotal > 0 ? (data.total / grandTotal) * 100 : 0,

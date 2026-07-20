@@ -60,7 +60,7 @@ interface RawSalesRow {
   period_id: string;
   category_id: string;
   supplier_id: string | null;
-  product: { name: string; stock_code: string; manufacturer?: { name: string }[] }[];
+  product: { name: string; stock_code: string }[];
   period: { label: string; year: number; quarter: number; month: number }[];
   branch: { name: string; code: string }[];
   category: { name: string }[];
@@ -115,13 +115,13 @@ export async function GET() {
     const branchIds = [...new Set(sharing.map((s) => s.branch_id).filter(Boolean))] as string[];
     const categoryIds = [...new Set(sharing.map((s) => s.category_id).filter(Boolean))] as string[];
 
-    // Get client's manufacturer name for competitor comparison
+    // Get client's supplier name for competitor comparison (suppliers-as-manufacturers, Option B)
     const clientName = client.company || client.name || "";
 
     // ── Sales data ──────────────────────────────────────────────
     let salesQuery = supabase
       .from("analytics_fact_sales")
-      .select("id, quantity, total_amount, cost_amount, weight_tonnes, unit_price, product_id, branch_id, period_id, category_id, supplier_id, product:analytics_products(name, stock_code, manufacturer:analytics_manufacturers(name)), period:analytics_periods(label, year, quarter, month), branch:analytics_branches(name, code), category:analytics_categories(name)")
+      .select("id, quantity, total_amount, cost_amount, weight_tonnes, unit_price, product_id, branch_id, period_id, category_id, supplier_id, product:analytics_products(name, stock_code), period:analytics_periods(label, year, quarter, month), branch:analytics_branches(name, code), category:analytics_categories(name)")
       .in("period_id", periodIds);
 
     if (branchIds.length > 0) salesQuery = salesQuery.in("branch_id", branchIds);
@@ -170,19 +170,30 @@ export async function GET() {
     // ── Process sales into visualizations ───────────────────────
     const salesRows = (sales || []) as unknown as RawSalesRow[];
 
-    // Competitor comparison: group sales by manufacturer
-    const mfgGrouped = new Map<string, { total: number; units: number; products: Set<string> }>();
+    // Competitor comparison: group sales by supplier (Option B — suppliers ARE manufacturers)
+    // Build supplier_id → name lookup first
+    const supplierIds = [...new Set(salesRows.map((r) => r.supplier_id).filter(Boolean))] as string[];
+    let supplierNameMap = new Map<string, string>();
+    if (supplierIds.length > 0) {
+      const { data: supplierRows } = await supabase
+        .from("analytics_suppliers")
+        .select("id, name")
+        .in("id", supplierIds);
+      supplierNameMap = new Map((supplierRows ?? []).map((s) => [s.id as string, s.name as string]));
+    }
+
+    const supGrouped = new Map<string, { total: number; units: number; products: Set<string> }>();
     for (const row of salesRows) {
-      const mfgName = row.product?.[0]?.manufacturer?.[0]?.name || "Unknown";
-      const existing = mfgGrouped.get(mfgName) || { total: 0, units: 0, products: new Set() };
+      const supName = row.supplier_id ? (supplierNameMap.get(row.supplier_id) || "Unknown") : "Unknown";
+      const existing = supGrouped.get(supName) || { total: 0, units: 0, products: new Set() };
       existing.total += Number(row.total_amount) || 0;
       existing.units += Number(row.quantity) || 0;
       if (row.product_id) existing.products.add(row.product_id);
-      mfgGrouped.set(mfgName, existing);
+      supGrouped.set(supName, existing);
     }
 
-    const grandTotal = Array.from(mfgGrouped.values()).reduce((s, g) => s + g.total, 0);
-    const competitors: CompetitorRank[] = Array.from(mfgGrouped.entries())
+    const grandTotal = Array.from(supGrouped.values()).reduce((s, g) => s + g.total, 0);
+    const competitors: CompetitorRank[] = Array.from(supGrouped.entries())
       .map(([name, data]) => ({
         manufacturer: name,
         total_sales: data.total,
@@ -300,7 +311,7 @@ export async function GET() {
       dashboardColor: (clientRow as { dashboard_color?: string } | null)?.dashboard_color || "#0F6E56",
       summary: {
         totalSales: grandTotal,
-        totalUnits: Array.from(mfgGrouped.values()).reduce((s, g) => s + g.units, 0),
+        totalUnits: Array.from(supGrouped.values()).reduce((s, g) => s + g.units, 0),
         totalInventoryValue: (inventory || []).reduce((s: number, i: RawInvRow) => s + (Number(i.total_value) || 0), 0),
         totalProducts: prodGrouped.size,
       },

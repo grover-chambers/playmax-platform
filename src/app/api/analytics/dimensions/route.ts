@@ -33,10 +33,6 @@ export async function GET(request: Request) {
         .select("id, category_id, name")
         .order("name"),
       supabase
-        .from("analytics_manufacturers")
-        .select("*")
-        .order("name"),
-      supabase
         .from("analytics_suppliers")
         .select("*")
         .eq("active", true)
@@ -50,7 +46,6 @@ export async function GET(request: Request) {
       branchesRes,
       categoriesRes,
       subcategoriesRes,
-      manufacturersRes,
       suppliersRes,
       productCountRes,
     ] = await Promise.all(baseQueries);
@@ -65,11 +60,6 @@ export async function GET(request: Request) {
         { error: sanitizeError(categoriesRes.error) },
         { status: 500 },
       );
-    if (manufacturersRes.error)
-      return NextResponse.json(
-        { error: sanitizeError(manufacturersRes.error) },
-        { status: 500 },
-      );
     if (suppliersRes.error)
       return NextResponse.json(
         { error: sanitizeError(suppliersRes.error) },
@@ -80,7 +70,7 @@ export async function GET(request: Request) {
       branches: branchesRes.data ?? [],
       categories: categoriesRes.data ?? [],
       subcategories: subcategoriesRes.data ?? [],
-      manufacturers: manufacturersRes.data ?? [],
+      manufacturers: suppliersRes.data ?? [],
       suppliers: suppliersRes.data ?? [],
       productCount: productCountRes.count ?? 0,
     };
@@ -88,30 +78,29 @@ export async function GET(request: Request) {
     if (includeProducts) {
       const { data: products, error: prodErr } = await supabase
         .from("analytics_products")
-        .select("id, stock_code, name, category_id, manufacturer_id, sub_category, unit_of_measure, active, created_at")
+        .select("id, stock_code, name, category_id, default_supplier_id, sub_category, unit_of_measure, active, created_at")
         .order("name");
 
       if (!prodErr && products) {
-        // Enrich with category and manufacturer names
         const catIds = [...new Set(products.map((p: { category_id: string | null }) => p.category_id).filter(Boolean))];
-        const mfgIds = [...new Set(products.map((p: { manufacturer_id: string | null }) => p.manufacturer_id).filter(Boolean))];
+        const supIds = [...new Set(products.map((p: { default_supplier_id: string | null }) => p.default_supplier_id).filter(Boolean))];
 
-        const [catRes, mfgRes] = await Promise.all([
+        const [catRes, supRes] = await Promise.all([
           catIds.length > 0
             ? supabase.from("analytics_categories").select("id, name").in("id", catIds)
             : Promise.resolve({ data: [] as { id: string; name: string }[], error: null }),
-          mfgIds.length > 0
-            ? supabase.from("analytics_manufacturers").select("id, name").in("id", mfgIds)
+          supIds.length > 0
+            ? supabase.from("analytics_suppliers").select("id, name").in("id", supIds)
             : Promise.resolve({ data: [] as { id: string; name: string }[], error: null }),
         ]);
 
         const catMap = new Map((catRes.data ?? []).map((c) => [c.id, c.name]));
-        const mfgMap = new Map((mfgRes.data ?? []).map((m) => [m.id, m.name]));
+        const supMap = new Map((supRes.data ?? []).map((m) => [m.id, m.name]));
 
         result.products = products.map((p: Record<string, unknown>) => ({
           ...p,
           category_name: catMap.get(p.category_id as string) ?? "Unknown",
-          manufacturer_name: mfgMap.get(p.manufacturer_id as string) ?? "Unknown",
+          manufacturer_name: supMap.get(p.default_supplier_id as string) ?? "Unknown",
         }));
       }
     }

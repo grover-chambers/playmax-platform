@@ -19,7 +19,7 @@ import PageHeader from "@/components/layout/page-header";
 import * as XLSX from "xlsx";
 
 // ── Types ────────────────────────────────────────────────────────
-type UploadFormat = "per_store_sales" | "chain_wide_sales" | "inventory" | "sales_transactions" | "stock_movements" | "supplier_details" | "pricing" | "product_master" | "supplier_products" | "item_list_master";
+type UploadFormat = "per_store_sales" | "chain_wide_sales" | "inventory" | "sales_transactions" | "stock_movements" | "supplier_details" | "pricing" | "product_master" | "supplier_products" | "item_list_master" | "per_supplier_sales" | "supplier_item_allocations" | "pending_grns";
 type UploadStep =
   | "select"
   | "confirm_details"
@@ -143,6 +143,24 @@ const formatOptions: { value: UploadFormat; label: string; desc: string; periodR
     desc: "Full item catalog with category, sub-category, suppliers — reference data",
     periodRequired: false,
   },
+  {
+    value: "per_supplier_sales",
+    label: "Per-supplier sales report",
+    desc: "Sales filtered to a single supplier across all branches (e.g. NICE per-branch files)",
+    periodRequired: true,
+  },
+  {
+    value: "supplier_item_allocations",
+    label: "Supplier-Product Allocations",
+    desc: "Canonical supplier-product junction file (stock codes × supplier codes) — reference data",
+    periodRequired: false,
+  },
+  {
+    value: "pending_grns",
+    label: "Goods Received Notes (Pending)",
+    desc: "GRNs with supplier, store, VAT, totals — maps to stock movements",
+    periodRequired: false,
+  },
 ];
 
 const REQUIRED_FIELDS: Record<UploadFormat, string[]> = {
@@ -156,6 +174,9 @@ const REQUIRED_FIELDS: Record<UploadFormat, string[]> = {
   product_master: ["stock_code", "product_name"],
   supplier_products: ["stock_code", "supplier_name"],
   item_list_master: ["stock_code", "product_name", "category", "sub_category"],
+  per_supplier_sales: ["stock_code", "quantity", "total"],
+  supplier_item_allocations: ["stock_code", "supplier_name"],
+  pending_grns: ["supplier_name", "total"],
 };
 
 const FIELD_DEFINITIONS: Record<
