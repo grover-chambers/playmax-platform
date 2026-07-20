@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
@@ -10,12 +12,13 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const supabase = createClient();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    const { createClient } = await import("@/utils/supabase/client");
+    const supabase = createClient();
 
     const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
       email,

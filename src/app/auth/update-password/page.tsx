@@ -1,8 +1,9 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     const checkSession = async () => {
+      const { createClient } = await import("@/utils/supabase/client");
       const supabase = createClient();
       const {
         data: { session },
@@ -46,6 +48,7 @@ export default function UpdatePasswordPage() {
     setLoading(true);
 
     try {
+      const { createClient } = await import("@/utils/supabase/client");
       const supabase = createClient();
       const { error: updateError } = await supabase.auth.updateUser({
         password,
