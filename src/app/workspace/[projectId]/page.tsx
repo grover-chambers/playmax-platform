@@ -20,18 +20,25 @@ import {
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────── */
-interface TaskItem {
+interface NoteItem {
+  id: string;
+  x: number;
+  y: number;
+  content: string;
+  color: string;
+  author_name: string;
+}
+
+interface TeamMember {
   id: string;
   name: string;
-  assignee: string;
-  assigneeInitials: string;
-  done: boolean;
-  due_date: string;
+  initials: string;
+  role: string;
 }
 
 interface ChatMessage {
   id: string;
-  author: string;
+  author_name: string;
   text: string;
   time: string;
 }
@@ -43,19 +50,13 @@ interface ProjectData {
   status: string;
 }
 
-interface StickyNote {
+interface TaskItem {
   id: string;
-  x: number;
-  y: number;
-  content: string;
-  color: string;
-  author: string;
-}
-
-interface TeamMember {
   name: string;
-  initials: string;
-  role: string;
+  assignee: string;
+  assigneeInitials: string;
+  done: boolean;
+  due_date: string;
 }
 
 type RightTab = "team" | "tasks" | "chat";
@@ -72,11 +73,6 @@ function initials(name: string): string {
 
 const NOTE_COLORS = ["#FCD34D", "#60A5FA", "#34D399", "#F472B6", "#A78BFA"];
 
-// TODO(playmax): Project team members & chat require new tables (project_members, project_messages)
-// Currently gated with Coming Soon banner. Remove mock data when tables are created.
-const MOCK_TEAM: TeamMember[] = [];
-const MOCK_MESSAGES: ChatMessage[] = [];
-
 export default function WorkspacePage({
   params,
 }: {
@@ -89,8 +85,8 @@ export default function WorkspacePage({
   const [project, setProject] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [team, setTeam] = useState<TeamMember[]>(MOCK_TEAM);
-  const [messages, setMessages] = useState<ChatMessage[]>(MOCK_MESSAGES);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [currentUser, setCurrentUser] = useState<{ id: string; role: string; name: string } | null>(null);
 
@@ -107,15 +103,14 @@ export default function WorkspacePage({
   const panOrigin = useRef({ x: 0, y: 0 });
 
   /* ── Sticky notes ── */
-  const [notes, setNotes] = useState<StickyNote[]>([
-    { id: "n1", x: 200, y: 200, content: "Campaign concept: Taste the Difference", color: NOTE_COLORS[0], author: "Brian" },
-    { id: "n2", x: 500, y: 150, content: "Budget cap: KES 1.2M", color: NOTE_COLORS[1], author: "Alice" },
-    { id: "n3", x: 350, y: 450, content: "Review site selection report by Friday", color: NOTE_COLORS[2], author: "James" },
-  ]);
+  const [notes, setNotes] = useState<NoteItem[]>([]);
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [draggingNote, setDraggingNote] = useState<string | null>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
+
+  /* ── Chat auto-scroll ref ── */
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   /* ── Data fetch ── */
   useEffect(() => {
@@ -128,31 +123,75 @@ export default function WorkspacePage({
         const userName = authData?.user?.user_metadata?.name as string | undefined;
         if (userId) setCurrentUser({ id: userId, role: userRole || "", name: userName || "You" });
 
-        const { data: proj } = await supabase
-          .from("projects").select("*, clients(company)").eq("id", projectId).single() as unknown as { data: Record<string, unknown> | null };
-        const projData = proj;
-        if (projData) {
-          const clientName = (projData.clients as Record<string, string> | null)?.company || (projData.client as string) || "—";
-          const projName = projData.name as string || "";
-          setProject({ id: projData.id as string, name: projName, client: clientName, status: (projData.status as string) || "draft" });
-          let { data: dbTasks } = await supabase
-            .from("tasks").select("*")
-            .or(`project_id.eq.${projectId},project.eq.${projName.replace(/'/g, "") || ""}`)
-            .order("created_at", { ascending: false });
-          if (userRole === "crm_staff" && userId && dbTasks) {
-            dbTasks = dbTasks.filter((t) => t.assigned_to === userId);
-          }
-          if (dbTasks && dbTasks.length > 0) {
-            setTasks(dbTasks.map((t) => ({
-              id: t.id, name: t.title, assignee: t.assigned_to || "Unassigned",
-              assigneeInitials: initials(t.assigned_to || ""), done: t.status === "done", due_date: t.due_date || "",
-            })));
-          }
-          if (userId && userRole === "crm_staff") {
-            setTeam([{ name: userName || "You", initials: initials(userName || "You"), role: "CRM Staff" }]);
-          }
-        } else {
-          setProject({ id: projectId, name: "New Project", client: "—", status: "draft" });
+        const res = await fetch(`/api/projects/${projectId}`);
+        const data = await res.json();
+        const p = data.project;
+
+        setProject({
+          id: p.id,
+          name: p.name,
+          client: p.clients?.company || "—",
+          status: p.status || "draft",
+        });
+
+        /* Map notes from API */
+        if (Array.isArray(data.notes)) {
+          setNotes(
+            data.notes.map((n: Record<string, unknown>) => ({
+              id: n.id as string,
+              x: (n.x as number) || 200,
+              y: (n.y as number) || 200,
+              content: (n.content as string) || "",
+              color: (n.color as string) || NOTE_COLORS[0],
+              author_name: (n.author_name as string) || "Unknown",
+            }))
+          );
+        }
+
+        /* Map team members from API */
+        if (Array.isArray(data.members)) {
+          setTeam(
+            data.members.map((m: Record<string, unknown>) => {
+              const name = (m.name as string) || "Unknown";
+              return {
+                id: m.id as string,
+                name,
+                initials: initials(name),
+                role: (m.role as string) || "Member",
+              };
+            })
+          );
+        } else if (userId && userRole === "crm_staff") {
+          setTeam([{ id: userId, name: userName || "You", initials: initials(userName || "You"), role: "CRM Staff" }]);
+        }
+
+        /* Map chat messages from API */
+        if (Array.isArray(data.messages)) {
+          setMessages(
+            data.messages.map((m: Record<string, unknown>) => ({
+              id: m.id as string,
+              author_name: (m.author_name as string) || "Unknown",
+              text: (m.text as string) || "",
+              time: m.time
+                ? new Date(m.time as string).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                : "",
+            }))
+          );
+        }
+
+        /* Fetch tasks */
+        let { data: dbTasks } = await supabase
+          .from("tasks").select("*")
+          .or(`project_id.eq.${projectId},project.eq.${(p.name as string || "").replace(/'/g, "") || ""}`)
+          .order("created_at", { ascending: false });
+        if (userRole === "crm_staff" && userId && dbTasks) {
+          dbTasks = dbTasks.filter((t) => t.assigned_to === userId);
+        }
+        if (dbTasks && dbTasks.length > 0) {
+          setTasks(dbTasks.map((t) => ({
+            id: t.id, name: t.title, assignee: t.assigned_to || "Unassigned",
+            assigneeInitials: initials(t.assigned_to || ""), done: t.status === "done", due_date: t.due_date || "",
+          })));
         }
       } catch {
         setProject({ id: projectId, name: "New Project", client: "—", status: "draft" });
@@ -161,6 +200,11 @@ export default function WorkspacePage({
       }
     })();
   }, [projectId]);
+
+  /* ── Chat auto-scroll ── */
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   /* ── Canvas pan handlers ── */
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -191,8 +235,20 @@ export default function WorkspacePage({
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false);
-    setDraggingNote(null);
-  }, []);
+    if (draggingNote) {
+      const note = notes.find((n) => n.id === draggingNote);
+      if (note && !note.id.startsWith("temp_")) {
+        fetch(`/api/projects/${projectId}/notes/${note.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ x: note.x, y: note.y }),
+        });
+      }
+      setDraggingNote(null);
+    } else {
+      setDraggingNote(null);
+    }
+  }, [draggingNote, notes, projectId]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -208,34 +264,57 @@ export default function WorkspacePage({
     setDraggingNote(noteId);
   }
 
-  function startEdit(note: StickyNote) {
+  function startEdit(note: NoteItem) {
     setEditingNote(note.id);
     setEditText(note.content);
   }
 
   function saveEdit() {
     if (editingNote) {
+      const newContent = editText;
       setNotes((prev) =>
-        prev.map((n) => (n.id === editingNote ? { ...n, content: editText } : n))
+        prev.map((n) => (n.id === editingNote ? { ...n, content: newContent } : n))
       );
+      if (!editingNote.startsWith("temp_")) {
+        fetch(`/api/projects/${projectId}/notes/${editingNote}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: newContent }),
+        });
+      }
       setEditingNote(null);
       setEditText("");
     }
   }
 
-  function addNote() {
+  async function addNote() {
     const hue = Math.floor(Math.random() * NOTE_COLORS.length);
-    setNotes((prev) => [
-      ...prev,
-      {
-        id: `n${Date.now()}`,
-        x: 150 + Math.random() * 300,
-        y: 150 + Math.random() * 300,
-        content: "New note",
-        color: NOTE_COLORS[hue],
-        author: "You",
-      },
-    ]);
+    const tempId = `temp_${Date.now()}`;
+    const newNote: NoteItem = {
+      id: tempId,
+      x: 150 + Math.random() * 300,
+      y: 150 + Math.random() * 300,
+      content: "New note",
+      color: NOTE_COLORS[hue],
+      author_name: currentUser?.name || "You",
+    };
+    setNotes((prev) => [...prev, newNote]);
+
+    try {
+      const res = await fetch(`/api/projects/${projectId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newNote.content, x: newNote.x, y: newNote.y, color: newNote.color }),
+      });
+      const data = await res.json();
+      if (data.note) {
+        setNotes((prev) =>
+          prev.map((n) => (n.id === tempId ? { ...n, id: data.note.id } : n))
+        );
+      }
+    } catch {
+      /* keep temp note visible even if API fails */
+    }
   }
 
   function deleteNote(id: string) {
@@ -244,6 +323,9 @@ export default function WorkspacePage({
       setEditingNote(null);
       setEditText("");
     }
+    if (!id.startsWith("temp_")) {
+      fetch(`/api/projects/${projectId}/notes/${id}`, { method: "DELETE" });
+    }
   }
 
   function changeColor(noteId: string) {
@@ -251,13 +333,51 @@ export default function WorkspacePage({
     if (!current) return;
     const idx = NOTE_COLORS.indexOf(current.color);
     const next = (idx + 1) % NOTE_COLORS.length;
-    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, color: NOTE_COLORS[next] } : n)));
+    const newColor = NOTE_COLORS[next];
+    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, color: newColor } : n)));
+    if (!noteId.startsWith("temp_")) {
+      fetch(`/api/projects/${projectId}/notes/${noteId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ color: newColor }),
+      });
+    }
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     if (!chatInput.trim()) return;
-    setMessages((prev) => [...prev, { id: String(Date.now()), author: "You", text: chatInput.trim(), time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
+    const text = chatInput.trim();
     setChatInput("");
+    const tempId = `temp_msg_${Date.now()}`;
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    setMessages((prev) => [...prev, { id: tempId, author_name: currentUser?.name || "You", text, time: now }]);
+
+    try {
+      const res = await fetch(`/api/projects/${projectId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (data.message) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? {
+                  id: data.message.id,
+                  author_name: data.message.author_name || currentUser?.name || "You",
+                  text: data.message.text || text,
+                  time: data.message.time
+                    ? new Date(data.message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    : now,
+                }
+              : m
+          )
+        );
+      }
+    } catch {
+      /* keep temp message visible */
+    }
   }
 
   const tasksByAssignee = tasks.reduce<Record<string, TaskItem[]>>((acc, t) => {
@@ -351,8 +471,8 @@ export default function WorkspacePage({
 
               {/* Author */}
               <div className="px-3 pb-2 text-[9px] font-mono opacity-50 flex items-center gap-1.5" style={{ color: "#1a1a1a" }}>
-                <span className="w-3.5 h-3.5 rounded-full bg-black/10 flex items-center justify-center text-[7px] font-bold">{initials(note.author)}</span>
-                {note.author}
+                <span className="w-3.5 h-3.5 rounded-full bg-black/10 flex items-center justify-center text-[7px] font-bold">{initials(note.author_name)}</span>
+                {note.author_name}
               </div>
             </div>
           ))}
@@ -361,7 +481,7 @@ export default function WorkspacePage({
         {/* ── Top bar overlay ── */}
         <div className="fixed top-0 left-0 right-0 z-40 flex items-center px-4 py-3 pointer-events-none">
           <div className="flex items-center gap-3 pointer-events-auto">
-            <button onClick={() => router.push("/app/projects")} className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-gray-4 hover:text-white hover:border-yellow/40 transition-all">
+            <button onClick={() => router.push(`/app/projects/${projectId}`)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-gray-4 hover:text-white hover:border-yellow/40 transition-all">
               <ArrowLeft size={16} />
             </button>
             <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm border border-white/10 rounded-lg px-3.5 py-1.5">
@@ -408,12 +528,7 @@ export default function WorkspacePage({
         </div>
 
         {/* Panel tabs */}
-                {/* Coming Soon banner */}
-                <div className="p-3 mb-2 rounded-lg bg-yellow/10 border border-yellow/30 text-yellow flex items-center gap-2">
-                  <span className="text-[11px] font-mono">⚠ COMING SOON</span>
-                  <span className="text-[11px] text-gray-5 ml-auto">Team & Chat tabs require project_members / project_messages tables</span>
-                </div>
-                <div className="flex border-b border-[#1E1E1E]">
+        <div className="flex border-b border-[#1E1E1E]">
           {[
             { key: "team" as RightTab, label: "Team", icon: Users },
             { key: "tasks" as RightTab, label: "Tasks", icon: CheckSquare },
@@ -439,7 +554,7 @@ export default function WorkspacePage({
             <div className="p-4 space-y-3">
               <p className="text-[10px] font-mono text-gray-5 uppercase tracking-wider mb-3">Project Team</p>
               {team.map((m) => (
-                <div key={m.initials} className="flex items-center gap-3 bg-[#0A0A0A] rounded-lg px-3.5 py-3 border border-[#1E1E1E]">
+                <div key={m.id} className="flex items-center gap-3 bg-[#0A0A0A] rounded-lg px-3.5 py-3 border border-[#1E1E1E]">
                   <div className="w-8 h-8 rounded-full bg-yellow/10 flex items-center justify-center text-[10px] font-bold text-yellow">
                     {m.initials}
                   </div>
@@ -490,17 +605,18 @@ export default function WorkspacePage({
                 {messages.map((msg) => (
                   <div key={msg.id} className="flex items-start gap-2.5">
                     <div className="w-6 h-6 rounded-full bg-yellow/10 flex items-center justify-center text-[8px] font-bold text-yellow flex-shrink-0 mt-0.5">
-                      {initials(msg.author)}
+                      {initials(msg.author_name)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-white">{msg.author}</span>
+                        <span className="text-[10px] font-semibold text-white">{msg.author_name}</span>
                         <span className="text-[8px] font-mono text-gray-6">{msg.time}</span>
                       </div>
                       <p className="text-[11px] text-gray-4 leading-relaxed mt-0.5">{msg.text}</p>
                     </div>
                   </div>
                 ))}
+                <div ref={chatEndRef} />
               </div>
               <div className="p-3 border-t border-[#1E1E1E] flex items-center gap-2">
                 <input

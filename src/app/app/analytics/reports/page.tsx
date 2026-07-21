@@ -118,6 +118,11 @@ export default function AnalyticsReportsPage() {
   const [visibleToClient, setVisibleToClient] = useState(true);
   const [selectedClientId, setSelectedClientId] = useState("");
 
+  /* ── Link-to-project modal state ── */
+  const [linkModalReport, setLinkModalReport] = useState<string | null>(null);
+  const [linkModalProjects, setLinkModalProjects] = useState<{ id: string; name: string }[]>([]);
+  const [linking, setLinking] = useState(false);
+
   /* ── Load dimensions & saved reports ── */
   useEffect(() => {
     const load = async () => {
@@ -260,6 +265,29 @@ export default function AnalyticsReportsPage() {
         setCategoryTab(report.report_type);
         setSelectedSubtype(report.subtype || "");
       }
+    }
+  };
+
+  /* ── Link report to project ── */
+  const openLinkModal = async (reportId: string) => {
+    setLinkModalReport(reportId);
+    const res = await fetch("/api/projects");
+    const data = await res.json();
+    setLinkModalProjects(data.data ?? []);
+  };
+
+  const handleLinkToProject = async (projectId: string) => {
+    if (!linkModalReport) return;
+    setLinking(true);
+    try {
+      await fetch(`/api/projects/${projectId}/analytics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ report_id: linkModalReport }),
+      });
+      setLinkModalReport(null);
+    } finally {
+      setLinking(false);
     }
   };
 
@@ -438,6 +466,12 @@ export default function AnalyticsReportsPage() {
         <div className="flex items-center justify-between mb-1">
           <span className="text-[12px] font-semibold text-white truncate">{report.name}</span>
           <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); openLinkModal(report.id); }}
+              className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border transition-colors cursor-pointer bg-transparent text-gray-5 border-[#2A2A2A] hover:text-yellow hover:border-yellow/30"
+            >
+              Link to Project
+            </button>
             {report.visible_to_client ? (
               <Eye size={11} className="text-teal" />
             ) : (
@@ -714,6 +748,31 @@ export default function AnalyticsReportsPage() {
           )}
         </div>
       </div>
+
+      {linkModalReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setLinkModalReport(null)}>
+          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-6 w-[400px] max-h-[500px] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[14px] font-semibold text-white mb-4">Link Report to Project</h3>
+            {linkModalProjects.length === 0 ? (
+              <p className="text-[12px] text-gray-5">No projects found.</p>
+            ) : (
+              <div className="space-y-2">
+                {linkModalProjects.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => handleLinkToProject(p.id)}
+                    disabled={linking}
+                    className="w-full text-left p-3 rounded-lg border border-white/6 hover:border-yellow/30 hover:bg-yellow/5 transition-colors text-[12px] text-white disabled:opacity-50"
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setLinkModalReport(null)} className="mt-4 text-[11px] text-gray-5 hover:text-white transition-colors">Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

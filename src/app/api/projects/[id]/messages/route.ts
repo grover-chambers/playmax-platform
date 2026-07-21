@@ -1,0 +1,99 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getPortalClient } from "@/lib/portal";
+import { sanitizeError } from "@/lib/errors";
+import type { UserRole } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+
+async function checkAccess(supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>, currentUser: { id: string; role: string }, projectId: string) {
+  if (isAdmin(currentUser.role as UserRole)) return true;
+  const client = await getPortalClient(supabase, currentUser.id);
+  if (!client) return false;
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("client_id")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  return project?.client_id === client.id;
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!(await checkAccess(supabase, currentUser, id))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { data, error } = await supabase
+      .from("project_messages")
+      .select("*")
+      .eq("project_id", id)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
+    }
+
+    return NextResponse.json({ messages: data || [] });
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!(await checkAccess(supabase, currentUser, id))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { text, author_name, author_id } = body;
+
+    if (!text) {
+      return NextResponse.json({ error: "Text is required" }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from("project_messages")
+      .insert({
+        project_id: id,
+        text,
+        author_name: author_name || currentUser.email || "Unknown",
+        author_id: author_id || currentUser.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: data }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+}

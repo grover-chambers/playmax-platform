@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect, startTransition } from "react";
-import { Plus, Download, Upload, FileText, Loader2, BarChart3 } from "lucide-react";
+import { Plus, Download, Upload, FileText, Loader2, BarChart3, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import NewResearchModal from "@/components/modals/new-research-modal";
 import AIReportModal from "@/components/modals/ai-report-modal";
 import PageHeader from "@/components/layout/page-header";
@@ -57,6 +58,7 @@ const statusVariantMap: Record<string, "active" | "review" | "draft"> = {
 };
 
 export default function ResearchPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<ResearchProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -110,6 +112,37 @@ export default function ResearchPage() {
   async function handleGenerateAI() {
     setShowAIReport(true);
   }
+
+  const handleOpenInWorkspace = async () => {
+    if (!selected) return;
+    if (selected.project_id) {
+      router.push(`/workspace/${selected.project_id}`);
+    } else {
+      try {
+        const res = await fetch("/api/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: selected.metadata?.title || `Research: ${selected.type.replace(/_/g, " ")}`,
+            client_id: selected.client_id,
+            type: "market_research",
+            status: "active",
+            value: selected.value || 0,
+            end_date: selected.due_date,
+          }),
+        });
+        const data = await res.json();
+        if (data.project) {
+          await fetch(`/api/projects/${data.project.id}/research`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ research_id: selected.id }),
+          });
+          router.push(`/workspace/${data.project.id}`);
+        }
+      } catch { /* silent */ }
+    }
+  };
 
   return (
     <div className="flex h-full">
@@ -247,6 +280,9 @@ export default function ResearchPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button variant="secondary" size="sm" onClick={handleOpenInWorkspace}>
+                    <ArrowLeft size={12} className="mr-1 rotate-90" /> Open in Workspace
+                  </Button>
                   <Button variant="secondary" size="sm" onClick={handleGenerateAI}>
                     <BarChart3 size={12} className="mr-1" /> Generate AI Report
                   </Button>
