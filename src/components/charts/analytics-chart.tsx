@@ -15,20 +15,9 @@ ChartJS.register(
 );
 
 import type { ChartType } from "@/lib/report-types";
+import { CHART_COLORS } from "@/lib/analytics-colors";
 
-const CHART_COLORS = {
-  yellow:  "#F4C300",
-  green:   "#22C55E",
-  blue:    "#3B82F6",
-  pink:    "#EC4899",
-  orange:  "#F97316",
-  purple:  "#A855F7",
-  cyan:    "#06B6D4",
-  red:     "#EF4444",
-  gray:    "#BBBBBB",
-};
-
-const palette = Object.values(CHART_COLORS);
+const palette = [...CHART_COLORS, "#BBBBBB"];
 
 export type ChartDataset = Record<string, unknown> & {
   label?: string;

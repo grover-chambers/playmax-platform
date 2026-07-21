@@ -10,7 +10,6 @@ import PageHeader from "@/components/layout/page-header";
 import { AnalyticsChart } from "@/components/charts/analytics-chart";
 import { transformChartData } from "@/lib/analytics-transform";
 import { REPORT_CATEGORIES, findSubtype, findCategory } from "@/lib/report-types";
-import { chartColor } from "@/lib/analytics-colors";
 import type { ReportCategory, ReportSubtype, FilterDef, ChartType } from "@/lib/report-types";
 import type { ChartProps } from "@/components/charts/analytics-chart";
 

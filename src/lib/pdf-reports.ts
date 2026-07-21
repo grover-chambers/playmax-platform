@@ -1,26 +1,16 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { ANALYTICS_COLORS, CHART_COLORS } from "@/lib/analytics-colors";
 
-/* ── Chart colors from analytics-colors.ts ── */
 const COLORS = {
-  yellow: "#F4C300",
-  green: "#22C55E",
-  blue: "#3B82F6",
-  pink: "#EC4899",
-  orange: "#F97316",
-  purple: "#A855F7",
-  cyan: "#06B6D4",
-  red: "#EF4444",
+  ...ANALYTICS_COLORS,
   dark: "#1a1a1a",
   ivory: "#FFFFF0",
   gray: "#666666",
   lightGray: "#999999",
 };
 
-const PALETTE = [
-  COLORS.yellow, COLORS.green, COLORS.blue, COLORS.pink,
-  COLORS.orange, COLORS.purple, COLORS.cyan, COLORS.red,
-];
+const PALETTE = [...CHART_COLORS];
 
 /* ── Types ── */
 export interface SupplierData {
