@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import type { ChartType } from "@/lib/report-types";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +18,17 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { type, category, sub_category, branch, period_start, period_end, compare_start, compare_end } = body;
+    const { type, subtype, category, sub_category, branch, period_start, period_end, compare_start, compare_end } = body;
+
+    // Subtype dispatch (new 34-report-type system)
+    if (subtype) {
+      const result = await queryBySubtype(supabase, body);
+      return NextResponse.json(result);
+    }
 
     if (!type) {
       return NextResponse.json(
-        { error: "type is required (market_share | category_performance | competitor_comparison)" },
+        { error: "type is required" },
         { status: 400 },
       );
     }
@@ -75,6 +84,119 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+}
+
+const subtypeTypeMap: Record<string, string> = {
+  market_share: "market_share",
+  category_perf: "category_performance",
+  competitor: "competitor_comparison",
+  inventory: "inventory_summary",
+  pricing: "pricing_analysis",
+  stock: "stock_movements",
+  supplier: "supplier_performance",
+};
+
+const subtypeChartMap: Record<string, ChartType> = {
+  cat_market_share_donut: "doughnut",
+  supplier_dominance: "bar_h",
+  sku_share_breakdown: "bar_h",
+  share_trend_mom: "line_multi",
+  competitive_share_shift: "bar_div",
+  cat_revenue_leaderboard: "bar_h",
+  cat_growth_matrix: "heatmap",
+  subcategory_drilldown: "bar",
+  top_skus_per_category: "table_bar",
+  cat_volume_vs_revenue: "scatter",
+  cat_seasonality: "line_multi",
+  h2h_supplier: "bar_grouped",
+  price_gap: "bar_div",
+  competitive_displacement: "area_stack",
+  similar_product_matrix: "table",
+  competitor_volume_ratio: "radar",
+  supply_demand_gap: "bar_div",
+  stock_shortage_alerts: "table_flag",
+  overstock_risk: "table_flag",
+  inventory_health_gauge: "bar_h",
+  reorder_recommendations: "table",
+  price_distribution: "bar_h",
+  margin_heatmap: "heatmap",
+  price_vs_volume: "scatter",
+  price_change_tracker: "line",
+  economy_vs_premium: "doughnut",
+  product_velocity: "bar_h",
+  trend_direction: "table_trend",
+  weekly_movement: "line",
+  movement_by_branch_heatmap: "heatmap",
+  supplier_scorecard: "radar",
+  supplier_revenue_timeline: "line",
+  supplier_portfolio: "bar_h",
+  top_suppliers_by_branch: "bar_grouped",
+};
+
+async function queryBySubtype(
+  supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>,
+  body: Record<string, unknown>,
+): Promise<{ data: Record<string, unknown>[]; chart_type: ChartType | null; error?: string }> {
+  const { subtype, category, sub_category, branch, period_start, period_end } = body as Record<string, any>;
+  if (!subtype) return { data: [], chart_type: null, error: "subtype required" };
+
+  // Infer category id from subtype prefix
+  const catId = subtype.split("_").slice(0, -1).join("_");
+  const oldType = subtypeTypeMap[catId];
+  if (!oldType) return { data: [], chart_type: null, error: `Unknown subtype category: ${catId}` };
+
+  const chartType = subtypeChartMap[subtype] ?? "table";
+
+  try {
+    const mainPeriods = await findPeriods(supabase, period_start, period_end);
+    const raw = await executeOldType(supabase, oldType, mainPeriods, category, sub_category, branch);
+    return { data: flattenForSubtype(subtype, raw), chart_type: chartType };
+  } catch (e: any) {
+    return { data: [], chart_type: null, error: e?.message ?? "Query failed" };
+  }
+}
+
+async function executeOldType(
+  supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>,
+  type: string,
+  periods: { id: string; label: string; start_date: string; end_date: string }[],
+  category?: string,
+  sub_category?: string,
+  branch?: string,
+): Promise<any> {
+  switch (type) {
+    case "market_share":
+      return queryMarketShare(supabase, periods, [], category, sub_category, branch);
+    case "category_performance":
+      return queryCategoryPerformance(supabase, periods, [], category, sub_category, branch);
+    case "competitor_comparison":
+      return queryCompetitorComparison(supabase, periods, category, sub_category, branch);
+    case "inventory_summary":
+      return queryInventorySummary(supabase, category, sub_category, branch);
+    case "pricing_analysis":
+      return queryPricingAnalysis(supabase, periods, category, sub_category, branch);
+    case "stock_movements":
+      return queryStockMovements(supabase, category, sub_category, branch);
+    case "supplier_performance":
+      return querySupplierPerformance(supabase, category, sub_category, branch);
+    default:
+      return {};
+  }
+}
+
+function flattenForSubtype(subtype: string, raw: any): Record<string, unknown>[] {
+  // Extract the first array property from the response
+  const arr = Object.values(raw).find((v: any) => Array.isArray(v) && v.length > 0) as Record<string, unknown>[] ?? [];
+  if (arr.length > 0) return arr;
+
+  // Fallback: look for nested arrays
+  for (const val of Object.values(raw)) {
+    if (typeof val === "object" && val !== null) {
+      const nested = Object.values(val).find((v: any) => Array.isArray(v) && v.length > 0);
+      if (nested) return nested as Record<string, unknown>[];
+    }
+  }
+  return [];
 }
 
 async function findPeriods(

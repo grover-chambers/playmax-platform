@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, startTransition } from "react";
+import React, { useState, useEffect, startTransition, useMemo } from "react";
 import {
   BarChart3,
   TrendingDown,
@@ -13,8 +13,14 @@ import {
   Loader2,
   FileText,
   Eye,
+  Download,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
+import { AnalyticsChart } from "@/components/charts/analytics-chart";
+import type { ChartProps } from "@/components/charts/analytics-chart";
+import { transformChartData } from "@/lib/analytics-transform";
+import { findCategory } from "@/lib/report-types";
+import type { ChartType } from "@/lib/report-types";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -177,6 +183,99 @@ function DonutChart({ segments, size = 140, strokeWidth = 16 }: {
         );
       })}
     </svg>
+  );
+}
+
+/* ── Report Viewer Component ──────────────────────────────────── */
+
+function ReportViewer({ report }: { report: SavedReport }) {
+  const reportCategory = findCategory(report.report_type);
+
+  const gd = report.generated_data as { data?: Record<string, unknown>[]; chart_type?: string } | undefined;
+  const rawData = gd?.data ?? [];
+  const chartProps: ChartProps | null = gd?.data && gd?.chart_type
+    ? transformChartData(gd.chart_type as ChartType, gd.data)
+    : null;
+
+  return (
+    <div className="pm-dash-card p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="font-display text-[15px] font-semibold">{report.name}</div>
+          <div className="text-[11px] text-gray-5 capitalize mt-0.5 flex items-center gap-2">
+            {reportCategory && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5">{reportCategory.label}</span>
+            )}
+            <span>{report.report_type.replace(/_/g, " ")}</span>
+            <span>·</span>
+            <span>Generated {new Date(report.updated_at).toLocaleDateString()}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {report.visible_to_client && <Eye size={14} className="text-teal" />}
+          <span className="text-[10px] text-gray-5">{rawData.length} data points</span>
+        </div>
+      </div>
+
+      {rawData.length > 0 && chartProps ? (
+        <>
+          <div className="mb-4" style={{ height: 300 }}>
+            <AnalyticsChart {...chartProps} height={300} />
+          </div>
+          {/* Data table */}
+          <details className="group">
+            <summary className="text-[11px] text-gray-5 cursor-pointer hover:text-white transition-colors select-none">
+              View raw data ({rawData.length} rows)
+            </summary>
+            <div className="mt-3 overflow-x-auto max-h-[300px] overflow-y-auto">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="border-b border-[#1A1A1A]">
+                    {rawData.length > 0 && Object.keys(rawData[0]).map((k) => (
+                      <th key={k} className="font-mono text-[9px] text-gray-5 uppercase tracking-widest text-left px-2 py-1.5">
+                        {k.replace(/_/g, " ")}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rawData.slice(0, 25).map((row, i) => (
+                    <tr key={i} className="border-b border-[#1A1A1A] hover:bg-white/2">
+                      {Object.values(row).map((v, j) => (
+                        <td key={j} className={`px-2 py-1.5 ${typeof v === "number" ? "font-mono text-right" : ""}`}
+                          style={{ color: typeof v === "number" ? "#ccc" : "#999" }}>
+                          {typeof v === "number"
+                            ? v >= 1000000
+                              ? `KES ${(v / 1000000).toFixed(1)}M`
+                              : v >= 1000
+                                ? `KES ${(v / 1000).toFixed(0)}K`
+                                : String(v).includes(".")
+                                  ? v.toFixed(2)
+                                  : v.toLocaleString()
+                            : String(v ?? "")
+                          }
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {rawData.length > 25 && (
+                <div className="text-center text-[10px] text-gray-5 py-2">
+                  Showing 25 of {rawData.length} rows
+                </div>
+              )}
+            </div>
+          </details>
+        </>
+      ) : (
+        <div className="text-center py-8 text-[12px] text-gray-5">
+          {report.generated_data && Object.keys(report.generated_data).length > 0
+            ? "This report contains data in a format that cannot be previewed here."
+            : "This report has been saved but does not yet contain generated data."}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -850,30 +949,7 @@ export default function PortalAnalyticsPage() {
               </div>
 
               {/* Selected report detail */}
-              {activeReport && (
-                <div className="pm-dash-card p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <div className="font-display text-[15px] font-semibold">{activeReport.name}</div>
-                      <div className="text-[11px] text-gray-5 capitalize mt-0.5">
-                        {activeReport.report_type.replace(/_/g, " ")} · Generated {new Date(activeReport.updated_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-
-                  {activeReport.generated_data && Object.keys(activeReport.generated_data).length > 0 ? (
-                    <div className="text-[12px] text-gray-4">
-                      <pre className="bg-[#0A0A0A] rounded p-4 overflow-auto max-h-96 font-mono text-[11px]">
-                        {JSON.stringify(activeReport.generated_data, null, 2)}
-                      </pre>
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-[12px] text-gray-5">
-                      This report has been saved but does not yet contain generated data.
-                    </div>
-                  )}
-                </div>
-              )}
+              {activeReport && <ReportViewer report={activeReport} />}
             </>
           )}
         </>
