@@ -177,7 +177,7 @@ function LoginForm() {
     const { error: authErr } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${location.origin}/auth/callback?next=${nextPath || "/app/pipeline"}`,
+        redirectTo: `${location.origin}/auth/callback?next=${nextPath || "/portal"}`,
       },
     });
 

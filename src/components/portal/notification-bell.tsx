@@ -178,8 +178,9 @@ export default function NotificationBell() {
                     {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-teal mt-2 flex-shrink-0" />}
                   </div>
                 );
-                return n.link ? (
-                  <Link key={n.id} href={n.link} onClick={() => setOpen(false)}>
+                const safeLink = n.link && n.link.startsWith("/portal") ? n.link : null;
+                return safeLink ? (
+                  <Link key={n.id} href={safeLink} onClick={() => setOpen(false)}>
                     {content}
                   </Link>
                 ) : (

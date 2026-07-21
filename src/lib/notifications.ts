@@ -12,6 +12,9 @@ interface CreateNotificationInput {
 }
 
 export async function createNotification(input: CreateNotificationInput) {
+  // Sanitize link — only allow /portal/* paths in client-facing notifications
+  const safeLink = input.link && input.link.startsWith("/portal") ? input.link : null;
+
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +31,7 @@ export async function createNotification(input: CreateNotificationInput) {
     type: input.type,
     title: input.title,
     message: input.message || null,
-    link: input.link || null,
+    link: safeLink,
     read: false,
   });
   if (error) console.error("Failed to create notification:", error);
