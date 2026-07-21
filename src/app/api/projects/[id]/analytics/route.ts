@@ -24,7 +24,7 @@ export async function GET(
 
     const { data, error } = await supabase
       .from("project_analytics_reports")
-      .select("*, analytics_saved_reports(*)")
+      .select("*, report_id:analytics_saved_reports(*)")
       .eq("project_id", id);
 
     if (error) {
@@ -64,6 +64,7 @@ export async function POST(
     const { error } = await supabase.from("project_analytics_reports").insert({
       project_id: id,
       report_id,
+      linked_by: currentUser.id,
     });
 
     if (error) {

@@ -60,10 +60,10 @@ interface RawSalesRow {
   period_id: string;
   category_id: string;
   supplier_id: string | null;
-  product: { name: string; stock_code: string }[];
-  period: { label: string; year: number; quarter: number; month: number }[];
-  branch: { name: string; code: string }[];
-  category: { name: string }[];
+  product: { name: string; stock_code: string };
+  period: { label: string; year: number; quarter: number; month: number };
+  branch: { name: string; code: string };
+  category: { name: string };
 }
 
 interface RawInvRow {
@@ -72,8 +72,17 @@ interface RawInvRow {
   quantity_on_hand: number;
   unit_cost: number;
   total_value: number;
-  product: { name: string; stock_code: string }[];
-  branch: { name: string; code: string }[];
+  product: { name: string; stock_code: string };
+  branch: { name: string; code: string };
+}
+
+interface RawPricingRow {
+  id: string;
+  standard_cost: number;
+  selling_price: number;
+  effective_date: string;
+  product: { name: string; stock_code: string };
+  branch: { name: string; code: string };
 }
 
 export async function GET() {
@@ -208,7 +217,7 @@ export async function GET() {
     // Category performance: group sales by category
     const catGrouped = new Map<string, { total: number; units: number; prices: number[]; products: Set<string> }>();
     for (const row of salesRows) {
-      const catName = row.category?.[0]?.name || "Uncategorized";
+      const catName = row.category?.name || "Uncategorized";
       const existing = catGrouped.get(catName) || { total: 0, units: 0, prices: [], products: new Set() };
       existing.total += Number(row.total_amount) || 0;
       existing.units += Number(row.quantity) || 0;
@@ -230,8 +239,8 @@ export async function GET() {
     // Branch breakdown: group sales by branch
     const branchGrouped = new Map<string, { name: string; code: string; total: number; units: number }>();
     for (const row of salesRows) {
-      const bName = row.branch?.[0]?.name || "Unknown";
-      const bCode = row.branch?.[0]?.code || "";
+      const bName = row.branch?.name || "Unknown";
+      const bCode = row.branch?.code || "";
       const key = row.branch_id || bName;
       const existing = branchGrouped.get(key) || { name: bName, code: bCode, total: 0, units: 0 };
       existing.total += Number(row.total_amount) || 0;
@@ -252,11 +261,11 @@ export async function GET() {
     // Top/bottom products
     const prodGrouped = new Map<string, { name: string; code: string; category: string; total: number; qty: number }>();
     for (const row of salesRows) {
-      const key = row.product_id || row.product?.[0]?.stock_code || "unknown";
+      const key = row.product_id || row.product?.stock_code || "unknown";
       const existing = prodGrouped.get(key) || {
-        name: row.product?.[0]?.name || key,
-        code: row.product?.[0]?.stock_code || "",
-        category: row.category?.[0]?.name || "",
+        name: row.product?.name || key,
+        code: row.product?.stock_code || "",
+        category: row.category?.name || "",
         total: 0,
         qty: 0,
       };
@@ -280,14 +289,14 @@ export async function GET() {
     const bottomProducts = allProducts.slice(-5).reverse();
 
     // Pricing
-    const pricing: PricingPoint[] = (pricingRaw || []).map((p) => ({
-      product: p.product?.[0]?.name || "",
-      stock_code: p.product?.[0]?.stock_code || "",
-      branch: p.branch?.[0]?.name || "",
+    const pricing: PricingPoint[] = ((pricingRaw || []) as unknown as RawPricingRow[]).map((p) => ({
+      product: p.product?.name || "",
+      stock_code: p.product?.stock_code || "",
+      branch: p.branch?.name || "",
       selling_price: Number(p.selling_price) || 0,
       standard_cost: Number(p.standard_cost) || 0,
       margin_pct: p.standard_cost && p.selling_price
-        ? ((Number(p.selling_price) - Number(p.standard_cost)) / Number(p.standard_cost)) * 100
+        ? ((Number(p.selling_price) - Number(p.standard_cost)) / Number(p.selling_price)) * 100
         : 0,
     }));
 
@@ -312,7 +321,7 @@ export async function GET() {
       summary: {
         totalSales: grandTotal,
         totalUnits: Array.from(supGrouped.values()).reduce((s, g) => s + g.units, 0),
-        totalInventoryValue: (inventory || []).reduce((s: number, i: RawInvRow) => s + (Number(i.total_value) || 0), 0),
+        totalInventoryValue: ((inventory || []) as unknown as RawInvRow[]).reduce((s, i) => s + (Number(i.total_value) || 0), 0),
         totalProducts: prodGrouped.size,
       },
     });

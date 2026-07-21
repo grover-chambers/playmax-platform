@@ -17,7 +17,7 @@ export interface ReportSubtype {
   chart: ChartType;
   desc: string;
   filters: FilterDef[];
-  /** Parameterised SQL template. Placeholders: :period_ids, :category_id, :sub_category_id, :branch_id, :supplier_ids, :product_id, :date_start, :date_end */
+  /** Parameterised SQL template. Placeholders: :period_ids, :category_id, :sub_category_id, :branch_id, :supplier_ids, :product_id, :date_start, :date_end, :current_period_ids, :prev_period_ids */
   sql: string;
 }
 
@@ -563,7 +563,7 @@ demand AS (
   WHERE (:period_ids IS NULL OR period_id = ANY(:period_ids))
   GROUP BY product_id, branch_id
 )
-SELECT p.name AS product_name, p.stock_code,
+SELECT p.name AS product_name, p.stock_code, b.name AS branch_name,
   COALESCE(i.quantity_on_hand, 0) AS on_hand,
   COALESCE(d.demand_qty, 0) AS demand,
   COALESCE(i.quantity_on_hand, 0) - COALESCE(d.demand_qty, 0) AS gap,
@@ -572,14 +572,20 @@ SELECT p.name AS product_name, p.stock_code,
     WHEN COALESCE(i.quantity_on_hand, 0) - COALESCE(d.demand_qty, 0) > 100 THEN 'OVERSTOCK'
     ELSE 'BALANCED'
   END AS flag
-FROM analytics_products p
-LEFT JOIN latest_inv i ON i.product_id = p.id
-LEFT JOIN demand d ON d.product_id = p.id
+FROM (
+  SELECT COALESCE(i.product_id, d.product_id) AS product_id,
+    COALESCE(i.branch_id, d.branch_id) AS branch_id,
+    i.quantity_on_hand, d.demand_qty
+  FROM latest_inv i
+  FULL OUTER JOIN demand d ON d.product_id = i.product_id AND d.branch_id = i.branch_id
+) combined
+JOIN analytics_products p ON p.id = combined.product_id
 LEFT JOIN analytics_subcategories sc ON sc.id = p.sub_category_id
 LEFT JOIN analytics_categories c ON c.id = sc.category_id
+LEFT JOIN analytics_branches b ON b.id = combined.branch_id
 WHERE (:category_id IS NULL OR c.id = :category_id)
   AND (:sub_category_id IS NULL OR sc.id = :sub_category_id)
-  AND (:branch_id IS NULL OR i.branch_id = :branch_id OR d.branch_id = :branch_id)
+  AND (:branch_id IS NULL OR combined.branch_id = :branch_id)
 ORDER BY gap ASC
 LIMIT 100`,
       },
@@ -597,21 +603,28 @@ LIMIT 100`,
   FROM analytics_fact_inventory ORDER BY product_id, branch_id, snapshot_date DESC
 ),
 demand AS (
-  SELECT product_id, SUM(quantity) AS demand_qty
+  SELECT product_id, branch_id, SUM(quantity) AS demand_qty
   FROM analytics_fact_sales
   WHERE (:period_ids IS NULL OR period_id = ANY(:period_ids))
-  GROUP BY product_id
+  GROUP BY product_id, branch_id
 )
-SELECT p.name, p.stock_code, c.name AS category,
+SELECT p.name, p.stock_code, c.name AS category, b.name AS branch_name,
   COALESCE(i.quantity_on_hand, 0) AS on_hand,
   COALESCE(d.demand_qty, 0) AS demand_30d,
   COALESCE(i.quantity_on_hand, 0) - COALESCE(d.demand_qty, 0) AS gap
-FROM analytics_products p
-LEFT JOIN latest_inv i ON i.product_id = p.id
-LEFT JOIN demand d ON d.product_id = p.id
+FROM (
+  SELECT COALESCE(i.product_id, d.product_id) AS product_id,
+    COALESCE(i.branch_id, d.branch_id) AS branch_id,
+    i.quantity_on_hand, d.demand_qty
+  FROM latest_inv i
+  FULL OUTER JOIN demand d ON d.product_id = i.product_id AND d.branch_id = i.branch_id
+) combined
+JOIN analytics_products p ON p.id = combined.product_id
+LEFT JOIN analytics_branches b ON b.id = combined.branch_id
 JOIN analytics_categories c ON c.id = p.category_id
 WHERE (:category_id IS NULL OR p.category_id = :category_id)
-  AND COALESCE(i.quantity_on_hand, 0) - COALESCE(d.demand_qty, 0) < 0
+  AND (:branch_id IS NULL OR combined.branch_id = :branch_id)
+  AND COALESCE(combined.quantity_on_hand, 0) - COALESCE(combined.demand_qty, 0) < 0
 ORDER BY gap ASC
 LIMIT 50`,
       },
@@ -629,22 +642,29 @@ LIMIT 50`,
   FROM analytics_fact_inventory ORDER BY product_id, branch_id, snapshot_date DESC
 ),
 demand AS (
-  SELECT product_id, SUM(quantity) AS demand_qty
+  SELECT product_id, branch_id, SUM(quantity) AS demand_qty
   FROM analytics_fact_sales
   WHERE (:period_ids IS NULL OR period_id = ANY(:period_ids))
-  GROUP BY product_id
+  GROUP BY product_id, branch_id
 )
-SELECT p.name, p.stock_code, c.name AS category,
+SELECT p.name, p.stock_code, c.name AS category, b.name AS branch_name,
   COALESCE(i.quantity_on_hand, 0) AS on_hand,
   COALESCE(d.demand_qty, 0) AS demand_30d,
   COALESCE(i.quantity_on_hand, 0) - COALESCE(d.demand_qty, 0) AS excess,
   ROUND(COALESCE(i.unit_cost, 0) * COALESCE(i.quantity_on_hand, 0), 0) AS stock_value
-FROM analytics_products p
-LEFT JOIN latest_inv i ON i.product_id = p.id
-LEFT JOIN demand d ON d.product_id = p.id
+FROM (
+  SELECT COALESCE(i.product_id, d.product_id) AS product_id,
+    COALESCE(i.branch_id, d.branch_id) AS branch_id,
+    i.quantity_on_hand, i.unit_cost, d.demand_qty
+  FROM latest_inv i
+  FULL OUTER JOIN demand d ON d.product_id = i.product_id AND d.branch_id = i.branch_id
+) combined
+JOIN analytics_products p ON p.id = combined.product_id
+LEFT JOIN analytics_branches b ON b.id = combined.branch_id
 JOIN analytics_categories c ON c.id = p.category_id
 WHERE (:category_id IS NULL OR p.category_id = :category_id)
-  AND COALESCE(i.quantity_on_hand, 0) - COALESCE(d.demand_qty, 0) > 100
+  AND (:branch_id IS NULL OR combined.branch_id = :branch_id)
+  AND COALESCE(combined.quantity_on_hand, 0) - COALESCE(combined.demand_qty, 0) > 100
 ORDER BY excess DESC
 LIMIT 50`,
       },
@@ -662,25 +682,26 @@ LIMIT 50`,
   FROM analytics_fact_inventory ORDER BY product_id, branch_id, snapshot_date DESC
 ),
 demand AS (
-  SELECT product_id, SUM(quantity) AS demand_qty
+  SELECT product_id, branch_id, SUM(quantity) AS demand_qty
   FROM analytics_fact_sales
   WHERE (:period_ids IS NULL OR period_id = ANY(:period_ids))
-  GROUP BY product_id
-),
-product_status AS (
-  SELECT p.category_id,
-    CASE WHEN COALESCE(i.quantity_on_hand, 0) >= COALESCE(d.demand_qty, 0) THEN 1 ELSE 0 END AS healthy
-  FROM analytics_products p
-  LEFT JOIN latest_inv i ON i.product_id = p.id
-  LEFT JOIN demand d ON d.product_id = p.id
+  GROUP BY product_id, branch_id
 )
 SELECT c.name AS category,
-  COUNT(*) AS total_products,
-  SUM(ps.healthy) AS healthy_count,
-  ROUND(SUM(ps.healthy) * 100.0 / COUNT(*), 0) AS health_score
-FROM product_status ps
-JOIN analytics_categories c ON c.id = ps.category_id
-WHERE (:category_id IS NULL OR ps.category_id = :category_id)
+  COUNT(*) AS total_product_branches,
+  SUM(CASE WHEN COALESCE(i.quantity_on_hand, 0) >= COALESCE(d.demand_qty, 0) THEN 1 ELSE 0 END) AS healthy_count,
+  ROUND(SUM(CASE WHEN COALESCE(i.quantity_on_hand, 0) >= COALESCE(d.demand_qty, 0) THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 0) AS health_score
+FROM (
+  SELECT COALESCE(i.product_id, d.product_id) AS product_id,
+    COALESCE(i.branch_id, d.branch_id) AS branch_id,
+    i.quantity_on_hand, d.demand_qty
+  FROM latest_inv i
+  FULL OUTER JOIN demand d ON d.product_id = i.product_id AND d.branch_id = i.branch_id
+) combined
+JOIN analytics_products p ON p.id = combined.product_id
+JOIN analytics_categories c ON c.id = p.category_id
+WHERE (:category_id IS NULL OR p.category_id = :category_id)
+  AND (:branch_id IS NULL OR combined.branch_id = :branch_id)
 GROUP BY c.name
 ORDER BY health_score`,
       },
@@ -699,22 +720,29 @@ ORDER BY health_score`,
   FROM analytics_fact_inventory ORDER BY product_id, branch_id, snapshot_date DESC
 ),
 velocity AS (
-  SELECT product_id,
+  SELECT product_id, branch_id,
     SUM(quantity) / GREATEST(COUNT(DISTINCT period_id), 1) AS weekly_velocity
   FROM analytics_fact_sales
   WHERE (:period_ids IS NULL OR period_id = ANY(:period_ids))
-  GROUP BY product_id
+  GROUP BY product_id, branch_id
 )
-SELECT p.name, p.stock_code, c.name AS category,
+SELECT p.name, p.stock_code, c.name AS category, b.name AS branch_name,
   COALESCE(i.quantity_on_hand, 0) AS on_hand,
   COALESCE(v.weekly_velocity, 0) AS weekly_velocity,
   GREATEST(0, COALESCE(v.weekly_velocity, 0) * 2 - COALESCE(i.quantity_on_hand, 0)) AS reorder_qty
-FROM analytics_products p
-LEFT JOIN latest_inv i ON i.product_id = p.id
-LEFT JOIN velocity v ON v.product_id = p.id
+FROM (
+  SELECT COALESCE(i.product_id, v.product_id) AS product_id,
+    COALESCE(i.branch_id, v.branch_id) AS branch_id,
+    i.quantity_on_hand, v.weekly_velocity
+  FROM latest_inv i
+  FULL OUTER JOIN velocity v ON v.product_id = i.product_id AND v.branch_id = i.branch_id
+) combined
+JOIN analytics_products p ON p.id = combined.product_id
+LEFT JOIN analytics_branches b ON b.id = combined.branch_id
 JOIN analytics_categories c ON c.id = p.category_id
 WHERE (:category_id IS NULL OR p.category_id = :category_id)
-  AND COALESCE(i.quantity_on_hand, 0) < COALESCE(v.weekly_velocity, 0) * 2
+  AND (:branch_id IS NULL OR combined.branch_id = :branch_id)
+  AND COALESCE(combined.quantity_on_hand, 0) < COALESCE(combined.weekly_velocity, 0) * 2
 ORDER BY reorder_qty DESC
 LIMIT 50`,
       },

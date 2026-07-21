@@ -28,10 +28,10 @@ interface RawSalesRow {
   period_id: string;
   category_id: string;
   supplier_id: string | null;
-  product: { name: string; stock_code: string }[];
-  period: { label: string; year: number; quarter: number; month: number }[];
-  branch: { name: string; code: string }[];
-  category: { name: string }[];
+  product: { name: string; stock_code: string };
+  period: { label: string; year: number; quarter: number; month: number };
+  branch: { name: string; code: string };
+  category: { name: string };
 }
 
 export async function POST() {
@@ -145,7 +145,7 @@ export async function POST() {
     // Group by branch
     const branchGrouped = new Map<string, { name: string; total: number; units: number }>();
     for (const row of salesRows) {
-      const bName = row.branch?.[0]?.name || "Unknown";
+      const bName = row.branch?.name || "Unknown";
       const key = row.branch_id || bName;
       const existing = branchGrouped.get(key) || { name: bName, total: 0, units: 0 };
       existing.total += Number(row.total_amount) || 0;
@@ -167,7 +167,7 @@ export async function POST() {
     for (const row of salesRows) {
       const supName = row.supplier_id ? (supplierNameMap.get(row.supplier_id) || "Unknown") : "Unknown";
       if (supName.toLowerCase() !== clientNameLower) continue;
-      const bName = row.branch?.[0]?.name || "Unknown";
+      const bName = row.branch?.name || "Unknown";
       const key = row.branch_id || bName;
       const existing = clientBranchGrouped.get(key) || { name: bName, total: 0, units: 0 };
       existing.total += Number(row.total_amount) || 0;

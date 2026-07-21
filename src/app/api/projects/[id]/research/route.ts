@@ -24,7 +24,7 @@ export async function GET(
 
     const { data, error } = await supabase
       .from("research_projects")
-      .select("*, research(*)")
+      .select("*")
       .eq("project_id", id);
 
     if (error) {

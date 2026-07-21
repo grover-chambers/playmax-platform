@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { REPORT_CATEGORIES } from "@/lib/report-types";
 import type { ChartType } from "@/lib/report-types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -140,17 +141,21 @@ async function queryBySubtype(
   const { subtype, category, sub_category, branch, period_start, period_end } = body as Record<string, any>;
   if (!subtype) return { data: [], chart_type: null, error: "subtype required" };
 
-  // Infer category id from subtype prefix
-  const catId = subtype.split("_").slice(0, -1).join("_");
-  const oldType = subtypeTypeMap[catId];
-  if (!oldType) return { data: [], chart_type: null, error: `Unknown subtype category: ${catId}` };
+  // Lookup subtype across all categories to find which category it belongs to
+  const cat = REPORT_CATEGORIES.find((c) =>
+    c.subtypes.some((s) => s.id === subtype),
+  );
+  if (!cat) return { data: [], chart_type: null, error: `Unknown subtype: ${subtype}` };
+
+  const oldType = subtypeTypeMap[cat.id];
+  if (!oldType) return { data: [], chart_type: null, error: `No old-type mapping for category: ${cat.id}` };
 
   const chartType = subtypeChartMap[subtype] ?? "table";
 
   try {
     const mainPeriods = await findPeriods(supabase, period_start, period_end);
     const raw = await executeOldType(supabase, oldType, mainPeriods, category, sub_category, branch);
-    return { data: flattenForSubtype(subtype, raw), chart_type: chartType };
+    return { data: flattenForSubtype(raw), chart_type: chartType };
   } catch (e: any) {
     return { data: [], chart_type: null, error: e?.message ?? "Query failed" };
   }
@@ -176,15 +181,15 @@ async function executeOldType(
     case "pricing_analysis":
       return queryPricingAnalysis(supabase, periods, category, sub_category, branch);
     case "stock_movements":
-      return queryStockMovements(supabase, category, sub_category, branch);
+      return queryStockMovements(supabase, periods, category, sub_category, branch);
     case "supplier_performance":
-      return querySupplierPerformance(supabase, category, sub_category, branch);
+      return querySupplierPerformance(supabase, periods, category, sub_category, branch);
     default:
       return {};
   }
 }
 
-function flattenForSubtype(subtype: string, raw: any): Record<string, unknown>[] {
+function flattenForSubtype(raw: any): Record<string, unknown>[] {
   // Extract the first array property from the response
   const arr = Object.values(raw).find((v: any) => Array.isArray(v) && v.length > 0) as Record<string, unknown>[] ?? [];
   if (arr.length > 0) return arr;
@@ -695,10 +700,14 @@ async function queryPricingAnalysis(
 // ── Stock Movements ───────────────────────────────────────────
 async function queryStockMovements(
   supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>,
+  mainPeriods: { id: string; start_date: string; end_date: string }[],
   category?: string,
   sub_category?: string,
   branch?: string,
 ) {
+  const startDate = mainPeriods.length > 0 ? mainPeriods.reduce((earliest, p) => p.start_date < earliest ? p.start_date : earliest, mainPeriods[0].start_date) : undefined;
+  const endDate = mainPeriods.length > 0 ? mainPeriods.reduce((latest, p) => p.end_date > latest ? p.end_date : latest, mainPeriods[0].end_date) : undefined;
+
   let query = supabase
     .from("analytics_fact_stock_movements")
     .select("id, movement_date, product_id, branch_id, supplier_id, movement_type, quantity, unit_cost, total_cost, reference_number, batch_number")
@@ -706,6 +715,8 @@ async function queryStockMovements(
     .limit(500);
 
   if (branch) query = query.eq("branch_id", branch);
+  if (startDate) query = query.gte("movement_date", startDate);
+  if (endDate) query = query.lte("movement_date", endDate);
 
   const { data: movements } = await query;
   if (!movements || movements.length === 0) return { movements: [], summary: {} };
@@ -769,10 +780,15 @@ async function queryStockMovements(
 // ── Supplier Performance ───────────────────────────────────────
 async function querySupplierPerformance(
   supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>,
+  mainPeriods: { id: string; start_date: string; end_date: string }[],
   category?: string,
   sub_category?: string,
   branch?: string,
 ) {
+  const periodIds = mainPeriods.map((p) => p.id);
+  const startDate = mainPeriods.length > 0 ? mainPeriods.reduce((earliest, p) => p.start_date < earliest ? p.start_date : earliest, mainPeriods[0].start_date) : undefined;
+  const endDate = mainPeriods.length > 0 ? mainPeriods.reduce((latest, p) => p.end_date > latest ? p.end_date : latest, mainPeriods[0].end_date) : undefined;
+
   const filters = await resolveCategoryFilters(supabase, category, sub_category);
 
   // Get suppliers with their product counts and sales
@@ -794,6 +810,9 @@ async function querySupplierPerformance(
   if (filters.productIds) {
     pricingQuery = pricingQuery.in("product_id", filters.productIds);
   }
+  if (periodIds.length > 0) {
+    pricingQuery = pricingQuery.in("period_id", periodIds);
+  }
   const { data: pricingRows } = await pricingQuery;
 
   // Get stock movements per supplier
@@ -807,6 +826,8 @@ async function querySupplierPerformance(
   if (branch) {
     movementsQuery = movementsQuery.eq("branch_id", branch);
   }
+  if (startDate) movementsQuery = movementsQuery.gte("movement_date", startDate);
+  if (endDate) movementsQuery = movementsQuery.lte("movement_date", endDate);
   const { data: movements } = await movementsQuery;
 
   const supData = suppliers.map((sup) => {

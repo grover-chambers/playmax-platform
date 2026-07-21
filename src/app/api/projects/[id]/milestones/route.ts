@@ -62,6 +62,17 @@ export async function POST(
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
+    // Fetch project to get client_id (required by table constraint)
+    const { data: project } = await supabase
+      .from("projects")
+      .select("client_id")
+      .eq("id", id)
+      .single();
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
     const { data: existing } = await supabase
       .from("project_milestones")
       .select("sort_order")
@@ -76,6 +87,7 @@ export async function POST(
       .from("project_milestones")
       .insert({
         project_id: id,
+        client_id: project.client_id,
         title,
         description: description || null,
         due_date: due_date || null,

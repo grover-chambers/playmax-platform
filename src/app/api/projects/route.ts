@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getPortalClient } from "@/lib/portal";
 import { sanitizeError } from "@/lib/errors";
 import type { UserRole } from "@/lib/types";
 
@@ -21,6 +22,15 @@ export async function GET() {
 
     if (currentUser.role === "crm_staff") {
       query = query.eq("assigned_to", currentUser.id);
+    } else if (!isAdmin(currentUser.role as UserRole)) {
+      // Portal clients see only their projects
+      const client = await getPortalClient(supabase, currentUser.id);
+      if (client) {
+        query = query.eq("client_id", client.id);
+      } else {
+        // Non-admin, non-client users see nothing
+        return NextResponse.json({ data: [] });
+      }
     }
 
     const { data, error } = await query;
