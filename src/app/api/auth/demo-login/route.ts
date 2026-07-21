@@ -42,6 +42,11 @@ const DEMO_ACCOUNTS: Record<
     role: "client",
     name: "Brian Kamau",
   },
+  nice_client: {
+    email: "demo@nicesupermarket.co.ke",
+    role: "client",
+    name: "NICE Supermarkets",
+  },
 };
 
 export async function POST(request: NextRequest) {

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, startTransition } from "react";
 import Button from "@/components/ui/button";
 import PageHeader from "@/components/layout/page-header";
-import { FileText, Presentation, BarChart3, Image, Download, Loader2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { FileText, Presentation, BarChart3, Image, Download, Loader2, ThumbsUp, ThumbsDown, FileBarChart } from "lucide-react";
 
 interface Deliverable {
   id: string;
@@ -15,6 +15,7 @@ interface Deliverable {
   created_at: string;
   approval_status?: string;
   client_feedback?: string | null;
+  has_pdf?: boolean;
 }
 
 const typeIcons: Record<string, React.ElementType> = {
@@ -41,8 +42,9 @@ export default function PortalDeliverablesPage() {
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [generating, setGenerating] = useState(false);
 
-  useEffect(() => {
+  const fetchDeliverables = () => {
     fetch("/api/portal/deliverables")
       .then((r) => r.json())
       .then(({ deliverables: data }) => {
@@ -52,7 +54,39 @@ export default function PortalDeliverablesPage() {
         });
       })
       .catch(() => startTransition(() => setLoading(false)));
+  };
+
+  useEffect(() => {
+    fetchDeliverables();
   }, []);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/portal/reports/generate", { method: "POST" });
+      if (res.ok) {
+        fetchDeliverables();
+      }
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDownload = async (d: Deliverable) => {
+    if (d.has_pdf && !d.url) {
+      const res = await fetch(`/api/portal/reports/${d.id}`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${d.name.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "_")}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (d.url) {
+      window.open(d.url, "_blank");
+    }
+  };
 
   const handleApproval = async (id: string, status: "approved" | "rejected") => {
     setSubmitting((p) => ({ ...p, [id]: true }));
@@ -90,6 +124,21 @@ export default function PortalDeliverablesPage() {
         subtitle={`${deliverables.length} file${deliverables.length !== 1 ? "s" : ""} across your projects`}
       />
 
+      <div className="mb-6 flex items-center gap-3">
+        <button
+          onClick={handleGenerate}
+          disabled={generating}
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium bg-yellow/10 text-yellow rounded-lg border border-yellow/20 hover:bg-yellow/20 transition-colors disabled:opacity-50"
+        >
+          {generating ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <FileBarChart size={14} />
+          )}
+          {generating ? "Generating Reports..." : "Generate Analytics Reports"}
+        </button>
+      </div>
+
       {deliverables.length === 0 ? (
         <div className="pm-dash-card pm-dash-card-b text-center text-[13px] text-gray-4">
           No deliverables available yet
@@ -125,12 +174,14 @@ export default function PortalDeliverablesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {d.url && (
-                      <a href={d.url} target="_blank" rel="noopener noreferrer">
-                        <Button variant="secondary" size="sm">
-                          <Download size={12} className="mr-1.5" /> Download
-                        </Button>
-                      </a>
+                    {(d.url || d.has_pdf) && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleDownload(d)}
+                      >
+                        <Download size={12} className="mr-1.5" /> Download
+                      </Button>
                     )}
                     {needsReview && (
                       <Button

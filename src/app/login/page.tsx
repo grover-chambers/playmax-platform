@@ -550,6 +550,7 @@ function LoginForm() {
                     { role: "crm_staff", label: "CRM Staff" },
                     { role: "cms_admin", label: "CMS Admin" },
                     { role: "finance", label: "Finance" },
+                    { role: "nice_client", label: "NICE Client Portal" },
                   ].map((d) => (
                     <button
                       key={d.role}

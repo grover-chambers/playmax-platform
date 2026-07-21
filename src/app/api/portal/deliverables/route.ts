@@ -27,7 +27,7 @@ export async function GET() {
     // Also fetch deliverables with visible_to_client
     const { data: dels } = await supabase
       .from("deliverables")
-      .select("id, title, description, file_url, file_type, file_size, visible_to_client, created_at, project_id, projects(name)")
+      .select("id, title, description, file_url, file_type, file_size, visible_to_client, created_at, project_id, pdf_base64, projects(name)")
       .eq("client_id", client.id)
       .eq("visible_to_client", true)
       .order("created_at", { ascending: false });
@@ -43,6 +43,7 @@ export async function GET() {
         project: d.projects?.[0]?.name || null,
         created_at: d.created_at,
         source: "documents" as const,
+        has_pdf: false,
       })),
       ...(dels || []).map(d => ({
         id: d.id,
@@ -53,6 +54,7 @@ export async function GET() {
         project: d.projects?.[0]?.name || null,
         created_at: d.created_at,
         source: "deliverables" as const,
+        has_pdf: !!d.pdf_base64,
       })),
     ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 

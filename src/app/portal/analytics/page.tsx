@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, startTransition, useMemo } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import {
   BarChart3,
   TrendingDown,
@@ -13,7 +13,6 @@ import {
   Loader2,
   FileText,
   Eye,
-  Download,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import { AnalyticsChart } from "@/components/charts/analytics-chart";
@@ -95,14 +94,25 @@ interface AnalyticsResponse {
   error?: string;
 }
 
-/* ── Color system ─────────────────────────────────────────────── */
+/* ── Color system (from analytics-colors.ts) ──────────────────── */
+
+const ANALYTICS_PALETTE = {
+  yellow:  "#F4C300",
+  green:   "#22C55E",
+  blue:    "#3B82F6",
+  pink:    "#EC4899",
+  orange:  "#F97316",
+  purple:  "#A855F7",
+  cyan:    "#06B6D4",
+  red:     "#EF4444",
+};
 
 const RANK_COLORS = {
-  gold: "#c98500",
-  silver: "#898781",
-  bronze: "#a07840",
-  gray: "#c3c2b7",
-  faded: "#d3d1c7",
+  gold: "#F4C300",
+  silver: "#BBBBBB",
+  bronze: "#F97316",
+  gray: "#A855F7",
+  faded: "#3B82F6",
 };
 
 function competitorColor(rank: number, isClient: boolean, clientColor: string): string {
@@ -111,6 +121,11 @@ function competitorColor(rank: number, isClient: boolean, clientColor: string): 
   if (rank === 2) return RANK_COLORS.silver;
   if (rank === 3) return RANK_COLORS.bronze;
   return RANK_COLORS.faded;
+}
+
+function asteriskName(name: string, isClient: boolean): string {
+  if (isClient) return name;
+  return name.replace(/[A-Z]{2,}/g, (match) => match[0] + "*".repeat(Math.max(1, match.length - 1)));
 }
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -590,6 +605,33 @@ export default function PortalAnalyticsPage() {
             </div>
           </div>
 
+          {/* ── NICE Position Banner ──────────────────────── */}
+          {clientComp && (
+            <div className="mb-6 p-5 rounded-xl border-2 border-[#F4C300]/30" style={{ background: "linear-gradient(135deg, #1a1a0a 0%, #0a0a0a 100%)" }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${clientColor}22`, border: `2px solid ${clientColor}44` }}>
+                    <span className="text-2xl font-display font-bold" style={{ color: clientColor }}>#{clientComp.rank}</span>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-gray-5 uppercase tracking-widest font-mono">Your Market Position</div>
+                    <div className="text-[22px] font-display font-bold mt-0.5" style={{ color: clientColor }}>
+                      {fmtPct(clientComp.share)} market share
+                    </div>
+                    <div className="text-[12px] text-gray-4 mt-1">
+                      Ranked #{clientComp.rank} of {competitors.length} suppliers · {fmt(clientComp.total_sales)} revenue · {fmtNum(clientComp.total_units)} units
+                    </div>
+                  </div>
+                </div>
+                <div className="hidden md:flex flex-col items-end gap-1">
+                  <div className="text-[10px] text-gray-5 font-mono uppercase tracking-widest">Category</div>
+                  <div className="text-[14px] font-display font-semibold text-white">Maize Flour</div>
+                  <div className="text-[10px] text-gray-5 font-mono">Jan — Jul 2026</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── Competitor Leaderboard + Category Share ─── */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
             {/* Leaderboard - 3 cols */}
@@ -612,6 +654,7 @@ export default function PortalAnalyticsPage() {
               <div className="space-y-2.5">
                 {competitors.slice(0, 8).map((comp) => {
                   const color = competitorColor(comp.rank, comp.is_client, clientColor);
+                  const displayName = comp.is_client ? comp.manufacturer : asteriskName(comp.manufacturer, comp.is_client);
                   return (
                     <div key={comp.manufacturer} className="flex items-center gap-3">
                       <span className="text-[10px] font-mono text-gray-5 w-4 text-right shrink-0">
@@ -623,9 +666,9 @@ export default function PortalAnalyticsPage() {
                             className="text-[12px] truncate font-medium"
                             style={{ color: comp.is_client ? clientColor : "#e5e5e5" }}
                           >
-                            {comp.manufacturer}
+                            {displayName}
                             {comp.is_client && (
-                              <span className="ml-1 text-[9px] opacity-60">(you)</span>
+                              <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: `${clientColor}22`, color: clientColor }}>you</span>
                             )}
                           </span>
                           <span className="text-[11px] text-gray-4 shrink-0 ml-2">
@@ -676,11 +719,7 @@ export default function PortalAnalyticsPage() {
                   <DonutChart
                     segments={categories.map((cat, i) => ({
                       value: cat.total_sales,
-                      color: i === 0 ? RANK_COLORS.gold
-                        : i === 1 ? RANK_COLORS.silver
-                        : i === 2 ? RANK_COLORS.bronze
-                        : i < 5 ? RANK_COLORS.gray
-                        : RANK_COLORS.faded,
+                      color: [ANALYTICS_PALETTE.yellow, ANALYTICS_PALETTE.green, ANALYTICS_PALETTE.blue, ANALYTICS_PALETTE.pink, ANALYTICS_PALETTE.orange, ANALYTICS_PALETTE.purple, ANALYTICS_PALETTE.cyan, ANALYTICS_PALETTE.red][i % 8],
                     }))}
                     size={150}
                     strokeWidth={20}
@@ -696,10 +735,7 @@ export default function PortalAnalyticsPage() {
 
               <div className="space-y-1.5 mt-4">
                 {categories.slice(0, 6).map((cat, i) => {
-                  const color = i === 0 ? RANK_COLORS.gold
-                    : i === 1 ? RANK_COLORS.silver
-                    : i === 2 ? RANK_COLORS.bronze
-                    : RANK_COLORS.faded;
+                  const color = [ANALYTICS_PALETTE.yellow, ANALYTICS_PALETTE.green, ANALYTICS_PALETTE.blue, ANALYTICS_PALETTE.pink, ANALYTICS_PALETTE.orange, ANALYTICS_PALETTE.purple][i % 6];
                   return (
                     <div key={cat.category} className="flex items-center justify-between text-[11px]">
                       <span className="flex items-center gap-1.5 min-w-0">
@@ -726,7 +762,7 @@ export default function PortalAnalyticsPage() {
               </div>
 
               <div className="space-y-2">
-                {branches.slice(0, 10).map((branch) => (
+                {branches.slice(0, 10).map((branch, i) => (
                   <div key={branch.branch_id} className="flex items-center gap-3">
                     <div className="w-20 min-w-0 shrink-0">
                       <span className="text-[11px] text-gray-4 truncate block">{branch.branch_name}</span>
@@ -735,7 +771,7 @@ export default function PortalAnalyticsPage() {
                       <HorizontalBar
                         value={branch.total_amount}
                         max={maxBranchSales}
-                        color={clientColor}
+                        color={[ANALYTICS_PALETTE.yellow, ANALYTICS_PALETTE.green, ANALYTICS_PALETTE.blue, ANALYTICS_PALETTE.pink, ANALYTICS_PALETTE.orange, ANALYTICS_PALETTE.purple, ANALYTICS_PALETTE.cyan, ANALYTICS_PALETTE.red][i % 8]}
                         height={14}
                       />
                     </div>
@@ -758,8 +794,8 @@ export default function PortalAnalyticsPage() {
                 {pricing.slice(0, 10).map((p, i) => {
                   const maxPrice = Math.max(...pricing.map((x) => x.selling_price), 1);
                   const marginColor = p.margin_pct > avgMargin
-                    ? "#10b981" : p.margin_pct < avgMargin * 0.5
-                    ? "#ef4444" : "#eab308";
+                    ? ANALYTICS_PALETTE.green : p.margin_pct < avgMargin * 0.5
+                    ? ANALYTICS_PALETTE.red : ANALYTICS_PALETTE.yellow;
                   return (
                     <div key={i} className="flex items-center gap-2">
                       <div className="w-24 min-w-0 shrink-0">
@@ -787,7 +823,7 @@ export default function PortalAnalyticsPage() {
 
               {/* Avg margin reference */}
               <div className="mt-3 pt-3 border-t border-[#1A1A1A] flex items-center gap-2 text-[10px] text-gray-5">
-                <span className="w-3 h-0.5 rounded" style={{ background: "#eab308" }} />
+                <span className="w-3 h-0.5 rounded" style={{ background: ANALYTICS_PALETTE.yellow }} />
                 Category avg margin: {fmtPct(avgMargin)}
               </div>
             </div>
@@ -892,7 +928,7 @@ export default function PortalAnalyticsPage() {
                             <div className="w-16 h-1.5 rounded bg-[#1A1A1A] overflow-hidden">
                               <div
                                 className="h-full rounded"
-                                style={{ width: `${share}%`, background: clientColor }}
+                                style={{ width: `${share}%`, background: ANALYTICS_PALETTE.yellow }}
                               />
                             </div>
                             <span className="text-[11px] text-gray-4">{fmtPct(share)}</span>
