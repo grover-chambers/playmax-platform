@@ -30,7 +30,7 @@ export interface SupplierData {
   units: number;
   share: number;
   avgPrice: number;
-  isNICE: boolean;
+  isClient: boolean;
 }
 
 export interface BranchData {
@@ -40,7 +40,7 @@ export interface BranchData {
   share: number;
 }
 
-export interface NiceBranchData {
+export interface ClientBranchData {
   name: string;
   revenue: number;
   units: number;
@@ -51,13 +51,17 @@ export interface ReportData {
   grandQty: number;
   supplierDetails: SupplierData[];
   branchDetails: BranchData[];
-  niceTotal: { total: number; units: number };
-  niceRank: number;
-  niceShare: number;
-  niceBranchDetails: NiceBranchData[];
+  clientTotal: { total: number; units: number };
+  clientRank: number;
+  clientShare: number;
+  clientBranchDetails: ClientBranchData[];
   totalSuppliers: number;
   totalProducts: number;
   totalBranches: number;
+  categoryName: string;
+  clientName: string;
+  clientDisplayName: string;
+  periodLabel: string;
 }
 
 /* ── Helpers ── */
@@ -83,28 +87,23 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 function drawHeader(doc: jsPDF, title: string, subtitle: string) {
-  // Yellow accent bar
   doc.setFillColor(...hexToRgb(COLORS.yellow));
   doc.rect(0, 0, 210, 8, "F");
 
-  // Title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
   doc.setTextColor(30, 30, 30);
   doc.text(title, 20, 28);
 
-  // Subtitle
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(100, 100, 100);
   doc.text(subtitle, 20, 36);
 
-  // Date
   doc.setFontSize(9);
   doc.setTextColor(150, 150, 150);
   doc.text(`Generated: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}`, 20, 42);
 
-  // Separator
   doc.setDrawColor(200, 200, 200);
   doc.line(20, 46, 190, 46);
 }
@@ -155,21 +154,17 @@ function drawBarChart(doc: jsPDF, data: { label: string; value: number; color?: 
     const pct = data[i].value / maxVal;
     const color = data[i].color || PALETTE[i % PALETTE.length];
 
-    // Label
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(80, 80, 80);
     doc.text(data[i].label.slice(0, 25), 20, barY + 4.5);
 
-    // Bar background
     doc.setFillColor(230, 230, 230);
     doc.roundedRect(20 + labelW + 2, barY, barW, barH, 1, 1, "F");
 
-    // Bar
     doc.setFillColor(...hexToRgb(color));
     doc.roundedRect(20 + labelW + 2, barY, barW * pct, barH, 1, 1, "F");
 
-    // Value
     doc.setFontSize(7);
     doc.setTextColor(60, 60, 60);
     doc.text(fmt(data[i].value), 20 + labelW + barW + 5, barY + 4.5);
@@ -202,7 +197,7 @@ function checkPageBreak(doc: jsPDF, currentY: number, needed: number): number {
 
 export function generateMarketShareReport(data: ReportData): jsPDF {
   const doc = new jsPDF();
-  drawHeader(doc, "Market Share Intelligence", "Maize Flour Category · NICE Supermarkets · Jan–Jul 2026");
+  drawHeader(doc, "Market Share Intelligence", `${data.categoryName} Category · ${data.clientDisplayName} · ${data.periodLabel}`);
 
   let y = 55;
   y = drawSectionTitle(doc, "Executive Summary", y);
@@ -212,27 +207,27 @@ export function generateMarketShareReport(data: ReportData): jsPDF {
 
   y = drawParagraph(
     doc,
-    `The maize flour category within the Kanini retail network represents a total addressable market of ${fmt(data.grandTotal)} in revenue across ${fmtNum(data.grandQty)} units sold through ${data.totalBranches} branches during the January to July 2026 period. This comprehensive analysis covers ${data.totalSuppliers} active suppliers competing for shelf space across ${data.totalProducts} distinct product lines.`,
+    `The ${data.categoryName.toLowerCase()} category within the Kanini retail network represents a total addressable market of ${fmt(data.grandTotal)} in revenue across ${fmtNum(data.grandQty)} units sold through ${data.totalBranches} branches during the ${data.periodLabel} period. This comprehensive analysis covers ${data.totalSuppliers} active suppliers competing for shelf space across ${data.totalProducts} distinct product lines.`,
     y
   );
 
   y = drawParagraph(
     doc,
-    `NICE Supermarkets currently holds position #${data.niceRank} in the competitive landscape with a ${fmtPct(data.niceShare)} market share, generating ${fmt(data.niceTotal.total)} in revenue from ${fmtNum(data.niceTotal.units)} units sold. This positions NICE as a significant mid-tier player with substantial room for growth against the market leaders.`,
+    `${data.clientDisplayName} currently holds position #${data.clientRank} in the competitive landscape with a ${fmtPct(data.clientShare)} market share, generating ${fmt(data.clientTotal.total)} in revenue from ${fmtNum(data.clientTotal.units)} units sold. This positions ${data.clientName} as a significant player with substantial room for growth against the market leaders.`,
     y
   );
 
   y = drawParagraph(
     doc,
-    `The market is led by ${topSupplier?.name || "the market leader"} with a ${fmtPct(topSupplier?.share || 0)} share, commanding ${fmt(topSupplier?.revenue || 0)} in revenue. The top three suppliers collectively control a dominant portion of the market, indicating an oligopolistic competitive structure that new entrants must navigate carefully.`,
+    `The market is led by ${topSupplier?.name || "the market leader"} with a ${fmtPct(topSupplier?.share || 0)} share, commanding ${fmt(topSupplier?.revenue || 0)} in revenue. The top three suppliers collectively control a dominant portion of the market, indicating an oligopolistic competitive structure that requires careful navigation.`,
     y
   );
 
   // KPI boxes
   y += 5;
   drawKPIBox(doc, "Market Leader", topSupplier?.name?.slice(0, 18) || "—", 20, y, 42, 22, COLORS.yellow);
-  drawKPIBox(doc, "Your Rank", `#${data.niceRank}`, 65, y, 30, 22, COLORS.green);
-  drawKPIBox(doc, "Your Share", fmtPct(data.niceShare), 98, y, 30, 22, COLORS.yellow);
+  drawKPIBox(doc, "Your Rank", `#${data.clientRank}`, 65, y, 30, 22, COLORS.green);
+  drawKPIBox(doc, "Your Share", fmtPct(data.clientShare), 98, y, 30, 22, COLORS.yellow);
   drawKPIBox(doc, "Total Market", fmt(data.grandTotal), 131, y, 59, 22, COLORS.blue);
   y += 30;
 
@@ -241,11 +236,11 @@ export function generateMarketShareReport(data: ReportData): jsPDF {
 
   const tableData = knownSuppliers.slice(0, 12).map((s, i) => [
     `#${i + 1}`,
-    s.isNICE ? `★ ${s.name}` : s.name,
+    s.isClient ? `★ ${s.name}` : s.name,
     fmt(s.revenue),
     fmtPct(s.share),
     fmtNum(s.units),
-    s.isNICE ? "You" : "",
+    s.isClient ? "You" : "",
   ]);
 
   autoTable(doc, {
@@ -267,7 +262,7 @@ export function generateMarketShareReport(data: ReportData): jsPDF {
     didParseCell: (hookData) => {
       if (hookData.section === "body" && hookData.row.index !== undefined) {
         const supplier = knownSuppliers[hookData.row.index];
-        if (supplier?.isNICE) {
+        if (supplier?.isClient) {
           hookData.cell.styles.fillColor = hexToRgb("#FFFDE7");
           hookData.cell.styles.fontStyle = "bold";
         }
@@ -282,12 +277,12 @@ export function generateMarketShareReport(data: ReportData): jsPDF {
   y = drawSectionTitle(doc, "Strategic Analysis", y);
   y = drawParagraph(
     doc,
-    `The competitive dynamics in the maize flour category reveal a market where scale and distribution reach are key differentiators. The market leader, ${topSupplier?.name}, has established dominance through extensive product range and branch penetration. NICE Supermarkets, while currently at ${fmtPct(data.niceShare)} share, demonstrates strong unit velocity and premium positioning with an average selling price of KES ${Math.round(data.niceTotal.total / data.niceTotal.units).toLocaleString()} per unit.`,
+    `The competitive dynamics in the ${data.categoryName.toLowerCase()} category reveal a market where scale and distribution reach are key differentiators. The market leader, ${topSupplier?.name}, has established dominance through extensive product range and branch penetration. ${data.clientDisplayName}, while currently at ${fmtPct(data.clientShare)} share, demonstrates strong unit velocity with an average selling price of KES ${Math.round(data.clientTotal.total / data.clientTotal.units).toLocaleString()} per unit.`,
     y
   );
   y = drawParagraph(
     doc,
-    `To improve market position, NICE should consider: (1) Expanding product range to capture price-sensitive segments, (2) Negotiating volume-based supplier agreements to improve margins, (3) Strengthening presence in high-volume branches where NICE currently underperforms, and (4) Leveraging the premium NICE EXTRA PREMIUM brand positioning to command higher margins in urban branches.`,
+    `To improve market position, ${data.clientName} should consider: (1) Expanding product range to capture price-sensitive segments, (2) Negotiating volume-based supplier agreements to improve margins, (3) Strengthening presence in high-volume branches where performance currently lags, and (4) Leveraging premium brand positioning to command higher margins in key urban branches.`,
     y
   );
 
@@ -301,20 +296,20 @@ export function generateMarketShareReport(data: ReportData): jsPDF {
 
 export function generateCategoryAnalysisReport(data: ReportData): jsPDF {
   const doc = new jsPDF();
-  drawHeader(doc, "Category Performance Analysis", "Maize Flour Segment · Kanini Network · Jan–Jul 2026");
+  drawHeader(doc, "Category Performance Analysis", `${data.categoryName} Segment · Kanini Network · ${data.periodLabel}`);
 
   let y = 55;
   y = drawSectionTitle(doc, "Category Overview", y);
 
   y = drawParagraph(
     doc,
-    `The maize flour category is one of the most critical staple food segments in the Kanini retail network. With ${data.totalProducts} active product lines sourced from ${data.totalSuppliers} suppliers and distributed across ${data.totalBranches} retail outlets, this category represents a ${fmt(data.grandTotal)} revenue opportunity during the January to July 2026 review period.`,
+    `The ${data.categoryName.toLowerCase()} category is a critical product segment in the Kanini retail network. With ${data.totalProducts} active product lines sourced from ${data.totalSuppliers} suppliers and distributed across ${data.totalBranches} retail outlets, this category represents a ${fmt(data.grandTotal)} revenue opportunity during the ${data.periodLabel} review period.`,
     y
   );
 
   y = drawParagraph(
     doc,
-    `Total unit volume reached ${fmtNum(data.grandQty)} units, translating to an average category velocity of approximately ${fmtNum(data.grandQty / data.totalBranches)} units per branch over the period. The category demonstrates strong demand fundamentals driven by maize flour being a primary dietary staple in the Kenyan market.`,
+    `Total unit volume reached ${fmtNum(data.grandQty)} units, translating to an average category velocity of approximately ${fmtNum(data.grandQty / data.totalBranches)} units per branch over the period. The category demonstrates strong demand fundamentals driven by consistent consumer demand across the network.`,
     y
   );
 
@@ -369,17 +364,17 @@ export function generateCategoryAnalysisReport(data: ReportData): jsPDF {
   y = drawSectionTitle(doc, "Key Observations", y);
   y = drawParagraph(
     doc,
-    `1. Geographic concentration is significant: The top three branches account for over 50% of total category revenue, indicating potential for targeted growth strategies in underperforming locations.`,
+    `1. Geographic concentration is significant: The top three branches account for over ${fmtPct(data.branchDetails.slice(0, 3).reduce((s, b) => s + b.share, 0))} of total category revenue, indicating potential for targeted growth strategies in underperforming locations.`,
     y
   );
   y = drawParagraph(
     doc,
-    `2. Thika CBD and HQ branches show minimal maize flour sales, suggesting either stock availability issues or low consumer demand in these locations that warrants further investigation.`,
+    `2. Branch-level performance varies considerably, with some locations showing minimal sales activity. This suggests either stock availability issues or differing consumer demand patterns that warrant further investigation.`,
     y
   );
   y = drawParagraph(
     doc,
-    `3. The branch-level variation presents an opportunity for NICE to negotiate branch-specific supply agreements that account for local demand patterns and competitive dynamics.`,
+    `3. The branch-level variation presents an opportunity for ${data.clientName} to negotiate branch-specific supply agreements that account for local demand patterns and competitive dynamics.`,
     y
   );
 
@@ -388,56 +383,56 @@ export function generateCategoryAnalysisReport(data: ReportData): jsPDF {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   REPORT 3: NICE Performance Deep Dive
+   REPORT 3: Client Performance Deep Dive
    ══════════════════════════════════════════════════════════════════ */
 
 export function generateNicePerformanceReport(data: ReportData): jsPDF {
   const doc = new jsPDF();
-  drawHeader(doc, "NICE Supermarkets Performance", "Competitive Position Analysis · Maize Flour Category · Jan–Jul 2026");
+  drawHeader(doc, `${data.clientDisplayName} Performance`, `Competitive Position Analysis · ${data.categoryName} Category · ${data.periodLabel}`);
 
   let y = 55;
   y = drawSectionTitle(doc, "Position Summary", y);
 
   y = drawParagraph(
     doc,
-    `NICE Supermarkets occupies position #${data.niceRank} out of ${data.totalSuppliers} active suppliers in the maize flour category, generating ${fmt(data.niceTotal.total)} in total revenue from ${fmtNum(data.niceTotal.units)} units sold across ${data.totalBranches} branches during the January to July 2026 period. This translates to a ${fmtPct(data.niceShare)} market share in a category worth ${fmt(data.grandTotal)}.`,
+    `${data.clientDisplayName} occupies position #${data.clientRank} out of ${data.totalSuppliers} active suppliers in the ${data.categoryName.toLowerCase()} category, generating ${fmt(data.clientTotal.total)} in total revenue from ${fmtNum(data.clientTotal.units)} units sold across ${data.totalBranches} branches during the ${data.periodLabel} period. This translates to a ${fmtPct(data.clientShare)} market share in a category worth ${fmt(data.grandTotal)}.`,
     y
   );
 
   // KPI boxes
   y += 5;
-  drawKPIBox(doc, "Market Position", `#${data.niceRank}`, 20, y, 35, 22, COLORS.yellow);
-  drawKPIBox(doc, "Revenue", fmt(data.niceTotal.total), 58, y, 42, 22, COLORS.green);
-  drawKPIBox(doc, "Market Share", fmtPct(data.niceShare), 103, y, 35, 22, COLORS.blue);
-  drawKPIBox(doc, "Units Sold", fmtNum(data.niceTotal.units), 141, y, 49, 22, COLORS.orange);
+  drawKPIBox(doc, "Market Position", `#${data.clientRank}`, 20, y, 35, 22, COLORS.yellow);
+  drawKPIBox(doc, "Revenue", fmt(data.clientTotal.total), 58, y, 42, 22, COLORS.green);
+  drawKPIBox(doc, "Market Share", fmtPct(data.clientShare), 103, y, 35, 22, COLORS.blue);
+  drawKPIBox(doc, "Units Sold", fmtNum(data.clientTotal.units), 141, y, 49, 22, COLORS.orange);
   y += 30;
 
-  const avgPrice = Math.round(data.niceTotal.total / data.niceTotal.units);
+  const avgPrice = Math.round(data.clientTotal.total / data.clientTotal.units);
 
   y = drawSectionTitle(doc, "Revenue Analysis", y);
   y = drawParagraph(
     doc,
-    `NICE's revenue performance of ${fmt(data.niceTotal.total)} represents a solid foundation in the maize flour category. The average selling price of KES ${avgPrice.toLocaleString()} per unit indicates NICE's positioning in the premium segment of the market, consistent with the NICE EXTRA PREMIUM brand identity. This premium positioning, while limiting volume potential, protects margin integrity and supports brand equity.`,
+    `${data.clientName}'s revenue performance of ${fmt(data.clientTotal.total)} represents a solid foundation in the ${data.categoryName.toLowerCase()} category. The average selling price of KES ${avgPrice.toLocaleString()} per unit indicates strong positioning in the market. This pricing strategy, while potentially limiting volume potential, protects margin integrity and supports brand equity.`,
     y
   );
 
-  // NICE branch breakdown
+  // Client branch breakdown
   y = drawSectionTitle(doc, "Branch-Level Performance", y);
   y = drawParagraph(
     doc,
-    `NICE's revenue distribution across branches reveals a clear geographic strength pattern. The Meru branch leads with significant volume, while Thika CBD shows the lowest performance. This distribution suggests opportunities for targeted growth in underperforming branches through localized marketing and supply chain optimization.`,
+    `${data.clientName}'s revenue distribution across branches reveals a clear geographic strength pattern. The following analysis highlights top-performing locations and areas where increased presence could drive significant growth.`,
     y
   );
 
-  const niceBranchBars = data.niceBranchDetails
+  const clientBranchBars = data.clientBranchDetails
     .filter((b) => b.revenue > 0)
     .map((b) => ({ label: b.name, value: b.revenue, color: COLORS.yellow }));
 
-  y = drawBarChart(doc, niceBranchBars, y);
+  y = drawBarChart(doc, clientBranchBars, y);
 
-  // NICE branch table
+  // Client branch table
   y = checkPageBreak(doc, y, 80);
-  const niceBranchTable = data.niceBranchDetails
+  const clientBranchTable = data.clientBranchDetails
     .filter((b) => b.revenue > 0)
     .map((b, i) => [
       `#${i + 1}`,
@@ -450,7 +445,7 @@ export function generateNicePerformanceReport(data: ReportData): jsPDF {
   autoTable(doc, {
     startY: y,
     head: [["#", "Branch", "Revenue", "Units", "Avg Price"]],
-    body: niceBranchTable,
+    body: clientBranchTable,
     theme: "grid",
     headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 8, fontStyle: "bold" },
     bodyStyles: { fontSize: 8, textColor: [60, 60, 60] },
@@ -463,22 +458,22 @@ export function generateNicePerformanceReport(data: ReportData): jsPDF {
   y = drawSectionTitle(doc, "Growth Recommendations", y);
   y = drawParagraph(
     doc,
-    `Based on the competitive analysis, NICE has significant opportunities to grow its market share in the maize flour category. The following strategic recommendations are designed to accelerate growth while maintaining the premium brand positioning that differentiates NICE from volume-focused competitors.`,
+    `Based on the competitive analysis, ${data.clientName} has significant opportunities to grow its market share in the ${data.categoryName.toLowerCase()} category. The following strategic recommendations are designed to accelerate growth while maintaining the brand positioning that differentiates ${data.clientName} from volume-focused competitors.`,
     y
   );
   y = drawParagraph(
     doc,
-    `1. Expand the NICE EXTRA PREMIUM product range to include additional pack sizes (5kg bags, 10kg bags) that capture family-sized purchase occasions without diluting the premium brand perception.`,
+    `1. Expand the product range to include additional pack sizes and variants that capture broader purchase occasions without diluting brand perception.`,
     y
   );
   y = drawParagraph(
     doc,
-    `2. Strengthen presence in high-volume branches like Narok and Naivasha where NICE currently has limited visibility but strong market potential.`,
+    `2. Strengthen presence in high-volume branches where ${data.clientName} currently has limited visibility but strong market potential.`,
     y
   );
   y = drawParagraph(
     doc,
-    `3. Negotiate volume-based rebate agreements with raw material suppliers to improve margins while maintaining competitive retail pricing.`,
+    `3. Negotiate volume-based rebate agreements with suppliers to improve margins while maintaining competitive retail pricing.`,
     y
   );
   y = drawParagraph(
@@ -497,7 +492,7 @@ export function generateNicePerformanceReport(data: ReportData): jsPDF {
 
 export function generateSupplierCompetitionReport(data: ReportData): jsPDF {
   const doc = new jsPDF();
-  drawHeader(doc, "Supplier Competition Analysis", "Competitive Landscape · Maize Flour Category · Jan–Jul 2026");
+  drawHeader(doc, "Supplier Competition Analysis", `Competitive Landscape · ${data.categoryName} Category · ${data.periodLabel}`);
 
   let y = 55;
   y = drawSectionTitle(doc, "Competitive Landscape Overview", y);
@@ -506,7 +501,7 @@ export function generateSupplierCompetitionReport(data: ReportData): jsPDF {
 
   y = drawParagraph(
     doc,
-    `The maize flour category features ${data.totalSuppliers} active suppliers competing for shelf space and consumer preference across the Kanini retail network. The competitive landscape is characterized by a mix of large-scale industrial millers and specialized regional producers, creating a dynamic market environment with varying pricing strategies and product positioning approaches.`,
+    `The ${data.categoryName.toLowerCase()} category features ${data.totalSuppliers} active suppliers competing for shelf space and consumer preference across the Kanini retail network. The competitive landscape is characterized by a mix of large-scale suppliers and specialized regional producers, creating a dynamic market environment with varying pricing strategies and product positioning approaches.`,
     y
   );
 
@@ -521,11 +516,11 @@ export function generateSupplierCompetitionReport(data: ReportData): jsPDF {
 
   const tableData = knownSuppliers.slice(0, 15).map((s, i) => [
     `#${i + 1}`,
-    s.isNICE ? `★ ${s.name}` : `${s.name.slice(0, 25)}`,
+    s.isClient ? `★ ${s.name}` : `${s.name.slice(0, 25)}`,
     fmt(s.revenue),
     fmtPct(s.share),
     fmt(s.avgPrice) + "/unit",
-    s.isNICE ? "You" : "",
+    s.isClient ? "You" : "",
   ]);
 
   autoTable(doc, {
@@ -539,7 +534,7 @@ export function generateSupplierCompetitionReport(data: ReportData): jsPDF {
     didParseCell: (hookData) => {
       if (hookData.section === "body" && hookData.row.index !== undefined) {
         const supplier = knownSuppliers[hookData.row.index];
-        if (supplier?.isNICE) {
+        if (supplier?.isClient) {
           hookData.cell.styles.fillColor = hexToRgb("#FFFDE7");
           hookData.cell.styles.fontStyle = "bold";
         }
@@ -553,13 +548,13 @@ export function generateSupplierCompetitionReport(data: ReportData): jsPDF {
   y = checkPageBreak(doc, y, 70);
   y = drawSectionTitle(doc, "Revenue Distribution", y);
 
-  const top5Bars = knownSuppliers.slice(0, 8).map((s, i) => ({
+  const topBars = knownSuppliers.slice(0, 8).map((s, i) => ({
     label: s.name.slice(0, 22),
     value: s.revenue,
-    color: s.isNICE ? COLORS.yellow : PALETTE[i % PALETTE.length],
+    color: s.isClient ? COLORS.yellow : PALETTE[i % PALETTE.length],
   }));
 
-  y = drawBarChart(doc, top5Bars, y);
+  y = drawBarChart(doc, topBars, y);
 
   // Competitive insights
   y = checkPageBreak(doc, y, 60);
@@ -576,13 +571,13 @@ export function generateSupplierCompetitionReport(data: ReportData): jsPDF {
 
   y = drawParagraph(
     doc,
-    `NICE Supermarkets at position #${data.niceRank} occupies a strategic mid-market position. While the premium pricing strategy of the NICE EXTRA PREMIUM brand limits volume potential, it protects margin integrity and supports long-term brand equity. The key challenge is balancing premium positioning with volume growth to improve overall category economics.`,
+    `${data.clientDisplayName} at position #${data.clientRank} occupies a strategic mid-market position. The key challenge is balancing brand positioning with volume growth to improve overall category economics.`,
     y
   );
 
   y = drawParagraph(
     doc,
-    `Price analysis reveals that premium-positioned suppliers like NICE command higher average selling prices (KES ${Math.round(data.niceTotal.total / data.niceTotal.units).toLocaleString()}/unit) compared to volume-focused competitors. This pricing premium is justified by product quality perception and brand trust but requires careful management to avoid price-sensitive consumer defection.`,
+    `Price analysis reveals that premium-positioned suppliers like ${data.clientName} command higher average selling prices (KES ${Math.round(data.clientTotal.total / data.clientTotal.units).toLocaleString()}/unit) compared to volume-focused competitors. This pricing premium is justified by product quality perception and brand trust but requires careful management to avoid price-sensitive consumer defection.`,
     y
   );
 
@@ -596,14 +591,14 @@ export function generateSupplierCompetitionReport(data: ReportData): jsPDF {
 
 export function generateBranchBreakdownReport(data: ReportData): jsPDF {
   const doc = new jsPDF();
-  drawHeader(doc, "Branch Performance Breakdown", "Geographic Sales Distribution · Maize Flour Category · Jan–Jul 2026");
+  drawHeader(doc, "Branch Performance Breakdown", `Geographic Sales Distribution · ${data.categoryName} Category · ${data.periodLabel}`);
 
   let y = 55;
   y = drawSectionTitle(doc, "Geographic Revenue Analysis", y);
 
   y = drawParagraph(
     doc,
-    `The Kanini retail network operates ${data.totalBranches} branches across Kenya, each serving distinct market segments with varying competitive dynamics and consumer preferences. This branch-level analysis reveals significant geographic variations in maize flour demand, pricing patterns, and supplier competitive positioning.`,
+    `The Kanini retail network operates ${data.totalBranches} branches across Kenya, each serving distinct market segments with varying competitive dynamics and consumer preferences. This branch-level analysis reveals significant geographic variations in ${data.categoryName.toLowerCase()} demand, pricing patterns, and supplier competitive positioning.`,
     y
   );
 
@@ -653,12 +648,14 @@ export function generateBranchBreakdownReport(data: ReportData): jsPDF {
 
   y = drawParagraph(
     doc,
-    `1. The top three branches (Narok, Thika Nampak, Naivasha) collectively account for approximately ${fmtPct(data.branchDetails.slice(0, 3).reduce((s, b) => s + b.share, 0))} of total category revenue. These high-volume locations represent priority targets for supplier negotiations and promotional investments.`,
+    `1. The top three branches collectively account for approximately ${fmtPct(data.branchDetails.slice(0, 3).reduce((s, b) => s + b.share, 0))} of total category revenue. These high-volume locations represent priority targets for supplier negotiations and promotional investments.`,
     y
   );
+
+  const lowPerformers = data.branchDetails.filter((b) => b.revenue > 0).slice(-2).map((b) => b.name).join(" and ");
   y = drawParagraph(
     doc,
-    `2. Thika CBD and HQ branches show minimal maize flour activity, suggesting either operational challenges, stock availability issues, or consumer preference patterns that differ from other locations. A detailed investigation is recommended.`,
+    `2. ${lowPerformers} show minimal ${data.categoryName.toLowerCase()} activity, suggesting either operational challenges, stock availability issues, or consumer preference patterns that differ from other locations. A detailed investigation is recommended.`,
     y
   );
   y = drawParagraph(
@@ -668,7 +665,7 @@ export function generateBranchBreakdownReport(data: ReportData): jsPDF {
   );
   y = drawParagraph(
     doc,
-    `4. For NICE specifically, the Meru branch represents the strongest performance area, while Thika CBD shows the lowest activity. Targeted strategies for each branch should account for local competitive dynamics and consumer preferences.`,
+    `4. For ${data.clientName} specifically, understanding branch-level performance enables targeted strategies that account for local competitive dynamics and consumer preferences in each location.`,
     y
   );
 
@@ -682,7 +679,7 @@ export function generateBranchBreakdownReport(data: ReportData): jsPDF {
 
 export function generateKaniniNetworkReport(data: ReportData): jsPDF {
   const doc = new jsPDF();
-  drawHeader(doc, "Kanini Network Sales Performance", "Cross-Branch Intelligence · Maize Flour Category · Jan–Jul 2026");
+  drawHeader(doc, "Kanini Network Sales Performance", `Cross-Branch Intelligence · ${data.categoryName} Category · ${data.periodLabel}`);
 
   let y = 55;
   y = drawSectionTitle(doc, "Network Overview", y);
@@ -692,7 +689,7 @@ export function generateKaniniNetworkReport(data: ReportData): jsPDF {
 
   y = drawParagraph(
     doc,
-    `The Kanini retail network represents a significant distribution platform for maize flour products, operating ${data.totalBranches} branches that collectively generated ${fmt(data.grandTotal)} in category revenue during the January to July 2026 period. This performance reflects the strength of the Kanini brand and its ability to attract both suppliers and consumers across diverse geographic markets.`,
+    `The Kanini retail network represents a significant distribution platform for ${data.categoryName.toLowerCase()} products, operating ${data.totalBranches} branches that collectively generated ${fmt(data.grandTotal)} in category revenue during the ${data.periodLabel} period. This performance reflects the strength of the Kanini brand and its ability to attract both suppliers and consumers across diverse geographic markets.`,
     y
   );
 
@@ -746,13 +743,13 @@ export function generateKaniniNetworkReport(data: ReportData): jsPDF {
   y = drawSectionTitle(doc, "Supplier Landscape Within Kanini Network", y);
   y = drawParagraph(
     doc,
-    `The Kanini network hosts ${knownSuppliers.length} active maize flour suppliers, creating a competitive marketplace that benefits consumers through product variety and competitive pricing. The following ranking shows the top suppliers by revenue contribution to the network.`,
+    `The Kanini network hosts ${knownSuppliers.length} active ${data.categoryName.toLowerCase()} suppliers, creating a competitive marketplace that benefits consumers through product variety and competitive pricing. The following ranking shows the top suppliers by revenue contribution to the network.`,
     y
   );
 
   const topSuppliersTable = knownSuppliers.slice(0, 10).map((s, i) => [
     `#${i + 1}`,
-    s.isNICE ? `★ ${s.name}` : s.name.slice(0, 28),
+    s.isClient ? `★ ${s.name}` : s.name.slice(0, 28),
     fmt(s.revenue),
     fmtPct(s.share),
     fmt(s.avgPrice),
@@ -769,7 +766,7 @@ export function generateKaniniNetworkReport(data: ReportData): jsPDF {
     didParseCell: (hookData) => {
       if (hookData.section === "body" && hookData.row.index !== undefined) {
         const supplier = knownSuppliers[hookData.row.index];
-        if (supplier?.isNICE) {
+        if (supplier?.isClient) {
           hookData.cell.styles.fillColor = hexToRgb("#FFFDE7");
           hookData.cell.styles.fontStyle = "bold";
         }
@@ -789,12 +786,12 @@ export function generateKaniniNetworkReport(data: ReportData): jsPDF {
   );
   y = drawParagraph(
     doc,
-    `2. Branch-level performance variation creates opportunities for targeted supplier agreements. High-volume branches like Narok and Thika Nampak offer volume-based negotiation opportunities, while smaller branches provide testing grounds for new products and pricing strategies.`,
+    `2. Branch-level performance variation creates opportunities for targeted supplier agreements. High-volume branches offer volume-based negotiation opportunities, while smaller branches provide testing grounds for new products and pricing strategies.`,
     y
   );
   y = drawParagraph(
     doc,
-    `3. For NICE Supermarkets, the network data reveals specific branch-level opportunities where increased presence could significantly improve overall market share. The premium NICE EXTRA PREMIUM brand positioning aligns well with urban branch demographics.`,
+    `3. For ${data.clientDisplayName}, the network data reveals specific branch-level opportunities where increased presence could significantly improve overall market share.`,
     y
   );
   y = drawParagraph(
