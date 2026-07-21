@@ -418,7 +418,7 @@ function LoginForm() {
                 </p>
               </div>
 
-              <div className="text-center mt-5">
+              <div className="text-center mt-5 flex flex-col items-center gap-2">
                 <button
                   type="button"
                   disabled={loading}
@@ -430,6 +430,18 @@ function LoginForm() {
                   className="text-[11px] font-mono font-medium px-4 py-2 rounded-full border border-[#2A2A2A] bg-transparent text-gray-5 hover:text-yellow hover:border-yellow/40 transition-all cursor-pointer disabled:opacity-50"
                 >
                   Demo: Client Portal
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    setEmail("demo@nicesupermarket.co.ke");
+                    setPassword("demo123456");
+                    setError("");
+                  }}
+                  className="text-[11px] font-mono font-medium px-4 py-2 rounded-full border border-yellow/30 bg-yellow/5 text-yellow hover:bg-yellow/10 hover:border-yellow/50 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  NICE Client Portal
                 </button>
               </div>
 
