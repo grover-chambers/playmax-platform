@@ -52,15 +52,25 @@ export async function GET() {
       return NextResponse.json({ maize: null, summary: "Maize category not found" });
     }
 
-    // Fetch sales filtered by this category
-    let salesQuery = supabase
-      .from("analytics_fact_sales")
-      .select("id, quantity, total_amount, cost_amount, unit_price, product_id, branch_id, period_id, supplier_id, product:analytics_products(name, stock_code), period:analytics_periods(label, year, quarter, month), branch:analytics_branches(name, code)")
-      .in("period_id", periodIds)
-      .eq("category_id", catId);
-
-    if (branchIds.length > 0) salesQuery = salesQuery.in("branch_id", branchIds);
-    const { data: sales } = await salesQuery;
+    // Fetch sales filtered by this category (paginated to avoid 1000-row limit)
+    const allSales: Record<string, unknown>[] = [];
+    const PAGE = 1000;
+    let from = 0;
+    while (true) {
+      let q = supabase
+        .from("analytics_fact_sales")
+        .select("id, quantity, total_amount, cost_amount, unit_price, product_id, branch_id, period_id, supplier_id, product:analytics_products(name, stock_code), period:analytics_periods(label, year, quarter, month), branch:analytics_branches(name, code)")
+        .in("period_id", periodIds)
+        .eq("category_id", catId)
+        .range(from, from + PAGE - 1);
+      if (branchIds.length > 0) q = q.in("branch_id", branchIds);
+      const { data } = await q;
+      if (!data || data.length === 0) break;
+      allSales.push(...data);
+      from += PAGE;
+      if (data.length < PAGE) break;
+    }
+    const sales = allSales;
 
     const salesRows = (sales || []) as unknown as Record<string, unknown>[];
 

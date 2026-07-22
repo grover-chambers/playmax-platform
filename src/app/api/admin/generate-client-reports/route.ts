@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
+import {
+  generateEnrichedMarketShareReport,
+  generateEnrichedSupplierCompetitionReport,
+  generateEnrichedBranchAnalysisReport,
+  type EnrichedReportData,
+  type CategorySupplierRank,
+  type BranchMarketShareItem,
+  type SupplierCompetitionItem,
+  type BranchAnalysisItem,
+} from "@/lib/pdf-reports";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -252,42 +262,132 @@ export async function POST(request: Request) {
 
       if (!reportRow) continue;
 
-      // 7. Insert as documents
-      const docEntries = [
-        {
-          project_id: null,
-          client_id,
-          name: `${catName} — Market Share Report`,
-          type: "pdf",
-          url: `data:application/json,${encodeURIComponent(JSON.stringify({ category: catName, categorySupplierRank, branchMarketShare, clientShare: niceShare, clientRank: clientRank?.rank }))}`,
-          visible_to_client: true,
-          source_report_id: reportRow.id,
-        },
-        {
-          project_id: null,
-          client_id,
-          name: `${catName} — Supplier Competition Report`,
-          type: "pdf",
-          url: `data:application/json,${encodeURIComponent(JSON.stringify({ category: catName, supplierCompetition }))}`,
-          visible_to_client: true,
-          source_report_id: reportRow.id,
-        },
-        {
-          project_id: null,
-          client_id,
-          name: `${catName} — Branch Performance Report`,
-          type: "pdf",
-          url: `data:application/json,${encodeURIComponent(JSON.stringify({ category: catName, branchAnalysis, bestBranch, worstBranch }))}`,
-          visible_to_client: true,
-          source_report_id: reportRow.id,
-        },
+      // 7. Generate PDFs and upload to storage
+      const enrichedData: EnrichedReportData = {
+        categoryName: catName,
+        clientName: client.company || client.name || "Client",
+        categoryTotal,
+        categoryUnits,
+        clientTotal: niceTotal,
+        clientUnits: niceUnits,
+        clientShare: niceShare,
+        clientRank: clientRank?.rank || 0,
+        totalSuppliers: categorySupplierRank.length,
+        supplierRank: categorySupplierRank.map((s) => ({
+          rank: s.rank,
+          name: s.name,
+          revenue: s.revenue,
+          units: s.units,
+          share: s.share,
+          isClient: s.isClient,
+        })),
+        branchMarketShare: branchMarketShare.map((b) => ({
+          branch: b.branch,
+          suppliers: b.suppliers.map((s) => ({
+            name: s.name,
+            revenue: s.revenue,
+            units: s.units,
+            share: s.share,
+            isClient: s.isClient,
+          })),
+        })),
+        supplierCompetition: supplierCompetition.map((s) => ({
+          supplier: s.supplier,
+          isClient: s.isClient,
+          totalRevenue: s.totalRevenue,
+          totalUnits: s.totalUnits,
+          products: s.products,
+        })),
+        branchAnalysis: branchAnalysis.map((b) => ({
+          branch: b.branch,
+          totalRevenue: b.totalRevenue,
+          totalUnits: b.totalUnits,
+          totalTransactions: b.totalTransactions,
+          clientRevenue: b.clientRevenue,
+          clientUnits: b.clientUnits,
+          clientShare: b.clientShare,
+          avgRevenuePerTransaction: b.avgRevenuePerTransaction,
+        })),
+        bestBranch: bestBranch ? {
+          branch: bestBranch.branch,
+          totalRevenue: bestBranch.totalRevenue,
+          totalUnits: bestBranch.totalUnits,
+          totalTransactions: bestBranch.totalTransactions,
+          clientRevenue: bestBranch.clientRevenue,
+          clientUnits: bestBranch.clientUnits,
+          clientShare: bestBranch.clientShare,
+          avgRevenuePerTransaction: bestBranch.avgRevenuePerTransaction,
+        } : null,
+        worstBranch: worstBranch ? {
+          branch: worstBranch.branch,
+          totalRevenue: worstBranch.totalRevenue,
+          totalUnits: worstBranch.totalUnits,
+          totalTransactions: worstBranch.totalTransactions,
+          clientRevenue: worstBranch.clientRevenue,
+          clientUnits: worstBranch.clientUnits,
+          clientShare: worstBranch.clientShare,
+          avgRevenuePerTransaction: worstBranch.avgRevenuePerTransaction,
+        } : null,
+      };
+
+      const docSpecs = [
+        { name: `${catName} — Market Share Report`, gen: () => generateEnrichedMarketShareReport(enrichedData) },
+        { name: `${catName} — Supplier Competition Report`, gen: () => generateEnrichedSupplierCompetitionReport(enrichedData) },
+        { name: `${catName} — Branch Performance Report`, gen: () => generateEnrichedBranchAnalysisReport(enrichedData) },
       ];
 
-      const { data: docs } = await admin.from("documents").insert(docEntries).select();
-      if (docs) {
-        for (const d of docs) {
-          createdDocs.push({ id: d.id, name: d.name, category: catName });
+      const bucket = process.env.STORAGE_BUCKET || "research-reports";
+      const createdDocsForCategory: { id: string; name: string }[] = [];
+      const notifsData: { client_id: string; user_id: null; type: string; title: string; message: string; link: string; read: boolean }[] = [];
+
+      for (const spec of docSpecs) {
+        const pdfDoc = spec.gen();
+        const pdfBuffer = Buffer.from(pdfDoc.output("arraybuffer"));
+        const filename = `client-${client_id.slice(0, 8)}-${spec.name.replace(/[^a-zA-Z0-9]/g, "_")}-${Date.now()}.pdf`;
+
+        const { error: uploadErr } = await admin.storage
+          .from(bucket)
+          .upload(filename, pdfBuffer, { contentType: "application/pdf", upsert: true });
+
+        if (uploadErr) {
+          console.error(`Upload failed for ${spec.name}: ${uploadErr.message}`);
+          continue;
         }
+        const publicUrl = admin.storage.from(bucket).getPublicUrl(filename).data.publicUrl;
+
+        const { data: doc } = await admin
+          .from("documents")
+          .insert({
+            project_id: null,
+            client_id,
+            name: spec.name,
+            type: "pdf",
+            url: publicUrl,
+            visible_to_client: true,
+            source_report_id: reportRow.id,
+          })
+          .select()
+          .single();
+
+        if (doc) {
+          createdDocsForCategory.push({ id: doc.id, name: doc.name });
+          notifsData.push({
+            client_id,
+            user_id: null,
+            type: "deliverable",
+            title: "New report available",
+            message: doc.name,
+            link: "/portal/deliverables",
+            read: false,
+          });
+        }
+      }
+
+      if (notifsData.length > 0) {
+        await admin.from("notifications").insert(notifsData);
+      }
+      for (const d of createdDocsForCategory) {
+        createdDocs.push({ id: d.id, name: d.name, category: catName });
       }
     }
 

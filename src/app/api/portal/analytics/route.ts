@@ -127,16 +127,27 @@ export async function GET() {
     // Get client's supplier name for competitor comparison (suppliers-as-manufacturers, Option B)
     const clientName = client.company || client.name || "";
 
-    // ── Sales data ──────────────────────────────────────────────
-    let salesQuery = supabase
-      .from("analytics_fact_sales")
-      .select("id, quantity, total_amount, cost_amount, weight_tonnes, unit_price, product_id, branch_id, period_id, category_id, supplier_id, product:analytics_products(name, stock_code), period:analytics_periods(label, year, quarter, month), branch:analytics_branches(name, code), category:analytics_categories(name)")
-      .in("period_id", periodIds);
-
-    if (branchIds.length > 0) salesQuery = salesQuery.in("branch_id", branchIds);
-    if (categoryIds.length > 0) salesQuery = salesQuery.in("category_id", categoryIds);
-
-    const { data: sales, error: salesErr } = await salesQuery;
+    // ── Sales data (paginated to avoid 1000-row limit) ──────────
+    const allSales: Record<string, unknown>[] = [];
+    const PAGE = 1000;
+    let from = 0;
+    let salesErr: { message: string } | null = null;
+    while (true) {
+      let q = supabase
+        .from("analytics_fact_sales")
+        .select("id, quantity, total_amount, cost_amount, weight_tonnes, unit_price, product_id, branch_id, period_id, category_id, supplier_id, product:analytics_products(name, stock_code), period:analytics_periods(label, year, quarter, month), branch:analytics_branches(name, code), category:analytics_categories(name)")
+        .in("period_id", periodIds)
+        .range(from, from + PAGE - 1);
+      if (branchIds.length > 0) q = q.in("branch_id", branchIds);
+      if (categoryIds.length > 0) q = q.in("category_id", categoryIds);
+      const { data, error } = await q;
+      if (error) { salesErr = error; break; }
+      if (!data || data.length === 0) break;
+      allSales.push(...data);
+      from += PAGE;
+      if (data.length < PAGE) break;
+    }
+    const sales = salesErr ? null : allSales;
 
     // ── Inventory data ──────────────────────────────────────────
     let invQuery = supabase

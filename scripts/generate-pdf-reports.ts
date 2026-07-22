@@ -1,10 +1,16 @@
-const { createClient } = require("@supabase/supabase-js");
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import {
+  generateEnrichedMarketShareReport,
+  generateEnrichedSupplierCompetitionReport,
+  generateEnrichedBranchAnalysisReport,
+  EnrichedReportData,
+} from "../src/lib/pdf-reports";
 
 const NICE_CLIENT_ID = "e2f9301b-e1ea-4026-886f-7f44e55770b5";
 const NICE_SUPPLIER_ID = "b2fba4d1-4df1-472e-9f5b-387561cae77b";
 
-async function fetchAll(admin, periodIds, categoryId) {
-  const all = [];
+async function fetchAllSales(admin: SupabaseClient, periodIds: string[], categoryId: string) {
+  const all: any[] = [];
   const PAGE = 1000;
   let from = 0;
   while (true) {
@@ -23,21 +29,51 @@ async function fetchAll(admin, periodIds, categoryId) {
 }
 
 async function main() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   if (!url || !key) throw new Error("Missing env vars");
   const admin = createClient(url, key);
 
-  const { data: client } = await admin.from("clients").select("id, name, company").eq("id", NICE_CLIENT_ID).single();
-  if (!client) { console.error("Client not found"); return; }
-  console.log("Client:", client.company || client.name);
+  // 1. Clean up old blank documents (data URIs)
+  const { data: oldDocs } = await admin
+    .from("documents")
+    .select("id")
+    .eq("client_id", NICE_CLIENT_ID)
+    .eq("visible_to_client", true)
+    .ilike("url", "data:%");
+  if (oldDocs && oldDocs.length > 0) {
+    const ids = oldDocs.map(d => d.id);
+    await admin.from("documents").delete().in("id", ids);
+    console.log(`Deleted ${ids.length} old blank documents`);
+  }
 
+  const { data: oldReports } = await admin
+    .from("reports")
+    .select("id")
+    .eq("client_id", NICE_CLIENT_ID)
+    .eq("type", "category_analysis");
+  if (oldReports && oldReports.length > 0) {
+    await admin.from("reports").delete().in("id", oldReports.map(r => r.id));
+    console.log(`Deleted ${oldReports.length} old reports`);
+  }
+
+  const { data: oldNotifs } = await admin
+    .from("notifications")
+    .select("id")
+    .eq("client_id", NICE_CLIENT_ID)
+    .eq("type", "deliverable");
+  if (oldNotifs && oldNotifs.length > 0) {
+    await admin.from("notifications").delete().in("id", oldNotifs.map(n => n.id));
+    console.log(`Deleted ${oldNotifs.length} old notifications`);
+  }
+
+  // 2. Sharing scope
   const { data: sharing } = await admin
     .from("portal_analytics_sharing")
     .select("period_id, category_id")
     .eq("client_id", NICE_CLIENT_ID)
     .eq("visible", true);
-  if (!sharing || sharing.length === 0) { console.error("No sharing"); return; }
+  if (!sharing || sharing.length === 0) { console.log("No sharing"); return; }
   const periodIds = [...new Set(sharing.map(s => s.period_id))];
   const categoryIds = [...new Set(sharing.map(s => s.category_id).filter(Boolean))];
   console.log(`Categories: ${categoryIds.length}, Periods: ${periodIds.length}`);
@@ -51,16 +87,19 @@ async function main() {
   const { data: prodRows } = await admin.from("analytics_products").select("id, name");
   const prodMap = new Map((prodRows ?? []).map(p => [p.id, p.name]));
 
+  const { data: client } = await admin.from("clients").select("id, name, company").eq("id", NICE_CLIENT_ID).single();
+  const clientDisplayName = client?.company || client?.name || "Client";
+
+  const bucket = process.env.STORAGE_BUCKET || "research-reports";
+
   for (const catId of categoryIds) {
     const catName = catMap.get(catId) || `Category-${catId}`;
     console.log(`\n--- ${catName} ---`);
 
-    const rows = await fetchAll(admin, periodIds, catId);
+    const rows = await fetchAllSales(admin, periodIds, catId);
     console.log(`  Rows: ${rows.length}`);
-
     if (rows.length === 0) continue;
 
-    // Compute aggregates from all rows
     const categoryTotal = rows.reduce((s, r) => s + Number(r.total_amount), 0);
     const categoryUnits = rows.reduce((s, r) => s + Number(r.quantity), 0);
     const niceRows = rows.filter(r => r.supplier_id === NICE_SUPPLIER_ID);
@@ -69,7 +108,7 @@ async function main() {
     const niceShare = categoryTotal > 0 ? (niceTotal / categoryTotal) * 100 : 0;
 
     // Supplier ranking
-    const supAgg = new Map();
+    const supAgg = new Map<string, { revenue: number; units: number }>();
     for (const r of rows) {
       if (!r.supplier_id) continue;
       const prev = supAgg.get(r.supplier_id) || { revenue: 0, units: 0 };
@@ -87,15 +126,15 @@ async function main() {
       .sort((a, b) => b.revenue - a.revenue)
       .map((item, i) => ({ ...item, rank: i + 1 }));
     const clientRank = supplierRank.find(s => s.isClient);
-    console.log(`  NICE: KES ${niceTotal.toFixed(0)}, Share: ${niceShare.toFixed(1)}%, Rank: ${clientRank?.rank || "N/A"}/${supplierRank.length}`);
+    console.log(`  NICE: KES ${(niceTotal / 1000000).toFixed(1)}M (${niceShare.toFixed(1)}%), Rank #${clientRank?.rank || "N/A"}/${supplierRank.length}`);
 
     // Per-branch supplier breakdown
-    const brSup = new Map();
+    const brSup = new Map<string, Map<string, { revenue: number; units: number }>>();
     for (const r of rows) {
       if (!r.supplier_id || !r.branch_id) continue;
       const bName = brMap.get(r.branch_id) || r.branch_id.slice(0, 8);
       if (!brSup.has(bName)) brSup.set(bName, new Map());
-      const sm = brSup.get(bName);
+      const sm = brSup.get(bName)!;
       const prev = sm.get(r.supplier_id) || { revenue: 0, units: 0 };
       prev.revenue += Number(r.total_amount) || 0;
       prev.units += Number(r.quantity) || 0;
@@ -117,12 +156,12 @@ async function main() {
       .sort((a, b) => b.suppliers.reduce((s, v) => s + v.revenue, 0) - a.suppliers.reduce((s, v) => s + v.revenue, 0));
 
     // Supplier competition per product
-    const supProd = new Map();
+    const supProd = new Map<string, Map<string, { revenue: number; units: number }>>();
     for (const r of rows) {
       if (!r.supplier_id || !r.product_id) continue;
       const sName = supMap.get(r.supplier_id) || r.supplier_id.slice(0, 8);
       if (!supProd.has(sName)) supProd.set(sName, new Map());
-      const pm = supProd.get(sName);
+      const pm = supProd.get(sName)!;
       const pName = prodMap.get(r.product_id) || r.product_id.slice(0, 8);
       const prev = pm.get(pName) || { revenue: 0, units: 0 };
       prev.revenue += Number(r.total_amount) || 0;
@@ -130,22 +169,19 @@ async function main() {
       pm.set(pName, prev);
     }
     const supplierCompetition = Array.from(supProd.entries())
-      .map(([sName, prods]) => {
-        const products = Array.from(prods.entries())
+      .map(([sName, prods]) => ({
+        supplier: sName,
+        isClient: sName.toLowerCase().includes("nice"),
+        totalRevenue: Array.from(prods.values()).reduce((s, d) => s + d.revenue, 0),
+        totalUnits: Array.from(prods.values()).reduce((s, d) => s + d.units, 0),
+        products: Array.from(prods.entries())
           .map(([pName, d]) => ({ product: pName, revenue: d.revenue, units: d.units }))
-          .sort((a, b) => b.revenue - a.revenue);
-        return {
-          supplier: sName,
-          isClient: sName.toLowerCase().includes("nice"),
-          totalRevenue: products.reduce((s, p) => s + p.revenue, 0),
-          totalUnits: products.reduce((s, p) => s + p.units, 0),
-          products,
-        };
-      })
+          .sort((a, b) => b.revenue - a.revenue),
+      }))
       .sort((a, b) => b.totalRevenue - a.totalRevenue);
 
     // Branch analysis
-    const brAgg = new Map();
+    const brAgg = new Map<string, { revenue: number; units: number; transactions: number }>();
     for (const r of rows) {
       if (!r.branch_id) continue;
       const bName = brMap.get(r.branch_id) || r.branch_id.slice(0, 8);
@@ -155,7 +191,7 @@ async function main() {
       prev.transactions += 1;
       brAgg.set(bName, prev);
     }
-    const niceBrAgg = new Map();
+    const niceBrAgg = new Map<string, { revenue: number; units: number; transactions: number }>();
     for (const r of niceRows) {
       if (!r.branch_id) continue;
       const bName = brMap.get(r.branch_id) || r.branch_id.slice(0, 8);
@@ -170,11 +206,8 @@ async function main() {
         const n = niceBrAgg.get(bName);
         return {
           branch: bName,
-          totalRevenue: d.revenue,
-          totalUnits: d.units,
-          totalTransactions: d.transactions,
-          clientRevenue: n?.revenue || 0,
-          clientUnits: n?.units || 0,
+          totalRevenue: d.revenue, totalUnits: d.units, totalTransactions: d.transactions,
+          clientRevenue: n?.revenue || 0, clientUnits: n?.units || 0,
           clientShare: d.revenue > 0 ? ((n?.revenue || 0) / d.revenue) * 100 : 0,
           avgRevenuePerTransaction: d.transactions > 0 ? d.revenue / d.transactions : 0,
         };
@@ -183,22 +216,29 @@ async function main() {
     const bestBranch = branchAnalysis.reduce((a, b) => a.clientRevenue > b.clientRevenue ? a : b, branchAnalysis[0]);
     const worstBranch = branchAnalysis.reduce((a, b) => a.clientRevenue < b.clientRevenue ? a : b, branchAnalysis[0]);
 
-    // Insert report row
+    const enrichedData: EnrichedReportData = {
+      categoryName: catName,
+      clientName: clientDisplayName,
+      categoryTotal, categoryUnits,
+      clientTotal: niceTotal, clientUnits: niceUnits, clientShare: niceShare,
+      clientRank: clientRank?.rank || 0,
+      totalSuppliers: supplierRank.length,
+      supplierRank: supplierRank.map(s => ({ ...s })),
+      branchMarketShare: branchMarketShare.map(b => ({ branch: b.branch, suppliers: b.suppliers.map(s => ({ ...s })) })),
+      supplierCompetition: supplierCompetition.map(s => ({ ...s, products: s.products.map(p => ({ ...p })) })),
+      branchAnalysis: branchAnalysis.map(b => ({ ...b })),
+      bestBranch: bestBranch ? { ...bestBranch } : null,
+      worstBranch: worstBranch ? { ...worstBranch } : null,
+    };
+
+    // Create report row
     const { data: reportRow } = await admin
       .from("reports")
       .insert({
-        project_id: null,
-        client_id: NICE_CLIENT_ID,
+        project_id: null, client_id: NICE_CLIENT_ID,
         title: `${catName} — Market Analysis`,
-        type: "category_analysis",
-        kind: "ai_summary",
-        content: JSON.stringify({
-          category: catName, categoryTotal, categoryUnits,
-          clientTotal: niceTotal, clientUnits: niceUnits, clientShare: niceShare,
-          clientRank: clientRank?.rank || 0,
-          totalSuppliers: supplierRank.length, categorySupplierRank: supplierRank,
-          branchMarketShare, supplierCompetition, branchAnalysis, bestBranch, worstBranch,
-        }),
+        type: "category_analysis", kind: "ai_summary",
+        content: JSON.stringify(enrichedData),
         visible_to_client: false,
       })
       .select()
@@ -206,47 +246,57 @@ async function main() {
     if (!reportRow) { console.error("  Failed to create report"); continue; }
     console.log(`  Report: ${reportRow.id}`);
 
-    // Insert documents
-    const docs = [
-      {
-        project_id: null, client_id: NICE_CLIENT_ID,
-        name: `${catName} — Market Share Report`,
-        type: "pdf",
-        url: `data:application/json,${encodeURIComponent(JSON.stringify({ category: catName, categorySupplierRank: supplierRank, branchMarketShare, clientShare: niceShare, clientRank: clientRank?.rank }))}`,
-        visible_to_client: true, source_report_id: reportRow.id,
-      },
-      {
-        project_id: null, client_id: NICE_CLIENT_ID,
-        name: `${catName} — Supplier Competition Report`,
-        type: "pdf",
-        url: `data:application/json,${encodeURIComponent(JSON.stringify({ category: catName, supplierCompetition }))}`,
-        visible_to_client: true, source_report_id: reportRow.id,
-      },
-      {
-        project_id: null, client_id: NICE_CLIENT_ID,
-        name: `${catName} — Branch Performance Report`,
-        type: "pdf",
-        url: `data:application/json,${encodeURIComponent(JSON.stringify({ category: catName, branchAnalysis, bestBranch, worstBranch }))}`,
-        visible_to_client: true, source_report_id: reportRow.id,
-      },
+    // Generate PDFs and upload
+    const docSpecs = [
+      { name: `${catName} — Market Share Report`, gen: () => generateEnrichedMarketShareReport(enrichedData) },
+      { name: `${catName} — Supplier Competition Report`, gen: () => generateEnrichedSupplierCompetitionReport(enrichedData) },
+      { name: `${catName} — Branch Performance Report`, gen: () => generateEnrichedBranchAnalysisReport(enrichedData) },
     ];
-    const { data: ins } = await admin.from("documents").insert(docs).select();
-    console.log(`  Created ${ins?.length || 0} documents`);
 
-    // Create notifications for each document
-    if (ins && ins.length > 0) {
-      const notifs = ins.map((d) => ({
-        client_id: NICE_CLIENT_ID,
-        user_id: null,
-        type: "deliverable",
-        title: "New report available",
-        message: d.name,
-        link: "/portal/deliverables",
-        read: false,
-      }));
-      const { data: notifIns } = await admin.from("notifications").insert(notifs).select();
-      console.log(`  Created ${notifIns?.length || 0} notifications`);
+    const createdDocs: { id: string; name: string }[] = [];
+    const notifications: any[] = [];
+
+    for (const spec of docSpecs) {
+      const pdfDoc = spec.gen();
+      const pdfBuffer = Buffer.from(pdfDoc.output("arraybuffer"));
+      const safeName = spec.name.replace(/[^a-zA-Z0-9]/g, "_");
+      const filename = `client-${NICE_CLIENT_ID.slice(0, 8)}-${safeName}-${Date.now()}.pdf`;
+
+      const { error: uploadErr } = await admin.storage
+        .from(bucket)
+        .upload(filename, pdfBuffer, { contentType: "application/pdf", upsert: true });
+
+      if (uploadErr) {
+        console.error(`  Upload failed for ${spec.name}: ${uploadErr.message}`);
+        continue;
+      }
+      const publicUrl = admin.storage.from(bucket).getPublicUrl(filename).data.publicUrl;
+      console.log(`  Uploaded: ${spec.name} → ${publicUrl}`);
+
+      const { data: doc } = await admin
+        .from("documents")
+        .insert({
+          project_id: null, client_id: NICE_CLIENT_ID,
+          name: spec.name, type: "pdf", url: publicUrl,
+          visible_to_client: true, source_report_id: reportRow.id,
+        })
+        .select()
+        .single();
+
+      if (doc) {
+        createdDocs.push({ id: doc.id, name: doc.name });
+        notifications.push({
+          client_id: NICE_CLIENT_ID, user_id: null, type: "deliverable",
+          title: "New report available", message: doc.name,
+          link: "/portal/deliverables", read: false,
+        });
+      }
     }
+
+    if (notifications.length > 0) {
+      await admin.from("notifications").insert(notifications);
+    }
+    console.log(`  Created ${createdDocs.length} documents with PDFs`);
   }
   console.log("\n✅ Done");
 }

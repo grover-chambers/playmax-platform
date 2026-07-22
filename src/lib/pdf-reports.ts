@@ -805,3 +805,250 @@ export function generateSummaryReport(title: string, clientName: string | null, 
   drawFooter(doc, 1);
   return doc;
 }
+
+export interface CategorySupplierRank {
+  rank: number;
+  name: string;
+  revenue: number;
+  units: number;
+  share: number;
+  isClient: boolean;
+}
+
+export interface BranchSupplierInfo {
+  name: string;
+  revenue: number;
+  units: number;
+  share: number;
+  isClient: boolean;
+}
+
+export interface BranchMarketShareItem {
+  branch: string;
+  suppliers: BranchSupplierInfo[];
+}
+
+export interface SupplierCompetitionItem {
+  supplier: string;
+  isClient: boolean;
+  totalRevenue: number;
+  totalUnits: number;
+  products: { product: string; revenue: number; units: number }[];
+}
+
+export interface BranchAnalysisItem {
+  branch: string;
+  totalRevenue: number;
+  totalUnits: number;
+  totalTransactions: number;
+  clientRevenue: number;
+  clientUnits: number;
+  clientShare: number;
+  avgRevenuePerTransaction: number;
+}
+
+export interface EnrichedReportData {
+  categoryName: string;
+  clientName: string;
+  categoryTotal: number;
+  categoryUnits: number;
+  clientTotal: number;
+  clientUnits: number;
+  clientShare: number;
+  clientRank: number;
+  totalSuppliers: number;
+  supplierRank: CategorySupplierRank[];
+  branchMarketShare: BranchMarketShareItem[];
+  supplierCompetition: SupplierCompetitionItem[];
+  branchAnalysis: BranchAnalysisItem[];
+  bestBranch: BranchAnalysisItem | null;
+  worstBranch: BranchAnalysisItem | null;
+}
+
+export function generateEnrichedMarketShareReport(data: EnrichedReportData): jsPDF {
+  const doc = new jsPDF({ format: "a4", unit: "mm" });
+  drawHeader(doc, `${data.categoryName} — Market Share Report`, `Prepared for ${data.clientName}`);
+  let y = 54;
+
+  // Executive summary
+  y = drawSectionTitle(doc, "Market Share Overview", y);
+  y = drawParagraph(doc, `This report provides a detailed analysis of the ${data.categoryName} market across the Kanini FMCG network. ${data.clientName} has achieved KES ${(data.clientTotal / 1000000).toFixed(1)}M in total sales, representing a ${data.clientShare.toFixed(1)}% share of the category and ranking #${data.clientRank} of ${data.totalSuppliers} suppliers.`, y);
+
+  // Supplier ranking table
+  y = checkPageBreak(doc, y, 80);
+  y = drawSectionTitle(doc, "Category Supplier Rankings", y);
+  y = drawParagraph(doc, `The following table ranks all ${data.totalSuppliers} suppliers in the ${data.categoryName} category by total revenue contribution.`, y);
+
+  const supTable = data.supplierRank.slice(0, 15).map((s) => [
+    `#${s.rank}`, s.isClient ? `★ ${s.name}` : s.name.slice(0, 28),
+    fmt(s.revenue), fmtPct(s.share), fmtNum(s.units),
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["#", "Supplier", "Revenue", "Share", "Units"]],
+    body: supTable,
+    theme: "grid",
+    headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 8, fontStyle: "bold" },
+    bodyStyles: { fontSize: 8, textColor: [60, 60, 60] },
+    margin: { left: 20 },
+    didParseCell: (hookData) => {
+      if (hookData.section === "body" && hookData.row.index !== undefined) {
+        const s = data.supplierRank[hookData.row.index];
+        if (s?.isClient) {
+          hookData.cell.styles.fillColor = hexToRgb("#FFFDE7");
+          hookData.cell.styles.fontStyle = "bold";
+        }
+      }
+    },
+  });
+  y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+
+  // Per-branch market share breakdown
+  y = checkPageBreak(doc, y, 60);
+  y = drawSectionTitle(doc, "Per-Branch Supplier Breakdown", y);
+  y = drawParagraph(doc, `The following analysis shows the supplier landscape within each branch. Each branch's top suppliers are listed with their revenue contribution and market share within that branch.`, y);
+
+  for (const branch of data.branchMarketShare.slice(0, 10)) {
+    y = checkPageBreak(doc, y, 40);
+    y = drawParagraph(doc, `${branch.branch}`, y);
+    const branchTotal = branch.suppliers.reduce((s, v) => s + v.revenue, 0);
+    const bTable = branch.suppliers.slice(0, 8).map((s) => [
+      s.isClient ? `★ ${s.name}` : s.name.slice(0, 25),
+      fmt(s.revenue), fmtPct(s.share),
+    ]);
+    autoTable(doc, {
+      startY: y,
+      head: [["Supplier", "Revenue", "Branch Share"]],
+      body: bTable,
+      theme: "grid",
+      headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 7, fontStyle: "bold" },
+      bodyStyles: { fontSize: 7, textColor: [60, 60, 60] },
+      margin: { left: 25 },
+      didParseCell: (hookData) => {
+        if (hookData.section === "body" && hookData.row.index !== undefined) {
+          const s = branch.suppliers[hookData.row.index];
+          if (s?.isClient) {
+            hookData.cell.styles.fillColor = hexToRgb("#FFFDE7");
+            hookData.cell.styles.fontStyle = "bold";
+          }
+        }
+      },
+    });
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+  }
+
+  drawFooter(doc, Math.ceil((doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY || y) / 297);
+  return doc;
+}
+
+export function generateEnrichedSupplierCompetitionReport(data: EnrichedReportData): jsPDF {
+  const doc = new jsPDF({ format: "a4", unit: "mm" });
+  drawHeader(doc, `${data.categoryName} — Supplier Competition Report`, `Prepared for ${data.clientName}`);
+  let y = 54;
+
+  y = drawSectionTitle(doc, "Competitive Landscape", y);
+  y = drawParagraph(doc, `This report provides a detailed product-level comparison of suppliers in the ${data.categoryName} category. Each supplier's product portfolio is analyzed to identify competitive overlaps and opportunities for ${data.clientName}.`, y);
+
+  const clientComp = data.supplierCompetition.find((s) => s.isClient);
+  const topCompetitors = data.supplierCompetition.filter((s) => !s.isClient).slice(0, 5);
+
+  y = checkPageBreak(doc, y, 60);
+  y = drawSectionTitle(doc, "Your Product Portfolio", y);
+  if (clientComp) {
+    const prodTable = clientComp.products.map((p) => [p.product.slice(0, 30), fmt(p.revenue), fmtNum(p.units)]);
+    autoTable(doc, {
+      startY: y,
+      head: [["Product", "Revenue", "Units"]],
+      body: prodTable,
+      theme: "grid",
+      headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 8, fontStyle: "bold" },
+      bodyStyles: { fontSize: 8, textColor: [60, 60, 60] },
+      margin: { left: 20 },
+    });
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+  } else {
+    y = drawParagraph(doc, `${data.clientName} has no product listings in this category.`, y);
+  }
+
+  y = checkPageBreak(doc, y, 60);
+  y = drawSectionTitle(doc, "Top Competitor Product Comparison", y);
+  for (const comp of topCompetitors) {
+    y = checkPageBreak(doc, y, 35);
+    y = drawParagraph(doc, `${comp.supplier} — KES ${(comp.totalRevenue / 1000000).toFixed(1)}M total`, y);
+    const cTable = comp.products.slice(0, 5).map((p) => [p.product.slice(0, 30), fmt(p.revenue), fmtNum(p.units)]);
+    autoTable(doc, {
+      startY: y,
+      head: [["Product", "Revenue", "Units"]],
+      body: cTable,
+      theme: "grid",
+      headStyles: { fillColor: hexToRgb(COLORS.orange), textColor: [30, 30, 30], fontSize: 7, fontStyle: "bold" },
+      bodyStyles: { fontSize: 7, textColor: [60, 60, 60] },
+      margin: { left: 25 },
+    });
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+  }
+
+  const totalPages = Math.ceil((y + 20) / 297);
+  drawFooter(doc, totalPages);
+  return doc;
+}
+
+export function generateEnrichedBranchAnalysisReport(data: EnrichedReportData): jsPDF {
+  const doc = new jsPDF({ format: "a4", unit: "mm" });
+  drawHeader(doc, `${data.categoryName} — Branch Performance Report`, `Prepared for ${data.clientName}`);
+  let y = 54;
+
+  y = drawSectionTitle(doc, "Branch Performance Overview", y);
+  y = drawParagraph(doc, `This report analyzes the ${data.categoryName} category performance across ${data.branchAnalysis.length} branches. It identifies the best and worst performing branches for ${data.clientName} and provides a complete branch-level breakdown.`, y);
+
+  // Best and worst branches
+  if (data.bestBranch) {
+    y = checkPageBreak(doc, y, 30);
+    y = drawSectionTitle(doc, "Best Performing Branch", y);
+    const bb = data.bestBranch;
+    y = drawParagraph(doc, `Branch: ${bb.branch}`, y);
+    y = drawParagraph(doc, `Total Category Revenue: ${fmt(bb.totalRevenue)}`, y);
+    y = drawParagraph(doc, `${data.clientName} Revenue: ${fmt(bb.clientRevenue)} (${fmtPct(bb.clientShare)} share)`, y);
+  }
+  if (data.worstBranch) {
+    y = checkPageBreak(doc, y, 30);
+    y = drawSectionTitle(doc, "Worst Performing Branch", y);
+    const wb = data.worstBranch;
+    y = drawParagraph(doc, `Branch: ${wb.branch}`, y);
+    y = drawParagraph(doc, `Total Category Revenue: ${fmt(wb.totalRevenue)}`, y);
+    y = drawParagraph(doc, `${data.clientName} Revenue: ${fmt(wb.clientRevenue)} (${fmtPct(wb.clientShare)} share)`, y);
+  }
+
+  // Complete branch breakdown table
+  y = checkPageBreak(doc, y, 50);
+  y = drawSectionTitle(doc, "Complete Branch Breakdown", y);
+  const brTable = data.branchAnalysis.map((b) => [
+    b.branch.slice(0, 20), fmt(b.totalRevenue), fmtPct(b.clientShare),
+    fmt(b.clientRevenue), fmtNum(b.totalTransactions),
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Branch", "Total Revenue", "Client Share", "Client Revenue", "Transactions"]],
+    body: brTable,
+    theme: "grid",
+    headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 8, fontStyle: "bold" },
+    bodyStyles: { fontSize: 7, textColor: [60, 60, 60] },
+    margin: { left: 20 },
+    didParseCell: (hookData) => {
+      if (hookData.section === "body" && hookData.row.index !== undefined) {
+        const b = data.branchAnalysis[hookData.row.index];
+        if (b && b.branch === data.bestBranch?.branch) {
+          hookData.cell.styles.fillColor = hexToRgb("#E8F5E9");
+        } else if (b && b.branch === data.worstBranch?.branch) {
+          hookData.cell.styles.fillColor = hexToRgb("#FFEBEE");
+        }
+      }
+    },
+  });
+
+  const totalPages = Math.ceil(((doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY || y + 40) / 297);
+  drawFooter(doc, totalPages);
+  return doc;
+}
