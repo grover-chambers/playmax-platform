@@ -7,6 +7,8 @@ import {
   generateShareShiftReport,
   generateMoMTrendReport,
   generateHeadToHeadReport,
+  generateIndustryReport,
+  computeReportSchema,
   EnrichedReportData,
   BranchDominanceData,
   BranchDominanceItem,
@@ -17,6 +19,7 @@ import {
   H2HData,
   H2HComparison,
   H2HProduct,
+  FMCG_INDUSTRY,
 } from "../src/lib/pdf-reports";
 
 const NICE_CLIENT_ID = "e2f9301b-e1ea-4026-886f-7f44e55770b5";
@@ -193,8 +196,9 @@ async function main() {
     const branchAnalysis = Array.from(brAgg.entries())
       .map(([bName, d]) => { const n = niceBrAgg.get(bName); return { branch: bName, totalRevenue: d.revenue, totalUnits: d.units, totalTransactions: d.transactions, clientRevenue: n?.revenue || 0, clientUnits: n?.units || 0, clientShare: d.revenue > 0 ? ((n?.revenue || 0) / d.revenue) * 100 : 0, avgRevenuePerTransaction: d.transactions > 0 ? d.revenue / d.transactions : 0 }; })
       .sort((a, b) => b.totalRevenue - a.totalRevenue);
-    const bestBranch = branchAnalysis.reduce((a: any, b: any) => a.clientRevenue > b.clientRevenue ? a : b, branchAnalysis[0]);
-    const worstBranch = branchAnalysis.reduce((a: any, b: any) => a.clientRevenue < b.clientRevenue ? a : b, branchAnalysis[0]);
+    const tradingBranches = branchAnalysis.filter((b: any) => b.totalRevenue > 0);
+    const bestBranch = tradingBranches.reduce((a: any, b: any) => a.clientRevenue > b.clientRevenue ? a : b, tradingBranches[0]);
+    const worstBranch = tradingBranches.reduce((a: any, b: any) => a.clientRevenue < b.clientRevenue ? a : b, tradingBranches[0]);
 
     // ── NEW: Supplier Dominance per Branch ──
     const branchDominance: BranchDominanceItem[] = branchMarketShare.map(b => {
@@ -369,7 +373,27 @@ async function main() {
       currentPeriodLabel: currentLabel, previousPeriodLabel: previousLabel, shifts: shareShifts,
     };
 
-    // ── All 7 reports ──
+    // ── Industry report schema for report #8 ──
+    const enrichedInput = {
+      categoryName: catName,
+      clientName: clientDisplayName,
+      categoryTotal,
+      categoryUnits,
+      clientTotal: niceTotal,
+      clientUnits: niceUnits,
+      clientShare: niceShare,
+      clientRank: clientRank?.rank || 0,
+      totalSuppliers: supplierRank.length,
+      supplierRank: supplierRank.map(mapSupplierRank),
+      branchAnalysis: branchAnalysis.map((b: any) => ({
+        branch: b.branch, totalRevenue: b.totalRevenue, clientRevenue: b.clientRevenue, clientShare: b.clientShare,
+      })),
+      branchMarketShare: branchMarketShare.map(mapBranchMS),
+      supplierCompetition: supplierCompetition.map(mapSupplierComp),
+    };
+    const reportSchema = computeReportSchema(enrichedInput, FMCG_INDUSTRY, perRowsSafe.map(p => p.label).join(", "));
+
+    // ── All 8 reports ──
     const allReports: { name: string; gen: () => any }[] = [
       { name: `${catName} — Market Share Report`, gen: () => generateEnrichedMarketShareReport(enrichedData) },
       { name: `${catName} — Supplier Competition Report`, gen: () => generateEnrichedSupplierCompetitionReport(enrichedData) },
@@ -378,6 +402,7 @@ async function main() {
       { name: `${catName} — Share Shift Analysis`, gen: () => generateShareShiftReport(shiftData) },
       { name: `${catName} — MoM Trend Analysis`, gen: () => generateMoMTrendReport(trendData) },
       { name: `${catName} — Head-to-Head Comparison`, gen: () => generateHeadToHeadReport(h2hData) },
+      { name: `${catName} — Market Analysis (uniform schema)`, gen: () => generateIndustryReport(reportSchema) },
     ];
 
     const createdDocs: { id: string; name: string }[] = [];
@@ -403,7 +428,7 @@ async function main() {
         link: "/portal/deliverables", read: false,
       })));
     }
-    console.log(`  Created ${createdDocs.length}/7 documents`);
+    console.log(`  Created ${createdDocs.length}/8 documents`);
   }
   console.log("\n✅ All done");
 }

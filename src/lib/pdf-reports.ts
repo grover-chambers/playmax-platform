@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+﻿import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { ANALYTICS_COLORS, CHART_COLORS } from "@/lib/analytics-colors";
 
@@ -226,7 +226,7 @@ export function generateMarketShareReport(data: ReportData): jsPDF {
 
   const tableData = knownSuppliers.slice(0, 12).map((s, i) => [
     `#${i + 1}`,
-    s.isClient ? `★ ${s.name}` : s.name,
+    s.isClient ? `${s.name} (you)` : s.name,
     fmt(s.revenue),
     fmtPct(s.share),
     fmtNum(s.units),
@@ -506,7 +506,7 @@ export function generateSupplierCompetitionReport(data: ReportData): jsPDF {
 
   const tableData = knownSuppliers.slice(0, 15).map((s, i) => [
     `#${i + 1}`,
-    s.isClient ? `★ ${s.name}` : `${s.name.slice(0, 25)}`,
+    s.isClient ? `YOU  ${s.name}` : `${s.name.slice(0, 25)}`,
     fmt(s.revenue),
     fmtPct(s.share),
     fmt(s.avgPrice) + "/unit",
@@ -739,7 +739,7 @@ export function generateKaniniNetworkReport(data: ReportData): jsPDF {
 
   const topSuppliersTable = knownSuppliers.slice(0, 10).map((s, i) => [
     `#${i + 1}`,
-    s.isClient ? `★ ${s.name}` : s.name.slice(0, 28),
+    s.isClient ? `YOU  ${s.name}` : s.name.slice(0, 28),
     fmt(s.revenue),
     fmtPct(s.share),
     fmt(s.avgPrice),
@@ -880,7 +880,7 @@ export function generateEnrichedMarketShareReport(data: EnrichedReportData): jsP
   y = drawParagraph(doc, `The following table ranks all ${data.totalSuppliers} suppliers in the ${data.categoryName} category by total revenue contribution.`, y);
 
   const supTable = data.supplierRank.slice(0, 15).map((s) => [
-    `#${s.rank}`, s.isClient ? `★ ${s.name}` : s.name.slice(0, 28),
+    `#${s.rank}`, s.isClient ? `YOU  ${s.name}` : s.name.slice(0, 28),
     fmt(s.revenue), fmtPct(s.share), fmtNum(s.units),
   ]);
 
@@ -914,7 +914,7 @@ export function generateEnrichedMarketShareReport(data: EnrichedReportData): jsP
     y = drawParagraph(doc, `${branch.branch}`, y);
     const branchTotal = branch.suppliers.reduce((s, v) => s + v.revenue, 0);
     const bTable = branch.suppliers.slice(0, 8).map((s) => [
-      s.isClient ? `★ ${s.name}` : s.name.slice(0, 25),
+      s.isClient ? `YOU  ${s.name}` : s.name.slice(0, 25),
       fmt(s.revenue), fmtPct(s.share),
     ]);
     autoTable(doc, {
@@ -1148,7 +1148,7 @@ export function generateShareShiftReport(data: ShareShiftData): jsPDF {
 
   const sorted = [...data.shifts].sort((a, b) => Math.abs(b.shareChange) - Math.abs(a.shareChange));
   const tableData = sorted.map((s) => [
-    s.isClient ? `★ ${s.supplier}` : s.supplier.slice(0, 24),
+    s.isClient ? `YOU  ${s.supplier}` : s.supplier.slice(0, 24),
     fmtPct(s.currentShare),
     fmtPct(s.previousShare),
     `${s.shareChange >= 0 ? "+" : ""}${s.shareChange.toFixed(1)}pp`,
@@ -1308,5 +1308,377 @@ export function generateHeadToHeadReport(data: H2HData): jsPDF {
   }
 
   drawFooter(doc, Math.ceil((y + 10) / 297));
+  return doc;
+}
+
+/* ══════════════════════════════════════════════════
+   Industry Report Schema — uniform format for all reports
+   ══════════════════════════════════════════════════ */
+
+export interface IndustryProfile {
+  id: string;
+  label: string;
+  distributionTerm: string;
+  growthTerm: string;
+  competitionTerm: string;
+  presenceTerm: string;
+}
+
+export const FMCG_INDUSTRY: IndustryProfile = {
+  id: "fmcg_retail",
+  label: "FMCG Retail",
+  distributionTerm: "shelf presence",
+  growthTerm: "sales volume",
+  competitionTerm: "supplier",
+  presenceTerm: "distribution intensity",
+};
+
+export interface StandingInfo {
+  rank: number;
+  totalPeers: number;
+  share: number;
+  revenue: number;
+  units: number;
+  positionLabel: "leader" | "challenger" | "contender" | "niche";
+}
+
+export interface CompetitiveGap {
+  name: string;
+  shareGap: number;
+  revenueGap: number;
+}
+
+export interface CompetitiveGapsInfo {
+  vsLeader: CompetitiveGap;
+  vsAbove: CompetitiveGap | null;
+  vsBelow: CompetitiveGap | null;
+  marketConcentration: number;
+}
+
+export interface InsightCard {
+  headline: string;
+  evidence: string;
+  branch?: string;
+}
+
+export interface RecommendationCard {
+  action: string;
+  rationale: string;
+  priority: "high" | "medium" | "low";
+}
+
+export interface PortfolioBenchmark {
+  skuCount: number;
+  revenuePerSku: number;
+  peerBenchmarks: { name: string; skuCount: number; revenuePerSku: number }[];
+}
+
+export interface ReportSchema {
+  meta: {
+    title: string;
+    industry: IndustryProfile;
+    clientName: string;
+    category: string;
+    period: string;
+  };
+  standing: StandingInfo;
+  competitiveGaps: CompetitiveGapsInfo;
+  portfolio: PortfolioBenchmark;
+  opportunities: InsightCard[];
+  risks: InsightCard[];
+  recommendations: RecommendationCard[];
+}
+
+/* ── Compute helpers that derive the schema from raw data ── */
+
+export interface EnrichedInput {
+  categoryName: string;
+  clientName: string;
+  categoryTotal: number;
+  categoryUnits: number;
+  clientTotal: number;
+  clientUnits: number;
+  clientShare: number;
+  clientRank: number;
+  totalSuppliers: number;
+  supplierRank: { rank: number; name: string; revenue: number; share: number; isClient: boolean }[];
+  branchAnalysis: { branch: string; totalRevenue: number; clientRevenue: number; clientShare: number }[];
+  branchMarketShare: { branch: string; suppliers: { name: string; revenue: number; share: number; isClient: boolean }[] }[];
+  supplierCompetition: { supplier: string; isClient: boolean; totalRevenue: number; products: { product: string; revenue: number }[] }[];
+}
+
+function positionLabel(rank: number, total: number): StandingInfo["positionLabel"] {
+  if (rank === 1) return "leader";
+  if (rank <= Math.ceil(total * 0.15)) return "challenger";
+  if (rank <= Math.ceil(total * 0.4)) return "contender";
+  return "niche";
+}
+
+export function computeReportSchema(input: EnrichedInput, industry?: IndustryProfile, period?: string): ReportSchema {
+  const ind = industry || FMCG_INDUSTRY;
+  const { supplierRank, clientRank, categoryTotal, clientTotal, clientShare, totalSuppliers } = input;
+
+  const standing: StandingInfo = {
+    rank: clientRank,
+    totalPeers: totalSuppliers,
+    share: clientShare,
+    revenue: clientTotal,
+    units: input.clientUnits,
+    positionLabel: positionLabel(clientRank, totalSuppliers),
+  };
+
+  const clientIdx = supplierRank.findIndex((s) => s.isClient);
+  const vsLeader: CompetitiveGap = {
+    name: supplierRank[0]?.name || "",
+    shareGap: (supplierRank[0]?.share || 0) - clientShare,
+    revenueGap: (supplierRank[0]?.revenue || 0) - clientTotal,
+  };
+  const vsAbove = clientIdx > 0 ? {
+    name: supplierRank[clientIdx - 1]?.name || "",
+    shareGap: (supplierRank[clientIdx - 1]?.share || 0) - clientShare,
+    revenueGap: (supplierRank[clientIdx - 1]?.revenue || 0) - clientTotal,
+  } : null;
+  const vsBelow = clientIdx < supplierRank.length - 1 ? {
+    name: supplierRank[clientIdx + 1]?.name || "",
+    shareGap: clientShare - (supplierRank[clientIdx + 1]?.share || 0),
+    revenueGap: clientTotal - (supplierRank[clientIdx + 1]?.revenue || 0),
+  } : null;
+  const top3Share = supplierRank.slice(0, 3).reduce((s, sup) => s + sup.share, 0);
+  const marketConcentration = top3Share;
+
+  const clientComp = input.supplierCompetition.find((s) => s.isClient);
+  const clientSKUs = clientComp?.products.length || 0;
+  const clientRevPerSku = clientSKUs > 0 ? clientTotal / clientSKUs : 0;
+  const topCompetitors = input.supplierCompetition.filter((s) => !s.isClient).slice(0, 5);
+  const peerBenchmarks = topCompetitors.map((c) => ({
+    name: c.supplier,
+    skuCount: c.products.length,
+    revenuePerSku: c.products.length > 0 ? c.totalRevenue / c.products.length : 0,
+  }));
+
+  const realBranches = input.branchAnalysis.filter((b) => b.totalRevenue > 0);
+  const avgClientShare = realBranches.length > 0
+    ? realBranches.reduce((s, b) => s + b.clientShare, 0) / realBranches.length
+    : 0;
+
+  const opportunities: InsightCard[] = [];
+  const risks: InsightCard[] = [];
+
+  const branchGaps = realBranches
+    .map((b) => ({
+      branch: b.branch,
+      totalRevenue: b.totalRevenue,
+      clientRevenue: b.clientRevenue,
+      currentShare: b.clientShare,
+      avgShare: avgClientShare,
+      gapRevenue: Math.max(0, (avgClientShare / 100) * b.totalRevenue - b.clientRevenue),
+    }))
+    .filter((b) => b.gapRevenue > 0)
+    .sort((a, b) => b.gapRevenue - a.gapRevenue);
+
+  if (branchGaps.length > 0) {
+    const topGap = branchGaps[0];
+    opportunities.push({
+      headline: `Direct distribution push at ${topGap.branch} — KES ${(topGap.gapRevenue / 1000000).toFixed(1)}M addressable gap`,
+      evidence: `${topGap.branch} generates KES ${(topGap.totalRevenue / 1000000).toFixed(1)}M in ${input.categoryName} sales but you hold only ${topGap.currentShare.toFixed(1)}% — reaching your network-average of ${avgClientShare.toFixed(1)}% would add KES ${(topGap.gapRevenue / 1000000).toFixed(1)}M.`,
+      branch: topGap.branch,
+    });
+  }
+
+  if (branchGaps.length > 1) {
+    const totalGap = branchGaps.reduce((s, g) => s + g.gapRevenue, 0);
+    opportunities.push({
+      headline: `${branchGaps.length} underweight branches represent KES ${(totalGap / 1000000).toFixed(1)}M in unrealized revenue`,
+      evidence: `Closing the gap between your current share and your network-average in ${branchGaps.length} branches would add approximately KES ${(totalGap / 1000000).toFixed(1)}M — before any market growth.`,
+    });
+  }
+
+  if (vsAbove) {
+    opportunities.push({
+      headline: `${vsAbove.name} is within striking distance — KES ${(vsAbove.revenueGap / 1000000).toFixed(1)}M gap`,
+      evidence: `You are ${vsAbove.shareGap.toFixed(1)} percentage points and KES ${(vsAbove.revenueGap / 1000000).toFixed(1)}M behind #${clientRank - 1}. That's the closest gap in the ranking and a realistic short-term target.`,
+    });
+  }
+
+  const topSkuSuppliers = peerBenchmarks.filter((p) => p.skuCount > clientSKUs);
+  if (topSkuSuppliers.length > 0) {
+    opportunities.push({
+      headline: `Expand from ${clientSKUs} to ${Math.min(clientSKUs + 2, 5)} SKUs to match competitor range`,
+      evidence: `Top suppliers carry ${topSkuSuppliers.map((p) => `${p.skuCount}`).join(", ")} SKUs vs your ${clientSKUs}. At your current revenue per SKU (KES ${(clientRevPerSku / 1000000).toFixed(1)}M), adding 2 products could add KES ${((clientRevPerSku * 2) / 1000000).toFixed(1)}M.`,
+    });
+  }
+
+  if (vsBelow && (!vsAbove || vsBelow.revenueGap < vsAbove.revenueGap)) {
+    risks.push({
+      headline: `${vsBelow.name} is KES ${(vsBelow.revenueGap / 1000000).toFixed(1)}M behind — narrow cushion`,
+      evidence: `You hold only a KES ${(vsBelow.revenueGap / 1000000).toFixed(1)}M lead over #${clientRank + 1}. A single bulk contract loss could shift this position.`,
+    });
+  }
+
+  if (marketConcentration > 60) {
+    risks.push({
+      headline: `Top 3 suppliers control ${marketConcentration.toFixed(0)}% of the category — oligopolistic market`,
+      evidence: `High concentration means shelf access and distribution deals are controlled by few players. Competitive response times are faster.`,
+    });
+  }
+
+  const recommendations: RecommendationCard[] = [];
+
+  if (vsAbove) {
+    recommendations.push({
+      priority: "high",
+      action: `Close the gap with ${vsAbove.name} — push toward KES ${(vsAbove.revenueGap / 1000000).toFixed(1)}M revenue target`,
+      rationale: `You are only ${vsAbove.shareGap.toFixed(1)}pp behind #${clientRank - 1}. This is the most winnable rank improvement.`,
+    });
+  }
+
+  if (branchGaps.length > 0) {
+    recommendations.push({
+      priority: "high",
+      action: `Prioritize ${branchGaps.slice(0, 2).map((b) => b.branch).join(" and ")} for distribution push`,
+      rationale: `These branches have the largest addressable revenue gap — KES ${(branchGaps.slice(0, 2).reduce((s, g) => s + g.gapRevenue, 0) / 1000000).toFixed(1)}M combined — at your own average performance level.`,
+    });
+  }
+
+  if (topSkuSuppliers.length > 0) {
+    recommendations.push({
+      priority: "medium",
+      action: `Expand product range from ${clientSKUs} to ${Math.min(clientSKUs + 2, 5)} SKUs`,
+      rationale: `Your per-SKU revenue (KES ${(clientRevPerSku / 1000000).toFixed(1)}M) already outperforms several larger competitors. Range expansion is the highest-leverage growth move.`,
+    });
+  }
+
+  const strongholds = realBranches.filter((b) => b.clientShare > avgClientShare * 1.3).slice(0, 2);
+  if (strongholds.length > 0) {
+    recommendations.push({
+      priority: "low",
+      action: `Defend and study ${strongholds.map((b) => b.branch).join(" and ")} as reference branches`,
+      rationale: `These branches already achieve ${strongholds.map((b) => `${b.clientShare.toFixed(1)}%`).join(" and ")} share — well above your ${avgClientShare.toFixed(1)}% average. Use their approach as the playbook for underweight branches.`,
+    });
+  }
+
+  const portfolio: PortfolioBenchmark = {
+    skuCount: clientSKUs,
+    revenuePerSku: clientRevPerSku,
+    peerBenchmarks,
+  };
+
+  return {
+    meta: {
+      title: `${input.categoryName} — Market Analysis`,
+      industry: ind,
+      clientName: input.clientName,
+      category: input.categoryName,
+      period: period || "Current Period",
+    },
+    standing,
+    competitiveGaps: { vsLeader, vsAbove, vsBelow, marketConcentration },
+    portfolio,
+    opportunities,
+    risks,
+    recommendations,
+  };
+}
+
+/* ── Report 8: Industry-standard report generator ── */
+
+export function generateIndustryReport(schema: ReportSchema): jsPDF {
+  const { meta, standing, competitiveGaps, portfolio, opportunities, risks, recommendations } = schema;
+  const doc = new jsPDF({ format: "a4", unit: "mm" });
+  drawHeader(doc, meta.title, `Prepared for ${meta.clientName}`);
+  let y = 54;
+
+  y = checkPageBreak(doc, y, 30);
+  y = drawSectionTitle(doc, "Where You Stand", y);
+  const place = standing.rank === 1 ? "#1" : `#${standing.rank} of ${standing.totalPeers}`;
+  const positionDesc =
+    standing.positionLabel === "leader" ? "You are the market leader." :
+    standing.positionLabel === "challenger" ? "You are a top-tier challenger within striking distance of the lead." :
+    standing.positionLabel === "contender" ? "You are a solid mid-tier contender with clear paths to improve." :
+    "You are a niche player with focused opportunities to grow.";
+
+  y = drawParagraph(doc, `${meta.clientName} ranks ${place} in ${meta.category}, holding ${standing.share.toFixed(1)}% share (KES ${(standing.revenue / 1000000).toFixed(1)}M, ${Math.round(standing.units).toLocaleString()} units). The market is ${competitiveGaps.marketConcentration > 60 ? "top-heavy" : "moderately fragmented"}: the top three suppliers combined control ${competitiveGaps.marketConcentration.toFixed(0)}% of the category. ${positionDesc}`, y);
+
+  y = checkPageBreak(doc, y, 40);
+  y = drawSectionTitle(doc, "Against Whom — Competitive Gaps", y);
+
+  const gapLines: string[] = [];
+  if (competitiveGaps.vsAbove) {
+    gapLines.push(`${competitiveGaps.vsAbove.name} is ranked #${standing.rank - 1} — you are KES ${(competitiveGaps.vsAbove.revenueGap / 1000000).toFixed(1)}M and ${competitiveGaps.vsAbove.shareGap.toFixed(1)}pp behind. That's the single closest gap in the ranking.`);
+  } else if (standing.rank === 1) {
+    gapLines.push(`You hold the #1 position with ${competitiveGaps.vsLeader.shareGap.toFixed(1)}pp lead over ${competitiveGaps.vsLeader.name}.`);
+  }
+  if (competitiveGaps.vsBelow) {
+    gapLines.push(`${competitiveGaps.vsBelow.name} is #${standing.rank + 1}, KES ${(competitiveGaps.vsBelow.revenueGap / 1000000).toFixed(1)}M behind you (${competitiveGaps.vsBelow.shareGap.toFixed(1)}pp cushion).`);
+  }
+  gapLines.push(`The market leader ${competitiveGaps.vsLeader.name} holds ${(competitiveGaps.vsLeader.shareGap + standing.share).toFixed(1)}% share (KES ${((competitiveGaps.vsLeader.revenueGap + standing.revenue) / 1000000).toFixed(1)}M) — a scale gap that makes them a long-term aspiration rather than an immediate target.`);
+
+  for (const line of gapLines) {
+    y = drawParagraph(doc, line, y);
+  }
+
+  y = checkPageBreak(doc, y, 40);
+  y = drawSectionTitle(doc, "Product Portfolio Comparison", y);
+  y = drawParagraph(doc, `You carry ${portfolio.skuCount} SKU${portfolio.skuCount !== 1 ? "s" : ""} in this category, generating KES ${(portfolio.revenuePerSku / 1000000).toFixed(1)}M per product on average.`, y);
+
+  const portTable = portfolio.peerBenchmarks.slice(0, 5).map((p) => [
+    p.name.slice(0, 22),
+    String(p.skuCount),
+    `KES ${(p.revenuePerSku / 1000000).toFixed(1)}M`,
+    p.revenuePerSku > 0 && portfolio.revenuePerSku > 0
+      ? `${((portfolio.revenuePerSku / p.revenuePerSku) * 100).toFixed(0)}%`
+      : "—",
+  ]);
+  autoTable(doc, {
+    startY: y,
+    head: [["Competitor", "SKUs", "Rev/SKU", "Your Efficiency vs Them"]],
+    body: portTable,
+    theme: "grid",
+    headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 8, fontStyle: "bold" },
+    bodyStyles: { fontSize: 7, textColor: [60, 60, 60] },
+    margin: { left: 20 },
+    didParseCell: (hookData) => {
+      if (hookData.section === "body" && hookData.column.index === 3 && hookData.cell.raw) {
+        const val = String(hookData.cell.raw);
+        if (val.startsWith("1") || val.startsWith("2")) {
+          hookData.cell.styles.fillColor = hexToRgb("#E8F5E9");
+        }
+      }
+    },
+  });
+  y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+
+  if (opportunities.length > 0) {
+    y = checkPageBreak(doc, y, 30);
+    y = drawSectionTitle(doc, "Key Opportunities", y);
+    for (const opp of opportunities) {
+      y = checkPageBreak(doc, y, 25);
+      y = drawParagraph(doc, `› ${opp.headline}`, y);
+      y = drawParagraph(doc, `  ${opp.evidence}`, y);
+    }
+  }
+
+  if (risks.length > 0) {
+    y = checkPageBreak(doc, y, 30);
+    y = drawSectionTitle(doc, "Risks to Monitor", y);
+    for (const risk of risks) {
+      y = checkPageBreak(doc, y, 20);
+      y = drawParagraph(doc, `⚠ ${risk.headline}`, y);
+      y = drawParagraph(doc, `  ${risk.evidence}`, y);
+    }
+  }
+
+  if (recommendations.length > 0) {
+    y = checkPageBreak(doc, y, 30);
+    y = drawSectionTitle(doc, "Recommended Actions", y);
+    for (const rec of recommendations) {
+      y = checkPageBreak(doc, y, 25);
+      const badge = rec.priority === "high" ? "🔴 HIGH" : rec.priority === "medium" ? "🟡 MEDIUM" : "🟢 LOW";
+      y = drawParagraph(doc, `${badge} — ${rec.action}`, y);
+      y = drawParagraph(doc, `  Why: ${rec.rationale}`, y);
+    }
+  }
+
+  drawFooter(doc, Math.ceil((y + 20) / 297));
   return doc;
 }
