@@ -26,30 +26,28 @@ export async function GET() {
     const periodIds = [...new Set(sharing.map((s) => s.period_id))];
     const branchIds = [...new Set(sharing.map((s) => s.branch_id).filter(Boolean))] as string[];
 
-    // Find the Maize category
-    const { data: maizeCat } = await supabase
+    // Find the Maize category — try exact match first, then fuzzy
+    let catId: string | null = null;
+
+    const { data: exactMatch } = await supabase
       .from("analytics_categories")
       .select("id, name")
-      .ilike("name", "%maize%")
-      .ilike("name", "%maizze%")
-      .limit(1)
-      .single();
+      .or("name.ilike.%maize%,name.ilike.%maizze%,name.ilike.%maize flour%")
+      .limit(5);
 
-    if (!maizeCat) {
-      // Try broader match
-      const { data: cats } = await supabase
-        .from("analytics_categories")
-        .select("id, name")
-        .limit(20);
-      const maize = (cats || []).find((c) =>
-        c.name.toLowerCase().includes("maize") || c.name.toLowerCase().includes("maizze")
-      );
-      if (!maize) {
-        return NextResponse.json({ maize: null, summary: "Maize/maizze category not found" });
-      }
+    if (exactMatch && exactMatch.length > 0) {
+      // Prefer the most specific match (Maize Flour over just "Maize" if it's a biscuit)
+      const sorted = exactMatch.sort((a, b) => {
+        const aScore = a.name.toLowerCase().includes("flour") ? 2 : a.name.toLowerCase().includes("maize") ? 1 : 0;
+        const bScore = b.name.toLowerCase().includes("flour") ? 2 : b.name.toLowerCase().includes("maize") ? 1 : 0;
+        return bScore - aScore;
+      });
+      catId = sorted[0].id;
     }
 
-    const catId = maizeCat?.id;
+    if (!catId) {
+      return NextResponse.json({ maize: null, summary: "Maize/maizze category not found in analytics_categories" });
+    }
     if (!catId) {
       return NextResponse.json({ maize: null, summary: "Maize category not found" });
     }
