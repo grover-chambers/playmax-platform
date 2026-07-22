@@ -71,21 +71,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error } = await supabase.from("projects").insert({
-      name,
-      client_id,
-      type,
-      status: status || "draft",
-      value,
-      end_date,
-      assigned_to,
-    });
+    const { data: project, error } = await supabase
+      .from("projects")
+      .insert({
+        name,
+        client_id,
+        type,
+        status: status || "draft",
+        value,
+        end_date,
+        assigned_to,
+      })
+      .select("id, name, client_id")
+      .single();
 
     if (error) {
       return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true }, { status: 201 });
+    return NextResponse.json({ project }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

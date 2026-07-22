@@ -1,9 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "@/components/ui/modal";
 import Button from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+
+interface Client {
+  id: string;
+  company: string;
+  name: string;
+  email: string;
+}
+
+interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 interface NewProjectModalProps {
   open: boolean;
@@ -13,24 +27,6 @@ interface NewProjectModalProps {
 }
 
 const projectTypes = ["Research", "Branding", "Campaign", "Event", "Rental"];
-const clientOptions = [
-  "Unga Group",
-  "Bidco Africa",
-  "Safaricom",
-  "Java House",
-  "Naivas",
-  "P&G East Africa",
-  "Twiga Foods",
-  "Kenchic",
-  "Haco Industries",
-  "Kevian Kenya",
-];
-const staffOptions = [
-  { value: "brian", label: "Brian Mwangi" },
-  { value: "amina", label: "Amina Mwangi" },
-  { value: "james", label: "James Kariuki" },
-  { value: "christine", label: "Christine Kamau" },
-];
 
 interface Milestone {
   name: string;
@@ -43,16 +39,18 @@ export default function NewProjectModal({
   onCreated,
   preselectedClient,
 }: NewProjectModalProps) {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     projectName: "",
-    client: preselectedClient || "",
+    client: "",
     type: projectTypes[0],
     startDate: "",
     endDate: "",
     budget: "",
     assignedTeam: [] as string[],
     description: "",
-    // Type-conditional fields
     targetMarket: "",
     inventoryItem: "",
     rentalStart: "",
@@ -65,6 +63,25 @@ export default function NewProjectModal({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const load = async () => {
+      try {
+        const [clientsRes, staffRes] = await Promise.all([
+          fetch("/api/clients"),
+          fetch("/api/staff"),
+        ]);
+        const clientsData = await clientsRes.json();
+        const staffData = await staffRes.json();
+        setClients(clientsData.data || []);
+        setStaff(staffData.staff || []);
+      } catch {
+        // silent
+      }
+    };
+    load();
+  }, [open]);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -125,7 +142,6 @@ export default function NewProjectModal({
     setSubmitSuccess(false);
 
     try {
-      // Map form to API format
       const typeMap: Record<string, string> = {
         Research: "market_research",
         Branding: "brand_strategy",
@@ -139,7 +155,7 @@ export default function NewProjectModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.projectName,
-          client_id: form.client, // This would need to be a real client ID in production
+          client_id: form.client,
           type: typeMap[form.type] || "market_research",
           status: "draft",
           value: parseInt(form.budget) || 0,
@@ -237,12 +253,14 @@ export default function NewProjectModal({
               className="form-select"
               value={form.client}
               onChange={(e) => handleChange("client", e.target.value)}
-              disabled={!!preselectedClient || submitting}
+              disabled={!!preselectedClient || submitting || loading}
             >
-              <option value="">Select client…</option>
-              {clientOptions.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+              <option value="">
+                {loading ? "Loading clients..." : "Select client\u2026"}
+              </option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.company || c.name}
                 </option>
               ))}
             </select>
@@ -346,7 +364,7 @@ export default function NewProjectModal({
                   }
                   disabled={submitting}
                 >
-                  <option value="">Select billboard / screen…</option>
+                  <option value="">Select billboard / screen\u2026</option>
                   <option value="westlands-screen-a">
                     Westlands Screen A
                   </option>
@@ -387,19 +405,25 @@ export default function NewProjectModal({
           <div>
             <label className="form-label">Assigned team</label>
             <div className="flex flex-wrap gap-2 mt-1">
-              {staffOptions.map((s) => (
+              {staff.length === 0 && loading && (
+                <span className="text-[11px] text-gray-4">Loading staff...</span>
+              )}
+              {staff.length === 0 && !loading && (
+                <span className="text-[11px] text-gray-4">No staff available</span>
+              )}
+              {staff.map((s) => (
                 <button
-                  key={s.value}
+                  key={s.id}
                   type="button"
-                  onClick={() => handleTeamToggle(s.value)}
+                  onClick={() => handleTeamToggle(s.id)}
                   className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
-                    form.assignedTeam.includes(s.value)
+                    form.assignedTeam.includes(s.id)
                       ? "bg-yellow/10 text-yellow border-yellow/30"
                       : "text-gray-4 border-[#2a2a2a] hover:text-white"
                   }`}
                   disabled={submitting}
                 >
-                  {s.label}
+                  {s.name}
                 </button>
               ))}
             </div>
