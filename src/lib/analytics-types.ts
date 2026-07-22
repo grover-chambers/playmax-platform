@@ -128,12 +128,16 @@ export interface AnalyticsFactSales {
 
 export interface AnalyticsFactInventory {
   id: string;
-  snapshot_date: string;
+  period_id: string;
+  branch_id: string;
+  category_id: string | null;
   product_id: string;
-  branch_id: string | null;
-  quantity_on_hand: number;
-  unit_cost: number | null;
-  total_value: number;
+  opening_stock: number;
+  closing_stock: number;
+  received: number;
+  sold: number;
+  adjustments: number;
+  stock_value: number;
   created_at: string;
 }
 

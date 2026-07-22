@@ -68,10 +68,9 @@ interface RawSalesRow {
 
 interface RawInvRow {
   id: string;
-  snapshot_date: string;
-  quantity_on_hand: number;
-  unit_cost: number;
-  total_value: number;
+  period: { end_date: string };
+  closing_stock: number;
+  stock_value: number;
   product: { name: string; stock_code: string };
   branch: { name: string; code: string };
 }
@@ -152,8 +151,8 @@ export async function GET() {
     // ── Inventory data ──────────────────────────────────────────
     let invQuery = supabase
       .from("analytics_fact_inventory")
-      .select("id, snapshot_date, quantity_on_hand, unit_cost, total_value, product:analytics_products(name, stock_code), branch:analytics_branches(name, code)")
-      .order("snapshot_date", { ascending: false })
+      .select("id, closing_stock, stock_value, product:analytics_products(name, stock_code), branch:analytics_branches(name, code), period:analytics_periods(end_date)")
+      .order("period_id", { ascending: false })
       .limit(500);
 
     if (branchIds.length > 0) invQuery = invQuery.in("branch_id", branchIds);
@@ -332,7 +331,7 @@ export async function GET() {
       summary: {
         totalSales: grandTotal,
         totalUnits: Array.from(supGrouped.values()).reduce((s, g) => s + g.units, 0),
-        totalInventoryValue: ((inventory || []) as unknown as RawInvRow[]).reduce((s, i) => s + (Number(i.total_value) || 0), 0),
+        totalInventoryValue: ((inventory || []) as unknown as RawInvRow[]).reduce((s, i) => s + (Number(i.stock_value) || 0), 0),
         totalProducts: prodGrouped.size,
       },
     });

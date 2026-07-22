@@ -304,21 +304,20 @@ export async function POST(_request: Request, context: RouteContext) {
           }
 
           // Check for existing inventory row
-          const invSnapDate = new Date().toISOString().split("T")[0];
+          const unitCost = row.unit_cost ? parseFloat(String(row.unit_cost).replace(/[^\d.-]/g, "")) : 0;
+          const invQty = row.quantity ?? 0;
           const invFields = {
-            snapshot_date: invSnapDate,
+            period_id: upload.period_id,
             product_id: productId,
             branch_id: upload.branch_id,
-            supplier_id: upload.supplier_id || null,
             category_id: invCategoryId,
-            sub_category_id: invSubCategoryId,
-            quantity_on_hand: row.quantity ?? 0,
-            unit_cost: row.unit_cost ? parseFloat(String(row.unit_cost).replace(/[^\d.-]/g, "")) : null,
+            closing_stock: invQty,
+            stock_value: invQty * unitCost,
           };
           const { data: existingInv } = await supabase
             .from("analytics_fact_inventory")
             .select("id")
-            .eq("snapshot_date", invSnapDate)
+            .eq("period_id", upload.period_id)
             .eq("product_id", productId)
             .eq("branch_id", upload.branch_id)
             .maybeSingle();

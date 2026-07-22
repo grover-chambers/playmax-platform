@@ -554,17 +554,25 @@ async function queryInventorySummary(
 ) {
   let query = supabase
     .from("analytics_fact_inventory")
-    .select("product_id, branch_id, quantity_on_hand, unit_cost, total_value, snapshot_date")
-    .order("snapshot_date", { ascending: false });
+    .select("product_id, branch_id, closing_stock, stock_value, period:analytics_periods(end_date)")
+    .order("period_id", { ascending: false });
 
   if (branch) query = query.eq("branch_id", branch);
 
   const { data: invRows } = await query;
   if (!invRows || invRows.length === 0) return { items: [], totals: { total_value: 0, total_units: 0, product_count: 0 } };
 
-  // Get latest snapshot per product PER BRANCH (composite key)
-  const latestByKey = new Map<string, typeof invRows[0]>();
-  for (const row of invRows) {
+  const rows = invRows as unknown as {
+    product_id: string;
+    branch_id: string;
+    closing_stock: number;
+    stock_value: number;
+    period: { end_date: string } | null;
+  }[];
+
+  // Get latest period per product PER BRANCH (composite key)
+  const latestByKey = new Map<string, typeof rows[0]>();
+  for (const row of rows) {
     const key = `${row.product_id}::${row.branch_id}`;
     if (!latestByKey.has(key)) latestByKey.set(key, row);
   }
@@ -596,20 +604,23 @@ async function queryInventorySummary(
 
   const items = filteredProducts
     .flatMap((prod) => {
-      // Find all branch snapshots for this product
       const productRows = [...latestByKey.values()].filter((r) => r.product_id === prod.id);
-      return productRows.map((inv) => ({
-        product: prod.name,
-        stock_code: prod.stock_code,
-        category: catMap.get(prod.category_id as string) ?? "Unknown",
-        sub_category: prod.sub_category || "",
-        branch: branchMap.get(inv.branch_id as string)?.name ?? "Unknown",
-        branch_code: branchMap.get(inv.branch_id as string)?.code ?? "??",
-        quantity_on_hand: inv.quantity_on_hand,
-        unit_cost: inv.unit_cost,
-        total_value: inv.total_value,
-        last_updated: inv.snapshot_date,
-      }));
+      return productRows.map((inv) => {
+        const qty = Number(inv.closing_stock) || 0;
+        const val = Number(inv.stock_value) || 0;
+        return {
+          product: prod.name,
+          stock_code: prod.stock_code,
+          category: catMap.get(prod.category_id as string) ?? "Unknown",
+          sub_category: prod.sub_category || "",
+          branch: branchMap.get(inv.branch_id as string)?.name ?? "Unknown",
+          branch_code: branchMap.get(inv.branch_id as string)?.code ?? "??",
+          quantity_on_hand: qty,
+          unit_cost: qty > 0 ? val / qty : 0,
+          total_value: val,
+          last_updated: inv.period?.end_date ?? "",
+        };
+      });
     })
     .filter(Boolean);
 
@@ -888,8 +899,8 @@ async function executeCustomQuery(
       "total_amount", "cost_amount", "vat_amount", "created_at"
     ],
     inventory: [
-      "id", "snapshot_date", "product_id", "branch_id",
-      "quantity_on_hand", "unit_cost", "total_value", "created_at"
+      "id", "period_id", "product_id", "branch_id", "category_id",
+      "opening_stock", "closing_stock", "received", "sold", "adjustments", "stock_value", "created_at"
     ],
     pricing: [
       "id", "period_id", "product_id", "branch_id", "supplier_id",
