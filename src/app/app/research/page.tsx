@@ -285,7 +285,7 @@ export default function ResearchPage() {
           <>
             {/* ── Scrollable detail area ──────────────────── */}
             <div className="flex-1 overflow-y-auto">
-              <div className="px-7 py-5 border-b border-[#1E1E1E] bg-black">
+              <div className="px-7 py-5 border-b border-[#1E1E1E] bg-black-2">
                 <div className="flex items-start justify-between">
                   <div>
                     <h2 className="font-display text-[18px] font-bold text-white">

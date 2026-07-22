@@ -4,15 +4,9 @@ import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
-const ALLOWED_PATCH_FIELDS = new Set([
-  "title", "description", "file_url", "file_type", "file_size",
-  "visible_to_client", "client_id", "project_id",
-]);
+const ALLOWED_PATCH_FIELDS = new Set(["visible_to_client", "title", "description", "file_url", "file_type", "approval_status"]);
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);

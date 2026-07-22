@@ -42,9 +42,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const role = (user.user_metadata?.role as UserRole) || "client";
+  const role = user.user_metadata?.role as UserRole | undefined;
+
+  if (!role) {
+    console.warn(`[middleware] No role found for user ${user.id} on path ${pathname} — redirecting to login`);
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
 
   if (!canAccess(role, pathname)) {
+    console.warn(`[middleware] Access denied: role=${role}, path=${pathname}`);
     const url = request.nextUrl.clone();
     url.pathname = getDefaultRedirect(role);
     return NextResponse.redirect(url);

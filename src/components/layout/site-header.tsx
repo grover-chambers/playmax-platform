@@ -49,12 +49,20 @@ function SiteHeader({ className = "" }: SiteHeaderProps) {
         ))}
       </nav>
 
-      <Link
-        href="/contact"
-        className="btn-primary text-[14px] px-6 py-2.5 no-underline"
-      >
-        Get in Touch
-      </Link>
+      <div className="flex items-center gap-3">
+        <Link
+          href="/login"
+          className="text-[13px] font-medium text-white/70 hover:text-yellow transition-colors no-underline"
+        >
+          Login
+        </Link>
+        <Link
+          href="/contact"
+          className="btn-primary text-[14px] px-6 py-2.5 no-underline"
+        >
+          Get in Touch
+        </Link>
+      </div>
     </header>
   );
 }

@@ -52,13 +52,20 @@ export default function PortalLayout({
     init();
   }, []);
 
+  const role: UserRole = (user?.user_metadata?.role as UserRole) || "client";
+
+  // Redirect staff users to admin dashboard — portal is client-only
+  useEffect(() => {
+    if (user && role !== "client") {
+      router.replace("/app");
+    }
+  }, [user, role, router]);
+
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
   };
-
-  const role: UserRole = (user?.user_metadata?.role as UserRole) || "client";
   const initials =
     user?.user_metadata?.name
       ?.split(" ")

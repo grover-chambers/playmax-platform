@@ -116,6 +116,8 @@ export default function AnalyticsReportsPage() {
   const [reportName, setReportName] = useState("");
   const [visibleToClient, setVisibleToClient] = useState(true);
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [editingReportId, setEditingReportId] = useState<string | null>(null);
+  const [confirmNoClient, setConfirmNoClient] = useState(false);
 
   /* ── Link-to-project modal state ── */
   const [linkModalReport, setLinkModalReport] = useState<string | null>(null);
@@ -222,10 +224,14 @@ export default function AnalyticsReportsPage() {
       setSaveMsg("Enter a report name");
       return;
     }
+    if (!selectedClientId && !editingReportId) {
+      setConfirmNoClient(true);
+      return;
+    }
     setSaving(true);
     setSaveMsg(null);
     try {
-      const body = {
+      const body: Record<string, unknown> = {
         name: reportName,
         report_type: categoryTab,
         subtype: selectedSubtype,
@@ -234,18 +240,86 @@ export default function AnalyticsReportsPage() {
         visible_to_client: visibleToClient,
         client_id: selectedClientId || null,
       };
-      const res = await fetch("/api/analytics/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+
+      let res: Response;
+      if (editingReportId) {
+        body.id = editingReportId;
+        res = await fetch("/api/analytics/reports", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      } else {
+        res = await fetch("/api/analytics/reports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      }
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Save failed" }));
         throw new Error(err.error ?? "Save failed");
       }
       const result = await res.json();
-      setSavedReports((prev) => [result.report, ...prev]);
+      setSavedReports((prev) => {
+        if (editingReportId) {
+          return prev.map((r) => r.id === editingReportId ? result.report : r);
+        }
+        return [result.report, ...prev];
+      });
       setSaveMsg("Report saved!");
+      setTimeout(() => setSaveMsg(null), 3000);
+    } catch (e: unknown) {
+      setSaveMsg(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveNoClientConfirm = async () => {
+    setConfirmNoClient(false);
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      const body: Record<string, unknown> = {
+        name: reportName,
+        report_type: categoryTab,
+        subtype: selectedSubtype,
+        config: buildApiBody(),
+        generated_data: { data: queryResult, chart_type: chartProps?.type ?? "table" },
+        visible_to_client: visibleToClient,
+        client_id: null,
+      };
+
+      let res: Response;
+      if (editingReportId) {
+        body.id = editingReportId;
+        res = await fetch("/api/analytics/reports", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      } else {
+        res = await fetch("/api/analytics/reports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      }
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Save failed" }));
+        throw new Error(err.error ?? "Save failed");
+      }
+      const result = await res.json();
+      setSavedReports((prev) => {
+        if (editingReportId) {
+          return prev.map((r) => r.id === editingReportId ? result.report : r);
+        }
+        return [result.report, ...prev];
+      });
+      setSaveMsg("Report saved (internal only)!");
       setTimeout(() => setSaveMsg(null), 3000);
     } catch (e: unknown) {
       setSaveMsg(e instanceof Error ? e.message : "Failed to save");
@@ -256,6 +330,10 @@ export default function AnalyticsReportsPage() {
 
   /* ── Load saved report into viewer ── */
   const loadSavedReport = (report: SavedReport) => {
+    setEditingReportId(report.id);
+    setSelectedClientId(report.client_id ?? "");
+    setVisibleToClient(report.visible_to_client);
+    setReportName(report.name);
     if (report.generated_data && typeof report.generated_data === "object") {
       const gd = report.generated_data as { data?: Record<string, unknown>[]; chart_type?: string };
       if (gd.data && gd.chart_type) {
@@ -265,6 +343,42 @@ export default function AnalyticsReportsPage() {
         setSelectedSubtype(report.subtype || "");
       }
     }
+  };
+
+  /* ── Toggle saved report visibility for client ── */
+  const [togglingVis, setTogglingVis] = useState<string | null>(null);
+
+  const toggleReportVisibility = async (report: SavedReport, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTogglingVis(report.id);
+    try {
+      const res = await fetch("/api/analytics/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: report.id, visible_to_client: !report.visible_to_client }),
+      });
+      if (!res.ok) throw new Error("Toggle failed");
+      const result = await res.json();
+      setSavedReports((prev) =>
+        prev.map((r) => r.id === report.id ? result.report : r)
+      );
+      setSaveMsg("Visibility updated");
+      setTimeout(() => setSaveMsg(null), 2000);
+    } catch {
+      setSaveMsg("Toggle failed");
+      setTimeout(() => setSaveMsg(null), 2000);
+    } finally {
+      setTogglingVis(null);
+    }
+  };
+
+  const clearEditing = () => {
+    setEditingReportId(null);
+    setSelectedClientId("");
+    setVisibleToClient(true);
+    setReportName("");
+    setChartProps(null);
+    setQueryResult([]);
   };
 
   /* ── Link report to project ── */
@@ -471,11 +585,20 @@ export default function AnalyticsReportsPage() {
             >
               Link to Project
             </button>
-            {report.visible_to_client ? (
-              <Eye size={11} className="text-teal" />
-            ) : (
-              <EyeOff size={11} className="text-gray-5" />
-            )}
+            <button
+              onClick={(e) => toggleReportVisibility(report, e)}
+              disabled={togglingVis === report.id}
+              className="cursor-pointer disabled:opacity-40 bg-transparent border-none p-0.5"
+              title={report.visible_to_client ? "Visible to client — click to hide" : "Hidden from client — click to show"}
+            >
+              {togglingVis === report.id ? (
+                <Loader2 size={11} className="animate-spin text-yellow" />
+              ) : report.visible_to_client ? (
+                <Eye size={11} className="text-teal" />
+              ) : (
+                <EyeOff size={11} className="text-gray-5" />
+              )}
+            </button>
             <ChevronRight size={11} className="text-gray-5" />
           </div>
         </div>
@@ -503,7 +626,17 @@ export default function AnalyticsReportsPage() {
         <div className="w-[240px] shrink-0">
           <div className="flex items-center justify-between mb-3">
             <span className="font-mono text-[9px] text-gray-5 uppercase tracking-wider">Saved Reports</span>
-            <span className="text-[10px] text-gray-5">{savedReports.length}</span>
+            <div className="flex items-center gap-1">
+              {editingReportId && (
+                <button
+                  onClick={clearEditing}
+                  className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-yellow/30 text-yellow hover:bg-yellow/10 transition-colors cursor-pointer bg-transparent"
+                >
+                  + New
+                </button>
+              )}
+              <span className="text-[10px] text-gray-5">{savedReports.length}</span>
+            </div>
           </div>
           <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
             {savedReports.length === 0 ? (
@@ -769,6 +902,31 @@ export default function AnalyticsReportsPage() {
               </div>
             )}
             <button onClick={() => setLinkModalReport(null)} className="mt-4 text-[11px] text-gray-5 hover:text-white transition-colors">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {confirmNoClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setConfirmNoClient(false)}>
+          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-6 w-[380px]" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[14px] font-semibold text-white mb-3">No client selected</h3>
+            <p className="text-[12px] text-gray-4 leading-relaxed mb-5">
+              This report will only be visible internally and won&rsquo;t appear on any client&rsquo;s portal. Continue?
+            </p>
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                onClick={() => setConfirmNoClient(false)}
+                className="text-[11px] px-4 py-1.5 rounded-lg border border-white/6 text-gray-4 hover:text-white hover:border-white/20 transition-colors cursor-pointer bg-transparent"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNoClientConfirm}
+                className="text-[11px] px-4 py-1.5 rounded-lg bg-yellow text-black font-semibold hover:bg-yellow/90 transition-colors cursor-pointer"
+              >
+                Save as internal
+              </button>
+            </div>
           </div>
         </div>
       )}

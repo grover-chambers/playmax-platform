@@ -225,7 +225,7 @@ export function SiteFooter() {
           </a>
           <span style={{ width: "1px", height: "14px", background: "#1A1A1A" }} />
           <a
-            href="/login"
+            href="/login?mode=staff"
             style={{
               fontSize: "12px",
               color: "var(--pm-black)",
@@ -240,7 +240,7 @@ export function SiteFooter() {
               (e.currentTarget.style.color = "var(--pm-black)")
             }
           >
-            Login
+            Staff Login
           </a>
         </div>
       </div>

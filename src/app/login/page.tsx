@@ -101,12 +101,35 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [view, setView] = useState<"client" | "staff">("client");
+  const [staffRole, setStaffRole] = useState("");
+  const [view] = useState<"client" | "staff">(
+    searchParams.get("mode") === "staff" ? "staff" : "client"
+  );
 
   const supabase = createClient();
 
+  const STAFF_ROLE_OPTIONS = [
+    { value: "super_admin", label: "Super Admin" },
+    { value: "crm_admin", label: "CRM Admin" },
+    { value: "crm_staff", label: "CRM Staff" },
+    { value: "cms_admin", label: "CMS Admin" },
+    { value: "finance", label: "Finance" },
+  ];
+
+  const STAFF_REDIRECTS: Record<string, string> = {
+    super_admin: "/app",
+    crm_admin: "/app/pipeline",
+    crm_staff: "/app/my-day",
+    cms_admin: "/app/content",
+    finance: "/app/invoices",
+  };
+
   const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!staffRole) {
+      setError("Select your role before signing in.");
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -121,15 +144,13 @@ function LoginForm() {
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const role = user?.user_metadata?.role;
+    // Set the role in user_metadata so the session token carries it
+    const { error: updateErr } = await supabase.auth.updateUser({
+      data: { role: staffRole },
+    });
 
-    if (!role) {
-      setError(
-        "Your account is missing a staff role configuration. Contact your administrator.",
-      );
+    if (updateErr) {
+      setError("Failed to set session role. Try again.");
       setLoading(false);
       await supabase.auth.signOut();
       return;
@@ -140,15 +161,7 @@ function LoginForm() {
       return;
     }
 
-    const redirects: Record<string, string> = {
-      super_admin: "/app",
-      crm_admin: "/app/pipeline",
-      crm_staff: "/app/my-day",
-      cms_admin: "/app/content",
-      finance: "/app/invoices",
-      client: "/portal",
-    };
-    router.push(redirects[role] || "/app/pipeline");
+    router.push(STAFF_REDIRECTS[staffRole] || "/app");
   };
 
   const handleClientLogin = async (e: React.FormEvent) => {
@@ -185,13 +198,6 @@ function LoginForm() {
       setError(authErr.message);
       setLoading(false);
     }
-  };
-
-  const switchToClient = () => {
-    setView("client");
-    setError("");
-    setEmail("");
-    setPassword("");
   };
 
   return (
@@ -405,32 +411,9 @@ function LoginForm() {
                   </button>
                 </form>
 
-                <p className="text-center text-[11px] text-gray-5 mt-5 leading-relaxed">
-                  No account? Your account manager creates this for you.
-                  <br />
-                  <Link
-                    href="/contact"
-                    className="text-yellow hover:underline font-medium"
-                  >
-                    Contact us
-                  </Link>{" "}
-                  to get started.
-                </p>
               </div>
 
-              <div className="text-center mt-5 flex flex-col items-center gap-2">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => {
-                    setEmail("demo.client@playmax.com");
-                    setPassword("Demo123!");
-                    setError("");
-                  }}
-                  className="text-[11px] font-mono font-medium px-4 py-2 rounded-full border border-[#2A2A2A] bg-transparent text-gray-5 hover:text-yellow hover:border-yellow/40 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  Demo: Client Portal
-                </button>
+              <div className="text-center mt-5 flex flex-col items-center gap-3">
                 <button
                   type="button"
                   disabled={loading}
@@ -443,31 +426,12 @@ function LoginForm() {
                 >
                   NICE Client Portal
                 </button>
-              </div>
-
-              <div className="text-center mt-8">
-                <button
-                  onClick={() => {
-                    setView("staff");
-                    setError("");
-                  }}
-                  className="inline-flex items-center gap-1.5 text-[12px] text-gray-5 hover:text-gray-3 transition-colors bg-transparent border-none cursor-pointer"
+                <Link
+                  href="/"
+                  className="text-[11px] text-gray-5 hover:text-gray-3 transition-colors no-underline"
                 >
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                  Staff sign in
-                </button>
+                  &larr; Back to Market Link
+                </Link>
               </div>
             </>
           )}
@@ -490,17 +454,8 @@ function LoginForm() {
                 </p>
               </div>
 
-              <div className="flex gap-2 mb-6">
-                <button
-                  onClick={() => {
-                    setView("client");
-                    setError("");
-                  }}
-                  className="flex-1 py-2 text-[11px] font-medium rounded-lg border border-[#333] text-gray-5 hover:text-white hover:border-[#555] transition-all bg-transparent cursor-pointer"
-                >
-                  &larr; Client Portal
-                </button>
-                <span className="flex-1 py-2 text-[11px] font-semibold rounded-lg bg-yellow text-black text-center cursor-default">
+              <div className="mb-6">
+                <span className="block py-2 text-[11px] font-semibold rounded-lg bg-yellow text-black text-center cursor-default">
                   Staff Login
                 </span>
               </div>
@@ -511,6 +466,29 @@ function LoginForm() {
                 </div>
               )}
 
+              {/* Role selector — must pick before credentials */}
+              <div className="mb-5">
+                <label className="font-mono text-[9px] text-gray-5 uppercase tracking-wider block mb-2">
+                  Select your role
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {STAFF_ROLE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => { setStaffRole(opt.value); setError(""); }}
+                      className={`py-2 px-3 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
+                        staffRole === opt.value
+                          ? "bg-yellow/10 text-yellow border-yellow/40"
+                          : "bg-black-3 border-white/6 text-gray-4 hover:text-white hover:border-white/20"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <form onSubmit={handleStaffLogin} className="space-y-4">
                 <div>
                   <input
@@ -518,9 +496,10 @@ function LoginForm() {
                     placeholder="Staff email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="form-input"
+                    className={`form-input ${!staffRole ? "opacity-40 pointer-events-none" : ""}`}
                     required
-                    autoFocus
+                    disabled={!staffRole}
+                    autoFocus={!!staffRole}
                   />
                 </div>
                 <div>
@@ -529,9 +508,10 @@ function LoginForm() {
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="form-input"
+                    className={`form-input ${!staffRole ? "opacity-40 pointer-events-none" : ""}`}
                     required
                     minLength={6}
+                    disabled={!staffRole}
                   />
                 </div>
                 <div className="text-right">
@@ -544,7 +524,7 @@ function LoginForm() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !staffRole}
                   className="form-submit disabled:opacity-60"
                 >
                   {loading ? "Signing in..." : "Sign In"}
@@ -562,7 +542,6 @@ function LoginForm() {
                     { role: "crm_staff", label: "CRM Staff" },
                     { role: "cms_admin", label: "CMS Admin" },
                     { role: "finance", label: "Finance" },
-                    { role: "nice_client", label: "NICE Client Portal" },
                   ].map((d) => (
                     <button
                       key={d.role}
@@ -620,6 +599,8 @@ function LoginForm() {
                 </div>
               </div>
 
+
+
               <div className="flex items-center gap-3 my-5">
                 <div className="divider flex-1" />
                 <span className="text-gray-5 text-[11px] font-body">or</span>
@@ -654,12 +635,7 @@ function LoginForm() {
               </button>
 
               <p className="text-center mt-5 text-[11px] text-gray-5">
-                <button
-                  onClick={switchToClient}
-                  className="text-yellow hover:underline bg-transparent border-none cursor-pointer text-[11px] font-medium"
-                >
-                  &larr; Back to client portal
-                </button>
+                Internal use only.
               </p>
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, startTransition } from "react";
+import React, { useState, useEffect, useMemo, useCallback, startTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, LogOut, Menu, X } from "lucide-react";
@@ -67,8 +67,78 @@ export default function DashboardLayout({
     startTransition(() => setMobileOpen(false));
   }, [pathname]);
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + "/");
+  const isActive = useCallback(
+    (href: string) => pathname === href || pathname.startsWith(href + "/"),
+    [pathname],
+  );
+
+  const toggleBtnStyle = useMemo(
+    () => ({ left: sidebarCollapsed ? "60px" : "var(--sidebar-w)" }),
+    [sidebarCollapsed],
+  );
+
+  const navContent = useMemo(() => {
+    if (navSections) {
+      return navSections.map((section) => (
+        <div key={section.label}>
+          {!sidebarCollapsed && (
+            <div className="sidebar-section">{section.label}</div>
+          )}
+          {section.items.map((item) => {
+            const active = isActive(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`sidebar-item ${active ? "active" : ""}`}
+                title={sidebarCollapsed ? item.label : undefined}
+              >
+                <Icon className="sidebar-item-icon" />
+                {!sidebarCollapsed && (
+                  <>
+                    <span className="flex-1 truncate">
+                      {item.label}
+                    </span>
+                    {item.badge && (
+                      <span className="sidebar-badge">
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      ));
+    }
+    if (navItems) {
+      return navItems.map((item) => {
+        const active = isActive(item.href);
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`sidebar-item ${active ? "active" : ""}`}
+            title={sidebarCollapsed ? item.label : undefined}
+          >
+            <Icon className="sidebar-item-icon" />
+            {!sidebarCollapsed && (
+              <>
+                <span className="flex-1 truncate">{item.label}</span>
+                {item.badge && (
+                  <span className="sidebar-badge">{item.badge}</span>
+                )}
+              </>
+            )}
+          </Link>
+        );
+      });
+    }
+    return null;
+  }, [navSections, navItems, sidebarCollapsed, isActive]);
 
   return (
     <div
@@ -120,62 +190,7 @@ export default function DashboardLayout({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-0">
-          {navSections
-            ? navSections.map((section) => (
-                <div key={section.label}>
-                  {!sidebarCollapsed && (
-                    <div className="sidebar-section">{section.label}</div>
-                  )}
-                  {section.items.map((item) => {
-                    const active = isActive(item.href);
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        className={`sidebar-item ${active ? "active" : ""}`}
-                        title={sidebarCollapsed ? item.label : undefined}
-                      >
-                        <Icon className="sidebar-item-icon" />
-                        {!sidebarCollapsed && (
-                          <>
-                            <span className="flex-1 truncate">
-                              {item.label}
-                            </span>
-                            {item.badge && (
-                              <span className="sidebar-badge">
-                                {item.badge}
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              ))
-            : navItems?.map((item) => {
-                const active = isActive(item.href);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`sidebar-item ${active ? "active" : ""}`}
-                    title={sidebarCollapsed ? item.label : undefined}
-                  >
-                    <Icon className="sidebar-item-icon" />
-                    {!sidebarCollapsed && (
-                      <>
-                        <span className="flex-1 truncate">{item.label}</span>
-                        {item.badge && (
-                          <span className="sidebar-badge">{item.badge}</span>
-                        )}
-                      </>
-                    )}
-                  </Link>
-                );
-              })}
+          {navContent}
         </nav>
 
         {/* User section */}
@@ -225,9 +240,7 @@ export default function DashboardLayout({
       <button
         onClick={toggleSidebar}
         className="sidebar-toggle-btn"
-        style={{
-          left: sidebarCollapsed ? "60px" : "var(--sidebar-w)",
-        }}
+        style={toggleBtnStyle}
         aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {sidebarCollapsed ? (
