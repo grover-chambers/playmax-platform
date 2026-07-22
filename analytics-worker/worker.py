@@ -54,6 +54,7 @@ def process_job(job: dict) -> None:
     # Get project details
     project_name = "Market Analysis"
     client_name = None
+    cid = None
     if project_id:
         p = fetch_first(db, "research_projects", "id", project_id)
         if p:
@@ -133,7 +134,7 @@ def process_job(job: dict) -> None:
         if project_id:
             report_data = {
                 "project_id": project_id,
-                "client_id": cid if project_id and locals().get("cid") else None,
+                "client_id": cid if project_id else None,
                 "title": f"AI Analysis — {datetime.now().strftime('%d %b %Y')}",
                 "type": "ai_analysis",
                 "kind": "ai_summary" if ai_result else "raw",
