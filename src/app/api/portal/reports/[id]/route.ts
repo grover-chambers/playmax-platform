@@ -24,7 +24,7 @@ export async function GET(
 
     const { data: del, error } = await admin
       .from("deliverables")
-      .select("id, title, pdf_base64, client_id")
+      .select("id, title, pdf_base64, client_id, visible_to_client")
       .eq("id", id)
       .single();
 
@@ -32,7 +32,7 @@ export async function GET(
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
 
-    if (del.client_id !== client.id) {
+    if (del.client_id !== client.id || !del.visible_to_client) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

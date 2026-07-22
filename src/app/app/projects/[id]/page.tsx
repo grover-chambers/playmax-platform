@@ -20,6 +20,8 @@ import {
   Clock,
   XCircle,
   AlertCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
@@ -295,6 +297,34 @@ export default function ProjectDetailPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingTask, setTogglingTask] = useState<string | null>(null);
+  const [togglingVisibility, setTogglingVisibility] = useState<string | null>(null);
+
+  const toggleVisible = async (deliverableId: string, current: boolean) => {
+    setTogglingVisibility(deliverableId);
+    try {
+      const res = await fetch(`/api/deliverables/${deliverableId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visible_to_client: !current }),
+      });
+      if (!res.ok) throw new Error("Toggle failed");
+      const result = await res.json();
+      if (data) {
+        setData({
+          ...data,
+          deliverables: data.deliverables.map((d) =>
+            d.id === deliverableId
+              ? { ...d, visible_to_client: result.data.visible_to_client }
+              : d
+          ),
+        });
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setTogglingVisibility(null);
+    }
+  };
 
   useEffect(() => {
     fetch(`/api/projects/${id}`)
@@ -812,6 +842,20 @@ export default function ProjectDetailPage({
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => toggleVisible(d.id, d.visible_to_client)}
+                        disabled={togglingVisibility === d.id}
+                        className="text-[10px] flex items-center gap-1 hover:text-white transition-colors cursor-pointer disabled:opacity-40"
+                        title={d.visible_to_client ? "Visible to client — click to hide" : "Hidden from client — click to show"}
+                      >
+                        {togglingVisibility === d.id ? (
+                          <Loader2 size={12} className="animate-spin text-yellow" />
+                        ) : d.visible_to_client ? (
+                          <Eye size={12} className="text-teal" />
+                        ) : (
+                          <EyeOff size={12} className="text-gray-5" />
+                        )}
+                      </button>
                       {d.pdf_base64 && (
                         <a
                           href={`data:application/pdf;base64,${d.pdf_base64}`}
