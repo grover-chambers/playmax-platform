@@ -13,6 +13,10 @@ import {
   BarChart3,
   Loader2,
   Milestone,
+  TrendingUp,
+  Store,
+  Package,
+  DollarSign,
 } from "lucide-react";
 import { usePortalClient } from "@/components/portal/portal-provider";
 import DocumentList from "@/components/documents/document-list";
@@ -210,13 +214,16 @@ export default function PortalOverviewPage() {
   const [activityLog, setActivityLog] = useState<LoggedActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [maizeAnalytics, setMaizeAnalytics] = useState<Record<string, unknown> | null>(null);
+  const [maizeLoading, setMaizeLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/portal/overview").then((r) => r.json()),
       fetch("/api/portal/activity").then((r) => r.json()),
+      fetch("/api/portal/analytics/category/maizze").then((r) => r.json()),
     ])
-      .then(([overview, activity]) => {
+      .then(([overview, activity, maize]) => {
         startTransition(() => {
           if (overview.error) {
             setError(overview.error);
@@ -227,6 +234,8 @@ export default function PortalOverviewPage() {
             setRecentBookings(overview.recentBookings || []);
           }
           setActivityLog(activity.activity || []);
+          if (maize && maize.category) setMaizeAnalytics(maize);
+          setMaizeLoading(false);
           setLoading(false);
         });
       })
@@ -234,6 +243,7 @@ export default function PortalOverviewPage() {
         startTransition(() => {
           setError("Failed to load dashboard");
           setLoading(false);
+          setMaizeLoading(false);
         });
       });
   }, []);
@@ -346,6 +356,90 @@ export default function PortalOverviewPage() {
           )}
         </div>
       </div>
+
+      {/* ── Maize Analytics at a Glance ───────────────── */}
+      {!maizeLoading && maizeAnalytics && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp size={14} className="text-yellow" />
+            <span className="font-display text-[14px] font-semibold text-white">Market at a Glance — Maize Flour</span>
+          </div>
+          <div className="pm-dash-krow pm-dash-krow-4">
+            <div className="pm-dash-kcard yel">
+              <div className="pm-dash-kn yel">
+                {(maizeAnalytics.summary as Record<string, unknown>)?.totalSales
+                  ? `KES ${(Number((maizeAnalytics.summary as Record<string, unknown>).totalSales) / 1000000).toFixed(1)}M`
+                  : "—"}
+              </div>
+              <div className="pm-dash-kl">Maize Revenue</div>
+              <div className="pm-dash-ksub">{(maizeAnalytics.competitors as Array<Record<string, unknown>>)?.length || 0} suppliers</div>
+            </div>
+            <div className="pm-dash-kcard grn">
+              <div className="pm-dash-kn grn">
+                {(maizeAnalytics.competitors as Array<Record<string, unknown>>)
+                  ?.find((c) => c.is_client)
+                  ? `${Number((maizeAnalytics.competitors as Array<Record<string, unknown>>).find((c) => c.is_client)?.share).toFixed(1)}%`
+                  : "—"}
+              </div>
+              <div className="pm-dash-kl">Your Share</div>
+              <div className="pm-dash-ksub">
+                Rank #{String((maizeAnalytics.competitors as Array<Record<string, unknown>>)?.find((c) => c.is_client)?.rank || "—")}
+              </div>
+            </div>
+            <div className="pm-dash-kcard blu">
+              <div className="pm-dash-kn blu">{String((maizeAnalytics.summary as Record<string, unknown>)?.totalProducts || "—")}</div>
+              <div className="pm-dash-kl">Maize Products</div>
+              <div className="pm-dash-ksub">{(maizeAnalytics.branches as Array<Record<string, unknown>>)?.length || 0} branches</div>
+            </div>
+            <div className="pm-dash-kcard red">
+              <div className="pm-dash-kn red">
+                {(maizeAnalytics.summary as Record<string, unknown>)?.avgMargin
+                  ? `${Number((maizeAnalytics.summary as Record<string, unknown>).avgMargin).toFixed(1)}%`
+                  : "—"}
+              </div>
+              <div className="pm-dash-kl">Avg Margin</div>
+              <div className="pm-dash-ksub">Maize flour category</div>
+            </div>
+          </div>
+          {/* Maize competitor leaderboard (mini) */}
+          {(maizeAnalytics.competitors as Array<Record<string, unknown>>)?.length > 0 && (
+            <div className="mt-3 pm-dash-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-semibold text-gray-3">Maize Supplier Rankings</span>
+                <Link href="/portal/analytics" className="text-[10px] text-teal hover:underline">
+                  Full analytics →
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {(maizeAnalytics.competitors as Array<Record<string, unknown>>).slice(0, 5).map((comp, i) => (
+                  <div key={String(comp.supplier || i)} className="flex items-center gap-3">
+                    <span className="text-[10px] font-mono text-gray-5 w-4 shrink-0">{comp.rank as number}</span>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className={`text-[11px] ${comp.is_client ? "text-yellow font-semibold" : "text-gray-4"}`}>
+                          {String(comp.supplier)}{comp.is_client ? " (you)" : ""}
+                        </span>
+                        <span className="text-[10px] text-gray-5">
+                          KES {(Number(comp.total_sales) / 1000000).toFixed(1)}M · {Number(comp.share).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded bg-[#1A1A1A] overflow-hidden">
+                        <div
+                          className="h-full rounded transition-all"
+                          style={{
+                            width: `${Math.min(100, (Number(comp.total_sales) / Math.max(...(maizeAnalytics.competitors as Array<Record<string, unknown>>).map((c) => Number(c.total_sales)))) * 100)}%`,
+                            background: comp.is_client ? "#F4C300" : ["#F4C300", "#BBBBBB", "#F97316", "#3B82F6", "#A855F7"][i % 5],
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Two-column layout ──────────────────────── */}
       <div className="grid grid-cols-3 gap-6">

@@ -13,6 +13,7 @@ import {
   Loader2,
   FileText,
   Eye,
+  ShoppingBag,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import { AnalyticsChart } from "@/components/charts/analytics-chart";
@@ -297,22 +298,26 @@ function ReportViewer({ report }: { report: SavedReport }) {
 /* ── Main Component ───────────────────────────────────────────── */
 
 export default function PortalAnalyticsPage() {
-  const [tab, setTab] = useState<"overview" | "reports">("overview");
+  const [tab, setTab] = useState<"overview" | "maize" | "reports">("overview");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const [maizeData, setMaizeData] = useState<Record<string, unknown> | null>(null);
+  const [maizeLoading, setMaizeLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [analyticsRes, reportsRes] = await Promise.all([
+        const [analyticsRes, reportsRes, maizeRes] = await Promise.all([
           fetch("/api/portal/analytics"),
           fetch("/api/portal/analytics/reports"),
+          fetch("/api/portal/analytics/category/maizze"),
         ]);
         const analyticsData = await analyticsRes.json();
         const reportsData = await reportsRes.json();
+        const maize = await maizeRes.json();
 
         startTransition(() => {
           if (analyticsData.error) {
@@ -321,12 +326,15 @@ export default function PortalAnalyticsPage() {
             setData(analyticsData);
           }
           setReports(reportsData.reports || []);
+          if (maize && maize.category) setMaizeData(maize);
+          setMaizeLoading(false);
           setLoading(false);
         });
       } catch {
         startTransition(() => {
           setError("Failed to load analytics data");
           setLoading(false);
+          setMaizeLoading(false);
         });
       }
     };
@@ -574,6 +582,19 @@ export default function PortalAnalyticsPage() {
             <span className="ml-1.5 bg-white/10 text-[10px] px-1.5 py-0.5 rounded-full">{reports.length}</span>
           )}
         </button>
+        {data && data.categories.some((c) => c.category.toLowerCase().includes("maize")) && (
+          <button
+            onClick={() => setTab("maize")}
+            className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+              tab === "maize"
+                ? "bg-yellow text-black"
+                : "bg-black-3 border border-[#252525] text-gray-4 hover:text-white"
+            }`}
+          >
+            <ShoppingBag size={13} className="inline mr-1.5" />
+            Maize Flour
+          </button>
+        )}
       </div>
 
       {/* ═══ LIVE ANALYTICS TAB ═══════════════════════════════ */}
@@ -941,6 +962,187 @@ export default function PortalAnalyticsPage() {
               </table>
             </div>
           </div>
+        </>
+      )}
+
+      {/* ═══ MAIZE FLOUR TAB ═══════════════════════════════════ */}
+      {tab === "maize" && (
+        <>
+          {maizeLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-6 h-6 animate-spin text-yellow" />
+            </div>
+          ) : maizeData ? (
+            <>
+              {/* KPI row */}
+              <div className="pm-dash-krow pm-dash-krow-4 mb-6">
+                <div className="pm-dash-kcard yel">
+                  <div className="pm-dash-kn yel">
+                    KES {(Number((maizeData.summary as Record<string, unknown>).totalSales) / 1000000).toFixed(1)}M
+                  </div>
+                  <div className="pm-dash-kl">Maize Revenue</div>
+                  <div className="pm-dash-ksub">total market</div>
+                </div>
+                <div className="pm-dash-kcard grn">
+                  <div className="pm-dash-kn grn">
+                    {(maizeData.competitors as Array<Record<string, unknown>>)?.find((c) => c.is_client)
+                      ? `${Number((maizeData.competitors as Array<Record<string, unknown>>).find((c) => c.is_client)?.share).toFixed(1)}%`
+                      : "—"}
+                  </div>
+                  <div className="pm-dash-kl">NICE Market Share</div>
+                  <div className="pm-dash-ksub">in Maize Flour</div>
+                </div>
+                <div className="pm-dash-kcard blu">
+                  <div className="pm-dash-kn blu">{String((maizeData.summary as Record<string, unknown>).totalProducts)}</div>
+                  <div className="pm-dash-kl">Products</div>
+                  <div className="pm-dash-ksub">{(maizeData.products as Array<Record<string, unknown>>)?.length || 0} SKUs</div>
+                </div>
+                <div className="pm-dash-kcard red">
+                  <div className="pm-dash-kn red">{Number((maizeData.summary as Record<string, unknown>).avgMargin).toFixed(1)}%</div>
+                  <div className="pm-dash-kl">Avg Margin</div>
+                  <div className="pm-dash-ksub">across branches</div>
+                </div>
+              </div>
+
+              {/* Supplier leaderboard */}
+              <div className="pm-dash-card p-5 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Trophy size={14} className="text-yellow" />
+                  <span className="font-display text-[13px] font-semibold">Maize Supplier Leaderboard</span>
+                </div>
+                <div className="space-y-2.5">
+                  {(maizeData.competitors as Array<Record<string, unknown>>).map((comp) => {
+                    const isClient = Boolean(comp.is_client);
+                    return (
+                    <div key={String(comp.supplier)} className="flex items-center gap-3">
+                      <span className="text-[10px] font-mono text-gray-5 w-4 shrink-0">{String(comp.rank)}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[12px] font-medium ${isClient ? "text-yellow" : "text-gray-3"}`}>
+                            {String(comp.supplier)}
+                            {isClient && <span className="ml-1.5 text-[9px] text-yellow">(you)</span>}
+                          </span>
+                          <span className="text-[11px] text-gray-4">
+                            KES {(Number(comp.total_sales) / 1000000).toFixed(1)}M · {Number(comp.share).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded bg-[#1A1A1A] overflow-hidden">
+                          <div className="h-full rounded" style={{
+                            width: `${(Number(comp.total_sales) / Math.max(...(maizeData.competitors as Array<Record<string, unknown>>).map(c => Number(c.total_sales)))) * 100}%`,
+                            background: isClient ? "#F4C300" : "#3B82F6",
+                          }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                </div>
+              </div>
+
+              {/* Branch performance within Maize */}
+              {(maizeData.branches as Array<Record<string, unknown>>)?.length > 0 && (
+                <div className="pm-dash-card p-5 mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <MapPin size={14} className="text-teal" />
+                    <span className="font-display text-[13px] font-semibold">Maize Branch Performance</span>
+                  </div>
+                  <div className="space-y-2">
+                    {(maizeData.branches as Array<Record<string, unknown>>).slice(0, 8).map((b, i) => {
+                      const maxVal = Math.max(...(maizeData.branches as Array<Record<string, unknown>>).slice(0, 8).map(x => Number(x.total)), 1);
+                      return (
+                        <div key={String(b.name) || i} className="flex items-center gap-3">
+                          <span className="text-[11px] text-gray-4 w-20 truncate">{String(b.name)}</span>
+                          <div className="flex-1 h-2 rounded bg-[#1A1A1A] overflow-hidden">
+                            <div className="h-full rounded" style={{
+                              width: `${(Number(b.total) / maxVal) * 100}%`,
+                              background: ["#F4C300", "#22C55E", "#3B82F6", "#EC4899", "#F97316"][i % 5],
+                            }} />
+                          </div>
+                          <span className="text-[11px] text-gray-4 shrink-0 w-16 text-right">
+                            KES {(Number(b.total) / 1000).toFixed(0)}K
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Top Maize Products */}
+              {(maizeData.products as Array<Record<string, unknown>>)?.length > 0 && (
+                <div className="pm-dash-card p-5 mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Award size={14} className="text-emerald-400" />
+                    <span className="font-display text-[13px] font-semibold">Top Maize Products</span>
+                  </div>
+                  <div className="space-y-2">
+                    {(maizeData.products as Array<Record<string, unknown>>).slice(0, 8).map((p, i) => (
+                      <div key={i} className="flex items-center justify-between text-[12px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[10px] font-mono text-gray-5 w-4">{i + 1}</span>
+                          <span className="text-gray-3 truncate">{String(p.name)}</span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-gray-5 text-[11px]">{Number(p.qty).toLocaleString()} units</span>
+                          <span className="text-gray-3 font-mono font-medium w-20 text-right">
+                            KES {(Number(p.total) / 1000).toFixed(0)}K
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Maize Pricing */}
+              {(maizeData.pricing as Array<Record<string, unknown>>)?.length > 0 && (
+                <div className="pm-dash-card p-5 mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <DollarSign size={14} className="text-yellow" />
+                    <span className="font-display text-[13px] font-semibold">Maize Pricing Analysis</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="border-b border-[#1A1A1A]">
+                          {["Product", "Branch", "Selling Price", "Cost", "Margin"].map((h) => (
+                            <th key={h} className="font-mono text-[9px] text-gray-5 uppercase tracking-widest text-left px-2 py-2">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(maizeData.pricing as Array<Record<string, unknown>>).slice(0, 10).map((p, i) => {
+                          const margin = Number(p.margin_pct);
+                          return (
+                            <tr key={i} className="border-b border-[#1A1A1A]">
+                              <td className="px-2 py-2 text-gray-3">{String(p.product)}</td>
+                              <td className="px-2 py-2 text-gray-5">{String(p.branch)}</td>
+                              <td className="px-2 py-2 font-mono text-gray-3">KES {Number(p.selling_price).toFixed(0)}</td>
+                              <td className="px-2 py-2 font-mono text-gray-5">KES {Number(p.standard_cost).toFixed(0)}</td>
+                              <td className={`px-2 py-2 font-mono font-bold ${margin >= 15 ? "text-green" : margin >= 8 ? "text-yellow" : "text-red"}`}>
+                                {margin.toFixed(1)}%
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-[#1A1A1A] flex items-center gap-2 text-[10px] text-gray-5">
+                    <span className="w-3 h-0.5 rounded bg-green" /> Healthy (≥15%)
+                    <span className="w-3 h-0.5 rounded bg-yellow ml-2" /> Moderate (8-15%)
+                    <span className="w-3 h-0.5 rounded bg-red ml-2" /> Low (&lt;8%)
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="pm-dash-card p-8 text-center">
+              <ShoppingBag size={40} className="mx-auto mb-4 text-gray-5 opacity-30" />
+              <div className="font-display text-[14px] font-semibold mb-2">Maize Data Not Available</div>
+              <div className="text-[12px] text-gray-4">No maize category data has been shared yet. Contact your account manager to set up Maize Flour category analytics.</div>
+            </div>
+          )}
         </>
       )}
 

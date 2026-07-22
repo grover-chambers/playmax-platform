@@ -75,6 +75,31 @@ export async function POST(request: Request) {
       );
     }
 
+    // Auto-link to research projects by client_id
+    if (data && client_id) {
+      const { data: researchProjects } = await supabase
+        .from("research_projects")
+        .select("id, project_id")
+        .eq("client_id", client_id);
+
+      if (researchProjects && researchProjects.length > 0) {
+        const links = researchProjects
+          .filter((rp) => rp.project_id)
+          .map((rp) => ({
+            project_id: rp.project_id,
+            report_id: data.id,
+            linked_by: currentUser.id,
+          }));
+
+        if (links.length > 0) {
+          await supabase.from("project_analytics_reports").upsert(links, {
+            onConflict: "project_id, report_id",
+            ignoreDuplicates: true,
+          });
+        }
+      }
+    }
+
     return NextResponse.json({ report: data }, { status: 201 });
   } catch {
     return NextResponse.json(
