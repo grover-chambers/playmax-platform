@@ -944,26 +944,30 @@ LIMIT 50`,
   WHERE (:period_ids IS NULL OR fs.period_id = ANY(:period_ids))
   GROUP BY fs.product_id, per.label
 ),
-trends AS (
+stats AS (
   SELECT product_id,
-    AVG(qty) AS avg_qty,
-    CASE
-      WHEN SUM(CASE WHEN period_label = (SELECT MAX(per2.label) FROM analytics_periods per2 JOIN analytics_fact_sales fs2 ON fs2.period_id = per2.id WHERE fs2.product_id = period_sales.product_id) THEN qty ELSE 0 END)
-        > AVG(qty) * 1.1 THEN 'RISING'
-      WHEN SUM(CASE WHEN period_label = (SELECT MAX(per2.label) FROM analytics_periods per2 JOIN analytics_fact_sales fs2 ON fs2.period_id = per2.id WHERE fs2.product_id = period_sales.product_id) THEN qty ELSE 0 END)
-        < AVG(qty) * 0.9 THEN 'FALLING'
-      ELSE 'STABLE'
-    END AS trend
+    AVG(qty) AS avg_qty
   FROM period_sales
   GROUP BY product_id
+),
+last_qty AS (
+  SELECT DISTINCT ON (product_id) product_id, qty AS last_qty
+  FROM period_sales
+  ORDER BY product_id, period_label DESC
 )
 SELECT p.name, p.stock_code, c.name AS category,
-  ROUND(t.avg_qty, 1) AS avg_period_qty, t.trend
-FROM trends t
-JOIN analytics_products p ON p.id = t.product_id
+  ROUND(s.avg_qty, 1) AS avg_period_qty,
+  CASE
+    WHEN lq.last_qty > s.avg_qty * 1.1 THEN 'RISING'
+    WHEN lq.last_qty < s.avg_qty * 0.9 THEN 'FALLING'
+    ELSE 'STABLE'
+  END AS trend
+FROM stats s
+JOIN last_qty lq ON lq.product_id = s.product_id
+JOIN analytics_products p ON p.id = s.product_id
 JOIN analytics_categories c ON c.id = p.category_id
 WHERE (:category_id IS NULL OR p.category_id = :category_id)
-ORDER BY t.trend, avg_qty DESC
+ORDER BY trend, avg_qty DESC
 LIMIT 100`,
       },
       {

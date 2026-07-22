@@ -209,7 +209,7 @@ export async function POST() {
       .select("id")
       .eq("client_id", client.id)
       .eq("file_type", "pdf")
-      .like("title", `%${categoryName}%`);
+      .like("title", `%${categoryName.replace(/[%_]/g, '')}%`);
 
     if (existingDels && existingDels.length > 0) {
       await admin.from("deliverables").delete().in("id", existingDels.map((d) => d.id));

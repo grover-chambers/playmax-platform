@@ -260,7 +260,7 @@ async function resolveCategoryFilters(
   const productIds = prods && prods.length > 0 ? prods.map(p => p.id) : [];
   
   return {
-    productIds: productIds.length > 0 ? productIds : ["00000000-0000-0000-0000-000000000000"],
+    productIds: productIds.length > 0 ? productIds : null,
     categoryIds: categoryId ? [categoryId] : null,
     subCategoryFilter: subCategoryId,
   };
