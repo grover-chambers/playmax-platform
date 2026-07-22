@@ -72,7 +72,7 @@ def process_job(job: dict) -> None:
     except Exception as e:
         db.table("report_jobs").update({
             "status": "failed",
-            "error_message": f"Algorithm error: {e}",
+            "error_message": "Algorithm execution failed",
             "updated_at": datetime.utcnow().isoformat(),
         }).eq("id", job_id).execute()
         log(f"  FAILED: {e}")
@@ -105,7 +105,7 @@ def process_job(job: dict) -> None:
     except Exception as e:
         db.table("report_jobs").update({
             "status": "failed",
-            "error_message": f"PDF generation error: {e}",
+            "error_message": "PDF generation failed",
             "updated_at": datetime.utcnow().isoformat(),
         }).eq("id", job_id).execute()
         log(f"  PDF FAILED: {e}")
@@ -170,7 +170,7 @@ def process_job(job: dict) -> None:
     except Exception as e:
         db.table("report_jobs").update({
             "status": "failed",
-            "error_message": f"Upload error: {e}",
+            "error_message": "Upload to storage failed",
             "updated_at": datetime.utcnow().isoformat(),
         }).eq("id", job_id).execute()
         log(f"  UPLOAD FAILED: {e}")
