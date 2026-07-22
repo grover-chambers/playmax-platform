@@ -21,6 +21,7 @@ import type { ChartProps } from "@/components/charts/analytics-chart";
 import { transformChartData } from "@/lib/analytics-transform";
 import { findCategory } from "@/lib/report-types";
 import type { ChartType } from "@/lib/report-types";
+import { ANALYTICS_COLORS, CHART_COLORS, chartColor } from "@/lib/analytics-colors";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -95,25 +96,14 @@ interface AnalyticsResponse {
   error?: string;
 }
 
-/* ── Color system (from analytics-colors.ts) ──────────────────── */
-
-const ANALYTICS_PALETTE = {
-  yellow:  "#F4C300",
-  green:   "#22C55E",
-  blue:    "#3B82F6",
-  pink:    "#EC4899",
-  orange:  "#F97316",
-  purple:  "#A855F7",
-  cyan:    "#06B6D4",
-  red:     "#EF4444",
-};
+/* ── Color system ──────────────────────────────────────────────── */
 
 const RANK_COLORS = {
-  gold: "#F4C300",
-  silver: "#BBBBBB",
-  bronze: "#F97316",
-  gray: "#A855F7",
-  faded: "#3B82F6",
+  gold:   ANALYTICS_COLORS.yellow,
+  silver: ANALYTICS_COLORS.gray,
+  bronze: ANALYTICS_COLORS.orange,
+  gray:   ANALYTICS_COLORS.purple,
+  faded:  ANALYTICS_COLORS.blue,
 };
 
 function competitorColor(rank: number, isClient: boolean, clientColor: string): string {
@@ -740,7 +730,7 @@ export default function PortalAnalyticsPage() {
                   <DonutChart
                     segments={categories.map((cat, i) => ({
                       value: cat.total_sales,
-                      color: [ANALYTICS_PALETTE.yellow, ANALYTICS_PALETTE.green, ANALYTICS_PALETTE.blue, ANALYTICS_PALETTE.pink, ANALYTICS_PALETTE.orange, ANALYTICS_PALETTE.purple, ANALYTICS_PALETTE.cyan, ANALYTICS_PALETTE.red][i % 8],
+                      color: CHART_COLORS[i % CHART_COLORS.length],
                     }))}
                     size={150}
                     strokeWidth={20}
@@ -756,7 +746,7 @@ export default function PortalAnalyticsPage() {
 
               <div className="space-y-1.5 mt-4">
                 {categories.slice(0, 6).map((cat, i) => {
-                  const color = [ANALYTICS_PALETTE.yellow, ANALYTICS_PALETTE.green, ANALYTICS_PALETTE.blue, ANALYTICS_PALETTE.pink, ANALYTICS_PALETTE.orange, ANALYTICS_PALETTE.purple][i % 6];
+                  const color = CHART_COLORS[i % CHART_COLORS.length];
                   return (
                     <div key={cat.category} className="flex items-center justify-between text-[11px]">
                       <span className="flex items-center gap-1.5 min-w-0">
@@ -792,7 +782,7 @@ export default function PortalAnalyticsPage() {
                       <HorizontalBar
                         value={branch.total_amount}
                         max={maxBranchSales}
-                        color={[ANALYTICS_PALETTE.yellow, ANALYTICS_PALETTE.green, ANALYTICS_PALETTE.blue, ANALYTICS_PALETTE.pink, ANALYTICS_PALETTE.orange, ANALYTICS_PALETTE.purple, ANALYTICS_PALETTE.cyan, ANALYTICS_PALETTE.red][i % 8]}
+                        color={CHART_COLORS[i % CHART_COLORS.length]}
                         height={14}
                       />
                     </div>
@@ -815,8 +805,8 @@ export default function PortalAnalyticsPage() {
                 {pricing.slice(0, 10).map((p, i) => {
                   const maxPrice = Math.max(...pricing.map((x) => x.selling_price), 1);
                   const marginColor = p.margin_pct > avgMargin
-                    ? ANALYTICS_PALETTE.green : p.margin_pct < avgMargin * 0.5
-                    ? ANALYTICS_PALETTE.red : ANALYTICS_PALETTE.yellow;
+                    ? ANALYTICS_COLORS.green : p.margin_pct < avgMargin * 0.5
+                    ? ANALYTICS_COLORS.red : ANALYTICS_COLORS.yellow;
                   return (
                     <div key={i} className="flex items-center gap-2">
                       <div className="w-24 min-w-0 shrink-0">
@@ -844,7 +834,7 @@ export default function PortalAnalyticsPage() {
 
               {/* Avg margin reference */}
               <div className="mt-3 pt-3 border-t border-[#1A1A1A] flex items-center gap-2 text-[10px] text-gray-5">
-                <span className="w-3 h-0.5 rounded" style={{ background: ANALYTICS_PALETTE.yellow }} />
+                <span className="w-3 h-0.5 rounded" style={{ background: ANALYTICS_COLORS.yellow }} />
                 Category avg margin: {fmtPct(avgMargin)}
               </div>
             </div>
@@ -949,7 +939,7 @@ export default function PortalAnalyticsPage() {
                             <div className="w-16 h-1.5 rounded bg-[#1A1A1A] overflow-hidden">
                               <div
                                 className="h-full rounded"
-                                style={{ width: `${share}%`, background: ANALYTICS_PALETTE.yellow }}
+                                style={{ width: `${share}%`, background: ANALYTICS_COLORS.yellow }}
                               />
                             </div>
                             <span className="text-[11px] text-gray-4">{fmtPct(share)}</span>
