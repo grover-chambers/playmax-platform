@@ -12,7 +12,7 @@ interface NewResearchModalProps {
 
 interface ClientOption {
   id: string;
-  company_name: string;
+  company: string;
 }
 
 export default function NewResearchModal({ open, onClose, onCreated }: NewResearchModalProps) {
@@ -105,7 +105,7 @@ export default function NewResearchModal({ open, onClose, onCreated }: NewResear
             <option value="">{loadingClients ? "Loading clients..." : "Select client..."}</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.company_name}
+                {c.company}
               </option>
             ))}
           </select>

@@ -26,9 +26,9 @@ export async function GET() {
     if (clientIds.length > 0) {
       const { data: clients } = await supabase
         .from("clients")
-        .select("id, company_name")
+        .select("id, company")
         .in("id", clientIds);
-      clientMap = new Map((clients || []).map(c => [c.id, c.company_name]));
+      clientMap = new Map((clients || []).map(c => [c.id, c.company]));
     }
 
     const projectIds = projects.filter(p => p.project_id).map(p => p.project_id);

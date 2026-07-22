@@ -63,7 +63,7 @@ def process_job(job: dict) -> None:
             if cid:
                 c = fetch_first(db, "clients", "id", cid)
                 if c:
-                    client_name = c.get("company_name")
+                    client_name = c.get("company")
 
     # Step 1: Run algorithms
     log("  Running algorithms...")

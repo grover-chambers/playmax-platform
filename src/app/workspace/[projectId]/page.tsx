@@ -182,7 +182,7 @@ export default function WorkspacePage({
         /* Fetch tasks */
         let { data: dbTasks } = await supabase
           .from("tasks").select("*")
-          .or(`project_id.eq.${projectId},project.eq.${(p.name as string || "").replace(/'/g, "") || ""}`)
+          .eq("project_id", projectId)
           .order("created_at", { ascending: false });
         if (userRole === "crm_staff" && userId && dbTasks) {
           dbTasks = dbTasks.filter((t) => t.assigned_to === userId);

@@ -74,13 +74,13 @@ export default function TasksPage() {
         const supabase = createClient();
         const { data: dbTasks, error } = await supabase
           .from("tasks")
-          .select("*")
+          .select("*, projects(name)")
           .order("created_at", { ascending: false });
         if (error || !dbTasks || dbTasks.length === 0) return;
         const mapped: Task[] = dbTasks.map((t) => ({
           id: t.id,
           name: t.title,
-          project: t.project || "—",
+          project: (t as unknown as { projects: { name: string }[] }).projects?.[0]?.name || "—",
           assignee: t.assigned_to || "Unassigned",
           assigneeInitials: uuidInitials(t.assigned_to || ""),
           dueDate: t.due_date ? new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
