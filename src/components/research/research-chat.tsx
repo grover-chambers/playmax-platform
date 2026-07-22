@@ -10,9 +10,11 @@ interface Message {
 
 interface ResearchChatProps {
   projectId: string | null;
+  reportId?: string | null;
+  onUseAsSummary?: (text: string) => void;
 }
 
-export default function ResearchChat({ projectId }: ResearchChatProps) {
+export default function ResearchChat({ projectId, reportId, onUseAsSummary }: ResearchChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Ask me anything about the market data for this project. I can analyze competition, categories, branches, supply gaps, and consumer behaviour." },
   ]);
@@ -48,7 +50,7 @@ export default function ResearchChat({ projectId }: ResearchChatProps) {
       const res = await fetch("/api/research/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: projectId, messages: updated }),
+        body: JSON.stringify({ project_id: projectId, messages: updated, report_id: reportId || undefined }),
       });
 
       if (!res.ok) {
@@ -94,7 +96,17 @@ export default function ResearchChat({ projectId }: ResearchChatProps) {
                 {msg.content}
               </div>
               {msg.role === "assistant" && !msg.content.startsWith("Error:") && (
-                <div className="text-[9px] text-gray-6 mt-1 font-mono">AI Analyst</div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="text-[9px] text-gray-6 font-mono">AI Analyst</div>
+                  {onUseAsSummary && i === messages.length - 1 && (
+                    <button
+                      onClick={() => onUseAsSummary(msg.content)}
+                      className="text-[9px] font-mono text-yellow hover:text-yellow/80 transition-colors"
+                    >
+                      Use as summary
+                    </button>
+                  )}
+                </div>
               )}
             </div>
             {msg.role === "user" && (

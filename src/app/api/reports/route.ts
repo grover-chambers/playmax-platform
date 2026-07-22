@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from("reports")
-      .select("*, metrics:report_metrics(*)")
+      .select("*, metrics:report_metrics(*), published:documents!source_report_id(id, visible_to_client)")
       .order("created_at", { ascending: false });
 
     if (projectId) query = query.eq("project_id", projectId);

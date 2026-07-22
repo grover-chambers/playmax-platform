@@ -793,3 +793,15 @@ export function generateKaniniNetworkReport(data: ReportData): jsPDF {
   drawFooter(doc, 1);
   return doc;
 }
+
+/* ── Summary Report (used by the publish pipeline) ── */
+export function generateSummaryReport(title: string, clientName: string | null, bodyText: string): jsPDF {
+  const doc = new jsPDF({ format: "a4", unit: "mm" });
+  drawHeader(doc, title, clientName ? `Prepared for ${clientName}` : "");
+  let y = 54;
+  y = drawSectionTitle(doc, "Executive Summary", y);
+  y += 2;
+  drawParagraph(doc, bodyText, y);
+  drawFooter(doc, 1);
+  return doc;
+}

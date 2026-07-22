@@ -5,6 +5,7 @@ import { Plus, Download, Upload, FileText, Loader2, BarChart3, ArrowLeft, Databa
 import { useRouter } from "next/navigation";
 import NewResearchModal from "@/components/modals/new-research-modal";
 import AIReportModal from "@/components/modals/ai-report-modal";
+import PublishReportModal from "@/components/modals/publish-report-modal";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
@@ -14,6 +15,18 @@ import StatusBadge from "@/components/ui/status-badge";
 import { downloadCSV } from "@/lib/export-utils";
 import Pagination, { usePagination } from "@/components/ui/pagination";
 import ResearchChat from "@/components/research/research-chat";
+
+interface ReportItem {
+  id: string;
+  title: string;
+  type: string;
+  kind: "raw" | "ai_summary";
+  content: string | null;
+  storage_url: string | null;
+  visible_to_client: boolean;
+  created_at: string;
+  published: { id: string; visible_to_client: boolean }[];
+}
 
 interface ResearchProject {
   id: string;
@@ -72,7 +85,15 @@ export default function ResearchPage() {
   const [analyticsData, setAnalyticsData] = useState<Record<string, unknown> | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
-  const [reportsVisibility, setReportsVisibility] = useState<Record<string, boolean>>({});
+  const [reportsList, setReportsList] = useState<ReportItem[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
+  const [publishTarget, setPublishTarget] = useState<ReportItem | null>(null);
+  const [pendingSummary, setPendingSummary] = useState<string | null>(null);
+
+  const selected = projects.find((p) => p.id === selectedId) || null;
+  const activeCount = projects.filter((p) => p.status === "in_progress").length;
+  const reviewCount = projects.filter((p) => p.status === "completed").length;
 
   useEffect(() => {
     fetch("/api/research")
@@ -111,17 +132,26 @@ export default function ResearchPage() {
     }
   }, [selectedId, detailTab]);
 
-  const selected = projects.find((p) => p.id === selectedId) || null;
+  useEffect(() => {
+    if (!selectedId) return;
+    startTransition(() => setReportsLoading(true));
+    fetch(`/api/reports?project_id=${selectedId}`)
+      .then((r) => r.json())
+      .then(({ data }) => startTransition(() => { setReportsList(data || []); setReportsLoading(false); }))
+      .catch(() => startTransition(() => { setReportsList([]); setReportsLoading(false); }));
+  }, [selectedId]);
 
-  const activeCount = projects.filter((p) => p.status === "in_progress").length;
-  const reviewCount = projects.filter((p) => p.status === "completed").length;
-
-  const toggleVisibility = (projectId: string, reportName: string) => {
-    setReportsVisibility((prev) => ({
-      ...prev,
-      [`${projectId}-${reportName}`]: !prev[`${projectId}-${reportName}`],
-    }));
-  };
+  function handlePublished(report: ReportItem, doc: { id: string; name: string }) {
+    setPublishSuccess(`Published as "${doc.name}"`);
+    setReportsList((prev) =>
+      prev.map((r) =>
+        r.id === report.id
+          ? { ...r, published: [...r.published, { id: doc.id, visible_to_client: false }] }
+          : r
+      )
+    );
+    setTimeout(() => setPublishSuccess(null), 3000);
+  }
 
   async function handleGenerateAI() {
     setShowAIReport(true);
@@ -367,33 +397,71 @@ export default function ResearchPage() {
                     <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-3">
                       Reports &amp; Deliverables
                     </h3>
+                    {publishSuccess && (
+                      <div className="mb-3 text-[11px] text-green bg-green/5 border border-green/20 rounded-lg px-3 py-2">
+                        {publishSuccess}
+                      </div>
+                    )}
                     <div className="space-y-2">
-                      {(selected.metadata?.reports && selected.metadata.reports.length > 0 ? selected.metadata.reports : []).map((report) => {
-                        const key = `${selected.id}-${report.name}`;
-                        const isVisible = reportsVisibility[key] !== undefined ? reportsVisibility[key] : report.visible;
-                        return (
-                          <div key={report.name} className="flex items-center justify-between pm-dash-card px-4 py-3">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <FileText size={14} className="text-gray-5 flex-shrink-0" />
-                              <div className="min-w-0">
-                                <div className="text-[12px] font-semibold text-white truncate">{report.name}</div>
-                                <div className="text-[10px] text-gray-5 mt-0.5">{report.meta}</div>
+                      {reportsLoading ? (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="w-4 h-4 animate-spin text-gray-5" />
+                        </div>
+                      ) : reportsList.length > 0 ? (
+                        reportsList.map((report) => {
+                          const pub = report.published?.[0];
+                          const pubState = !pub
+                            ? "none"
+                            : pub.visible_to_client
+                              ? "visible"
+                              : "hidden";
+                          return (
+                            <div key={report.id} className="flex items-center justify-between pm-dash-card px-4 py-3">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <FileText size={14} className="text-gray-5 flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-[12px] font-semibold text-white truncate">{report.title}</div>
+                                    <span className={`text-[8px] font-mono font-bold px-1.5 py-[2px] rounded-full border ${
+                                      report.kind === "ai_summary"
+                                        ? "bg-purple/10 text-purple border-purple/20"
+                                        : "bg-teal/10 text-teal border-teal/20"
+                                    }`}>
+                                      {report.kind === "ai_summary" ? "AI" : "Raw"}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] text-gray-5 mt-0.5">
+                                    {new Date(report.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                                    {report.storage_url && (
+                                      <> · <a href={report.storage_url} target="_blank" rel="noopener noreferrer" className="text-yellow hover:underline">View PDF</a></>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {pubState === "none" && (
+                                  <button
+                                    onClick={() => setPublishTarget(report)}
+                                    className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border border-yellow/30 bg-yellow/5 text-yellow hover:bg-yellow/10 transition-colors cursor-pointer"
+                                  >
+                                    Publish to client
+                                  </button>
+                                )}
+                                {pubState === "hidden" && (
+                                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border border-orange/20 bg-orange/5 text-orange">
+                                    Published (hidden)
+                                  </span>
+                                )}
+                                {pubState === "visible" && (
+                                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border border-green/20 bg-green/5 text-green">
+                                    Live for client
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => toggleVisibility(selected.id, report.name)}
-                                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
-                                  isVisible ? "bg-green/10 text-green border-green/20" : "bg-transparent text-gray-5 border-[#2A2A2A] hover:text-gray-3"
-                                }`}
-                              >
-                                {isVisible ? "Client visible" : "Hidden"}
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {(!selected.metadata?.reports || selected.metadata.reports.length === 0) && (
+                          );
+                        })
+                      ) : (
                         <div className="text-[12px] text-gray-5 text-center py-6">
                           No deliverables yet. Generate an AI report to create one.
                         </div>
@@ -505,7 +573,14 @@ export default function ResearchPage() {
             </div>
 
             {/* ── AI Chat panel (fixed bottom) ───────────── */}
-            <ResearchChat projectId={selectedId} />
+            <ResearchChat
+              projectId={selectedId}
+              onUseAsSummary={(text) => {
+                setPendingSummary(text);
+                const firstUnpublished = reportsList.find((r) => !r.published?.length);
+                if (firstUnpublished) setPublishTarget(firstUnpublished);
+              }}
+            />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-5 text-[13px]">
@@ -534,6 +609,18 @@ export default function ResearchPage() {
         }}
       />
 
+      <PublishReportModal
+        key={publishTarget?.id ?? "none"}
+        open={!!publishTarget}
+        report={publishTarget ? { ...publishTarget, content: pendingSummary ?? publishTarget.content } : null}
+        onClose={() => { setPublishTarget(null); setPendingSummary(null); }}
+        onPublished={(doc) => {
+          if (publishTarget) handlePublished(publishTarget, doc);
+          setPublishTarget(null);
+          setPendingSummary(null);
+        }}
+      />
+
       <AIReportModal
         open={showAIReport}
         project={selected}
@@ -545,6 +632,11 @@ export default function ResearchPage() {
             .then(({ projects: data }) => {
               startTransition(() => setProjects(data || []));
             });
+          if (selectedId) {
+            fetch(`/api/reports?project_id=${selectedId}`)
+              .then((r) => r.json())
+              .then(({ data }) => startTransition(() => setReportsList(data || [])));
+          }
         }}
       />
     </div>

@@ -19,12 +19,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { project_id, messages } = await req.json();
+    const { project_id, messages, report_id } = await req.json();
     if (!project_id || !messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: "project_id and messages array required" }, { status: 400 });
     }
 
-    const { context } = await buildResearchContext(project_id);
+    const { context } = await buildResearchContext(project_id, report_id || undefined);
 
     const userMsg = messages[messages.length - 1]?.content || "";
 

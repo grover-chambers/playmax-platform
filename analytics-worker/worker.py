@@ -129,7 +129,22 @@ def process_job(job: dict) -> None:
 
         public_url = db.storage.from_(bucket).get_public_url(filename)
 
-        # Update research project metadata with the report
+        # Insert a permanent report record in the reports table
+        if project_id:
+            report_data = {
+                "project_id": project_id,
+                "client_id": cid if project_id and locals().get("cid") else None,
+                "title": f"AI Analysis — {datetime.now().strftime('%d %b %Y')}",
+                "type": "ai_analysis",
+                "kind": "ai_summary" if ai_result else "raw",
+                "content": (ai_result.get("executive_summary", "") if ai_result else None),
+                "storage_url": public_url,
+                "source_job_id": job_id,
+                "visible_to_client": False,
+            }
+            db.table("reports").insert(report_data).execute()
+
+        # Legacy — keep metadata.reports append for one sprint as safety net
         if project_id and ai_result:
             p = fetch_first(db, "research_projects", "id", project_id)
             if p:

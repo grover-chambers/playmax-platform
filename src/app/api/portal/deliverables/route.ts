@@ -14,22 +14,38 @@ export async function GET() {
     const client = await getPortalClient(supabase, currentUser.id);
     if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
 
-    // Fetch visible documents
+    // Get all project IDs owned by this client — documents/deliverables are
+    // often linked through project_id rather than a direct client_id column
+    const { data: clientProjects } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("client_id", client.id);
+    const projectIds = (clientProjects || []).map(p => p.id);
+
+    // Match documents by direct client_id OR via a project this client owns
+    const docFilter = projectIds.length > 0
+      ? `client_id.eq.${client.id},project_id.in.(${projectIds.join(",")})`
+      : `client_id.eq.${client.id}`;
+
     const { data: docs, error: docsErr } = await supabase
       .from("documents")
       .select("id, name, type, url, size, visible_to_client, created_at, project_id, projects(name)")
-      .eq("client_id", client.id)
       .eq("visible_to_client", true)
+      .or(docFilter)
       .order("created_at", { ascending: false });
 
     if (docsErr) return NextResponse.json({ error: sanitizeError(docsErr) }, { status: 500 });
 
-    // Also fetch deliverables with visible_to_client
+    // Same for legacy deliverables table
+    const delFilter = projectIds.length > 0
+      ? `client_id.eq.${client.id},project_id.in.(${projectIds.join(",")})`
+      : `client_id.eq.${client.id}`;
+
     const { data: dels } = await supabase
       .from("deliverables")
       .select("id, title, description, file_url, file_type, file_size, visible_to_client, created_at, project_id, pdf_base64, projects(name)")
-      .eq("client_id", client.id)
       .eq("visible_to_client", true)
+      .or(delFilter)
       .order("created_at", { ascending: false });
 
     // Merge and deduplicate

@@ -12,7 +12,7 @@ interface ChatContext {
   supplyGaps: { product: string; branch: string; gap_status: string; gap: number }[];
 }
 
-export async function buildResearchContext(projectId: string): Promise<{ context: string; structured: ChatContext | null }> {
+export async function buildResearchContext(projectId: string, reportId?: string): Promise<{ context: string; structured: ChatContext | null }> {
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,6 +33,18 @@ export async function buildResearchContext(projectId: string): Promise<{ context
 
   if (!project) {
     return { context: "Research project not found.", structured: null };
+  }
+
+  let selectedReportContent: string | null = null;
+  if (reportId) {
+    const { data: rep } = await supabase
+      .from("reports")
+      .select("title, content, storage_url")
+      .eq("id", reportId)
+      .single();
+    if (rep) {
+      selectedReportContent = rep.content || `[Report: ${rep.title} — see PDF at ${rep.storage_url}]`;
+    }
   }
 
   const meta = (project.metadata as Record<string, unknown>) || {};
@@ -105,6 +117,9 @@ export async function buildResearchContext(projectId: string): Promise<{ context
   }));
 
   const parts: string[] = [];
+  if (selectedReportContent) {
+    parts.push(`Selected report:\n${selectedReportContent}`);
+  }
   parts.push(`Project: ${projectTitle}${clientName ? ` (Client: ${clientName})` : ""}`);
 
   if (competition.length > 0) {
