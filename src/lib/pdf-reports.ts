@@ -1052,3 +1052,261 @@ export function generateEnrichedBranchAnalysisReport(data: EnrichedReportData): 
   drawFooter(doc, totalPages);
   return doc;
 }
+
+/* ── Report 4: Supplier Dominance per Branch ──────────── */
+
+export interface BranchDominanceItem {
+  branch: string;
+  dominantSupplier: string;
+  dominantShare: number;
+  dominantRevenue: number;
+  clientShare: number;
+  clientRevenue: number;
+  clientRank: number;
+  totalSuppliers: number;
+}
+
+export interface BranchDominanceData {
+  categoryName: string;
+  clientName: string;
+  branches: BranchDominanceItem[];
+}
+
+export function generateSupplierDominanceReport(data: BranchDominanceData): jsPDF {
+  const doc = new jsPDF({ format: "a4", unit: "mm" });
+  drawHeader(doc, `${data.categoryName} — Supplier Dominance by Branch`, `Prepared for ${data.clientName}`);
+  let y = 54;
+
+  y = drawSectionTitle(doc, "Branch Dominance Analysis", y);
+  y = drawParagraph(doc, `This report identifies the dominant supplier in each branch alongside ${data.clientName}'s position. Highlighted rows show branches where ${data.clientName} is the leader.`, y);
+
+  const tableData = data.branches.map((b) => [
+    b.branch.slice(0, 18),
+    b.dominantSupplier.slice(0, 22),
+    fmtPct(b.dominantShare),
+    fmt(b.dominantRevenue),
+    `#${b.clientRank}`,
+    fmtPct(b.clientShare),
+    fmt(b.clientRevenue),
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Branch", "Dominant Supplier", "Dom. Share", "Dom. Revenue", "Your Rank", "Your Share", "Your Revenue"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 7, fontStyle: "bold" },
+    bodyStyles: { fontSize: 7, textColor: [60, 60, 60] },
+    margin: { left: 15 },
+    didParseCell: (hookData) => {
+      if (hookData.section === "body" && hookData.row.index !== undefined) {
+        const b = data.branches[hookData.row.index];
+        if (b && b.clientRank === 1) {
+          hookData.cell.styles.fillColor = hexToRgb("#E8F5E9");
+          hookData.cell.styles.fontStyle = "bold";
+        } else if (b && b.clientRank === 2) {
+          hookData.cell.styles.fillColor = hexToRgb("#E3F2FD");
+        }
+      }
+    },
+  });
+
+  const fp = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY || y;
+  drawFooter(doc, Math.ceil(fp / 297));
+  return doc;
+}
+
+/* ── Report 5: Share Shift Analysis ────────────────────── */
+
+export interface ShareShiftItem {
+  supplier: string;
+  isClient: boolean;
+  currentShare: number;
+  previousShare: number;
+  shareChange: number;
+  currentRevenue: number;
+  previousRevenue: number;
+  revenueChange: number;
+  direction: "up" | "down" | "stable";
+}
+
+export interface ShareShiftData {
+  categoryName: string;
+  clientName: string;
+  currentPeriodLabel: string;
+  previousPeriodLabel: string;
+  shifts: ShareShiftItem[];
+}
+
+export function generateShareShiftReport(data: ShareShiftData): jsPDF {
+  const doc = new jsPDF({ format: "a4", unit: "mm" });
+  drawHeader(doc, `${data.categoryName} — Market Share Shift Analysis`, `Prepared for ${data.clientName}`);
+  let y = 54;
+
+  y = drawSectionTitle(doc, "Share Movement Overview", y);
+  y = drawParagraph(doc, `Comparing ${data.currentPeriodLabel} vs ${data.previousPeriodLabel}. Suppliers with positive share changes are gaining ground while declining ones are losing market position.`, y);
+
+  const sorted = [...data.shifts].sort((a, b) => Math.abs(b.shareChange) - Math.abs(a.shareChange));
+  const tableData = sorted.map((s) => [
+    s.isClient ? `★ ${s.supplier}` : s.supplier.slice(0, 24),
+    fmtPct(s.currentShare),
+    fmtPct(s.previousShare),
+    `${s.shareChange >= 0 ? "+" : ""}${s.shareChange.toFixed(1)}pp`,
+    fmt(s.currentRevenue),
+    fmt(s.previousRevenue),
+    s.direction === "up" ? "▲" : s.direction === "down" ? "▼" : "—",
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Supplier", "Current", "Previous", "Change", "Current Rev", "Prev Rev", "Δ"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 7, fontStyle: "bold" },
+    bodyStyles: { fontSize: 7, textColor: [60, 60, 60] },
+    margin: { left: 15 },
+    didParseCell: (hookData) => {
+      if (hookData.section === "body" && hookData.row.index !== undefined) {
+        const s = sorted[hookData.row.index];
+        if (s?.isClient) {
+          hookData.cell.styles.fillColor = hexToRgb("#FFFDE7");
+          hookData.cell.styles.fontStyle = "bold";
+        } else if (s && s.shareChange > 1) {
+          hookData.cell.styles.fillColor = hexToRgb("#E8F5E9");
+        } else if (s && s.shareChange < -1) {
+          hookData.cell.styles.fillColor = hexToRgb("#FFEBEE");
+        }
+      }
+    },
+  });
+
+  const fp = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY || y;
+  drawFooter(doc, Math.ceil(fp / 297));
+  return doc;
+}
+
+/* ── Report 6: MoM Trend for Top 5 vs NICE ────────────── */
+
+export interface MoMTrendPoint {
+  period: string;
+  clientRevenue: number;
+  clientShare: number;
+  competitors: { name: string; revenue: number; share: number }[];
+}
+
+export interface MoMTrendData {
+  categoryName: string;
+  clientName: string;
+  trendPoints: MoMTrendPoint[];
+}
+
+export function generateMoMTrendReport(data: MoMTrendData): jsPDF {
+  const doc = new jsPDF({ format: "a4", unit: "mm" });
+  drawHeader(doc, `${data.categoryName} — Month-over-Month Market Share Trend`, `Prepared for ${data.clientName}`);
+  let y = 54;
+
+  y = drawSectionTitle(doc, "Monthly Trend Analysis", y);
+  y = drawParagraph(doc, `Tracking the month-over-month performance of ${data.clientName} against the top 5 competitors in the ${data.categoryName} category.`, y);
+
+  for (let pi = 0; pi < data.trendPoints.length; pi++) {
+    const point = data.trendPoints[pi];
+    y = checkPageBreak(doc, y, 35);
+    y = drawParagraph(doc, `${point.period} — ${data.clientName}: ${fmtPct(point.clientShare)} (${fmt(point.clientRevenue)})`, y);
+
+    const rows = point.competitors.map((c) => [c.name.slice(0, 24), fmt(c.revenue), fmtPct(c.share)]);
+    autoTable(doc, {
+      startY: y,
+      head: [["Supplier", "Revenue", "Share"]],
+      body: rows,
+      theme: "grid",
+      headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 7, fontStyle: "bold" },
+      bodyStyles: { fontSize: 6, textColor: [60, 60, 60] },
+      margin: { left: 25 },
+    });
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 5;
+  }
+
+  drawFooter(doc, Math.ceil((y + 10) / 297));
+  return doc;
+}
+
+/* ── Report 7: Head-to-Head Supplier Comparison ────────── */
+
+export interface H2HProduct {
+  name: string;
+  clientRevenue: number;
+  competitorRevenue: number;
+  clientUnits: number;
+  competitorUnits: number;
+  winner: "client" | "competitor" | "tie";
+}
+
+export interface H2HComparison {
+  competitorName: string;
+  clientRevenue: number;
+  competitorRevenue: number;
+  clientShare: number;
+  competitorShare: number;
+  clientSKUs: number;
+  competitorSKUs: number;
+  winningProducts: number;
+  totalProducts: number;
+  products: H2HProduct[];
+}
+
+export interface H2HData {
+  categoryName: string;
+  clientName: string;
+  comparisons: H2HComparison[];
+}
+
+export function generateHeadToHeadReport(data: H2HData): jsPDF {
+  const doc = new jsPDF({ format: "a4", unit: "mm" });
+  drawHeader(doc, `${data.categoryName} — Head-to-Head Supplier Comparison`, `Prepared for ${data.clientName}`);
+  let y = 54;
+
+  y = drawSectionTitle(doc, "Competitive Comparison Summary", y);
+  y = drawParagraph(doc, `Detailed head-to-head comparison between ${data.clientName} and the top 5 competitors in the ${data.categoryName} category, covering product portfolios (SKUs), market share, and revenue.`, y);
+
+  for (const comp of data.comparisons) {
+    y = checkPageBreak(doc, y, 50);
+    y = drawSectionTitle(doc, `${data.clientName} vs ${comp.competitorName}`, y);
+
+    y = drawParagraph(doc, `Revenue: ${fmt(comp.clientRevenue)} vs ${fmt(comp.competitorRevenue)}`, y);
+    y = drawParagraph(doc, `Share: ${fmtPct(comp.clientShare)} vs ${fmtPct(comp.competitorShare)}`, y);
+    y = drawParagraph(doc, `SKUs: ${comp.clientSKUs} vs ${comp.competitorSKUs}`, y);
+    y = drawParagraph(doc, `Winning products: ${comp.winningProducts}/${comp.totalProducts}`, y);
+    y += 4;
+
+    const prodTable = comp.products.map((p) => [
+      p.name.slice(0, 26),
+      fmt(p.clientRevenue),
+      fmt(p.competitorRevenue),
+      p.winner === "client" ? "✓" : p.winner === "competitor" ? "✗" : "—",
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Product", `${data.clientName.slice(0, 12)}`, comp.competitorName.slice(0, 12), "Win"]],
+      body: prodTable,
+      theme: "grid",
+      headStyles: { fillColor: hexToRgb(COLORS.yellow), textColor: [30, 30, 30], fontSize: 7, fontStyle: "bold" },
+      bodyStyles: { fontSize: 6, textColor: [60, 60, 60] },
+      margin: { left: 20 },
+      didParseCell: (hookData) => {
+        if (hookData.section === "body" && hookData.row.index !== undefined) {
+          const p = comp.products[hookData.row.index];
+          if (p?.winner === "client") {
+            hookData.cell.styles.fillColor = hexToRgb("#E8F5E9");
+          } else if (p?.winner === "competitor") {
+            hookData.cell.styles.fillColor = hexToRgb("#FFEBEE");
+          }
+        }
+      },
+    });
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  }
+
+  drawFooter(doc, Math.ceil((y + 10) / 297));
+  return doc;
+}
