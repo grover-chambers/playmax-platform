@@ -89,7 +89,8 @@ export function canAccess(
  * Get the redirect path for users who don't have access.
  */
 export function getDefaultRedirect(role: UserRole | undefined | null): string {
-  if (!role || role === "client") return "/portal";
+  if (!role) return "/login";
+  if (role === "client") return "/portal";
   return "/app/pipeline";
 }
 

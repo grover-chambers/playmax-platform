@@ -156,6 +156,10 @@ function LoginForm() {
       return;
     }
 
+    // Refresh the session so the new metadata is baked into the cookie
+    // before redirecting — otherwise the middleware reads stale user_metadata.
+    await supabase.auth.refreshSession();
+
     if (nextPath && !nextPath.startsWith("/login")) {
       router.push(nextPath);
       return;
@@ -179,6 +183,10 @@ function LoginForm() {
       setLoading(false);
       return;
     }
+
+    // Ensure client role is set in session metadata
+    await supabase.auth.updateUser({ data: { role: "client" } });
+    await supabase.auth.refreshSession();
 
     router.push("/portal");
   };
