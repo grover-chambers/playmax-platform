@@ -66,10 +66,6 @@ ALTER TABLE public.analytics_fact_pricing
   ADD COLUMN IF NOT EXISTS effective_date date,
   ADD COLUMN IF NOT EXISTS notes text;
 
--- Make branch_id NOT NULL if it wasn't
-ALTER TABLE public.analytics_fact_pricing
-  ALTER COLUMN branch_id SET NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_analytics_fact_pricing_category
   ON public.analytics_fact_pricing(category_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_fact_pricing_sub_category
@@ -95,18 +91,10 @@ ALTER TABLE public.analytics_suppliers
   ADD COLUMN IF NOT EXISTS lead_time_days int;
 
 -- ══════════════════════════════════════════════════════════
--- 6. analytics_staging_uploads — add missing columns + update check
+-- 6. analytics_staging_uploads — add missing columns
 -- ══════════════════════════════════════════════════════════
 ALTER TABLE public.analytics_staging_uploads
   ADD COLUMN IF NOT EXISTS sub_category_id uuid;
-
--- Widen the file_type check constraint to include current values
-ALTER TABLE public.analytics_staging_uploads
-  DROP CONSTRAINT IF EXISTS analytics_staging_uploads_file_type_check;
-
-ALTER TABLE public.analytics_staging_uploads
-  ADD CONSTRAINT analytics_staging_uploads_file_type_check
-  CHECK (file_type IN ('per_store_sales','chain_wide_sales','inventory','pricing','stock_movements'));
 
 -- ══════════════════════════════════════════════════════════
 -- 8. Re-run RLS policies for recreated/dropped tables
