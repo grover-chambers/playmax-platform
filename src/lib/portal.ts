@@ -10,6 +10,7 @@ export interface PortalClient {
   status: string;
   created_at: string;
   notification_prefs?: Record<string, boolean>;
+  linked_supplier_id: string | null;
 }
 
 /**
@@ -22,7 +23,7 @@ export async function getPortalClient(
 ): Promise<PortalClient | null> {
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name, email, company, industry, phone, status, created_at, notification_prefs")
+    .select("id, name, email, company, industry, phone, status, created_at, notification_prefs, linked_supplier_id")
     .eq("user_id", userId)
     .maybeSingle();
 

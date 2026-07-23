@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 import {
   generateEnrichedMarketShareReport,
@@ -44,9 +45,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "client_id is required" }, { status: 400 });
     }
 
-    const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!svcKey) return NextResponse.json({ error: "Service role key not configured" }, { status: 500 });
-    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, svcKey);
+    const admin = getAdminClient();
 
     // 1. Fetch client info and sharing records
     const { data: client } = await admin

@@ -10,6 +10,7 @@ import os
 import sys
 import time
 import json
+import uuid
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -43,13 +44,11 @@ def process_job(job: dict) -> None:
 
     db = get_client()
 
-    # Mark as processing
-    now = datetime.utcnow().isoformat()
-    db.table("report_jobs").update({
-        "status": "processing",
-        "progress": 10,
-        "updated_at": now,
-    }).eq("id", job_id).execute()
+    # Atomic job claiming — prevents double-processing
+    claim = db.rpc("claim_job", {"job_id": job_id}).execute()
+    if not claim.data:
+        log(f"  Job {job_id} already claimed — skipping")
+        return
 
     # Get project details
     project_name = "Market Analysis"
@@ -120,7 +119,7 @@ def process_job(job: dict) -> None:
     # Step 4: Upload PDF to Supabase Storage
     log("  Uploading PDF to Storage...")
     try:
-        filename = f"research-{project_id or job_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.pdf"
+        filename = f"research-{project_id or job_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}.pdf"
         bucket = get_bucket()
         db.storage.from_(bucket).upload(
             path=filename,
@@ -143,41 +142,38 @@ def process_job(job: dict) -> None:
                 "source_job_id": job_id,
                 "visible_to_client": False,
             }
-            db.table("reports").insert(report_data).execute()
+            db.table("reports").upsert(report_data, on_conflict="source_job_id").execute()
 
-        # Legacy — keep metadata.reports append for one sprint as safety net
+        # Atomic metadata append via RPC — prevents read-modify-write race
         if project_id and ai_result:
-            p = fetch_first(db, "research_projects", "id", project_id)
-            if p:
-                meta = p.get("metadata", {}) or {}
-                reports = meta.get("reports", [])
-                reports.append({
-                    "name": f"AI Report — {datetime.now().strftime('%d %b %Y')}",
-                    "meta": f"PDF · Generated {datetime.now().strftime('%d %b %Y')}",
-                    "visible": True,
-                    "url": public_url,
-                })
-                meta["reports"] = reports
-                if ai_result:
-                    meta["ai_summary"] = ai_result.get("executive_summary", "")
-                db.table("research_projects").update({
-                    "metadata": meta,
-                    "progress": 100,
-                    "status": "completed",
-                    "updated_at": datetime.utcnow().isoformat(),
-                }).eq("id", project_id).execute()
+            report_entry = {
+                "name": f"AI Report — {datetime.now().strftime('%d %b %Y')}",
+                "meta": f"PDF · Generated {datetime.now().strftime('%d %b %Y')}",
+                "visible": True,
+                "url": public_url,
+            }
+            db.rpc("append_report_to_project", {
+                "p_project_id": project_id,
+                "p_report": json.dumps(report_entry),
+            }).execute()
+            # Also update status/progress
+            db.table("research_projects").update({
+                "progress": 100,
+                "status": "completed",
+                "updated_at": datetime.utcnow().isoformat(),
+            }).eq("id", project_id).execute()
 
         # Mark job complete
         db.table("report_jobs").update({
             "status": "complete",
             "progress": 100,
             "result_url": public_url,
-            "metadata": json.dumps({
+            "metadata": {
                 "ai_result": ai_result,
                 "algorithm_summary": {
                     k: len(v) for k, v in algorithm_results.items()
                 },
-            }),
+            },
             "updated_at": datetime.utcnow().isoformat(),
         }).eq("id", job_id).execute()
 

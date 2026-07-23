@@ -23,6 +23,7 @@ import { transformChartData } from "@/lib/analytics-transform";
 import { findCategory } from "@/lib/report-types";
 import type { ChartType } from "@/lib/report-types";
 import { ANALYTICS_COLORS, CHART_COLORS } from "@/lib/analytics-colors";
+import { competitorLabel, competitorColor } from "@/lib/competitor-utils";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -95,30 +96,6 @@ interface AnalyticsResponse {
     totalProducts: number;
   };
   error?: string;
-}
-
-/* ── Color system ──────────────────────────────────────────────── */
-
-const RANK_COLORS = {
-  gold:   ANALYTICS_COLORS.yellow,
-  silver: ANALYTICS_COLORS.gray,
-  bronze: ANALYTICS_COLORS.orange,
-  gray:   ANALYTICS_COLORS.purple,
-  faded:  ANALYTICS_COLORS.blue,
-};
-
-function competitorColor(rank: number, isClient: boolean, clientColor: string): string {
-  if (isClient) return clientColor;
-  if (rank === 1) return RANK_COLORS.gold;
-  if (rank === 2) return RANK_COLORS.silver;
-  if (rank === 3) return RANK_COLORS.bronze;
-  return RANK_COLORS.faded;
-}
-
-function competitorLabel(name: string, isClient: boolean, rank: number): string {
-  if (isClient) return name;
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  return `Competitor ${letters[(rank - 1) % 26]}`;
 }
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -719,15 +696,15 @@ export default function PortalAnalyticsPage() {
               {/* Legend */}
               <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-[var(--ws-border,#e5e5e5)] text-[10px] text-gray-5">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.gold }} />
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: ANALYTICS_COLORS.yellow }} />
                   1st
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.silver }} />
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: ANALYTICS_COLORS.gray }} />
                   2nd
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.bronze }} />
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: ANALYTICS_COLORS.orange }} />
                   3rd
                 </span>
                 <span className="flex items-center gap-1.5">
@@ -735,7 +712,7 @@ export default function PortalAnalyticsPage() {
                   You
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.faded }} />
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: ANALYTICS_COLORS.blue }} />
                   Others
                 </span>
               </div>

@@ -85,18 +85,19 @@ export async function GET() {
       supplierNameMap = new Map((supplierRows ?? []).map((s) => [s.id as string, s.name as string]));
     }
 
-    const supGrouped = new Map<string, { total: number; units: number; products: Set<string> }>();
+    const supGrouped = new Map<string, { total: number; units: number; products: Set<string>; supplierIds: Set<string> }>();
     for (const row of salesRows) {
       const supName = row.supplier_id ? (supplierNameMap.get(row.supplier_id as string) || "Unknown") : "Unknown";
-      const existing = supGrouped.get(supName) || { total: 0, units: 0, products: new Set() };
+      const existing = supGrouped.get(supName) || { total: 0, units: 0, products: new Set(), supplierIds: new Set() };
       existing.total += Number(row.total_amount) || 0;
       existing.units += Number(row.quantity) || 0;
       if (row.product_id) existing.products.add(row.product_id as string);
+      if (row.supplier_id) existing.supplierIds.add(row.supplier_id as string);
       supGrouped.set(supName, existing);
     }
 
+    const linkedSupplierId = client.linked_supplier_id;
     const grandTotal = Array.from(supGrouped.values()).reduce((s, g) => s + g.total, 0);
-    const clientName = client.company || client.name || "";
     const competitors = Array.from(supGrouped.entries())
       .map(([name, data]) => ({
         supplier: name,
@@ -104,7 +105,7 @@ export async function GET() {
         total_units: data.units,
         products_count: data.products.size,
         share: grandTotal > 0 ? (data.total / grandTotal) * 100 : 0,
-        is_client: name.trim().toLowerCase() === clientName.trim().toLowerCase() || name.trim().toLowerCase().split(/\s+/)[0] === clientName.trim().toLowerCase().split(/\s+/)[0],
+        is_client: linkedSupplierId ? data.supplierIds.has(linkedSupplierId) : name.trim().toLowerCase() === (client.company || client.name || "").trim().toLowerCase(),
         rank: 0,
       }))
       .sort((a, b) => b.total_sales - a.total_sales)

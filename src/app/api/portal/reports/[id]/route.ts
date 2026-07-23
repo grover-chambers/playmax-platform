@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { getPortalClient } from "@/lib/portal";
+import { getAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +18,7 @@ export async function GET(
     const client = await getPortalClient(supabase, currentUser.id);
     if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
 
-    const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!svcKey) return NextResponse.json({ error: "Service role key not configured" }, { status: 500 });
-    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, svcKey);
+    const admin = getAdminClient();
 
     const { data: del, error } = await admin
       .from("deliverables")

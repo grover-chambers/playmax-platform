@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Trophy, TrendingUp, BarChart3 } from "lucide-react";
 import { AnalyticsChart } from "@/components/charts/analytics-chart";
 import type { ChartProps } from "@/components/charts/analytics-chart";
@@ -41,7 +40,6 @@ const MOCK_PRICING = [
   { product: "Maize Flour 10kg", branch: "Thika", selling_price: 780, standard_cost: 680, margin_pct: 12.8 },
 ];
 
-const CLIENT_COLOR = "#F4C300";
 const TOTAL_REVENUE = MOCK_COMPETITORS.reduce((s, c) => s + c.total_sales, 0);
 const CLIENT = MOCK_COMPETITORS.find((c) => c.is_client)!;
 
@@ -55,7 +53,7 @@ const RANK_COLORS = {
 };
 
 function competitorColor(rank: number, isClient: boolean): string {
-  if (isClient) return CLIENT_COLOR;
+  if (isClient) return ANALYTICS_COLORS.yellow;
   if (rank === 1) return RANK_COLORS.gold;
   if (rank === 2) return RANK_COLORS.silver;
   if (rank === 3) return RANK_COLORS.bronze;
@@ -81,7 +79,7 @@ function fmtPct(n: number): string {
 function HorizontalBar({ value, max, color, height = 14 }: { value: number; max: number; color: string; height?: number }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
-    <div className="w-full rounded overflow-hidden" style={{ height, background: "#1A1A1A" }}>
+    <div className="w-full rounded overflow-hidden" style={{ height, background: "var(--ws-border,#e5e5e5)" }}>
       <div className="h-full rounded transition-all duration-500" style={{ width: `${pct}%`, background: color }} />
     </div>
   );
@@ -136,12 +134,12 @@ export default function DemoPortalOverview() {
       <div className="mb-4 p-5 rounded-xl border-2 border-[#F4C300]/30" style={{ background: "linear-gradient(135deg, #1a1a0a 0%, #0a0a0a 100%)" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${CLIENT_COLOR}22`, border: `2px solid ${CLIENT_COLOR}44` }}>
-              <span className="text-2xl font-display font-bold" style={{ color: CLIENT_COLOR }}>#{CLIENT.rank}</span>
+            <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${ANALYTICS_COLORS.yellow}22`, border: `2px solid ${ANALYTICS_COLORS.yellow}44` }}>
+              <span className="text-2xl font-display font-bold" style={{ color: ANALYTICS_COLORS.yellow }}>#{CLIENT.rank}</span>
             </div>
             <div>
               <div className="text-[11px] text-gray-5 uppercase tracking-widest font-mono">Your Market Position</div>
-              <div className="text-[22px] font-display font-bold mt-0.5" style={{ color: CLIENT_COLOR }}>
+              <div className="text-[22px] font-display font-bold mt-0.5" style={{ color: ANALYTICS_COLORS.yellow }}>
                 {fmtPct(CLIENT.share)} market share
               </div>
               <div className="text-[12px] text-gray-4 mt-1">
@@ -151,7 +149,7 @@ export default function DemoPortalOverview() {
           </div>
           <div className="hidden md:flex flex-col items-end gap-1">
             <div className="text-[10px] text-gray-5 font-mono uppercase tracking-widest">Category</div>
-            <div className="text-[14px] font-display font-semibold text-white">Maize Flour</div>
+            <div className="text-[14px] font-display font-semibold text-[var(--ws-text,#1A1C23)]">Maize Flour</div>
             <div className="text-[10px] text-gray-5 font-mono">Jan — Jul 2026</div>
           </div>
         </div>
@@ -166,7 +164,7 @@ export default function DemoPortalOverview() {
               <Trophy size={14} className="text-yellow" />
               <span className="font-display text-[13px] font-semibold">Market Share Leaderboard</span>
             </div>
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: `${CLIENT_COLOR}22`, color: CLIENT_COLOR }}>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: `${ANALYTICS_COLORS.yellow}22`, color: ANALYTICS_COLORS.yellow }}>
               You: #{CLIENT.rank}
             </span>
           </div>
@@ -180,7 +178,7 @@ export default function DemoPortalOverview() {
                   <span className="text-[10px] font-mono text-gray-5 w-4 text-right shrink-0">{comp.rank}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[12px] truncate font-medium" style={{ color: comp.is_client ? CLIENT_COLOR : "#e5e5e5" }}>
+                      <span className="text-[12px] truncate font-medium" style={{ color: comp.is_client ? ANALYTICS_COLORS.yellow : "#e5e5e5" }}>
                         {displayName}
                       </span>
                       <span className="text-[11px] text-gray-4 shrink-0 ml-2">
@@ -194,7 +192,7 @@ export default function DemoPortalOverview() {
             })}
           </div>
 
-          <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-[#1A1A1A] text-[10px] text-gray-5">
+          <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-[var(--ws-border,#e5e5e5)] text-[10px] text-gray-5">
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.gold }} /> 1st
             </span>
@@ -205,7 +203,7 @@ export default function DemoPortalOverview() {
               <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.bronze }} /> 3rd
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: CLIENT_COLOR }} /> You
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: ANALYTICS_COLORS.yellow }} /> You
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.faded }} /> Others
@@ -222,7 +220,7 @@ export default function DemoPortalOverview() {
           <div style={{ height: 200 }}>
             <AnalyticsChart {...categoryChart} height={200} />
           </div>
-          <div className="mt-3 pt-3 border-t border-[#1A1A1A] text-[10px] text-gray-5">
+          <div className="mt-3 pt-3 border-t border-[var(--ws-border,#e5e5e5)] text-[10px] text-gray-5">
             <span className="w-3 h-0.5 rounded inline-block mr-1" style={{ background: ANALYTICS_COLORS.yellow }} />
             Maize Flour is your top category
           </div>
@@ -239,7 +237,7 @@ export default function DemoPortalOverview() {
           {MOCK_BRANCHES.map((b, i) => (
             <div key={b.name} className="flex flex-col gap-2">
               <span className="text-[11px] text-gray-4 truncate">{b.name}</span>
-              <div className="h-20 rounded overflow-hidden flex items-end" style={{ background: "#1A1A1A" }}>
+              <div className="h-20 rounded overflow-hidden flex items-end" style={{ background: "var(--ws-border,#e5e5e5)" }}>
                 <div
                   className="w-full rounded transition-all duration-500"
                   style={{

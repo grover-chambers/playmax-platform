@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Wheat, TrendingDown, Award, DollarSign } from "lucide-react";
 import { AnalyticsChart } from "@/components/charts/analytics-chart";
 import type { ChartProps } from "@/components/charts/analytics-chart";
@@ -45,7 +44,6 @@ const MOCK_PRICING = [
   { product: "Organic Maize 1kg", branch: "Kisumu", selling_price: 145, standard_cost: 118, margin_pct: 18.6 },
 ];
 
-const CLIENT_COLOR = "#F4C300";
 const CLIENT = MOCK_COMPETITORS.find((c) => c.is_client)!;
 const MAX_SALES = Math.max(...MOCK_COMPETITORS.map((c) => c.total_sales), 1);
 
@@ -78,7 +76,7 @@ export default function DemoPortalAnalytics() {
     datasets: [{
       label: "Total Sales (KES)",
       data: MOCK_COMPETITORS.map((c) => c.total_sales),
-      backgroundColor: MOCK_COMPETITORS.map((c) => c.is_client ? CLIENT_COLOR : chartColor(c.rank - 1)),
+      backgroundColor: MOCK_COMPETITORS.map((c) => c.is_client ? ANALYTICS_COLORS.yellow : chartColor(c.rank - 1)),
     }],
   };
 
@@ -117,9 +115,9 @@ export default function DemoPortalAnalytics() {
         <div style={{ height: 220 }}>
           <AnalyticsChart {...compChart} height={220} />
         </div>
-        <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-[#1A1A1A] text-[10px] text-gray-5">
+        <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-[var(--ws-border,#e5e5e5)] text-[10px] text-gray-5">
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm" style={{ background: CLIENT_COLOR }} /> You (DemoBrand)
+            <span className="w-2.5 h-2.5 rounded-sm" style={{ background: ANALYTICS_COLORS.yellow }} /> You (DemoBrand)
           </span>
           {MOCK_COMPETITORS.filter((c) => !c.is_client).slice(0, 4).map((c) => (
             <span key={c.supplier} className="flex items-center gap-1.5">
@@ -140,7 +138,7 @@ export default function DemoPortalAnalytics() {
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
-                <tr className="border-b border-[#1A1A1A]">
+                <tr className="border-b border-[var(--ws-border,#e5e5e5)]">
                   {["Product", "Revenue", "Units", "Avg Price"].map((h) => (
                     <th key={h} className="font-mono text-[9px] text-gray-5 uppercase tracking-widest text-left px-2 py-2">{h}</th>
                   ))}
@@ -148,9 +146,9 @@ export default function DemoPortalAnalytics() {
               </thead>
               <tbody>
                 {MOCK_PRODUCTS.map((p, i) => (
-                  <tr key={p.stock_code} className="border-b border-[#1A1A1A]">
+                  <tr key={p.stock_code} className="border-b border-[var(--ws-border,#e5e5e5)]">
                     <td className="px-2 py-2 text-gray-3 font-medium">{p.name}</td>
-                    <td className="px-2 py-2 font-display font-semibold" style={{ color: i === 0 ? CLIENT_COLOR : "#ccc" }}>{fmt(p.total_revenue)}</td>
+                    <td className="px-2 py-2 font-display font-semibold" style={{ color: i === 0 ? ANALYTICS_COLORS.yellow : "#ccc" }}>{fmt(p.total_revenue)}</td>
                     <td className="px-2 py-2 text-gray-4">{fmtNum(p.total_qty)}</td>
                     <td className="px-2 py-2 text-gray-4">KES {p.avg_price}</td>
                   </tr>
@@ -176,7 +174,7 @@ export default function DemoPortalAnalytics() {
                     <span className="text-[11px] text-gray-4">{b.name}</span>
                     <span className="text-[10px] font-mono text-gray-5">{fmt(b.total)}</span>
                   </div>
-                  <div className="w-full h-2 rounded overflow-hidden" style={{ background: "#1A1A1A" }}>
+                  <div className="w-full h-2 rounded overflow-hidden" style={{ background: "var(--ws-border,#e5e5e5)" }}>
                     <div className="h-full rounded transition-all duration-500" style={{ width: `${Math.min(100, pct)}%`, background: colors[i % colors.length] }} />
                   </div>
                 </div>
@@ -195,7 +193,7 @@ export default function DemoPortalAnalytics() {
         <div className="overflow-x-auto">
           <table className="w-full text-[11px]">
             <thead>
-              <tr className="border-b border-[#1A1A1A]">
+              <tr className="border-b border-[var(--ws-border,#e5e5e5)]">
                 {["Product", "Branch", "Selling Price", "Cost", "Margin"].map((h) => (
                   <th key={h} className="font-mono text-[9px] text-gray-5 uppercase tracking-widest text-left px-2 py-2">{h}</th>
                 ))}
@@ -203,7 +201,7 @@ export default function DemoPortalAnalytics() {
             </thead>
             <tbody>
               {MOCK_PRICING.map((p, i) => (
-                <tr key={i} className="border-b border-[#1A1A1A]">
+                <tr key={i} className="border-b border-[var(--ws-border,#e5e5e5)]">
                   <td className="px-2 py-2 text-gray-3">{p.product}</td>
                   <td className="px-2 py-2 text-gray-5">{p.branch}</td>
                   <td className="px-2 py-2 font-mono text-gray-3">KES {p.selling_price}</td>
@@ -216,7 +214,7 @@ export default function DemoPortalAnalytics() {
             </tbody>
           </table>
         </div>
-        <div className="mt-3 pt-3 border-t border-[#1A1A1A] flex items-center gap-2 text-[10px] text-gray-5">
+        <div className="mt-3 pt-3 border-t border-[var(--ws-border,#e5e5e5)] flex items-center gap-2 text-[10px] text-gray-5">
           <span className="w-3 h-0.5 rounded" style={{ background: ANALYTICS_COLORS.green }} /> Healthy (&ge;15%)
           <span className="w-3 h-0.5 rounded" style={{ background: ANALYTICS_COLORS.yellow }} /> Moderate (8-15%)
           <span className="w-3 h-0.5 rounded" style={{ background: ANALYTICS_COLORS.red }} /> Low (&lt;8%)

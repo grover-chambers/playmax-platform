@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 import { generateSummaryReport } from "@/lib/pdf-reports";
 
@@ -48,9 +48,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const finalTitle = overrideTitle || report.title;
 
     // 3. Decide whether to reuse the worker PDF or render a new one
-    const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!svcKey) return NextResponse.json({ error: "Service role key not configured" }, { status: 500 });
-    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, svcKey);
+    const admin = getAdminClient();
 
     let finalUrl = report.storage_url;
 

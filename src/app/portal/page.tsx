@@ -20,12 +20,7 @@ import DocumentList from "@/components/documents/document-list";
 import PageHeader from "@/components/layout/page-header";
 import ResearchFindingsCards from "@/components/portal/research-findings-cards";
 import MilestoneTimeline from "@/components/portal/milestone-timeline";
-
-function competitorLabel(name: string, isClient: boolean, rank: number): string {
-  if (isClient) return name;
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  return `Competitor ${letters[(rank - 1) % 26]}`;
-}
+import { competitorLabel } from "@/lib/competitor-utils";
 
 interface KpiData {
   activeProjects: number;
