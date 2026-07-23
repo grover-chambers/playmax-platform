@@ -115,9 +115,10 @@ function competitorColor(rank: number, isClient: boolean, clientColor: string): 
   return RANK_COLORS.faded;
 }
 
-function asteriskName(name: string, isClient: boolean): string {
+function competitorLabel(name: string, isClient: boolean, rank: number): string {
   if (isClient) return name;
-  return name.replace(/[A-Z]{2,}/g, (match) => match[0] + "*".repeat(Math.max(1, match.length - 1)));
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return `Competitor ${letters[(rank - 1) % 26]}`;
 }
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -687,7 +688,7 @@ export default function PortalAnalyticsPage() {
               <div className="space-y-2.5">
                 {leaderboardCompetitors.slice(0, 8).map((comp) => {
                   const color = competitorColor(comp.rank, comp.is_client, clientColor);
-                  const displayName = comp.is_client ? comp.manufacturer : asteriskName(comp.manufacturer, comp.is_client);
+                  const displayName = competitorLabel(comp.manufacturer, comp.is_client, comp.rank);
                   return (
                     <div key={comp.manufacturer} className="flex items-center gap-3">
                       <span className="text-[10px] font-mono text-gray-5 w-4 text-right shrink-0">
@@ -1031,7 +1032,7 @@ export default function PortalAnalyticsPage() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className={`text-[12px] font-medium ${isClient ? "text-yellow" : "text-gray-3"}`}>
-                            {String(comp.supplier)}
+                            {competitorLabel(String(comp.supplier), isClient, Number(comp.rank))}
                             {isClient && <span className="ml-1.5 text-[9px] text-yellow">(you)</span>}
                           </span>
                           <span className="text-[11px] text-gray-4">

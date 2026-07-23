@@ -27,6 +27,7 @@ import { Carousel } from "@/components/ui/Carousel";
 import { InventoryBar } from "@/components/InventoryBar";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { SERVICES } from "@/lib/services-data";
+import DemoDashboardTabs from "@/components/demo/demo-dashboard-tabs";
 import { getLatestArticles } from "@/lib/articles-data";
 
 const servicePills = [
@@ -418,6 +419,24 @@ export default function HomePage() {
               </a>
             </div>
           </div>
+        </div>
+      </RevealSection>
+
+      {/* ═══ LIVE DEMO DASHBOARD SECTION ═══ */}
+      <RevealSection className="section" style={{ color: "var(--pm-white)" }}>
+        <div className="container-sm">
+          <div className="mb-10 text-center">
+            <div className="pm-eyebrow mb-4">Interactive Demo</div>
+            <h2 className="pm-section-title mb-4">
+              See your dashboard <span className="pm-accent">in action</span>
+            </h2>
+            <p className="pm-hero-sub max-w-[540px] mx-auto">
+              Real-time market intelligence with competitor tracking, category
+              breakdowns, branch performance, and pricing analysis.
+            </p>
+          </div>
+
+          <DemoDashboardTabs />
         </div>
       </RevealSection>
 

@@ -104,7 +104,7 @@ export async function GET() {
         total_units: data.units,
         products_count: data.products.size,
         share: grandTotal > 0 ? (data.total / grandTotal) * 100 : 0,
-        is_client: name.toLowerCase() === clientName.toLowerCase(),
+        is_client: name.trim().toLowerCase() === clientName.trim().toLowerCase() || name.trim().toLowerCase().split(/\s+/)[0] === clientName.trim().toLowerCase().split(/\s+/)[0],
         rank: 0,
       }))
       .sort((a, b) => b.total_sales - a.total_sales)
