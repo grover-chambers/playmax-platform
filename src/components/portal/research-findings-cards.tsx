@@ -69,20 +69,20 @@ export default function ResearchFindingsCards({ clientId }: ResearchFindingsCard
       {topFindings.map((f) => (
         <div
           key={f.id}
-          className="bg-[#0D0D0D] rounded-lg border border-[#2A2A2A] p-3"
+          className="bg-[var(--ws-surface,#fff)] rounded-lg border border-[var(--ws-border,#e5e5e5)] p-3"
         >
-          <div className="flex items-center gap-1.5 text-[10px] text-gray-5 uppercase tracking-wider mb-1.5">
+          <div className="flex items-center gap-1.5 text-[10px] text-[var(--ws-text-muted,#70716C)] uppercase tracking-wider mb-1.5">
             <BarChart3 size={10} />
             {f.metric_label}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[18px] font-display font-bold text-white">
+            <span className="text-[18px] font-display font-bold text-[var(--ws-text,#1A1C23)]">
               {formatValue(f.metric_value, f.unit)}
             </span>
             {trendIcon()}
           </div>
           {f.unit && (
-            <div className="text-[9px] text-gray-5 font-mono mt-1 uppercase">{f.unit}</div>
+            <div className="text-[9px] text-[var(--ws-text-muted,#70716C)] font-mono mt-1 uppercase">{f.unit}</div>
           )}
         </div>
       ))}

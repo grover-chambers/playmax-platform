@@ -14,6 +14,7 @@ import {
   FileText,
   Eye,
   ShoppingBag,
+  Wheat,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import { AnalyticsChart } from "@/components/charts/analytics-chart";
@@ -236,7 +237,7 @@ function ReportViewer({ report }: { report: SavedReport }) {
             <div className="mt-3 overflow-x-auto max-h-[300px] overflow-y-auto">
               <table className="w-full text-[11px]">
                 <thead>
-                  <tr className="border-b border-[#1A1A1A]">
+                  <tr className="border-b border-[var(--ws-border,#e5e5e5)]">
                     {rawData.length > 0 && Object.keys(rawData[0]).map((k) => (
                       <th key={k} className="font-mono text-[9px] text-gray-5 uppercase tracking-widest text-left px-2 py-1.5">
                         {k.replace(/_/g, " ")}
@@ -246,7 +247,7 @@ function ReportViewer({ report }: { report: SavedReport }) {
                 </thead>
                 <tbody>
                   {rawData.slice(0, 25).map((row, i) => (
-                    <tr key={i} className="border-b border-[#1A1A1A] hover:bg-white/2">
+                    <tr key={i} className="border-b border-[var(--ws-border,#e5e5e5)] hover:bg-white/2">
                       {Object.values(row).map((v, j) => (
                         <td key={j} className={`px-2 py-1.5 ${typeof v === "number" ? "font-mono text-right" : ""}`}
                           style={{ color: typeof v === "number" ? "#ccc" : "#999" }}>
@@ -402,7 +403,7 @@ export default function PortalAnalyticsPage() {
                 <div key={i} className="flex items-center gap-3">
                   <span className="text-[10px] font-mono text-gray-5 w-4 text-right">{i + 1}</span>
                   <div className="flex-1">
-                    <div className="h-2 w-full rounded bg-[#1A1A1A] overflow-hidden">
+                    <div className="h-2 w-full rounded bg-[var(--ws-border,#e5e5e5)] overflow-hidden">
                       <div className="h-full rounded bg-gray-5" style={{ width: `${90 - i * 15}%` }} />
                     </div>
                   </div>
@@ -419,7 +420,7 @@ export default function PortalAnalyticsPage() {
               <span className="font-display text-[13px] font-semibold">Category Share</span>
             </div>
             <div className="flex flex-col items-center justify-center py-6">
-              <div className="w-24 h-24 rounded-full border-4 border-[#1A1A1A] border-t-gray-5" />
+              <div className="w-24 h-24 rounded-full border-4 border-[var(--ws-border,#e5e5e5)] border-t-gray-5" />
               <div className="mt-3 text-center text-[11px] text-gray-5">Waiting for category data</div>
             </div>
           </div>
@@ -436,7 +437,7 @@ export default function PortalAnalyticsPage() {
               {["Branch A", "Branch B", "Branch C"].map((b) => (
                 <div key={b} className="flex items-center gap-2">
                   <span className="text-[11px] text-gray-5 w-16">{b}</span>
-                  <div className="flex-1 h-2 rounded bg-[#1A1A1A]">
+                  <div className="flex-1 h-2 rounded bg-[var(--ws-border,#e5e5e5)]">
                     <div className="h-full rounded bg-gray-5 w-1/3" />
                   </div>
                 </div>
@@ -455,7 +456,7 @@ export default function PortalAnalyticsPage() {
               {["Product A", "Product B", "Product C"].map((p) => (
                 <div key={p} className="flex items-center gap-2">
                   <span className="text-[11px] text-gray-5 w-16">{p}</span>
-                  <div className="flex-1 h-2 rounded bg-[#1A1A1A]">
+                  <div className="flex-1 h-2 rounded bg-[var(--ws-border,#e5e5e5)]">
                     <div className="h-full rounded bg-gray-5 w-1/2" />
                   </div>
                 </div>
@@ -507,7 +508,7 @@ export default function PortalAnalyticsPage() {
               { icon: <Award size={14} className="text-emerald-400" />, title: "Product Rankings", desc: "Top and underperforming products" },
               { icon: <BarChart3 size={14} className="text-teal" />, title: "Trend Analysis", desc: "Period-over-period growth tracking" },
             ].map((item) => (
-              <div key={item.title} className="flex items-start gap-3 p-3 rounded-lg bg-[#0A0A0A] border border-[#1A1A1A]">
+              <div key={item.title} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)]">
                 <div className="mt-0.5">{item.icon}</div>
                 <div>
                   <div className="text-[12px] font-semibold text-gray-3">{item.title}</div>
@@ -536,6 +537,15 @@ export default function PortalAnalyticsPage() {
     ? pricing.reduce((sum, p) => sum + p.margin_pct, 0) / pricing.length
     : 0;
 
+  // Prefer maize-specific rank for consistency with overview page
+  const maizeCompetitors = (maizeData?.competitors as Array<Record<string, unknown>> | undefined) || [];
+  const maizeClient = maizeCompetitors.find((c) => c.is_client);
+  const displayRank = maizeClient ? Number(maizeClient.rank) : clientComp?.rank;
+  const displayShare = maizeClient ? Number(maizeClient.share) : clientComp?.share;
+  const displayRevenue = maizeClient ? Number(maizeClient.total_sales) : clientComp?.total_sales;
+  const displayUnits = maizeClient ? Number(maizeClient.total_units) : clientComp?.total_units;
+  const displayTotal = maizeClient ? maizeCompetitors.length : competitors.length;
+
   const activeReport = selectedReport ? reports.find((r) => r.id === selectedReport) : null;
 
   return (
@@ -552,7 +562,7 @@ export default function PortalAnalyticsPage() {
           className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
             tab === "overview"
               ? "bg-teal text-white"
-              : "bg-black-3 border border-[#252525] text-gray-4 hover:text-white"
+              : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
           }`}
         >
           <BarChart3 size={13} className="inline mr-1.5" />
@@ -563,7 +573,7 @@ export default function PortalAnalyticsPage() {
           className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
             tab === "reports"
               ? "bg-teal text-white"
-              : "bg-black-3 border border-[#252525] text-gray-4 hover:text-white"
+              : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
           }`}
         >
           <FileText size={13} className="inline mr-1.5" />
@@ -573,16 +583,16 @@ export default function PortalAnalyticsPage() {
           )}
         </button>
         {data && data.categories.some((c) => c.category.toLowerCase().includes("maize")) && (
-          <button
-            onClick={() => setTab("maize")}
-            className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
-              tab === "maize"
-                ? "bg-yellow text-black"
-                : "bg-black-3 border border-[#252525] text-gray-4 hover:text-white"
-            }`}
-          >
-            <ShoppingBag size={13} className="inline mr-1.5" />
-            Maize Flour
+        <button
+          onClick={() => setTab("maize")}
+          className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+            tab === "maize"
+              ? "bg-teal text-white"
+              : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
+          }`}
+        >
+          <Wheat size={13} className="inline mr-1.5" />
+          Maize Flour
           </button>
         )}
       </div>
@@ -618,26 +628,26 @@ export default function PortalAnalyticsPage() {
 
           {/* ── NICE Position Banner ──────────────────────── */}
           {clientComp && (
-            <div className="mb-6 p-5 rounded-xl border-2 border-[#F4C300]/30" style={{ background: "linear-gradient(135deg, #1a1a0a 0%, #0a0a0a 100%)" }}>
+            <div className="mb-6 p-5 rounded-xl border-2 border-[#F4C300]/30 bg-[var(--ws-surface,#fff)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${clientColor}22`, border: `2px solid ${clientColor}44` }}>
-                    <span className="text-2xl font-display font-bold" style={{ color: clientColor }}>#{clientComp.rank}</span>
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${clientColor}15`, border: `2px solid ${clientColor}33` }}>
+                    <span className="text-2xl font-display font-bold" style={{ color: clientColor }}>#{displayRank}</span>
                   </div>
                   <div>
-                    <div className="text-[11px] text-gray-5 uppercase tracking-widest font-mono">Your Market Position</div>
+                    <div className="text-[11px] uppercase tracking-widest font-mono" style={{ color: "var(--ws-text-muted,#70716C)" }}>Your Market Position</div>
                     <div className="text-[22px] font-display font-bold mt-0.5" style={{ color: clientColor }}>
-                      {fmtPct(clientComp.share)} market share
+                      {fmtPct(displayShare)} market share
                     </div>
-                    <div className="text-[12px] text-gray-4 mt-1">
-                      Ranked #{clientComp.rank} of {competitors.length} suppliers · {fmt(clientComp.total_sales)} revenue · {fmtNum(clientComp.total_units)} units
+                    <div className="text-[12px] mt-1" style={{ color: "var(--ws-text-muted,#70716C)" }}>
+                      Ranked #{displayRank} of {displayTotal} suppliers · {fmt(displayRevenue)} revenue · {fmtNum(displayUnits)} units
                     </div>
                   </div>
                 </div>
                 <div className="hidden md:flex flex-col items-end gap-1">
-                  <div className="text-[10px] text-gray-5 font-mono uppercase tracking-widest">Category</div>
-                  <div className="text-[14px] font-display font-semibold text-white">Maize Flour</div>
-                  <div className="text-[10px] text-gray-5 font-mono">Jan — Jul 2026</div>
+                  <div className="text-[10px] uppercase tracking-widest font-mono" style={{ color: "var(--ws-text-muted,#70716C)" }}>Category</div>
+                  <div className="text-[14px] font-display font-semibold" style={{ color: "var(--ws-text,#1A1C23)" }}>Maize Flour</div>
+                  <div className="text-[10px] font-mono" style={{ color: "var(--ws-text-muted,#70716C)" }}>Jan — Jul 2026</div>
                 </div>
               </div>
             </div>
@@ -655,9 +665,9 @@ export default function PortalAnalyticsPage() {
                 {clientComp && (
                   <span
                     className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                    style={{ background: `${clientColor}22`, color: clientColor }}
+                    style={{ background: `${clientColor}15`, color: clientColor }}
                   >
-                    You: #{clientComp.rank}
+                    You: #{displayRank}
                   </span>
                 )}
               </div>
@@ -694,7 +704,7 @@ export default function PortalAnalyticsPage() {
               </div>
 
               {/* Legend */}
-              <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-[#1A1A1A] text-[10px] text-gray-5">
+              <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-[var(--ws-border,#e5e5e5)] text-[10px] text-gray-5">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-sm" style={{ background: RANK_COLORS.gold }} />
                   1st
@@ -833,7 +843,7 @@ export default function PortalAnalyticsPage() {
               </div>
 
               {/* Avg margin reference */}
-              <div className="mt-3 pt-3 border-t border-[#1A1A1A] flex items-center gap-2 text-[10px] text-gray-5">
+              <div className="mt-3 pt-3 border-t border-[var(--ws-border,#e5e5e5)] flex items-center gap-2 text-[10px] text-gray-5">
                 <span className="w-3 h-0.5 rounded" style={{ background: ANALYTICS_COLORS.yellow }} />
                 Category avg margin: {fmtPct(avgMargin)}
               </div>
@@ -914,7 +924,7 @@ export default function PortalAnalyticsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[#1A1A1A]">
+                  <tr className="border-b border-[var(--ws-border,#e5e5e5)]">
                     {["Category", "Revenue", "Units", "Avg Price", "Products", "Share"].map((h) => (
                       <th key={h} className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-3 py-2">
                         {h}
@@ -926,7 +936,7 @@ export default function PortalAnalyticsPage() {
                   {categories.map((cat) => {
                     const share = s.totalSales > 0 ? (cat.total_sales / s.totalSales) * 100 : 0;
                     return (
-                      <tr key={cat.category} className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors">
+                      <tr key={cat.category} className="border-b border-[var(--ws-border,#e5e5e5)] hover:bg-white/2 transition-colors">
                         <td className="px-3 py-2.5 text-[12px] font-semibold text-gray-3">{cat.category}</td>
                         <td className="px-3 py-2.5 text-[12px] font-display font-bold" style={{ color: clientColor }}>
                           {fmt(cat.total_sales)}
@@ -936,7 +946,7 @@ export default function PortalAnalyticsPage() {
                         <td className="px-3 py-2.5 text-[12px] text-gray-4">{cat.product_count}</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 rounded bg-[#1A1A1A] overflow-hidden">
+                            <div className="w-16 h-1.5 rounded bg-[var(--ws-border,#e5e5e5)] overflow-hidden">
                               <div
                                 className="h-full rounded"
                                 style={{ width: `${share}%`, background: ANALYTICS_COLORS.yellow }}
@@ -1016,7 +1026,7 @@ export default function PortalAnalyticsPage() {
                             KES {(Number(comp.total_sales) / 1000000).toFixed(1)}M · {Number(comp.share).toFixed(1)}%
                           </span>
                         </div>
-                        <div className="w-full h-2 rounded bg-[#1A1A1A] overflow-hidden">
+                        <div className="w-full h-2 rounded bg-[var(--ws-border,#e5e5e5)] overflow-hidden">
                           <div className="h-full rounded" style={{
                             width: `${(Number(comp.total_sales) / Math.max(...(maizeData.competitors as Array<Record<string, unknown>>).map(c => Number(c.total_sales)))) * 100}%`,
                             background: isClient ? "#F4C300" : "#3B82F6",
@@ -1042,7 +1052,7 @@ export default function PortalAnalyticsPage() {
                       return (
                         <div key={String(b.name) || i} className="flex items-center gap-3">
                           <span className="text-[11px] text-gray-4 w-20 truncate">{String(b.name)}</span>
-                          <div className="flex-1 h-2 rounded bg-[#1A1A1A] overflow-hidden">
+                          <div className="flex-1 h-2 rounded bg-[var(--ws-border,#e5e5e5)] overflow-hidden">
                             <div className="h-full rounded" style={{
                               width: `${(Number(b.total) / maxVal) * 100}%`,
                               background: ["#F4C300", "#22C55E", "#3B82F6", "#EC4899", "#F97316"][i % 5],
@@ -1094,7 +1104,7 @@ export default function PortalAnalyticsPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-[11px]">
                       <thead>
-                        <tr className="border-b border-[#1A1A1A]">
+                        <tr className="border-b border-[var(--ws-border,#e5e5e5)]">
                           {["Product", "Branch", "Selling Price", "Cost", "Margin"].map((h) => (
                             <th key={h} className="font-mono text-[9px] text-gray-5 uppercase tracking-widest text-left px-2 py-2">{h}</th>
                           ))}
@@ -1104,7 +1114,7 @@ export default function PortalAnalyticsPage() {
                         {(maizeData.pricing as Array<Record<string, unknown>>).slice(0, 10).map((p, i) => {
                           const margin = Number(p.margin_pct);
                           return (
-                            <tr key={i} className="border-b border-[#1A1A1A]">
+                            <tr key={i} className="border-b border-[var(--ws-border,#e5e5e5)]">
                               <td className="px-2 py-2 text-gray-3">{String(p.product)}</td>
                               <td className="px-2 py-2 text-gray-5">{String(p.branch)}</td>
                               <td className="px-2 py-2 font-mono text-gray-3">KES {Number(p.selling_price).toFixed(0)}</td>
@@ -1118,7 +1128,7 @@ export default function PortalAnalyticsPage() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-[#1A1A1A] flex items-center gap-2 text-[10px] text-gray-5">
+                  <div className="mt-3 pt-3 border-t border-[var(--ws-border,#e5e5e5)] flex items-center gap-2 text-[10px]" style={{ color: "var(--ws-text-muted,#70716C)" }}>
                     <span className="w-3 h-0.5 rounded bg-green" /> Healthy (≥15%)
                     <span className="w-3 h-0.5 rounded bg-yellow ml-2" /> Moderate (8-15%)
                     <span className="w-3 h-0.5 rounded bg-red ml-2" /> Low (&lt;8%)
@@ -1158,7 +1168,7 @@ export default function PortalAnalyticsPage() {
                     className={`pm-dash-card p-4 text-left transition-all cursor-pointer ${
                       selectedReport === report.id
                         ? "border-teal ring-1 ring-teal/30"
-                        : "hover:border-[#333]"
+                        : "hover:border-[var(--ws-border,#e5e5e5)]"
                     }`}
                   >
                     <div className="flex items-start justify-between mb-2">

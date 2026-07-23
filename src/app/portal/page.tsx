@@ -359,7 +359,7 @@ export default function PortalOverviewPage() {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp size={14} className="text-yellow" />
-            <span className="font-display text-[14px] font-semibold text-white">Market at a Glance — Maize Flour</span>
+            <span className="font-display text-[14px] font-semibold">Market at a Glance — Maize Flour</span>
           </div>
           <div className="pm-dash-krow pm-dash-krow-4">
             <div className="pm-dash-kcard yel">
@@ -420,7 +420,7 @@ export default function PortalOverviewPage() {
                           KES {(Number(comp.total_sales) / 1000000).toFixed(1)}M · {Number(comp.share).toFixed(1)}%
                         </span>
                       </div>
-                      <div className="w-full h-1.5 rounded bg-[#1A1A1A] overflow-hidden">
+                      <div className="w-full h-1.5 rounded bg-[var(--ws-border,#e5e5e5)] overflow-hidden">
                         <div
                           className="h-full rounded transition-all"
                           style={{
