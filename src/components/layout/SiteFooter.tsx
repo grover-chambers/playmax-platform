@@ -37,8 +37,8 @@ const FOOTER_COLS = [
   {
     title: "Contact",
     links: [
-      { label: "+254 700 000 000", href: "tel:+254700000000" },
-      { label: "hello@marketlink.co.ke", href: "mailto:hello@marketlink.co.ke" },
+      { label: "+254 741 953 190", href: "tel:+254741953190" },
+      { label: "playmaxltd@gmail.com", href: "mailto:playmaxltd@gmail.com" },
       { label: "Westlands, Nairobi", href: "https://maps.google.com/?q=Westlands+Nairobi" },
     ],
   },

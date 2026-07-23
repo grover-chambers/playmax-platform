@@ -107,7 +107,7 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
             name="phone"
             type="tel"
             className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 !rounded-none !border-t-0 !border-l-0 !border-r-0"
-            placeholder="+254 700 000 000"
+            placeholder="+254 741 953 190"
           />
         </div>
       </div>

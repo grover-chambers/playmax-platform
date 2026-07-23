@@ -35,11 +35,11 @@ export default function PrivacyPolicyPage() {
             <p>
               <strong>Registered office:</strong> Westlands Business Park, Off Waiyaki Way, Nairobi, Kenya.
               <br />
-              <strong>Email:</strong> hello@marketlink.co.ke
+              <strong>Email:</strong> playmaxltd@gmail.com
               <br />
-              <strong>Phone:</strong> +254 700 000 000
+              <strong>Phone:</strong> +254 741 953 190
             </p>
-
+            
             <h2 className="text-xl font-display font-bold mt-10 mb-3">2. Personal Data We Collect</h2>
             <p>We may collect the following categories of personal data:</p>
             <ul className="list-disc pl-6 space-y-1">
@@ -110,7 +110,7 @@ export default function PrivacyPolicyPage() {
               <li><strong>Withdraw consent:</strong> at any time, without affecting the lawfulness of prior processing.</li>
             </ul>
             <p>
-              To exercise any of these rights, contact us at <strong>hello@marketlink.co.ke</strong>.
+              To exercise any of these rights, contact us at <strong>playmaxltd@gmail.com</strong>.
               We will respond within 30 days as required by the DPA. If you are unsatisfied, you may lodge
               a complaint with the <strong>Office of the Data Protection Commissioner (ODPC)</strong> at
               www.odpc.go.ke.
@@ -148,9 +148,9 @@ export default function PrivacyPolicyPage() {
               practices, please contact our Data Protection Officer:
             </p>
             <p>
-              <strong>Email:</strong> hello@marketlink.co.ke
+              <strong>Email:</strong> playmaxltd@gmail.com
               <br />
-              <strong>Phone:</strong> +254 700 000 000
+              <strong>Phone:</strong> +254 741 953 190
               <br />
               <strong>Address:</strong> Westlands Business Park, Off Waiyaki Way, Nairobi, Kenya
             </p>

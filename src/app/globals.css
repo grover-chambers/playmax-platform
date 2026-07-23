@@ -105,7 +105,7 @@
 
     /* Layout */
     --page-max: 1280px;
-    --content-max: 1100px;
+    --content-max: 1200px;
     --sidebar-w: 220px;
     --header-h: 72px;
     --platform-header-h: 56px;
@@ -1639,10 +1639,10 @@ h6 {
     display: inline-block;
 }
 .pm-hero-sub {
-    font-size: var(--text-lg);
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
     color: var(--pm-gray-3);
     line-height: 1.7;
-    max-width: 480px;
+    max-width: 540px;
 }
 .pm-section-title {
     font-family: var(--font-display);
@@ -1668,7 +1668,7 @@ h6 {
 }
 .pm-body-sm {
     font-family: var(--font-body);
-    font-size: var(--text-sm);
+    font-size: clamp(0.9rem, 2vw, 1rem);
     color: var(--pm-gray-4);
     line-height: 1.65;
 }

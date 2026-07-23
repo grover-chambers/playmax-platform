@@ -61,7 +61,7 @@ export default function TermsPage() {
 
             <h2 className="text-xl font-display font-bold mt-10 mb-3">7. Contact</h2>
             <p>
-              For questions about these terms, contact us at <strong>hello@marketlink.co.ke</strong>.
+              For questions about these terms, contact us at <strong>playmaxltd@gmail.com</strong>.
             </p>
           </section>
         </article>

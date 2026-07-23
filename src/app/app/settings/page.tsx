@@ -41,8 +41,8 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("General");
   const [agencyName, setAgencyName] = useState("Market Link");
   const [agencyEmail, setAgencyEmail] = useState("hello@marketlink.co.ke");
-  const [agencyPhone, setAgencyPhone] = useState("+254 700 000 000");
-  const [whatsappNumber, setWhatsappNumber] = useState("+254 700 000 000");
+  const [agencyPhone, setAgencyPhone] = useState("+254 741 953 190");
+  const [whatsappNumber, setWhatsappNumber] = useState("+254 741 953 190");
   const [currency, setCurrency] = useState("KES");
   const [toggles, setToggles] = useState<Record<string, boolean>>(
     Object.fromEntries(automations.map((a) => [a.id, a.enabled]))

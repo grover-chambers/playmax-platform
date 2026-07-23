@@ -278,6 +278,17 @@ export default function PortalOverviewPage() {
     );
   }
 
+  const rawCompetitors = (maizeAnalytics?.competitors || []) as Array<Record<string, unknown>>;
+  const normalizedCompetitors = rawCompetitors.map((c) => ({
+    supplier: String(c.supplier || c.manufacturer || ""),
+    total_sales: Number(c.total_sales),
+    total_units: Number(c.total_units),
+    share: Number(c.share),
+    is_client: Boolean(c.is_client),
+    rank: Number(c.rank),
+    products_count: Number(c.products_count),
+  }));
+
   return (
     <div className="page-content portal-page">
       {/* ── Welcome strip (dynamic context) ─────────────── */}
@@ -375,18 +386,17 @@ export default function PortalOverviewPage() {
                   : "—"}
               </div>
               <div className="pm-dash-kl">Maize Revenue</div>
-              <div className="pm-dash-ksub">{(maizeAnalytics.competitors as Array<Record<string, unknown>>)?.length || 0} suppliers</div>
+              <div className="pm-dash-ksub">{normalizedCompetitors.length || 0} suppliers</div>
             </div>
             <div className="pm-dash-kcard grn">
               <div className="pm-dash-kn grn">
-                {(maizeAnalytics.competitors as Array<Record<string, unknown>>)
-                  ?.find((c) => c.is_client)
-                  ? `${Number((maizeAnalytics.competitors as Array<Record<string, unknown>>).find((c) => c.is_client)?.share).toFixed(1)}%`
+                {normalizedCompetitors.find((c) => c.is_client)
+                  ? `${Number(normalizedCompetitors.find((c) => c.is_client)?.share).toFixed(1)}%`
                   : "—"}
               </div>
               <div className="pm-dash-kl">Your Share</div>
               <div className="pm-dash-ksub">
-                Rank #{String((maizeAnalytics.competitors as Array<Record<string, unknown>>)?.find((c) => c.is_client)?.rank || "—")}
+                Rank #{String(normalizedCompetitors.find((c) => c.is_client)?.rank || "—")}
               </div>
             </div>
             <div className="pm-dash-kcard blu">
@@ -405,7 +415,7 @@ export default function PortalOverviewPage() {
             </div>
           </div>
           {/* Maize competitor leaderboard (mini) */}
-          {(maizeAnalytics.competitors as Array<Record<string, unknown>>)?.length > 0 && (
+          {normalizedCompetitors.length > 0 && (
             <div className="mt-3 pm-dash-card p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] font-semibold text-gray-3">Maize Supplier Rankings</span>
@@ -414,24 +424,24 @@ export default function PortalOverviewPage() {
                 </Link>
               </div>
               <div className="space-y-2">
-                {(maizeAnalytics.competitors as Array<Record<string, unknown>>).slice(0, 5).map((comp, i) => (
+                {normalizedCompetitors.slice(0, 5).map((comp, i) => (
                   <div key={String(comp.supplier || i)} className="flex items-center gap-3">
-                    <span className="text-[10px] font-mono text-gray-5 w-4 shrink-0">{comp.rank as number}</span>
+                    <span className="text-[10px] font-mono text-gray-5 w-4 shrink-0">{comp.rank}</span>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-0.5">
                         <span className={`text-[11px] ${comp.is_client ? "text-yellow font-semibold" : "text-gray-4"}`}>
-                          {competitorLabel(String(comp.supplier), Boolean(comp.is_client), Number(comp.rank))}
+                          {competitorLabel(comp.supplier, comp.is_client, comp.rank)}
                           {comp.is_client ? <span className="ml-1 text-[9px] text-yellow">(you)</span> : ""}
                         </span>
                         <span className="text-[10px] text-gray-5">
-                          KES {(Number(comp.total_sales) / 1000000).toFixed(1)}M · {Number(comp.share).toFixed(1)}%
+                          KES {(comp.total_sales / 1000000).toFixed(1)}M · {comp.share.toFixed(1)}%
                         </span>
                       </div>
                       <div className="w-full h-1.5 rounded bg-[var(--ws-border,#e5e5e5)] overflow-hidden">
                         <div
                           className="h-full rounded transition-all"
                           style={{
-                            width: `${Math.min(100, (Number(comp.total_sales) / Math.max(...(maizeAnalytics.competitors as Array<Record<string, unknown>>).map((c) => Number(c.total_sales)))) * 100)}%`,
+                            width: `${Math.min(100, (comp.total_sales / Math.max(...normalizedCompetitors.map((c) => c.total_sales))) * 100)}%`,
                             background: comp.is_client ? "#F4C300" : ["#F4C300", "#BBBBBB", "#F97316", "#3B82F6", "#A855F7"][i % 5],
                           }}
                         />
@@ -448,7 +458,7 @@ export default function PortalOverviewPage() {
       {/* ── Two-column layout ──────────────────────── */}
       <div className="grid grid-cols-3 gap-6">
         {/* ══════════ LEFT (2/3) ════════════ */}
-        <div className="col-span-2 space-y-4">
+        <div className="col-span-2 space-y-6">
           {/* ── Recent projects ────────────────── */}
           {recentProjects.length > 0 && recentProjects.map((project) => (
             <div key={project.id} className="pm-dash-proj-card">
@@ -530,7 +540,7 @@ export default function PortalOverviewPage() {
         </div>
 
         {/* ══════════ RIGHT (1/3) ════════════ */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* ── Recent invoices ────────────────────── */}
           <div className="pm-dash-card">
             <div className="pm-dash-card-h">

@@ -155,9 +155,9 @@ export default function CookiePolicyPage() {
               If you have questions about our use of cookies, please contact us:
             </p>
             <p>
-              <strong>Email:</strong> hello@marketlink.co.ke
+              <strong>Email:</strong> playmaxltd@gmail.com
               <br />
-              <strong>Phone:</strong> +254 700 000 000
+              <strong>Phone:</strong> +254 741 953 190
               <br />
               <strong>Address:</strong> Westlands Business Park, Off Waiyaki Way, Nairobi, Kenya
             </p>

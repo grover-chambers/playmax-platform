@@ -42,8 +42,8 @@ function SiteFooter() {
             <div className="flex flex-col gap-3.5 text-[14px] text-gray-4">
               <div>Westlands Business Park</div>
               <div>Off Waiyaki Way, Nairobi</div>
-              <div className="text-white">+254 700 000 000</div>
-              <div className="text-white">hello@marketlink.co.ke</div>
+              <div className="text-white">+254 741 953 190</div>
+              <div className="text-white">playmaxltd@gmail.com</div>
             </div>
           </div>
         </div>

@@ -38,7 +38,7 @@ export default function ContactPage() {
                     className="text-[16px] md:text-[17px] font-medium"
                     style={{ color: "var(--pm-black)" }}
                   >
-                    +254 700 000 000
+                    +254 741 953 190
                   </span>
                 </div>
                 <div className="flex items-start gap-4">
@@ -52,7 +52,7 @@ export default function ContactPage() {
                     className="text-[16px] md:text-[17px] font-medium"
                     style={{ color: "var(--pm-black)" }}
                   >
-                    hello@marketlink.co.ke
+                    playmaxltd@gmail.com
                   </span>
                 </div>
                 <div className="flex items-start gap-4">
