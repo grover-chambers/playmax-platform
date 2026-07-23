@@ -531,7 +531,6 @@ export default function PortalAnalyticsPage() {
   const pricing = data!.pricing;
 
   const clientComp = competitors.find((c) => c.is_client);
-  const maxSales = Math.max(...competitors.map((c) => c.total_sales), 1);
   const maxBranchSales = Math.max(...branches.map((b) => b.total_amount), 1);
   const avgMargin = pricing.length > 0
     ? pricing.reduce((sum, p) => sum + p.margin_pct, 0) / pricing.length
@@ -545,6 +544,19 @@ export default function PortalAnalyticsPage() {
   const displayRevenue = maizeClient ? Number(maizeClient.total_sales) : clientComp?.total_sales;
   const displayUnits = maizeClient ? Number(maizeClient.total_units) : clientComp?.total_units;
   const displayTotal = maizeClient ? maizeCompetitors.length : competitors.length;
+
+  // Use maize competitors for the leaderboard when available, so rank numbers are consistent
+  const leaderboardCompetitors = maizeCompetitors.length > 0
+    ? maizeCompetitors.map((c) => ({
+        manufacturer: String(c.manufacturer),
+        total_sales: Number(c.total_sales),
+        total_units: Number(c.total_units),
+        share: Number(c.share),
+        is_client: Boolean(c.is_client),
+        rank: Number(c.rank),
+      }))
+    : competitors;
+  const maxLeaderboardSales = Math.max(...leaderboardCompetitors.map((c) => c.total_sales), 1);
 
   const activeReport = selectedReport ? reports.find((r) => r.id === selectedReport) : null;
 
@@ -607,11 +619,11 @@ export default function PortalAnalyticsPage() {
               <div className="pm-dash-kl">Total Revenue</div>
               <div className="pm-dash-ksub">{fmtNum(s.totalUnits)} units sold</div>
             </div>
-            <div className="pm-dash-kcard grn">
-              <div className="pm-dash-kn grn">{clientComp ? fmtPct(clientComp.share) : "—"}</div>
-              <div className="pm-dash-kl">Market Share</div>
+              <div className="pm-dash-kcard grn">
+              <div className="pm-dash-kn grn">{clientComp ? fmtPct(displayShare) : "—"}</div>
+              <div className="pm-dash-kl">Maize Flour Share</div>
               <div className="pm-dash-ksub">
-                {clientComp ? `Rank #${clientComp.rank} of ${competitors.length}` : "Not ranked"}
+                {clientComp ? `Rank #${displayRank} of ${displayTotal} maize suppliers` : "Not ranked"}
               </div>
             </div>
             <div className="pm-dash-kcard blu">
@@ -640,7 +652,7 @@ export default function PortalAnalyticsPage() {
                       {fmtPct(displayShare)} market share
                     </div>
                     <div className="text-[12px] mt-1" style={{ color: "var(--ws-text-muted,#70716C)" }}>
-                      Ranked #{displayRank} of {displayTotal} suppliers · {fmt(displayRevenue)} revenue · {fmtNum(displayUnits)} units
+                      Ranked #{displayRank} of {displayTotal} maize suppliers · {fmt(displayRevenue)} revenue · {fmtNum(displayUnits)} units
                     </div>
                   </div>
                 </div>
@@ -660,7 +672,7 @@ export default function PortalAnalyticsPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Trophy size={14} className="text-yellow" />
-                  <span className="font-display text-[13px] font-semibold">Market Share Leaderboard</span>
+                  <span className="font-display text-[13px] font-semibold">Maize Flour Leaderboard</span>
                 </div>
                 {clientComp && (
                   <span
@@ -673,7 +685,7 @@ export default function PortalAnalyticsPage() {
               </div>
 
               <div className="space-y-2.5">
-                {competitors.slice(0, 8).map((comp) => {
+                {leaderboardCompetitors.slice(0, 8).map((comp) => {
                   const color = competitorColor(comp.rank, comp.is_client, clientColor);
                   const displayName = comp.is_client ? comp.manufacturer : asteriskName(comp.manufacturer, comp.is_client);
                   return (
@@ -696,7 +708,7 @@ export default function PortalAnalyticsPage() {
                             {fmt(comp.total_sales)} · {fmtPct(comp.share)}
                           </span>
                         </div>
-                        <HorizontalBar value={comp.total_sales} max={maxSales} color={color} height={14} />
+                        <HorizontalBar value={comp.total_sales} max={maxLeaderboardSales} color={color} height={14} />
                       </div>
                     </div>
                   );
