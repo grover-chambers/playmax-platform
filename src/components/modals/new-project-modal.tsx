@@ -67,6 +67,7 @@ export default function NewProjectModal({
   useEffect(() => {
     if (!open) return;
     const load = async () => {
+      setLoading(true);
       try {
         const [clientsRes, staffRes] = await Promise.all([
           fetch("/api/clients"),
@@ -78,6 +79,8 @@ export default function NewProjectModal({
         setStaff(staffData.staff || []);
       } catch {
         // silent
+      } finally {
+        setLoading(false);
       }
     };
     load();

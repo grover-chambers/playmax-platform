@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { rateLimit, rateLimitResponse, getClientIp } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
@@ -56,6 +57,11 @@ export async function POST(request: NextRequest) {
   ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  const ip = getClientIp(request);
+  const rl = rateLimit(`demo-login:${ip}`, { windowMs: 60_000, maxRequests: 10 });
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs);
+
   try {
     if (!DEMO_PASSWORD) {
       return NextResponse.json({ error: "DEMO_PASSWORD not configured" }, { status: 500 });

@@ -290,7 +290,6 @@ export async function POST(_request: Request, context: RouteContext) {
 
           // Resolve category from product
           let invCategoryId: string | null = null;
-          let invSubCategoryId: string | null = null;
           if (productId) {
             const { data: prodCat } = await supabase
               .from("analytics_products")
@@ -299,7 +298,6 @@ export async function POST(_request: Request, context: RouteContext) {
               .single();
             if (prodCat) {
               invCategoryId = prodCat.category_id || null;
-              invSubCategoryId = prodCat.sub_category_id || null;
             }
           }
 

@@ -7,7 +7,7 @@ import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/browser";
 import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/types";
 import type { UserRole, StaffMember } from "@/lib/types";
 

@@ -12,7 +12,7 @@ import {
   BarChart3,
   BookOpen,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/browser";
 import { getRoleLabel } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
 import DashboardLayout from "@/components/layout/dashboard-layout";

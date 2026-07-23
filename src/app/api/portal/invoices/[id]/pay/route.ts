@@ -61,33 +61,24 @@ export async function POST(
       return NextResponse.json({ error: sanitizeError(paymentError) }, { status: 500 });
     }
 
-    // Mark payment as completed (M-Pesa STK Push integration pending)
-    // In production, this would be done via Safaricom API callback
-    await supabase
-      .from("invoice_payments")
-      .update({ status: "completed", paid_at: new Date().toISOString() })
-      .eq("invoice_id", invoice.id)
-      .eq("status", "pending");
-
-    // Update invoice status to paid
-    await supabase
-      .from("invoices")
-      .update({ status: "paid", paid_date: new Date().toISOString() })
-      .eq("id", invoice.id);
+    // NOTE: M-Pesa STK Push integration not yet implemented.
+    // Payment stays in "pending" status until Safaricom callback confirms.
+    // Do NOT auto-mark as completed — that bypasses actual payment verification.
 
     // Log activity
     await supabase.from("client_activity_log").insert({
       client_id: client.id,
       activity_type: "payment_event",
-      title: `Payment received for ${invoice.invoice_number}`,
-      description: `KES ${Number(invoice.amount).toLocaleString()} paid via M-Pesa.`,
+      title: `Payment initiated for ${invoice.invoice_number}`,
+      description: `KES ${Number(invoice.amount).toLocaleString()} M-Pesa payment initiated via ${normalized}.`,
       entity_type: "invoice",
       entity_id: invoice.id,
     }).maybeSingle();
 
     return NextResponse.json({
       success: true,
-      message: "Payment recorded successfully. You will receive a confirmation shortly.",
+      message: "M-Pesa payment initiated. You will receive an STK Push prompt on your phone.",
+      status: "pending",
     });
   } catch (err) {
     console.error("M-Pesa payment initiation failed:", err);

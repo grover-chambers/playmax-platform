@@ -24,7 +24,7 @@ import {
   Upload,
   Database,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/browser";
 import { getRoleLabel } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
 import { UserProvider } from "@/lib/user-context";

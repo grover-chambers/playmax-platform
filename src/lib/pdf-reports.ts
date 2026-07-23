@@ -912,7 +912,6 @@ export function generateEnrichedMarketShareReport(data: EnrichedReportData): jsP
   for (const branch of data.branchMarketShare.slice(0, 10)) {
     y = checkPageBreak(doc, y, 40);
     y = drawParagraph(doc, `${branch.branch}`, y);
-    const branchTotal = branch.suppliers.reduce((s, v) => s + v.revenue, 0);
     const bTable = branch.suppliers.slice(0, 8).map((s) => [
       s.isClient ? `YOU  ${s.name}` : s.name.slice(0, 25),
       fmt(s.revenue), fmtPct(s.share),
@@ -1416,7 +1415,7 @@ function positionLabel(rank: number, total: number): StandingInfo["positionLabel
 
 export function computeReportSchema(input: EnrichedInput, industry?: IndustryProfile, period?: string): ReportSchema {
   const ind = industry || FMCG_INDUSTRY;
-  const { supplierRank, clientRank, categoryTotal, clientTotal, clientShare, totalSuppliers } = input;
+  const { supplierRank, clientRank, clientTotal, clientShare, totalSuppliers } = input;
 
   const standing: StandingInfo = {
     rank: clientRank,

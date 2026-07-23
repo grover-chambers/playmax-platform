@@ -12,6 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Utility scripts (not part of the app)
+    "scripts/**",
+    "*.cjs",
+    "*.mjs",
+    "check_state.mjs",
+    "apply_035_data.js",
+    "read_excel.js",
+    "verify-build.js",
   ]),
 ]);
 

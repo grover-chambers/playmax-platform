@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/browser";
 
 const ALLOWED_ROLES = ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance"];
 

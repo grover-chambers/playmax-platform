@@ -5,7 +5,7 @@ import { Send, Loader2 } from "lucide-react";
 import Avatar from "@/components/ui/avatar";
 import Button from "@/components/ui/button";
 import PageHeader from "@/components/layout/page-header";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/browser";
 
 
 interface Conversation {

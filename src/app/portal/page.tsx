@@ -14,9 +14,6 @@ import {
   Loader2,
   Milestone,
   TrendingUp,
-  Store,
-  Package,
-  DollarSign,
 } from "lucide-react";
 import { usePortalClient } from "@/components/portal/portal-provider";
 import DocumentList from "@/components/documents/document-list";

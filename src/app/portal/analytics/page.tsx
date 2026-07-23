@@ -21,7 +21,7 @@ import type { ChartProps } from "@/components/charts/analytics-chart";
 import { transformChartData } from "@/lib/analytics-transform";
 import { findCategory } from "@/lib/report-types";
 import type { ChartType } from "@/lib/report-types";
-import { ANALYTICS_COLORS, CHART_COLORS, chartColor } from "@/lib/analytics-colors";
+import { ANALYTICS_COLORS, CHART_COLORS } from "@/lib/analytics-colors";
 
 /* ── Types ────────────────────────────────────────────────────── */
 

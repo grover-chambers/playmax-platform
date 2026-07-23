@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import {
   Download, Save, Loader2, Eye, EyeOff, ChevronRight,
 } from "lucide-react";
@@ -75,7 +74,6 @@ function filterKeyToLabel(key: string): string {
 /* ══════════════════════════════════════════════════════════════ */
 
 export default function AnalyticsReportsPage() {
-  const router = useRouter();
 
   /* ── Dimension data ── */
   const [categories, setCategories] = useState<DimensionOption[]>([]);
@@ -157,10 +155,7 @@ export default function AnalyticsReportsPage() {
     if (!filters.category) return subcategories;
     const cat = categories.find((c) => c.name === filters.category);
     if (!cat) return subcategories;
-    return subcategories.filter((sc) => {
-      // Derive category_id from subcategory (we store category_id in subcategory)
-      return true;
-    });
+    return subcategories.filter(() => true);
   }, [filters.category, categories, subcategories]);
 
   /* ── Build API body from subtype + filters ── */

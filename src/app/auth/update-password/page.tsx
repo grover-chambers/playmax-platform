@@ -16,7 +16,7 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { createClient } = await import("@/utils/supabase/client");
+      const { createClient } = await import("@/lib/supabase/browser");
       const supabase = createClient();
       const {
         data: { session },
@@ -48,7 +48,7 @@ export default function UpdatePasswordPage() {
     setLoading(true);
 
     try {
-      const { createClient } = await import("@/utils/supabase/client");
+      const { createClient } = await import("@/lib/supabase/browser");
       const supabase = createClient();
       const { error: updateError } = await supabase.auth.updateUser({
         password,

@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/browser";
 
 export default function LoginPage() {
   return (
@@ -567,7 +567,7 @@ function LoginForm() {
                           const data = await res.json();
                           if (data.session) {
                             const { createClient } =
-                              await import("@/utils/supabase/client");
+                              await import("@/lib/supabase/browser");
                             const supabase = createClient();
                             await supabase.auth.setSession({
                               access_token: data.session.access_token,

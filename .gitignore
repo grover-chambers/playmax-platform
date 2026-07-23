@@ -52,3 +52,10 @@ data/
 _*.js
 *.bat
 *.ps1
+
+# scripts with hardcoded secrets (service role key)
+check_state.mjs
+apply_035_data.js
+run_migrations.py
+pending_migrations_*.sql
+verify-build.js

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, startTransition, useCallback } from "react";
 import Link from "next/link";
 import { Bell, CheckCheck, Loader2 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/browser";
 
 interface Notification {
   id: string;
