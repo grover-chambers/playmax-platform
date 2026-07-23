@@ -21,6 +21,12 @@ import PageHeader from "@/components/layout/page-header";
 import ResearchFindingsCards from "@/components/portal/research-findings-cards";
 import MilestoneTimeline from "@/components/portal/milestone-timeline";
 
+function competitorLabel(name: string, isClient: boolean, rank: number): string {
+  if (isClient) return name;
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return `Competitor ${letters[(rank - 1) % 26]}`;
+}
+
 interface KpiData {
   activeProjects: number;
   totalProjects: number;
@@ -414,7 +420,8 @@ export default function PortalOverviewPage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-0.5">
                         <span className={`text-[11px] ${comp.is_client ? "text-yellow font-semibold" : "text-gray-4"}`}>
-                          {String(comp.supplier)}{comp.is_client ? " (you)" : ""}
+                          {competitorLabel(String(comp.supplier), Boolean(comp.is_client), Number(comp.rank))}
+                          {comp.is_client ? <span className="ml-1 text-[9px] text-yellow">(you)</span> : ""}
                         </span>
                         <span className="text-[10px] text-gray-5">
                           KES {(Number(comp.total_sales) / 1000000).toFixed(1)}M · {Number(comp.share).toFixed(1)}%

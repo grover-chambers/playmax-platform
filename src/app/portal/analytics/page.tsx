@@ -549,7 +549,7 @@ export default function PortalAnalyticsPage() {
   // Use maize competitors for the leaderboard when available, so rank numbers are consistent
   const leaderboardCompetitors = maizeCompetitors.length > 0
     ? maizeCompetitors.map((c) => ({
-        manufacturer: String(c.manufacturer),
+        manufacturer: String(c.supplier || c.manufacturer || ""),
         total_sales: Number(c.total_sales),
         total_units: Number(c.total_units),
         share: Number(c.share),
