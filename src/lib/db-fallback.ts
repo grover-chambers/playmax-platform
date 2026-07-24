@@ -29,6 +29,14 @@ export async function withPgFallback<T>(
   try {
     return await supabaseOp();
   } catch (err) {
+    // If DATABASE_URL is not set, don't even try PG — just rethrow Supabase error
+    if (!process.env.DATABASE_URL) {
+      console.error(
+        `[pg-fallback] Supabase failed${label ? ` (${label})` : ""} and DATABASE_URL not set:`,
+        err instanceof Error ? err.message : err,
+      );
+      throw err;
+    }
     console.error(
       `[pg-fallback] Supabase failed${label ? ` (${label})` : ""}:`,
       err instanceof Error ? err.message : err,
