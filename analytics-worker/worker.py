@@ -22,11 +22,26 @@ from pdf_generator import generate_pdf
 load_dotenv()
 
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
+MAX_RETRIES = 3
+BASE_DELAY = 5
 
 
 def log(msg: str):
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{ts}] {msg}", flush=True)
+
+
+def health_check() -> dict:
+    """Return current job counts grouped by status."""
+    db = get_client()
+    result = db.table("report_jobs").select("status").execute()
+    rows = result.data or []
+    counts = {"queued": 0, "processing": 0, "complete": 0, "failed": 0}
+    for row in rows:
+        s = row.get("status", "")
+        if s in counts:
+            counts[s] += 1
+    return counts
 
 
 def fetch_first(db, table: str, column: str, value: str):
@@ -40,7 +55,8 @@ def process_job(job: dict) -> None:
     job_id = job["id"]
     project_id = job.get("project_id")
     algorithms = job.get("algorithms", [])
-    log(f"Processing job {job_id} — project={project_id} algorithms={algorithms}")
+    retry_count = job.get("retry_count", 0) or 0
+    log(f"Processing job {job_id} — project={project_id} algorithms={algorithms} retry={retry_count}")
 
     db = get_client()
 
@@ -50,6 +66,31 @@ def process_job(job: dict) -> None:
         log(f"  Job {job_id} already claimed — skipping")
         return
 
+    try:
+        _run_job(db, job_id, project_id, algorithms)
+    except Exception as e:
+        log(f"  Job {job_id} failed: {e}")
+        if retry_count < MAX_RETRIES:
+            new_retry = retry_count + 1
+            delay = BASE_DELAY * (2 ** retry_count)
+            log(f"  Retrying job {job_id} in {delay}s (attempt {new_retry}/{MAX_RETRIES})")
+            db.table("report_jobs").update({
+                "status": "queued",
+                "retry_count": new_retry,
+                "error_message": f"Retry {new_retry}/{MAX_RETRIES}: {e}",
+                "updated_at": datetime.utcnow().isoformat(),
+            }).eq("id", job_id).execute()
+            time.sleep(delay)
+        else:
+            log(f"  Job {job_id} exhausted retries — marking failed")
+            db.table("report_jobs").update({
+                "status": "failed",
+                "error_message": f"Exceeded {MAX_RETRIES} retries: {e}",
+                "updated_at": datetime.utcnow().isoformat(),
+            }).eq("id", job_id).execute()
+
+
+def _run_job(db, job_id: str, project_id: str | None, algorithms: list) -> None:
     # Get project details
     project_name = "Market Analysis"
     client_name = None
@@ -192,6 +233,7 @@ def main():
     log("PlayMax Analytic Engine Worker started")
     log(f"Poll interval: {POLL_INTERVAL}s")
     log(f"Ollama: {os.getenv('OLLAMA_URL', 'http://localhost:11434')} / {os.getenv('OLLAMA_MODEL', 'qwen2.5:1.5b')}")
+    log(f"Retry config: MAX_RETRIES={MAX_RETRIES}, BASE_DELAY={BASE_DELAY}s")
 
     db = get_client()
 
@@ -208,7 +250,10 @@ def main():
             if jobs:
                 log(f"Found {len(jobs)} queued job(s)")
                 for job in jobs:
-                    process_job(job)
+                    try:
+                        process_job(job)
+                    except Exception as e:
+                        log(f"Unhandled error processing job {job.get('id')}: {e}")
             else:
                 time.sleep(POLL_INTERVAL)
 

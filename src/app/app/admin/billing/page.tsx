@@ -212,16 +212,32 @@ export default function BillingPage() {
             </div>
           </div>
 
-          <p className="text-[10px] text-gray-5 mt-4 leading-relaxed">
-            Payment integration coming soon. Currently billing is managed manually.
-          </p>
-
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[#1e1e1e]">
-            <Button variant="secondary" size="sm" onClick={() => setPaymentModal("update")}>
-              Update
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={async () => {
+                const res = await fetch("/api/stripe/create-checkout", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO }),
+                });
+                const json = await res.json();
+                if (json.url) window.location.href = json.url;
+              }}
+            >
+              <ArrowUpCircle size={14} className="mr-1" /> Upgrade with Stripe
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => setPaymentModal("change")}>
-              Change Payment Method
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={async () => {
+                const res = await fetch("/api/stripe/portal", { method: "POST" });
+                const json = await res.json();
+                if (json.url) window.location.href = json.url;
+              }}
+            >
+              Manage Billing
             </Button>
           </div>
         </div>

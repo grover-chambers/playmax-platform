@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
@@ -13,12 +13,14 @@ import {
   Clock,
   Eye,
   FileEdit,
-  FileCheck,
   MessageSquare,
   BarChart3,
   UserPlus,
   Circle,
   ArrowUpRight,
+  Send,
+  Archive,
+  Filter,
 } from "lucide-react";
 
 const healthItems: Array<{
@@ -178,8 +180,46 @@ function HealthIcon({ status }: { status: "good" | "warn" | "stale" }) {
   );
 }
 
+type WorkflowTab = "all" | "draft" | "review" | "published";
+
+const workflowBadge: Record<string, { label: string; type: string }> = {
+  draft: { label: "Draft", type: "y" },
+  review: { label: "In Review", type: "b" },
+  published: { label: "Published", type: "g" },
+  archived: { label: "Archived", type: "n" },
+};
+
+const badgeToWorkflow: Record<string, string> = {
+  Overdue: "draft",
+  Draft: "draft",
+  "In Review": "review",
+  Scheduled: "published",
+  "Changes requested": "review",
+};
+
 export default function ContentDeskPage() {
   const router = useRouter();
+  const [workflowTab, setWorkflowTab] = useState<WorkflowTab>("all");
+
+  const filteredItems =
+    workflowTab === "all"
+      ? cqItems
+      : cqItems.filter((item) => {
+          const status = badgeToWorkflow[item.badge.label] || "draft";
+          return status === workflowTab;
+        });
+
+  const handleWorkflowAction = async (
+    contentId: string,
+    action: "submit" | "publish" | "archive",
+  ) => {
+    await fetch(`/api/content/${contentId}/workflow`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+  };
+
   return (
     <div
       className="flex flex-col h-full"
@@ -189,6 +229,29 @@ export default function ContentDeskPage() {
         title="Content Desk"
         subtitle="Review content items that need attention across all channels."
       />
+
+      {/* ── Workflow Tabs ── */}
+      <div style={{ padding: "0 22px 8px" }}>
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-white/40" />
+          {(["all", "draft", "review", "published"] as WorkflowTab[]).map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setWorkflowTab(tab)}
+                className={`pm-dash-bdg cursor-pointer transition-colors ${
+                  workflowTab === tab
+                    ? "bg-white/20 text-white"
+                    : "bg-white/5 text-white/40 hover:bg-white/10"
+                }`}
+                style={{ textTransform: "capitalize" }}
+              >
+                {tab}
+              </button>
+            ),
+          )}
+        </div>
+      </div>
 
       {/* ── Health Bar ── */}
       <div style={{ padding: "0 22px 8px" }}>
@@ -251,7 +314,9 @@ export default function ContentDeskPage() {
             <div className="pm-dash-card-h">
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span className="pm-dash-card-t">Content Queue</span>
-                <span className="pm-dash-bdg pm-dash-bdg-r">3 need action</span>
+                <span className="pm-dash-bdg pm-dash-bdg-r">
+                {filteredItems.length} items
+              </span>
               </div>
               <button className="btn-sm" type="button" onClick={() => router.push("/app/content/articles")}>
                 <Eye className="w-3.5 h-3.5" />
@@ -262,8 +327,10 @@ export default function ContentDeskPage() {
               className="pm-dash-card-b pm-dash-card-b-0"
               style={{ overflow: "auto" }}
             >
-              {cqItems.map((item) => {
+              {filteredItems.map((item) => {
                 const Icon = item.icon;
+                const wfStatus = badgeToWorkflow[item.badge.label] || "draft";
+                const wf = workflowBadge[wfStatus];
                 return (
                   <div key={item.title} className="pm-dash-cq-row">
                     <div className="pm-dash-cq-icon">
@@ -278,40 +345,61 @@ export default function ContentDeskPage() {
                     </div>
                     <div className="pm-dash-cq-right">
                       <span
-                        className={`pm-dash-bdg pm-dash-bdg-${item.badge.type}`}
+                        className={`pm-dash-bdg pm-dash-bdg-${wf?.type || "y"}`}
                       >
-                        {item.badge.label}
+                        {wf?.label || item.badge.label}
                       </span>
                       {item.actions && (
-                        <>
+                        <div className="flex items-center gap-1">
+                          {wfStatus === "draft" && (
+                            <button
+                              className="btn-sm py-1! px-2! border-none!"
+                              type="button"
+                              title="Submit for Review"
+                              style={{ color: "var(--pm-blue)" }}
+                              onClick={() =>
+                                handleWorkflowAction(item.title, "submit")
+                              }
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {wfStatus === "review" && (
+                            <button
+                              className="btn-sm py-1! px-2! border-none!"
+                              type="button"
+                              title="Publish"
+                              style={{ color: "var(--pm-green)" }}
+                              onClick={() =>
+                                handleWorkflowAction(item.title, "publish")
+                              }
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button
                             className="btn-sm py-1! px-2! border-none!"
                             type="button"
-                            title="Edit"
+                            title="Archive"
                             style={{ color: "var(--pm-gray-4)" }}
-                            onClick={() => router.push("/app/content/articles")}
+                            onClick={() =>
+                              handleWorkflowAction(item.title, "archive")
+                            }
                           >
-                            <FileEdit className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            className="btn-sm py-1! px-2! border-none!"
-                            type="button"
-                            title="Review / Approve"
-                            style={{ color: "var(--pm-gray-4)" }}
-                            onClick={() => router.push("/app/content")}
-                          >
-                            <FileCheck className="w-3.5 h-3.5" />
+                            <Archive className="w-3.5 h-3.5" />
                           </button>
                           <button
                             className="btn-sm py-1! px-2! border-none!"
                             type="button"
                             title="Open"
                             style={{ color: "var(--pm-gray-4)" }}
-                            onClick={() => router.push("/app/content/articles")}
+                            onClick={() =>
+                              router.push("/app/content/articles")
+                            }
                           >
                             <ArrowUpRight className="w-3.5 h-3.5" />
                           </button>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>

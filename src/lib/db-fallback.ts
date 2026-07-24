@@ -1,7 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { query, queryOne, queryMany } from "./db";
 
+/* ── Migration 046 verified ─────────────────────────────────── */
+// Migration 046 (046_fix_inventory_schema_and_worker.sql) was verified:
+// - Restores supplier_id, sub_category_id, and 3 indexes on analytics_fact_inventory
+// - Adds source_job_id unique constraint on reports for idempotent ETL inserts
+// - Adds claim_job() RPC for atomic worker job claiming
+// - Adds append_report_to_project() RPC for atomic metadata append
+
 /* ── Core pattern ───────────────────────────────────────────── */
+
+const FALLBACK_TIMEOUT_MS = 5_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`[pg-fallback] ${label} timed out after ${ms}ms`)), ms),
+    ),
+  ]);
+}
 
 export async function withPgFallback<T>(
   supabaseOp: () => Promise<T>,
@@ -11,12 +29,24 @@ export async function withPgFallback<T>(
   try {
     return await supabaseOp();
   } catch (err) {
-    console.warn(
+    console.error(
       `[pg-fallback] Supabase failed${label ? ` (${label})` : ""}:`,
       err instanceof Error ? err.message : err,
       "— falling back to direct SQL",
     );
-    return await pgOp();
+    try {
+      const result = await withTimeout(pgOp(), FALLBACK_TIMEOUT_MS, label ?? "pg-fallback");
+      console.log(
+        `[pg-fallback] Direct SQL recovered${label ? ` (${label})` : ""}`,
+      );
+      return result;
+    } catch (fallbackErr) {
+      console.error(
+        `[pg-fallback] Direct SQL also failed${label ? ` (${label})` : ""}:`,
+        fallbackErr instanceof Error ? fallbackErr.message : fallbackErr,
+      );
+      throw fallbackErr;
+    }
   }
 }
 

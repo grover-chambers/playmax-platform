@@ -23,7 +23,6 @@ import {
   getDeliverablesByCategoryPg,
   deleteDeliverablesPg,
   insertDeliverablePg,
-  withPgFallback,
 } from "@/lib/db-fallback";
 
 export const dynamic = "force-dynamic";
@@ -223,6 +222,34 @@ export async function POST() {
 
       if (del) {
         createdDeliverables.push(del);
+      }
+    }
+
+    // Create notification for client
+    await supabase.from("notifications").insert({
+      client_id: client.id,
+      type: "report",
+      title: "New Reports Available",
+      message: `${createdDeliverables.length} analytics reports for ${categoryName} have been generated and are ready for review.`,
+      link: "/portal/deliverables",
+    });
+
+    // Send email notification if enabled
+    const prefs = client.notification_prefs as Record<string, boolean> | undefined;
+    if (prefs?.email !== false && client.email) {
+      try {
+        const { NotificationEmail } = await import("@/emails/notification");
+        const { sendEmail } = await import("@/lib/email");
+        await sendEmail({
+          to: client.email,
+          subject: `New Analytics Reports — ${categoryName}`,
+          react: NotificationEmail({
+            name: "New Reports Available",
+            message: `${createdDeliverables.length} analytics reports for ${categoryName} have been generated and are ready for review in your portal.`,
+          }),
+        });
+      } catch (emailErr) {
+        console.error("[reports/generate] email notification failed:", emailErr);
       }
     }
 

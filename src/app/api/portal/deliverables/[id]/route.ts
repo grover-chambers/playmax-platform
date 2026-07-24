@@ -62,6 +62,25 @@ export async function PUT(
       entity_id: id,
     }).maybeSingle();
 
+    // Send email notification to staff if enabled
+    const prefs = client.notification_prefs as Record<string, boolean> | undefined;
+    if (prefs?.email !== false && client.email) {
+      try {
+        const { NotificationEmail } = await import("@/emails/notification");
+        const { sendEmail } = await import("@/lib/email");
+        await sendEmail({
+          to: client.email,
+          subject: `Deliverable ${approval_status === "approved" ? "Approved" : "Changes Requested"}`,
+          react: NotificationEmail({
+            name: `Deliverable ${approval_status === "approved" ? "Approved" : "Changes Requested"}`,
+            message: `"${deliverable.title}" was ${approval_status === "approved" ? "approved" : "sent back with feedback"} by the client.`,
+          }),
+        });
+      } catch (emailErr) {
+        console.error("[deliverables] email notification failed:", emailErr);
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed to update deliverable" }, { status: 500 });

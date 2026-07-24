@@ -1,9 +1,10 @@
 import { ANALYTICS_COLORS } from "./analytics-colors";
+import type { SubscriptionTier } from "@/lib/stripe";
 
-export function competitorLabel(name: string, isClient: boolean, rank: number): string {
-  if (isClient) return name;
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  return `Competitor ${letters[(rank - 1) % 26]}`;
+export function competitorLabel(name: string, isClient: boolean, rank: number, tier: SubscriptionTier = "free"): string {
+  if (isClient) return `${name} (you)`;
+  if (tier === "free") return `Competitor ${String.fromCharCode(64 + rank)}`;
+  return name;
 }
 
 const RANK_COLORS = {

@@ -24,6 +24,8 @@ import { findCategory } from "@/lib/report-types";
 import type { ChartType } from "@/lib/report-types";
 import { ANALYTICS_COLORS, CHART_COLORS } from "@/lib/analytics-colors";
 import { competitorLabel, competitorColor } from "@/lib/competitor-utils";
+import { KpiSkeleton, CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -94,7 +96,12 @@ interface AnalyticsResponse {
     totalUnits: number;
     totalInventoryValue: number;
     totalProducts: number;
+    prevTotalSales: number;
+    prevTotalUnits: number;
   };
+  periods: { id: string; label: string }[];
+  allBranches: { id: string; name: string }[];
+  allCategories: { id: string; name: string }[];
   error?: string;
 }
 
@@ -113,6 +120,18 @@ function fmtNum(n: number | null | undefined): string {
 
 function fmtPct(n: number | null | undefined): string {
   return `${(n ?? 0).toFixed(1)}%`;
+}
+
+function TrendArrow({ value, label }: { value: number | null; label?: string }) {
+  if (value === null || value === undefined) return null;
+  const up = value >= 0;
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[10px] font-mono ${up ? "text-green" : "text-red"}`}>
+      <span>{up ? "▲" : "▼"}</span>
+      {Math.abs(value).toFixed(1)}%
+      {label && <span className="text-gray-5 ml-0.5">{label}</span>}
+    </span>
+  );
 }
 
 /* ── SVG Bar Chart Components ─────────────────────────────────── */
@@ -275,47 +294,90 @@ export default function PortalAnalyticsPage() {
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [maizeData, setMaizeData] = useState<Record<string, unknown> | null>(null);
   const [maizeLoading, setMaizeLoading] = useState(true);
+  const [filterPeriod, setFilterPeriod] = useState("all");
+  const [filterBranches, setFilterBranches] = useState<string[]>([]);
+  const [filterCategories, setFilterCategories] = useState<string[]>([]);
+  const [periods, setPeriods] = useState<{ id: string; label: string }[]>([]);
+  const [allBranches, setAllBranches] = useState<{ id: string; name: string }[]>([]);
+  const [allCategories, setAllCategories] = useState<{ id: string; name: string }[]>([]);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+
+  const fetchData = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filterPeriod !== "all") params.set("period_id", filterPeriod);
+      if (filterBranches.length > 0) params.set("branch_ids", filterBranches.join(","));
+      if (filterCategories.length > 0) params.set("category_ids", filterCategories.join(","));
+      const qs = params.toString();
+      const [analyticsRes, reportsRes, maizeRes] = await Promise.all([
+        fetch(`/api/portal/analytics${qs ? `?${qs}` : ""}`),
+        fetch("/api/portal/analytics/reports"),
+        fetch("/api/portal/analytics/category/maizze"),
+      ]);
+      const analyticsData = await analyticsRes.json();
+      const reportsData = await reportsRes.json();
+      const maize = await maizeRes.json();
+
+      startTransition(() => {
+        if (analyticsData.error) {
+          setError(analyticsData.error);
+        } else {
+          setData(analyticsData);
+          if (analyticsData.periods) setPeriods(analyticsData.periods);
+          if (analyticsData.allBranches) setAllBranches(analyticsData.allBranches);
+          if (analyticsData.allCategories) setAllCategories(analyticsData.allCategories);
+        }
+        setReports(reportsData.reports || []);
+        if (maize && maize.category) setMaizeData(maize);
+        setMaizeLoading(false);
+        setLoading(false);
+      });
+    } catch {
+      startTransition(() => {
+        setError("Failed to load analytics data");
+        setLoading(false);
+        setMaizeLoading(false);
+      });
+    }
+    setLastRefresh(new Date());
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [analyticsRes, reportsRes, maizeRes] = await Promise.all([
-          fetch("/api/portal/analytics"),
-          fetch("/api/portal/analytics/reports"),
-          fetch("/api/portal/analytics/category/maizze"),
-        ]);
-        const analyticsData = await analyticsRes.json();
-        const reportsData = await reportsRes.json();
-        const maize = await maizeRes.json();
+    let cancelled = false;
+    (async () => {
+      await fetchData();
+      if (!cancelled) setLastRefresh(new Date());
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterPeriod, filterBranches.join(","), filterCategories.join(",")]);
 
-        startTransition(() => {
-          if (analyticsData.error) {
-            setError(analyticsData.error);
-          } else {
-            setData(analyticsData);
-          }
-          setReports(reportsData.reports || []);
-          if (maize && maize.category) setMaizeData(maize);
-          setMaizeLoading(false);
-          setLoading(false);
-        });
-      } catch {
-        startTransition(() => {
-          setError("Failed to load analytics data");
-          setLoading(false);
-          setMaizeLoading(false);
-        });
-      }
-    };
-    fetchData();
-  }, []);
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(() => { fetchData(); }, 30000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefresh]);
 
   /* ── Loading / Error states ───────────────────────────────── */
   if (loading) {
     return (
       <div className="page-content">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-teal" />
+        <PageHeader title="Analytics" subtitle="Loading market intelligence data..." />
+        <div className="pm-dash-krow pm-dash-krow-4 mb-6">
+          <KpiSkeleton />
+          <KpiSkeleton />
+          <KpiSkeleton />
+          <KpiSkeleton />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+          <div className="lg:col-span-3"><TableSkeleton rows={5} /></div>
+          <div className="lg:col-span-2"><CardSkeleton height={250} /></div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <CardSkeleton height={180} />
+          <CardSkeleton height={180} />
         </div>
       </div>
     );
@@ -590,31 +652,149 @@ export default function PortalAnalyticsPage() {
       {/* ═══ LIVE ANALYTICS TAB ═══════════════════════════════ */}
       {tab === "overview" && (
         <>
+          {/* ── Filter Bar ─────────────────────────────── */}
+          <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-gray-5">Filters</span>
+              {/* Period filter */}
+              <select
+                value={filterPeriod}
+                onChange={(e) => setFilterPeriod(e.target.value)}
+                className="bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] rounded-lg px-3 py-1.5 text-[12px] text-[var(--ws-text,#1A1C23)] cursor-pointer"
+              >
+                <option value="all">All periods</option>
+                {periods.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
+              {/* Branch filter */}
+              <select
+                value={filterBranches[0] || "all"}
+                onChange={(e) => setFilterBranches(e.target.value === "all" ? [] : [e.target.value])}
+                className="bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] rounded-lg px-3 py-1.5 text-[12px] text-[var(--ws-text,#1A1C23)] cursor-pointer"
+              >
+                <option value="all">All branches</option>
+                {allBranches.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+              {/* Category filter */}
+              <select
+                value={filterCategories[0] || "all"}
+                onChange={(e) => setFilterCategories(e.target.value === "all" ? [] : [e.target.value])}
+                className="bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] rounded-lg px-3 py-1.5 text-[12px] text-[var(--ws-text,#1A1C23)] cursor-pointer"
+              >
+                <option value="all">All categories</option>
+                {allCategories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {/* Active filter count */}
+              {(filterPeriod !== "all" || filterBranches.length > 0 || filterCategories.length > 0) && (
+                <button
+                  onClick={() => { setFilterPeriod("all"); setFilterBranches([]); setFilterCategories([]); }}
+                  className="text-[10px] text-red hover:underline cursor-pointer"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Auto-refresh toggle */}
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  autoRefresh
+                    ? "border-teal bg-teal/10 text-teal"
+                    : "border-[var(--ws-border,#e5e5e5)] hover:bg-white/5 text-[var(--ws-text,#1A1C23)]"
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? "bg-teal animate-pulse" : "bg-gray-5"}`} />
+                {autoRefresh ? "Auto" : "Manual"}
+              </button>
+              <button
+                onClick={fetchData}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[var(--ws-border,#e5e5e5)] hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--ws-text,#1A1C23)]"
+              >
+                <Loader2 size={12} className={loading ? "animate-spin" : ""} />
+                Refresh
+              </button>
+              <span className="text-[10px] text-gray-5 hidden md:inline">
+                {lastRefresh.toLocaleTimeString()}
+              </span>
+              <button
+                onClick={() => {
+                  let csv = "Metric,Value\n";
+                  csv += `Total Revenue,${s.totalSales}\n`;
+                  csv += `Total Units,${s.totalUnits}\n`;
+                  csv += `Products,${s.totalProducts}\n`;
+                  csv += `Avg Margin,${avgMargin.toFixed(1)}%\n\n`;
+                  csv += "Competitor,Rank,Revenue,Share\n";
+                  leaderboardCompetitors.forEach((c) => {
+                    csv += `${c.manufacturer},${c.rank},${c.total_sales},${c.share.toFixed(1)}%\n`;
+                  });
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "analytics-export.csv";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[var(--ws-border,#e5e5e5)] hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--ws-text,#1A1C23)]"
+              >
+                <FileText size={12} />
+                CSV
+              </button>
+              <button
+                onClick={() => {
+                  // PDF export via browser print
+                  window.print();
+                }}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[var(--ws-border,#e5e5e5)] hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--ws-text,#1A1C23)]"
+              >
+                PDF
+              </button>
+            </div>
+          </div>
+
           {/* ── KPI Summary Row ─────────────────────────── */}
+          <ErrorBoundary fallbackTitle="KPI data unavailable">
           <div className="pm-dash-krow pm-dash-krow-4 mb-6">
             <div className="pm-dash-kcard">
               <div className="pm-dash-kn">{fmt(s.totalSales)}</div>
               <div className="pm-dash-kl">Total Revenue</div>
-              <div className="pm-dash-ksub">{fmtNum(s.totalUnits)} units sold</div>
+              <div className="pm-dash-ksub flex items-center gap-2">
+                {fmtNum(s.totalUnits)} units sold
+                {s.prevTotalSales > 0 && (
+                  <TrendArrow value={((s.totalSales - s.prevTotalSales) / s.prevTotalSales) * 100} label="vs prev" />
+                )}
+              </div>
             </div>
               <div className="pm-dash-kcard grn">
               <div className="pm-dash-kn grn">{clientComp ? fmtPct(displayShare) : "—"}</div>
               <div className="pm-dash-kl">Maize Flour Share</div>
-              <div className="pm-dash-ksub">
-                {clientComp ? `Rank #${displayRank} of ${displayTotal} maize suppliers` : "Not ranked"}
+              <div className="pm-dash-ksub flex items-center gap-2">
+                {clientComp ? `Rank #${displayRank} of ${displayTotal}` : "Not ranked"}
+                {clientComp && displayRank === 1 && <TrendArrow value={0} label="leader" />}
               </div>
             </div>
             <div className="pm-dash-kcard blu">
               <div className="pm-dash-kn blu">{fmtNum(s.totalProducts)}</div>
               <div className="pm-dash-kl">Products</div>
-              <div className="pm-dash-ksub">{categories.length} categories</div>
+              <div className="pm-dash-ksub flex items-center gap-2">
+                {categories.length} categories
+              </div>
             </div>
             <div className="pm-dash-kcard red">
               <div className="pm-dash-kn red">{fmtPct(avgMargin)}</div>
               <div className="pm-dash-kl">Avg Margin</div>
-              <div className="pm-dash-ksub">{pricing.length} price points</div>
+              <div className="pm-dash-ksub flex items-center gap-2">
+                {pricing.length} price points
+              </div>
             </div>
           </div>
+          </ErrorBoundary>
 
           {/* ── NICE Position Banner ──────────────────────── */}
           {clientComp && (
@@ -644,6 +824,7 @@ export default function PortalAnalyticsPage() {
           )}
 
           {/* ── Competitor Leaderboard + Category Share ─── */}
+          <ErrorBoundary fallbackTitle="Leaderboard data unavailable">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
             {/* Leaderboard - 3 cols */}
             <div className="lg:col-span-3 pm-dash-card p-5">
@@ -762,8 +943,10 @@ export default function PortalAnalyticsPage() {
               </div>
             </div>
           </div>
+          </ErrorBoundary>
 
           {/* ── Branch Performance + Pricing ────────────── */}
+          <ErrorBoundary fallbackTitle="Branch/pricing data unavailable">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Branch breakdown */}
             <div className="pm-dash-card p-5">
@@ -839,8 +1022,10 @@ export default function PortalAnalyticsPage() {
               </div>
             </div>
           </div>
+          </ErrorBoundary>
 
           {/* ── Top / Bottom Products ───────────────────── */}
+          <ErrorBoundary fallbackTitle="Product data unavailable">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Top products */}
             <div className="pm-dash-card p-5">
@@ -903,8 +1088,10 @@ export default function PortalAnalyticsPage() {
               </div>
             </div>
           </div>
+          </ErrorBoundary>
 
           {/* ── Category Performance Detail ─────────────── */}
+          <ErrorBoundary fallbackTitle="Category data unavailable">
           <div className="pm-dash-card p-5 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 size={14} className="text-teal" />
@@ -952,6 +1139,7 @@ export default function PortalAnalyticsPage() {
               </table>
             </div>
           </div>
+          </ErrorBoundary>
         </>
       )}
 

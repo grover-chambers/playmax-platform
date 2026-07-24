@@ -10,6 +10,7 @@ import {
   MessageSquare,
   FileText,
   Loader2,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -33,8 +34,14 @@ interface DbClient {
   email: string | null;
   assigned_to: string | null;
   status: string | null;
+  linked_supplier_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface SupplierOption {
+  id: string;
+  name: string;
 }
 
 interface DbProject {
@@ -158,6 +165,9 @@ export default function ClientDetailPage() {
   const [invoicePage, setInvoicePage] = useState(1);
   const [activityPage, setActivityPage] = useState(1);
 
+  const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
+  const [linkingSupplier, setLinkingSupplier] = useState(false);
+
   /* ── Derived activity from conversations + invoices + projects ──── */
   const activity: ActivityItem[] = React.useMemo(() => {
     const items: ActivityItem[] = [];
@@ -248,6 +258,16 @@ export default function ClientDetailPage() {
     let cancelled = false;
     const supabase = createClient();
 
+    // Always fetch suppliers for the selector
+    fetch("/api/suppliers")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && Array.isArray(d.suppliers)) {
+          setSuppliers(d.suppliers.map((s: { id: string; name: string }) => ({ id: s.id, name: s.name })));
+        }
+      })
+      .catch(() => {});
+
     if (activeTab === "overview" || activeTab === "projects") {
       supabase
         .from("projects")
@@ -283,6 +303,26 @@ export default function ClientDetailPage() {
 
     return () => { cancelled = true; };
   }, [id, activeTab]);
+
+  /* ── Link supplier handler ─────────────────── */
+  const handleLinkSupplier = async (supplierId: string) => {
+    if (!id) return;
+    setLinkingSupplier(true);
+    try {
+      const res = await fetch(`/api/clients/${id}/link-supplier`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ supplier_id: supplierId || null }),
+      });
+      if (res.ok) {
+        setClient((prev) => prev ? { ...prev, linked_supplier_id: supplierId || null } : prev);
+      }
+    } catch {
+      // silent
+    } finally {
+      setLinkingSupplier(false);
+    }
+  };
 
   /* ── Loading / Error states ──────────────────── */
   if (loading) {
@@ -445,10 +485,24 @@ export default function ClientDetailPage() {
                         </span>
                       </div>
                     </div>
+                    {/* Supplier Link */}
+                    <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-[rgba(255,255,255,0.04)]">
+                      <svg className="w-3.5 h-3.5 text-gray-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21V8a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v13"/><path d="M15 13h2"/><path d="M9 13H7"/><circle cx="12" cy="5" r="2"/></svg>
+                      <select
+                        value={c.linked_supplier_id || ""}
+                        onChange={(e) => handleLinkSupplier(e.target.value)}
+                        disabled={linkingSupplier}
+                        className="flex-1 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] rounded-lg px-2.5 py-1.5 text-[12px] text-gray-3 outline-none focus:border-yellow/40 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <option value="">No supplier linked</option>
+                        {suppliers.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                      {linkingSupplier && <Loader2 size={12} className="animate-spin text-gray-5" />}
+                    </div>
                   </div>
                 </div>
-
-                {/* Active Projects */}
                 <div className="pm-dash-card">
                   <div className="pm-dash-card-h">
                     <span className="pm-dash-card-t text-[16px]">Active Projects</span>
@@ -573,6 +627,15 @@ export default function ClientDetailPage() {
                       <span className="pm-dash-kn text-[18px]">
                         {activeProjectCount}
                       </span>
+                    </div>
+                    <div className="pt-2 border-t border-[rgba(255,255,255,0.04)]">
+                      <Link
+                        href={`/app/clients/${c.id}/users`}
+                        className="inline-flex items-center gap-1.5 text-[11px] text-yellow hover:underline"
+                      >
+                        <Users size={12} />
+                        Manage Team
+                      </Link>
                     </div>
                   </div>
                 </div>

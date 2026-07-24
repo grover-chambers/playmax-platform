@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { getPortalClient } from "@/lib/portal";
 import { sanitizeError } from "@/lib/errors";
@@ -20,7 +20,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
@@ -28,6 +28,10 @@ export async function PUT(req: Request) {
 
     const client = await getPortalClient(supabase, currentUser.id);
     if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
+
+    if (client.portal_role === "viewer") {
+      return NextResponse.json({ error: "Viewers cannot update profile" }, { status: 403 });
+    }
 
     const body = await req.json();
     const allowedFields: Record<string, unknown> = {};
