@@ -257,7 +257,7 @@ export async function fetchAllSalesWithJoinsPg(
   }
 
   const { rows } = await query(sql, params);
-  return rows.map((r) => ({
+  return rows.map((r: Record<string, unknown>) => ({
     id: r.id,
     quantity: r.quantity,
     total_amount: r.total_amount,
@@ -312,7 +312,7 @@ export async function fetchInventoryPg(branchIds?: string[]): Promise<Record<str
   }
   sql += ` ORDER BY i.period_id DESC LIMIT 500`;
   const { rows } = await query(sql, params);
-  return rows.map((r) => ({
+  return rows.map((r: Record<string, unknown>) => ({
     id: r.id,
     closing_stock: r.closing_stock,
     stock_value: r.stock_value,
@@ -356,7 +356,7 @@ export async function fetchPricingPg(branchIds?: string[]): Promise<Record<strin
   }
   sql += ` ORDER BY pr.effective_date DESC LIMIT 200`;
   const { rows } = await query(sql, params);
-  return rows.map((r) => ({
+  return rows.map((r: Record<string, unknown>) => ({
     id: r.id,
     standard_cost: r.standard_cost,
     selling_price: r.selling_price,
@@ -382,7 +382,7 @@ export async function fetchPricingByCategoryPg(categoryId: string): Promise<Reco
      LIMIT 100`,
     [categoryId],
   );
-  return rows.map((r) => ({
+  return rows.map((r: Record<string, unknown>) => ({
     id: r.id,
     standard_cost: r.standard_cost,
     selling_price: r.selling_price,
@@ -548,7 +548,7 @@ export async function fetchMaizzeSalesPg(
     params.push(branchIds);
   }
   const { rows } = await query(sql, params);
-  return rows.map((r) => ({
+  return rows.map((r: Record<string, unknown>) => ({
     id: r.id, quantity: r.quantity, total_amount: r.total_amount, cost_amount: r.cost_amount,
     unit_price: r.unit_price, product_id: r.product_id, branch_id: r.branch_id,
     period_id: r.period_id, supplier_id: r.supplier_id,
