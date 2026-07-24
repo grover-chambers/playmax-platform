@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
@@ -9,28 +8,22 @@ import {
   generateEnrichedBranchAnalysisReport,
   type EnrichedReportData,
 } from "@/lib/pdf-reports";
+import {
+  getClientById,
+  findSupplierByName,
+  getSharingRecords,
+  getCategoriesByIds,
+  getAllBranchesPg,
+  getAllProductsPg,
+  getAllSuppliersPg,
+  fetchAllSalesFallback,
+  insertReportPg,
+  insertDocumentPg,
+  insertNotificationsPg,
+} from "@/lib/db-fallback";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
-
-async function fetchAllSales(admin: SupabaseClient, periodIds: string[], categoryId: string) {
-  const all: { id: string; quantity: number; total_amount: number; supplier_id: string | null; branch_id: string; product_id: string }[] = [];
-  const PAGE = 1000;
-  let from = 0;
-  while (true) {
-    const { data } = await admin
-      .from("analytics_fact_sales")
-      .select("id, quantity, total_amount, supplier_id, branch_id, product_id")
-      .in("period_id", periodIds)
-      .eq("category_id", categoryId)
-      .range(from, from + PAGE - 1);
-    if (!data || data.length === 0) break;
-    all.push(...data);
-    from += PAGE;
-    if (data.length < PAGE) break;
-  }
-  return all;
-}
 
 export async function POST(request: Request) {
   try {
@@ -47,30 +40,19 @@ export async function POST(request: Request) {
 
     const admin = getAdminClient();
 
-    // 1. Fetch client info and sharing records
-    const { data: client } = await admin
-      .from("clients")
-      .select("id, name, company")
-      .eq("id", client_id)
-      .single();
+    // 1. Fetch client info and sharing records (with pg fallback)
+    const client = await getClientById(admin, client_id);
     if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
 
     // Find matching supplier — all clients are suppliers
     const clientCompany = (client.company || client.name || "").trim();
-    const { data: matchingSuppliers } = await admin
-      .from("analytics_suppliers")
-      .select("id, name")
-      .ilike("name", clientCompany);
-    const clientSupplierId = matchingSuppliers?.[0]?.id || null;
+    const matchingSupplier = await findSupplierByName(admin, clientCompany);
+    const clientSupplierId = matchingSupplier?.id || null;
     if (!clientSupplierId) {
       return NextResponse.json({ error: `No supplier found matching "${clientCompany}". Add them to analytics_suppliers first.` }, { status: 400 });
     }
 
-    const { data: sharing } = await admin
-      .from("portal_analytics_sharing")
-      .select("period_id, category_id")
-      .eq("client_id", client_id)
-      .eq("visible", true);
+    const sharing = await getSharingRecords(admin, client_id);
 
     if (!sharing || sharing.length === 0) {
       return NextResponse.json({ error: "No analytics sharing configured for this client" }, { status: 400 });
@@ -79,14 +61,14 @@ export async function POST(request: Request) {
     const periodIds = [...new Set(sharing.map((s) => s.period_id))];
     const categoryIds = [...new Set(sharing.map((s) => s.category_id).filter(Boolean))] as string[];
 
-    // 2. Fetch reference data
-    const { data: catRows } = await admin.from("analytics_categories").select("id, name").in("id", categoryIds);
+    // 2. Fetch reference data (with pg fallback)
+    const catRows = await getCategoriesByIds(admin, categoryIds);
     const catMap = new Map((catRows ?? []).map((c) => [c.id, c.name]));
-    const { data: supRows } = await admin.from("analytics_suppliers").select("id, name");
+    const supRows = await getAllSuppliersPg();
     const supMap = new Map((supRows ?? []).map((s) => [s.id, s.name]));
-    const { data: brRows } = await admin.from("analytics_branches").select("id, name");
+    const brRows = await getAllBranchesPg();
     const brMap = new Map((brRows ?? []).map((b) => [b.id, b.name]));
-    const { data: prodRows } = await admin.from("analytics_products").select("id, name");
+    const prodRows = await getAllProductsPg();
     const prodMap = new Map((prodRows ?? []).map((p) => [p.id, p.name]));
 
     const createdDocs: { id: string; name: string; category: string }[] = [];
@@ -94,7 +76,7 @@ export async function POST(request: Request) {
 
     for (const catId of categoryIds) {
       const catName = catMap.get(catId) || `Category-${catId}`;
-      const rows = await fetchAllSales(admin, periodIds, catId);
+      const rows = await fetchAllSalesFallback(admin, periodIds, catId);
       if (rows.length === 0) continue;
 
       // Compute aggregates
@@ -240,20 +222,15 @@ export async function POST(request: Request) {
       };
       generatedReports.push(analysis);
 
-      // 6. Create reports row
-      const { data: reportRow } = await admin
-        .from("reports")
-        .insert({
-          project_id: null,
-          client_id,
-          title: `${catName} — Market Analysis`,
-          type: "category_analysis",
-          kind: "ai_summary",
-          content: JSON.stringify(analysis),
-          visible_to_client: false,
-        })
-        .select()
-        .single();
+      // 6. Create reports row (with pg fallback)
+      const reportRow = await insertReportPg({
+        client_id,
+        title: `${catName} — Market Analysis`,
+        type: "category_analysis",
+        kind: "ai_summary",
+        content: JSON.stringify(analysis),
+        visible_to_client: false,
+      });
 
       if (!reportRow) continue;
 
@@ -350,19 +327,14 @@ export async function POST(request: Request) {
         }
         const publicUrl = admin.storage.from(bucket).getPublicUrl(filename).data.publicUrl;
 
-        const { data: doc } = await admin
-          .from("documents")
-          .insert({
-            project_id: null,
-            client_id,
-            name: spec.name,
-            type: "pdf",
-            url: publicUrl,
-            visible_to_client: true,
-            source_report_id: reportRow.id,
-          })
-          .select()
-          .single();
+        const doc = await insertDocumentPg({
+          client_id,
+          name: spec.name,
+          type: "pdf",
+          url: publicUrl,
+          visible_to_client: true,
+          source_report_id: reportRow.id,
+        });
 
         if (doc) {
           createdDocsForCategory.push({ id: doc.id, name: doc.name });
@@ -379,7 +351,7 @@ export async function POST(request: Request) {
       }
 
       if (notifsData.length > 0) {
-        await admin.from("notifications").insert(notifsData);
+        await insertNotificationsPg(notifsData);
       }
       for (const d of createdDocsForCategory) {
         createdDocs.push({ id: d.id, name: d.name, category: catName });

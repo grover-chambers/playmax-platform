@@ -3,6 +3,7 @@ import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/
 import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 import { generateSummaryReport } from "@/lib/pdf-reports";
+import { getReportByIdPg, updateReportContentPg, getClientById, insertDocumentPg, withPgFallback } from "@/lib/db-fallback";
 
 export const dynamic = "force-dynamic";
 
@@ -18,31 +19,39 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const overrideTitle: string | undefined = body.title;
     const overrideContent: string | undefined = body.content;
 
-    // 1. Load the report
-    const { data: report, error: reportErr } = await supabase
-      .from("reports")
-      .select("*")
-      .eq("id", id)
-      .single();
+    // 1. Load the report (with pg fallback)
+    const report = await withPgFallback(
+      async () => {
+        const { data, error } = await supabase
+          .from("reports")
+          .select("*")
+          .eq("id", id)
+          .single();
+        if (error) throw error;
+        return data;
+      },
+      () => getReportByIdPg(id),
+      "getReport",
+    );
 
-    if (reportErr || !report) {
+    if (!report) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
 
-    // 2. If content override, persist it
+    // 2. If content override, persist it (with pg fallback)
     if (overrideContent !== undefined) {
-      await supabase.from("reports").update({ content: overrideContent }).eq("id", id);
+      await withPgFallback(
+        async () => { await supabase.from("reports").update({ content: overrideContent }).eq("id", id); },
+        () => updateReportContentPg(id, overrideContent),
+        "updateReportContent",
+      );
     }
 
     // Resolve client name for the PDF header
     let clientName: string | null = null;
     if (report.client_id) {
-      const { data: cl } = await supabase
-        .from("clients")
-        .select("company, name")
-        .eq("id", report.client_id)
-        .single();
-      clientName = cl?.company || cl?.name || null;
+      const cl = await getClientById(supabase, report.client_id);
+      clientName = (cl as { company?: string; name?: string } | null)?.company || (cl as { name?: string } | null)?.name || null;
     }
 
     const finalTitle = overrideTitle || report.title;
@@ -72,22 +81,37 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       finalUrl = admin.storage.from(bucket).getPublicUrl(filename).data.publicUrl;
     }
 
-    // 4. Insert into documents
-    const { data: doc, error: docErr } = await admin
-      .from("documents")
-      .insert({
-        project_id: null,
+    // 4. Insert into documents (with pg fallback)
+    const doc = await withPgFallback(
+      async () => {
+        const { data, error } = await admin
+          .from("documents")
+          .insert({
+            project_id: null,
+            client_id: report.client_id,
+            name: finalTitle,
+            type: "pdf",
+            url: finalUrl,
+            visible_to_client: false,
+            source_report_id: report.id,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      },
+      () => insertDocumentPg({
         client_id: report.client_id,
         name: finalTitle,
         type: "pdf",
         url: finalUrl,
         visible_to_client: false,
         source_report_id: report.id,
-      })
-      .select()
-      .single();
+      }),
+      "insertDocument",
+    );
 
-    if (docErr) return NextResponse.json({ error: sanitizeError(docErr) }, { status: 500 });
+    if (!doc) return NextResponse.json({ error: "Failed to create document" }, { status: 500 });
 
     return NextResponse.json({ data: doc });
   } catch (e) {
