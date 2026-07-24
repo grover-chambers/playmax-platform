@@ -430,8 +430,8 @@ export async function insertReportPg(data: {
 
 /* ── Deliverables via pg ────────────────────────────────────── */
 
-export async function getDeliverablesByCategoryPg(clientId: string, categoryName: string) {
-  return queryMany(
+export async function getDeliverablesByCategoryPg(clientId: string, categoryName: string): Promise<{ id: string }[]> {
+  return queryMany<{ id: string }>(
     `SELECT id FROM deliverables WHERE client_id = $1 AND file_type = 'pdf' AND title LIKE $2`,
     [clientId, `%${categoryName}%`],
   );
@@ -570,4 +570,11 @@ export async function getAllProductsPg(): Promise<{ id: string; name: string }[]
 
 export async function getAllSuppliersPg(): Promise<{ id: string; name: string }[]> {
   return queryMany<{ id: string; name: string }>(`SELECT id, name FROM analytics_suppliers`);
+}
+
+export async function getPeriodLabelsPg(periodIds: string[]): Promise<{ label: string }[]> {
+  return queryMany<{ label: string }>(
+    `SELECT label FROM analytics_periods WHERE id = ANY($1) ORDER BY year ASC, month ASC`,
+    [periodIds],
+  );
 }

@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { getPortalClient } from "@/lib/portal";
+import {
+  getSharingRecords,
+  fetchAllSalesWithJoinsFallback,
+  fetchInventoryFallback,
+  fetchPricingFallback,
+  getSuppliersByIds,
+  getClientColorPg,
+  withPgFallback,
+} from "@/lib/db-fallback";
 
 export const dynamic = "force-dynamic";
 
@@ -93,16 +102,8 @@ export async function GET() {
     const client = await getPortalClient(supabase, currentUser.id);
     if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
 
-    // Fetch sharing records for this client
-    const { data: sharing, error: shareErr } = await supabase
-      .from("portal_analytics_sharing")
-      .select("id, period_id, branch_id, category_id")
-      .eq("client_id", client.id)
-      .eq("visible", true);
-
-    if (shareErr) {
-      return NextResponse.json({ error: shareErr.message }, { status: 500 });
-    }
+    // Fetch sharing records for this client (with pg fallback)
+    const sharing = await getSharingRecords(supabase, client.id);
 
     if (!sharing || sharing.length === 0) {
       return NextResponse.json({
@@ -123,53 +124,23 @@ export async function GET() {
     const branchIds = [...new Set(sharing.map((s) => s.branch_id).filter(Boolean))] as string[];
     const categoryIds = [...new Set(sharing.map((s) => s.category_id).filter(Boolean))] as string[];
 
-    // ── Sales data (paginated to avoid 1000-row limit) ──────────
-    const allSales: Record<string, unknown>[] = [];
-    const PAGE = 1000;
-    let from = 0;
-    let salesErr: { message: string } | null = null;
-    while (true) {
-      let q = supabase
-        .from("analytics_fact_sales")
-        .select("id, quantity, total_amount, cost_amount, weight_tonnes, unit_price, product_id, branch_id, period_id, category_id, supplier_id, product:analytics_products(name, stock_code), period:analytics_periods(label, year, quarter, month), branch:analytics_branches(name, code), category:analytics_categories(name)")
-        .in("period_id", periodIds)
-        .range(from, from + PAGE - 1);
-      if (branchIds.length > 0) q = q.in("branch_id", branchIds);
-      if (categoryIds.length > 0) q = q.in("category_id", categoryIds);
-      const { data, error } = await q;
-      if (error) { salesErr = error; break; }
-      if (!data || data.length === 0) break;
-      allSales.push(...data);
-      from += PAGE;
-      if (data.length < PAGE) break;
-    }
-    const sales = salesErr ? null : allSales;
+    // ── Sales data (with pg fallback for joins) ──────────
+    const allSales = await fetchAllSalesWithJoinsFallback(
+      supabase, periodIds,
+      branchIds.length > 0 ? branchIds : undefined,
+      categoryIds.length > 0 ? categoryIds : undefined,
+    );
+    const sales = allSales.length > 0 ? allSales : null;
 
-    // ── Inventory data ──────────────────────────────────────────
-    let invQuery = supabase
-      .from("analytics_fact_inventory")
-      .select("id, closing_stock, stock_value, product:analytics_products(name, stock_code), branch:analytics_branches(name, code), period:analytics_periods(end_date)")
-      .order("period_id", { ascending: false })
-      .limit(500);
+    // ── Inventory data (with pg fallback) ──────────────────
+    const inventory = await fetchInventoryFallback(supabase, branchIds.length > 0 ? branchIds : undefined);
 
-    if (branchIds.length > 0) invQuery = invQuery.in("branch_id", branchIds);
+    // ── Pricing data (with pg fallback) ────────────────────
+    const pricingRaw = await fetchPricingFallback(supabase, branchIds.length > 0 ? branchIds : undefined);
 
-    const { data: inventory, error: invErr } = await invQuery;
-
-    // ── Pricing data ────────────────────────────────────────────
-    let pricingQuery = supabase
-      .from("analytics_fact_pricing")
-      .select("id, standard_cost, selling_price, effective_date, product:analytics_products(name, stock_code), branch:analytics_branches(name, code)")
-      .order("effective_date", { ascending: false })
-      .limit(200);
-
-    if (branchIds.length > 0) pricingQuery = pricingQuery.in("branch_id", branchIds);
-
-    const { data: pricingRaw } = await pricingQuery;
-
-    if (salesErr || invErr) {
+    if (!sales) {
       return NextResponse.json({
-        error: salesErr?.message || invErr?.message || "Query failed",
+        error: "Sales query failed",
         sharing,
         sales: [],
         inventory: [],
@@ -191,11 +162,8 @@ export async function GET() {
     const supplierIds = [...new Set(salesRows.map((r) => r.supplier_id).filter(Boolean))] as string[];
     let supplierNameMap = new Map<string, string>();
     if (supplierIds.length > 0) {
-      const { data: supplierRows } = await supabase
-        .from("analytics_suppliers")
-        .select("id, name")
-        .in("id", supplierIds);
-      supplierNameMap = new Map((supplierRows ?? []).map((s) => [s.id as string, s.name as string]));
+      const supRows = await getSuppliersByIds(supabase, supplierIds);
+      supplierNameMap = new Map((supRows ?? []).map((s) => [s.id, s.name]));
     }
 
     const supGrouped = new Map<string, { total: number; units: number; products: Set<string>; supplierIds: Set<string> }>();
@@ -309,12 +277,19 @@ export async function GET() {
         : 0,
     }));
 
-    // Dashboard color
-    const { data: clientRow } = await supabase
-      .from("clients")
-      .select("dashboard_color")
-      .eq("id", client.id)
-      .single();
+    // Dashboard color (with pg fallback)
+    const dashboardColor = await withPgFallback(
+      async () => {
+        const { data } = await supabase
+          .from("clients")
+          .select("dashboard_color")
+          .eq("id", client.id)
+          .single();
+        return (data as { dashboard_color?: string } | null)?.dashboard_color || "#0F6E56";
+      },
+      () => getClientColorPg(client.id).then((c) => c || "#0F6E56"),
+      "getClientColor",
+    );
 
     return NextResponse.json({
       sharing,
@@ -326,7 +301,7 @@ export async function GET() {
       topProducts,
       bottomProducts,
       pricing,
-      dashboardColor: (clientRow as { dashboard_color?: string } | null)?.dashboard_color || "#0F6E56",
+      dashboardColor,
       summary: {
         totalSales: grandTotal,
         totalUnits: Array.from(supGrouped.values()).reduce((s, g) => s + g.units, 0),

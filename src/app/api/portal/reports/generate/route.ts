@@ -14,6 +14,17 @@ import {
   type BranchData,
   type ClientBranchData,
 } from "@/lib/pdf-reports";
+import {
+  getSharingRecords,
+  getCategoriesByIds,
+  getPeriodLabelsPg,
+  getSuppliersByIds,
+  fetchAllSalesWithJoinsFallback,
+  getDeliverablesByCategoryPg,
+  deleteDeliverablesPg,
+  insertDeliverablePg,
+  withPgFallback,
+} from "@/lib/db-fallback";
 
 export const dynamic = "force-dynamic";
 
@@ -48,12 +59,8 @@ export async function POST() {
     const clientDisplayName = client.company || client.name || "Client";
     const clientNameLower = clientDisplayName.toLowerCase();
 
-    // Fetch sharing records
-    const { data: sharing } = await supabase
-      .from("portal_analytics_sharing")
-      .select("period_id, branch_id, category_id")
-      .eq("client_id", client.id)
-      .eq("visible", true);
+    // Fetch sharing records (with pg fallback)
+    const sharing = await getSharingRecords(supabase, client.id);
 
     if (!sharing || sharing.length === 0) {
       return NextResponse.json({ error: "No analytics data shared" }, { status: 404 });
@@ -63,55 +70,32 @@ export async function POST() {
     const branchIds = [...new Set(sharing.map((s) => s.branch_id).filter(Boolean))] as string[];
     const categoryIds = [...new Set(sharing.map((s) => s.category_id).filter(Boolean))] as string[];
 
-    // Fetch category name
+    // Fetch category name (with pg fallback)
     let categoryName = "Product";
     if (categoryIds.length > 0) {
-      const { data: catRow } = await admin
-        .from("analytics_categories")
-        .select("name")
-        .in("id", categoryIds)
-        .limit(1)
-        .single();
-      if (catRow) categoryName = catRow.name;
+      const cats = await getCategoriesByIds(admin, categoryIds);
+      if (cats && cats.length > 0) categoryName = cats[0].name;
     }
 
-    // Fetch period label
+    // Fetch period label (pg fallback)
     let periodLabel = "Review Period";
     if (periodIds.length > 0) {
-      const { data: periodRows } = await admin
-        .from("analytics_periods")
-        .select("label")
-        .in("id", periodIds)
-        .order("year", { ascending: true })
-        .order("month", { ascending: true });
+      const periodRows = await getPeriodLabelsPg(periodIds);
       if (periodRows && periodRows.length > 0) {
         const labels = periodRows.map((p) => p.label).filter(Boolean);
         periodLabel = labels.length > 1 ? `${labels[0]}–${labels[labels.length - 1]}` : labels[0] || "Review Period";
       }
     }
 
-    // Fetch sales
-    let salesQuery = supabase
-      .from("analytics_fact_sales")
-      .select("id, quantity, total_amount, cost_amount, unit_price, product_id, branch_id, period_id, category_id, supplier_id, product:analytics_products(name, stock_code), period:analytics_periods(label, year, quarter, month), branch:analytics_branches(name, code), category:analytics_categories(name)")
-      .in("period_id", periodIds);
-    if (branchIds.length > 0) salesQuery = salesQuery.in("branch_id", branchIds);
-    if (categoryIds.length > 0) salesQuery = salesQuery.in("category_id", categoryIds);
+    // Fetch sales (with pg fallback for joins)
+    const salesRows = await fetchAllSalesWithJoinsFallback(supabase, periodIds, branchIds.length > 0 ? branchIds : undefined, categoryIds.length > 0 ? categoryIds : undefined) as unknown as RawSalesRow[];
 
-    const { data: sales, error: salesErr } = await salesQuery;
-    if (salesErr) return NextResponse.json({ error: salesErr.message }, { status: 500 });
-
-    const salesRows = (sales || []) as unknown as RawSalesRow[];
-
-    // Build supplier lookup
+    // Build supplier lookup (with pg fallback)
     const supplierIds = [...new Set(salesRows.map((r) => r.supplier_id).filter(Boolean))] as string[];
     let supplierNameMap = new Map<string, string>();
     if (supplierIds.length > 0) {
-      const { data: supplierRows } = await admin
-        .from("analytics_suppliers")
-        .select("id, name")
-        .in("id", supplierIds);
-      supplierNameMap = new Map((supplierRows ?? []).map((s) => [s.id as string, s.name as string]));
+      const supRows = await getSuppliersByIds(admin, supplierIds);
+      supplierNameMap = new Map((supRows ?? []).map((s) => [s.id, s.name]));
     }
 
     // Group by supplier
@@ -201,16 +185,11 @@ export async function POST() {
       periodLabel,
     };
 
-    // Delete previously generated reports for this client
-    const { data: existingDels } = await admin
-      .from("deliverables")
-      .select("id")
-      .eq("client_id", client.id)
-      .eq("file_type", "pdf")
-      .like("title", `%${categoryName.replace(/[%_]/g, '')}%`);
+    // Delete previously generated reports for this client (with pg fallback)
+    const existingDels = await getDeliverablesByCategoryPg(client.id, categoryName.replace(/[%_]/g, ''));
 
     if (existingDels && existingDels.length > 0) {
-      await admin.from("deliverables").delete().in("id", existingDels.map((d) => d.id));
+      await deleteDeliverablesPg(existingDels.map((d) => d.id));
     }
 
     // Generate 6 PDFs with dynamic titles
@@ -231,23 +210,18 @@ export async function POST() {
       const doc = fn(reportData);
       const pdfBase64 = doc.output("datauristring").split(",")[1] || "";
 
-      const { data: del, error: insErr } = await admin
-        .from("deliverables")
-        .insert({
-          project_id: null,
-          client_id: client.id,
-          title,
-          description: `Auto-generated analytics report for ${clientDisplayName} — ${categoryName} Category (${periodLabel})`,
-          file_type: "pdf",
-          file_size: String(Math.round((pdfBase64.length * 3) / 4)),
-          visible_to_client: true,
-          approval_status: "pending",
-          pdf_base64: pdfBase64,
-        })
-        .select("id, title, file_type, file_size, created_at")
-        .single();
+      const del = await insertDeliverablePg({
+        client_id: client.id,
+        title,
+        description: `Auto-generated analytics report for ${clientDisplayName} — ${categoryName} Category (${periodLabel})`,
+        file_type: "pdf",
+        file_size: Math.round((pdfBase64.length * 3) / 4),
+        visible_to_client: true,
+        approval_status: "pending",
+        pdf_base64: pdfBase64,
+      });
 
-      if (!insErr && del) {
+      if (del) {
         createdDeliverables.push(del);
       }
     }
