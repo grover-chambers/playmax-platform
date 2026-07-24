@@ -325,7 +325,7 @@ export async function GET(request: NextRequest) {
       resolvedSalesRows, linkedSupplierId, client.company, client.name, pricingRaw,
     );
 
-    // Rebuild supplier grouping with resolved names
+    // Rebuild supplier grouping with resolved names, preserving original supplier UUIDs for is_client matching
     const resolvedSupGrouped = new Map<string, { total: number; units: number; products: Set<string>; supplierIds: Set<string> }>();
     for (const row of resolvedSalesRows) {
       const supName = row.supplier_id || "Unknown";
@@ -336,15 +336,41 @@ export async function GET(request: NextRequest) {
       resolvedSupGrouped.set(supName, existing);
     }
 
+    // Build a reverse map: supplier name → original UUID(s) for linked_supplier_id matching
+    const nameToUuids = new Map<string, Set<string>>();
+    for (const row of salesRows) {
+      if (row.supplier_id) {
+        const name = supplierNameMap.get(row.supplier_id) || row.supplier_id;
+        if (!nameToUuids.has(name)) nameToUuids.set(name, new Set());
+        nameToUuids.get(name)!.add(row.supplier_id);
+      }
+    }
+
+    const clientCompany = (client.company || client.name || "").trim().toLowerCase();
+
     const competitors: CompetitorRank[] = Array.from(resolvedSupGrouped.entries())
-      .map(([name, data]) => ({
-        manufacturer: name,
-        total_sales: data.total,
-        total_units: data.units,
-        share: grandTotal > 0 ? (data.total / grandTotal) * 100 : 0,
-        is_client: name.trim().toLowerCase() === (client.company || client.name || "").trim().toLowerCase(),
-        rank: 0,
-      }))
+      .map(([name, data]) => {
+        // Determine is_client: try linked_supplier_id UUID match first, then fallback to name match
+        let isClient = false;
+        if (linkedSupplierId) {
+          const uuids = nameToUuids.get(name);
+          if (uuids && uuids.has(linkedSupplierId)) {
+            isClient = true;
+          }
+        }
+        // Fallback: name-based match
+        if (!isClient) {
+          isClient = name.trim().toLowerCase() === clientCompany;
+        }
+        return {
+          manufacturer: name,
+          total_sales: data.total,
+          total_units: data.units,
+          share: grandTotal > 0 ? (data.total / grandTotal) * 100 : 0,
+          is_client: isClient,
+          rank: 0,
+        };
+      })
       .sort((a, b) => b.total_sales - a.total_sales)
       .map((item, idx) => ({ ...item, rank: idx + 1 }));
 
@@ -415,7 +441,8 @@ export async function GET(request: NextRequest) {
         prevTotalUnits,
       },
     });
-  } catch {
+  } catch (err) {
+    console.error("[portal/analytics] Error:", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Failed to fetch analytics" }, { status: 500 });
   }
 }
