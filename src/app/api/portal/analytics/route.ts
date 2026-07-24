@@ -254,7 +254,44 @@ export async function GET(request: NextRequest) {
       branchIds.length > 0 ? branchIds : undefined,
       categoryIds.length > 0 ? categoryIds : undefined,
     );
-    const sales = allSales.length > 0 ? allSales : null;
+
+    // If sales query returned empty (not an error — just no matching data), return empty analytics
+    if (!allSales || allSales.length === 0) {
+      // Still try to return useful metadata (periods, branches, categories)
+      let periods: { id: string; label: string }[] = [];
+      if (periodIds.length > 0) {
+        const { rows: periodRows } = await import("@/lib/db").then((m) =>
+          m.query<{ id: string; label: string }>(
+            `SELECT id, label FROM analytics_periods WHERE id = ANY($1) ORDER BY year DESC, month DESC, quarter DESC`,
+            [periodIds],
+          ),
+        );
+        periods = periodRows;
+      }
+      let allBranches: { id: string; name: string }[] = [];
+      if (branchIds.length > 0) {
+        allBranches = await getAllBranchesPg();
+      }
+
+      return NextResponse.json({
+        sharing: filteredSharing,
+        sales: [],
+        inventory: [],
+        competitors: [],
+        categories: [],
+        branches: [],
+        topProducts: [],
+        bottomProducts: [],
+        pricing: [],
+        dashboardColor: "#0F6E56",
+        periods,
+        allBranches,
+        allCategories: [],
+        summary: { totalSales: 0, totalUnits: 0, totalInventoryValue: 0, totalProducts: 0, prevTotalSales: 0, prevTotalUnits: 0 },
+      });
+    }
+
+    const sales = allSales;
 
     // ── Trend data: fetch previous period's sales ──
     let prevTotalSales = 0;
@@ -283,36 +320,15 @@ export async function GET(request: NextRequest) {
     const pricingRaw = await fetchPricingFallback(supabase, branchIds.length > 0 ? branchIds : undefined);
 
     // Fetch supplier names
+    const salesRows = sales as unknown as RawSalesRow[];
     let supplierNameMap = new Map<string, string>();
-    if (sales) {
-      const salesRows = sales as unknown as RawSalesRow[];
+    {
       const supplierIds = [...new Set(salesRows.map((r) => r.supplier_id).filter(Boolean))] as string[];
       if (supplierIds.length > 0) {
         const supRows = await getSuppliersByIds(supabase, supplierIds);
         supplierNameMap = new Map((supRows ?? []).map((s) => [s.id, s.name]));
       }
     }
-
-    if (!sales) {
-      return NextResponse.json({
-        error: "Sales query failed",
-        sharing,
-        sales: [],
-        inventory: [],
-        competitors: [],
-        categories: [],
-        branches: [],
-        pricing: [],
-        topProducts: [],
-        bottomProducts: [],
-        dashboardColor: "#0F6E56",
-        periods: [],
-        allBranches: [],
-        summary: { totalSales: 0, totalUnits: 0, totalInventoryValue: 0, totalProducts: 0, prevTotalSales: 0, prevTotalUnits: 0 },
-      });
-    }
-
-    const salesRows = (sales || []) as unknown as RawSalesRow[];
 
     // Map supplier IDs to names in salesRows
     const resolvedSalesRows = salesRows.map((r) => ({
