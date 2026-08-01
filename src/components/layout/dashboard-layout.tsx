@@ -47,6 +47,29 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [clock, setClock] = useState<Date>(() => new Date());
+
+  // Live clock for the top bar (NAMPARK-style TopNav)
+  useEffect(() => {
+    const interval = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const greeting = () => {
+    if (!clock) return "Good day";
+    const hour = clock.getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const firstName = user?.name?.split(" ")[0] || "User";
+  const todayLabel = clock
+    ? clock.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+    : "";
+  const clockLabel = clock
+    ? clock.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })
+    : "";
 
   // Restore collapse state on mount (SNDBX-style persistence)
   useEffect(() => {
@@ -142,7 +165,7 @@ export default function DashboardLayout({
 
   return (
     <div
-      className={`platform-shell !min-h-screen ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
+      className={`platform-shell min-h-screen! ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
     >
       {/* Mobile menu trigger */}
       <button
@@ -161,7 +184,7 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <aside
-        className={`sidebar !h-screen ${sidebarCollapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}
+        className={`sidebar h-screen! ${sidebarCollapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}
       >
         {/* Logo */}
         <div className="sidebar-logo">
@@ -252,11 +275,27 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto min-h-screen">
-        {topBar && (
-          <div className="sticky top-0 z-30 flex items-center justify-end px-6 py-2 bg-[var(--ws-surface)]/90 backdrop-blur-sm border-b border-[var(--ws-border)]">
-            {topBar}
+        <div className="sticky top-0 z-30 border-b border-[var(--ws-border)] bg-[var(--ws-surface)]/90 backdrop-blur-sm">
+          <div className="flex items-center justify-between h-14 px-4 md:px-6 gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[var(--ws-text)] truncate leading-tight">
+                {greeting()}, {firstName}
+              </p>
+              {todayLabel && (
+                <p className="text-[11px] text-[var(--ws-text-muted)] leading-tight mt-0.5">{todayLabel}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {clockLabel && (
+                <div className="hidden sm:flex ws-clock-chip">
+                  <span className="ws-clock-dot" />
+                  <span className="ws-clock tabular-nums">{clockLabel}</span>
+                </div>
+              )}
+              {topBar}
+            </div>
           </div>
-        )}
+        </div>
         {children}
       </main>
     </div>

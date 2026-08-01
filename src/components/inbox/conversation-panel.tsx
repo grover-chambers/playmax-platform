@@ -45,8 +45,8 @@ function ConversationPanel({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="px-6 py-4 border-b border-[#1A1A1A] bg-black">
+    <div className="inbox-chat flex flex-col h-full">
+      <div className="pm-chat-head px-6 py-4 border-b border-[#1A1A1A] bg-black">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <Avatar
@@ -90,7 +90,7 @@ function ConversationPanel({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="search-box !bg-black-3">
+          <div className="search-box bg-black-3!">
             <span className="text-[11px] text-gray-3">Pipeline:</span>
             <span className="text-[11px] font-display font-bold text-yellow">
               {conversation.pipelineValue || "—"}
@@ -116,14 +116,14 @@ function ConversationPanel({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-4 bg-[#0D0D0D]">
+      <div className="pm-chat-stream flex-1 overflow-y-auto px-6 py-4 bg-[#0D0D0D]">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="px-6 py-3 border-t border-[#1A1A1A] bg-black">
+      <div className="pm-chat-compose px-6 py-3 border-t border-[#1A1A1A] bg-black">
         <div className="flex items-end gap-2">
           <button className="p-2 hover:bg-white/5 rounded transition-colors flex-shrink-0">
             <FileText className="w-4 h-4 text-gray-4" />

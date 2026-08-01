@@ -263,7 +263,7 @@ function AnalyticsTab({ reports }: { reports: AnalyticsReport[] }) {
               className={`pm-dash-card p-4 text-left transition-all cursor-pointer ${
                 selected === report.id
                   ? "border-teal ring-1 ring-teal/30"
-                  : "hover:border-[#333]"
+                  : "hover:border-[var(--ws-border)]"
               }`}
             >
               <div className="flex items-start justify-between mb-2">
@@ -306,7 +306,7 @@ function MilestonesTab({ milestones }: { milestones: Milestone[] }) {
   return (
     <div className="pm-dash-card p-5">
       <div className="relative">
-        <div className="absolute left-[17px] top-3 bottom-3 w-px bg-[#2A2A2A]" />
+        <div className="absolute left-[17px] top-3 bottom-3 w-px bg-[var(--ws-border)]" />
         <div className="space-y-0">
           {milestones.map((m, i) => {
             const isLast = i === milestones.length - 1;
@@ -320,7 +320,7 @@ function MilestonesTab({ milestones }: { milestones: Milestone[] }) {
                   >
                     {m.status === "completed" ? "✓" : i + 1}
                   </div>
-                  {!isLast && <div className="flex-1 w-px bg-[#2A2A2A]" />}
+                  {!isLast && <div className="flex-1 w-px bg-[var(--ws-border)]" />}
                 </div>
                 <div className="pb-6 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -438,7 +438,7 @@ function DeliverablesTab({
                 {(d.file_url || d.has_pdf) && (
                   <button
                     onClick={() => handleDownload(d)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium bg-black-3 border border-[#252525] text-gray-4 rounded-lg hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium bg-[var(--ws-bg)] border border-[var(--ws-border)] text-gray-4 rounded-lg hover:text-[var(--ws-text)] transition-colors"
                   >
                     <Download size={11} /> Download
                   </button>
@@ -446,7 +446,7 @@ function DeliverablesTab({
                 {needsReview && (
                   <button
                     onClick={() => setExpanded((p) => ({ ...p, [d.id]: !isExpanded }))}
-                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium bg-black-3 border border-[#252525] text-gray-4 rounded-lg hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium bg-[var(--ws-bg)] border border-[var(--ws-border)] text-gray-4 rounded-lg hover:text-[var(--ws-text)] transition-colors"
                   >
                     Review
                   </button>
@@ -472,13 +472,13 @@ function DeliverablesTab({
             )}
 
             {isExpanded && needsReview && (
-              <div className="mt-3 pt-3 border-t border-[#2A2A2A] space-y-2">
+              <div className="mt-3 pt-3 border-t border-[var(--ws-border)] space-y-2">
                 <textarea
                   placeholder="Add feedback or request changes..."
                   value={feedback[d.id] || ""}
                   onChange={(e) => setFeedback((p) => ({ ...p, [d.id]: e.target.value }))}
                   rows={2}
-                  className="w-full bg-[#0D0D0D] border border-[#2A2A2A] rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-5 resize-none focus:outline-none focus:border-teal/50"
+                  className="w-full w-full ws-input rounded-lg placeholder-gray-5 resize-none focus:border-[var(--ws-accent)]"
                 />
                 <div className="flex items-center gap-2">
                   <button
@@ -534,7 +534,7 @@ function UpdatesTab({ messages }: { messages: ProjectMessage[] }) {
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
                   isStaff
                     ? "bg-teal/15 text-teal"
-                    : "bg-yellow/15 text-yellow"
+                    : "bg-[var(--ws-accent)]/10 text-[var(--ws-accent)]"
                 }`}
               >
                 {msg.author_name.charAt(0).toUpperCase()}
@@ -633,7 +633,7 @@ export default function PortalProjectDetailPage({
       <div className="page-content">
         <Link
           href="/portal/projects"
-          className="inline-flex items-center gap-1.5 text-[12px] text-gray-4 hover:text-white transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-[12px] text-gray-4 hover:text-[var(--ws-text)] transition-colors mb-4"
         >
           <ArrowLeft size={14} /> Back to Projects
         </Link>
@@ -663,7 +663,7 @@ export default function PortalProjectDetailPage({
       {/* Back link */}
       <Link
         href="/portal/projects"
-        className="inline-flex items-center gap-1.5 text-[12px] text-gray-4 hover:text-white transition-colors mb-4"
+        className="inline-flex items-center gap-1.5 text-[12px] text-gray-4 hover:text-[var(--ws-text)] transition-colors mb-4"
       >
         <ArrowLeft size={14} /> Back to Projects
       </Link>
@@ -671,7 +671,7 @@ export default function PortalProjectDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="font-display text-[22px] font-bold text-white">{project.name}</h1>
+          <h1 className="font-display text-[22px] font-bold text-[var(--ws-text)]">{project.name}</h1>
           <div className="flex items-center gap-3 mt-1.5">
             <StatusBadge variant={mapStatus(project.status)}>
               {project.status.replace(/_/g, " ")}
@@ -688,7 +688,7 @@ export default function PortalProjectDetailPage({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[18px] font-display font-bold text-yellow">{formatCurrency(project.value)}</div>
+          <div className="text-[18px] font-display font-bold text-[var(--ws-accent)]">{formatCurrency(project.value)}</div>
           <div className="text-[11px] text-gray-5 mt-0.5">{project.progress}% complete</div>
         </div>
       </div>
@@ -705,7 +705,7 @@ export default function PortalProjectDetailPage({
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
                 tab === t.key
                   ? "bg-teal text-white"
-                  : "bg-black-3 border border-[#252525] text-gray-4 hover:text-white"
+                  : "bg-[var(--ws-bg)] border border-[var(--ws-border)] text-gray-4 hover:text-[var(--ws-text)]"
               }`}
             >
               <Icon size={13} />

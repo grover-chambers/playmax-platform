@@ -43,7 +43,7 @@ export default function UploadHistoryPage() {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title="Upload History"
         subtitle="All XLSX files ingested into the analytics engine"
@@ -56,13 +56,13 @@ export default function UploadHistoryPage() {
       />
 
       {error && (
-        <div className="mt-4 px-4 py-3 rounded-lg bg-red/10 border border-red/20 text-red text-[12px]">
+        <div className="px-4 py-3 rounded-lg bg-red/10 border border-red/20 text-red text-[12px]">
           {error}
           <button onClick={() => setError(null)} className="ml-2 underline cursor-pointer">dismiss</button>
         </div>
       )}
 
-      <div className="mt-5 border border-[#252525] rounded-lg bg-black-3 overflow-hidden">
+      <div className="ws-panel overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-4 h-4 text-gray-5 animate-spin" />
@@ -71,7 +71,7 @@ export default function UploadHistoryPage() {
         ) : (
           <><table className="w-full text-[11px]">
             <thead>
-              <tr className="text-gray-5 font-mono border-b border-[#252525]">
+              <tr className="text-gray-5 font-mono border-b border-[var(--ws-border)]">
                 <th className="text-left px-4 py-3 font-normal">File</th>
                 <th className="text-left px-4 py-3 font-normal">Date</th>
                 <th className="text-left px-4 py-3 font-normal">Period</th>
@@ -91,8 +91,8 @@ export default function UploadHistoryPage() {
                 </tr>
               )}
               {paginated.map((u) => (
-                <tr key={u.id} className="border-b border-[#1E1E1E] last:border-0 cursor-pointer hover:bg-white/2 transition-colors" onClick={() => router.push("/app/analytics/upload/history/" + u.id)}>
-                  <td className="px-4 py-2.5 text-white font-medium truncate max-w-[200px]">{u.filename}</td>
+                <tr key={u.id} className="border-b border-[var(--ws-border)] last:border-0 cursor-pointer transition-colors" onClick={() => router.push("/app/analytics/upload/history/" + u.id)}>
+                  <td className="px-4 py-2.5 text-[var(--ws-text)] font-medium truncate max-w-50">{u.filename}</td>
                   <td className="px-4 py-2.5 text-gray-4">
                     {new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                   </td>

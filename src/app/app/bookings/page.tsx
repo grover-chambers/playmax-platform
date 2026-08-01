@@ -91,7 +91,7 @@ export default function BookingsPage() {
   const { paginated, total } = usePagination(filtered, page, 20);
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       {loading ? (
         <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">
           Loading bookings…
@@ -129,15 +129,15 @@ export default function BookingsPage() {
             }
           />
 
-          <div className="pm-dash-card pm-dash-card-b-0">
+          <div className="ws-panel overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#1A1A1A]">
+                <tr className="border-b border-[var(--ws-border)]">
                   {["Client", "Inventory", "Start", "End", "Status", "Total"].map(
                     (h) => (
                       <th
                         key={h}
-                        className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
+                        className="font-mono text-[11px] text-gray-5 font-semibold tracking-widest uppercase text-left px-4 py-3"
                       >
                         {h}
                       </th>
@@ -149,12 +149,12 @@ export default function BookingsPage() {
                 {paginated.map((b) => (
                   <tr
                     key={b.id}
-                    className="border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors"
+                    className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors"
                   >
-                    <td className="px-4 py-3 text-[13px] font-semibold">
+                    <td className="px-4 py-3 text-[13px] font-semibold text-[var(--ws-text)]">
                       {b.clientName}
                     </td>
-                    <td className="px-4 py-3 text-[13px] text-gray-3">
+                    <td className="px-4 py-3 text-[13px] text-gray-4">
                       {b.inventoryName}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-gray-4 font-mono">
@@ -170,7 +170,7 @@ export default function BookingsPage() {
                         {b.status.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-[13px] font-display font-bold text-yellow">
+                    <td className="px-4 py-3 text-[13px] font-display font-bold text-[var(--ws-accent)]">
                       KES {b.totalPrice.toLocaleString()}
                     </td>
                   </tr>

@@ -228,7 +228,7 @@ function ReportViewer({ report }: { report: SavedReport }) {
           </div>
           {/* Data table */}
           <details className="group">
-            <summary className="text-[11px] text-gray-5 cursor-pointer hover:text-white transition-colors select-none">
+            <summary className="text-[11px] text-gray-5 cursor-pointer hover:text-[var(--ws-text)] transition-colors select-none">
               View raw data ({rawData.length} rows)
             </summary>
             <div className="mt-3 overflow-x-auto max-h-[300px] overflow-y-auto">
@@ -917,7 +917,7 @@ export default function PortalAnalyticsPage() {
                     strokeWidth={20}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[18px] font-display font-bold text-white">
+                    <span className="text-[18px] font-display font-bold text-[var(--ws-text)]">
                       {categories.length}
                     </span>
                     <span className="text-[10px] text-gray-5">categories</span>

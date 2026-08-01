@@ -97,7 +97,7 @@ export default function ResearchChat({ projectId, reportId, onUseAsSummary }: Re
               </div>
               {msg.role === "assistant" && !msg.content.startsWith("Error:") && (
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="text-[9px] text-gray-6 font-mono">AI Analyst</div>
+                  <div className="text-[9px] text-gray-4 font-mono">AI Analyst</div>
                   {onUseAsSummary && i === messages.length - 1 && (
                     <button
                       onClick={() => onUseAsSummary(msg.content)}
@@ -133,7 +133,7 @@ export default function ResearchChat({ projectId, reportId, onUseAsSummary }: Re
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder={projectId ? "Ask about this project's market data..." : "Select a research project first..."}
             disabled={!projectId || loading}
-            className="flex-1 bg-black-3 border border-[#252525] rounded-lg px-3 py-2 text-[12px] text-gray-3 placeholder-gray-6 outline-none focus:border-yellow/40 transition-colors disabled:opacity-40"
+            className="flex-1 bg-black-3 border border-[#252525] rounded-lg px-3 py-2 text-[12px] text-gray-3 placeholder-gray-5 outline-none focus:border-yellow/40 transition-colors disabled:opacity-40"
           />
           <button
             onClick={handleSend}

@@ -173,14 +173,14 @@ export default function InventoryPage() {
   /* ── header actions (filters, search, view toggle) ──── */
   const headerActions = (
     <div className="flex items-center gap-2">
-      <div className="flex gap-1 bg-[#111] border border-[#252525] rounded p-0.5">
+      <div className="flex gap-1 bg-[var(--ws-bg)] border border-[var(--ws-border)] rounded p-0.5">
         {viewModes.map((mode) => (
           <button
             key={mode}
             onClick={() => setViewMode(mode)}
             className={`p-1.5 rounded transition-colors cursor-pointer ${
               viewMode === mode
-                ? "bg-yellow/10 text-yellow"
+                ? "bg-[var(--ws-accent)]/10 text-[var(--ws-accent)]"
                 : "text-gray-5 hover:text-gray-3"
             }`}
           >
@@ -216,7 +216,7 @@ export default function InventoryPage() {
         className={`flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full border cursor-pointer transition-colors ${
           availableOnly
             ? "bg-green/10 border-green/20 text-green"
-            : "border-[#333] text-gray-4 hover:text-white"
+            : "border-[var(--ws-border)] text-gray-4 hover:text-[var(--ws-text)]"
         }`}
       >
         <SlidersHorizontal className="w-3 h-3" />
@@ -227,7 +227,7 @@ export default function InventoryPage() {
 
   /* ── render ──────────────────────────────────────────── */
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       {loading ? (
         <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">
           Loading inventory…
@@ -268,7 +268,7 @@ export default function InventoryPage() {
 
             <div className="pm-dash-kcard">
               <div className="flex items-center gap-2 mb-1">
-                <Clock className="w-3.5 h-3.5 text-yellow" />
+                <Clock className="w-3.5 h-3.5 text-[var(--ws-accent)]" />
                 <span className="text-[10px] text-gray-5 uppercase tracking-wider font-mono">
                   Booked
                 </span>
@@ -278,7 +278,7 @@ export default function InventoryPage() {
 
             <div className="pm-dash-kcard">
               <div className="flex items-center gap-2 mb-1">
-                <DollarSign className="w-3.5 h-3.5 text-yellow" />
+                <DollarSign className="w-3.5 h-3.5 text-[var(--ws-accent)]" />
                 <span className="text-[10px] text-gray-5 uppercase tracking-wider font-mono">
                   Monthly Revenue
                 </span>
@@ -317,7 +317,7 @@ export default function InventoryPage() {
                   <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-[#1A1A1A]">
+                        <tr className="border-b border-[var(--ws-border)]">
                           {[
                             "Name",
                             "Type",
@@ -341,9 +341,9 @@ export default function InventoryPage() {
                           <tr
                             key={item.id}
                             onClick={() => setSelectedItemId(item.id)}
-                            className={`border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors cursor-pointer ${
+                            className={`border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors cursor-pointer ${
                               item.id === selectedItemId
-                                ? "bg-yellow/[0.03]"
+                                ? "bg-[var(--ws-accent)]/[0.03]"
                                 : ""
                             }`}
                           >
@@ -362,7 +362,7 @@ export default function InventoryPage() {
                             <td className="px-4 py-3 text-[12px] text-gray-4 font-mono">
                               {item.dailyImpressions.toLocaleString()}
                             </td>
-                            <td className="px-4 py-3 text-[13px] font-display font-bold text-yellow">
+                            <td className="px-4 py-3 text-[13px] font-display font-bold text-[var(--ws-accent)]">
                               KES {item.price.toLocaleString()}
                             </td>
                             <td className="px-4 py-3">

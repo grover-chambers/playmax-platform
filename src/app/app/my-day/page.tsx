@@ -23,11 +23,18 @@ import Pagination, { usePagination } from "@/components/ui/pagination";
 /* ── Data ──────────────────────────────────────────────── */
 
 const defaultKpis = [
-  { value: "3", label: "Tasks due today", sub: "2 overdue from Friday", cardClass: "red", valueClass: "red" },
-  { value: "2", label: "Unread messages", sub: "Twiga Foods · P&G EA", cardClass: "blu", valueClass: "blu" },
-  { value: "8", label: "My open leads", sub: "2 need follow-up today", cardClass: "", valueClass: "" },
-  { value: "2", label: "Deals closed this month", sub: "KES 1.1M won", cardClass: "grn", valueClass: "grn" },
+  { value: "3", label: "Tasks due today", sub: "2 overdue from Friday", icon: "tasks" },
+  { value: "2", label: "Unread messages", sub: "Twiga Foods · P&G EA", icon: "messages" },
+  { value: "8", label: "My open leads", sub: "2 need follow-up today", icon: "leads" },
+  { value: "2", label: "Deals closed this month", sub: "KES 1.1M won", icon: "deals" },
 ];
+
+const kpiIconStyles: Record<string, { icon: React.ElementType; bg: string; color: string }> = {
+  tasks: { icon: AlertTriangle, bg: "rgba(185, 74, 72, 0.1)", color: "var(--pm-red)" },
+  messages: { icon: MessageSquare, bg: "rgba(59, 130, 246, 0.1)", color: "var(--pm-blue)" },
+  leads: { icon: FolderKanban, bg: "rgba(15, 118, 110, 0.08)", color: "var(--pm-teal)" },
+  deals: { icon: CheckCircle2, bg: "rgba(61, 143, 90, 0.1)", color: "var(--pm-green)" },
+};
 
 interface Task {
   id: string;
@@ -339,7 +346,7 @@ export default function MyDayPage() {
   const { paginated: paginatedConvs, total: totalConvs } = usePagination(myConversations, convPage, 20);
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <NewTaskModal open={showNewTask} onClose={() => setShowNewTask(false)} />
       <PageHeader
         title="My Day"
@@ -347,7 +354,7 @@ export default function MyDayPage() {
       />
 
       {/* ── Alerts ──────────────────────────────── */}
-      <div className="px-7 pt-5 pb-2">
+      <div>
         <AlertBox variant="y" icon={AlertTriangle}>
           <strong>Twiga Foods</strong> has an unread message waiting for your
           reply — 4 hours old.
@@ -359,30 +366,38 @@ export default function MyDayPage() {
       </div>
 
       {/* ── KPI Row ─────────────────────────────── */}
-      <div className="px-7 pt-4 pb-2">
+      <div>
         <div className="pm-dash-krow pm-dash-krow-4">
-          {myKpis.map((kpi) => (
-            <div key={kpi.label} className={`pm-dash-kcard ${kpi.cardClass}`}>
-              <div className={`pm-dash-kn ${kpi.valueClass}`}>{kpi.value}</div>
-              <div className="pm-dash-kl">{kpi.label}</div>
-              <div className="pm-dash-ksub">{kpi.sub}</div>
-            </div>
-          ))}
+          {myKpis.map((kpi) => {
+            const k = kpiIconStyles[kpi.icon] ?? kpiIconStyles.leads;
+            const Icon = k.icon;
+            return (
+              <div key={kpi.label} className="ws-stat-card">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="ws-stat-icon" style={{ background: k.bg, color: k.color }}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="ws-stat-value" style={{ color: k.color }}>{kpi.value}</div>
+                <div className="ws-stat-label">{kpi.label}</div>
+                <div className="pm-dash-ksub">{kpi.sub}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* ── Two-column grid ─────────────────────── */}
       <div
-        className="px-7 pb-7"
         style={{
           display: "grid",
           gridTemplateColumns: "2fr 1fr",
-          gap: "16px",
+          gap: "20px",
           alignItems: "start",
         }}
       >
         {/* ════ LEFT COLUMN ════════════════════════ */}
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* ── Today's Tasks ──────────────────── */}
           <div className="pm-dash-card">
             <div className="pm-dash-card-h">
@@ -459,7 +474,7 @@ export default function MyDayPage() {
                     gap: "8px",
                     alignItems: "center",
                     padding: "9px 14px",
-                    borderBottom: "1px solid #111",
+                    borderBottom: "1px solid var(--ws-border)",
                     fontSize: "12px",
                   }}
                 >
@@ -490,7 +505,7 @@ export default function MyDayPage() {
         </div>
 
         {/* ════ RIGHT COLUMN ═══════════════════════ */}
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* ── My Conversations ────────────────── */}
           <div className="pm-dash-card">
             <div className="pm-dash-card-h">

@@ -84,7 +84,7 @@ export default function PortalProjectsPage() {
         <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#1A1A1A]">
+              <tr className="border-b border-[var(--ws-border)]">
                 {["Project", "Type", "Status", "Progress", "Value", "End Date"].map((h) => (
                   <th key={h} className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3">
                     {h}
@@ -94,8 +94,8 @@ export default function PortalProjectsPage() {
             </thead>
             <tbody>
               {projects.map((p) => (
-                <tr key={p.id} className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors">
-                  <td className="px-4 py-3.5 text-[13px] font-semibold text-white">{p.name}</td>
+                <tr key={p.id} className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors">
+                  <td className="px-4 py-3.5 text-[13px] font-semibold text-[var(--ws-text)]">{p.name}</td>
                   <td className="px-4 py-3.5 text-[12px] text-gray-4">{p.type.replace(/_/g, " ")}</td>
                   <td className="px-4 py-3.5">
                     <StatusBadge variant={mapStatus(p.status)}>
@@ -113,7 +113,7 @@ export default function PortalProjectsPage() {
                       <span className="text-[11px] text-gray-4 font-mono">{p.progress}%</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-[13px] font-display font-bold text-yellow">
+                  <td className="px-4 py-3.5 text-[13px] font-display font-bold text-[var(--ws-accent)]">
                     {formatCurrency(p.value)}
                   </td>
                   <td className="px-4 py-3.5 text-[12px] text-gray-4 font-mono">{formatDate(p.end_date)}</td>

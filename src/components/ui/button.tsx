@@ -1,6 +1,6 @@
 import React from "react";
 
-type ButtonVariant = "primary" | "secondary" | "teal" | "ivory";
+type ButtonVariant = "primary" | "secondary" | "teal" | "ivory" | "outline" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -15,12 +15,9 @@ const variantStyles: Record<ButtonVariant, string> = {
   secondary: "btn-secondary",
   teal: "btn-teal",
   ivory: "btn-ivory",
-};
-
-const sizeStyles: Record<ButtonSize, string> = {
-  sm: "btn-sm",
-  md: "",
-  lg: "",
+  outline: "ws-btn ws-btn-outline",
+  ghost: "ws-btn ws-btn-ghost",
+  danger: "ws-btn ws-btn-danger",
 };
 
 function Button({
@@ -30,9 +27,20 @@ function Button({
   children,
   ...props
 }: ButtonProps) {
+  let variantClass = variantStyles[variant];
+  let sizeClass = "";
+  if (variant === "primary" && size === "sm") {
+    variantClass = "btn-sm-primary";
+  } else if (variant === "secondary" && size === "sm") {
+    variantClass = "btn-sm";
+  } else if (size === "sm") {
+    sizeClass = "ws-btn-sm";
+  } else if (size === "lg") {
+    sizeClass = "ws-btn-lg";
+  }
   return (
     <button
-      className={`font-display cursor-pointer transition-all duration-150 ${variantStyles[variant]} ${size === "sm" ? sizeStyles.sm : ""} ${className}`}
+      className={`font-display cursor-pointer transition-all duration-150 ${variantClass} ${sizeClass} ${className}`}
       {...props}
     >
       {children}

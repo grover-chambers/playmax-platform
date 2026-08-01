@@ -1,4 +1,4 @@
-BEGIN;
+proBEGIN;
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 

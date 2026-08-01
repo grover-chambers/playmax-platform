@@ -161,7 +161,7 @@ export default function PortalDeliverablesPage() {
                       <Icon size={18} className="text-yellow" />
                     </div>
                     <div>
-                      <div className="font-display text-[13px] font-semibold text-white leading-tight">
+                      <div className="font-display text-[13px] font-semibold text-[var(--ws-text)] leading-tight">
                         {d.name}
                       </div>
                       {d.project && (
@@ -211,13 +211,13 @@ export default function PortalDeliverablesPage() {
                 )}
 
                 {isExpanded && needsReview && (
-                  <div className="mt-3 pt-3 border-t border-[#2A2A2A] space-y-2">
+                  <div className="mt-3 pt-3 border-t border-[var(--ws-border)] space-y-2">
                     <textarea
                       placeholder="Add feedback or request changes..."
                       value={feedback[d.id] || ""}
                       onChange={(e) => setFeedback((p) => ({ ...p, [d.id]: e.target.value }))}
                       rows={2}
-                      className="w-full bg-[#0D0D0D] border border-[#2A2A2A] rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-5 resize-none focus:outline-none focus:border-teal/50"
+                      className="w-full w-full ws-input rounded-lg placeholder-gray-5 resize-none focus:border-[var(--ws-accent)]"
                     />
                     <div className="flex items-center gap-2">
                       <button

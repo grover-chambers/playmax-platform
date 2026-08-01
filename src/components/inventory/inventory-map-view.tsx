@@ -40,7 +40,7 @@ export default function InventoryMapView({ inventory }: InventoryMapViewProps) {
       <MapContainer
         center={centerMap}
         zoom={12}
-        className="w-full h-full rounded-xl border border-[#2A2A2A]"
+        className="w-full h-full rounded-xl border border-[var(--ws-border)]"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

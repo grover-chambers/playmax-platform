@@ -1445,7 +1445,7 @@ export default function AnalyticsUploadPage() {
                     ? "bg-green text-white"
                     : i === currentStepIndex
                       ? "bg-yellow text-black"
-                      : "bg-black-3 border border-[#252525] text-gray-5"
+                      : "bg-black-3 border border-[var(--ws-border)] text-gray-5"
                 }`}
               >
                 {i < currentStepIndex ? (
@@ -1455,14 +1455,14 @@ export default function AnalyticsUploadPage() {
                 )}
               </div>
               <span
-                className={`ml-2 text-[11px] font-medium ${i <= currentStepIndex ? "text-white" : "text-gray-5"}`}
+                className={`ml-2 text-[11px] font-medium ${i <= currentStepIndex ? "text-[var(--ws-text)]" : "text-gray-5"}`}
               >
                 {s.label}
               </span>
             </div>
             {i < steps.length - 1 && (
               <div
-                className={`ml-2 flex-1 h-1 mx-2 rounded ${i < currentStepIndex ? "bg-green" : "bg-[#1E1E1E]"}`}
+                className={`ml-2 flex-1 h-1 mx-2 rounded ${i < currentStepIndex ? "bg-green" : "bg-[var(--ws-border)]"}`}
               />
             )}
           </React.Fragment>
@@ -1490,11 +1490,11 @@ export default function AnalyticsUploadPage() {
                       className={`text-left p-3 rounded-lg border transition-all cursor-pointer ${
                         format === opt.value
                           ? "border-yellow bg-yellow/5"
-                          : "border-[#252525] bg-transparent hover:border-[#3A3A3A]"
+                          : "border-[var(--ws-border)] bg-transparent hover:border-[var(--ws-accent)]"
                         }`}
                         disabled={step === "confirm_details"}
                     >
-                      <div className="font-display text-[11px] font-semibold text-white">
+                      <div className="font-display text-[11px] font-semibold text-[var(--ws-text)]">
                         {opt.label}
                       </div>
                       <div className="text-[9px] text-gray-5 mt-0.5 leading-relaxed">
@@ -1522,12 +1522,12 @@ export default function AnalyticsUploadPage() {
                     className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
                       dragOver
                         ? "border-yellow bg-yellow/5"
-                        : "border-[#252525] bg-transparent hover:border-[#3A3A3A]"
+                        : "border-[var(--ws-border)] bg-transparent hover:border-[var(--ws-accent)]"
                     }`}
                   >
                     <Upload className="w-8 h-8 mx-auto mb-3 text-gray-5" />
                     <p className="text-[13px] text-gray-4">
-                      Drag & drop <strong className="text-white">.xlsx</strong>{" "}
+                      Drag & drop <strong className="text-[var(--ws-text)]">.xlsx</strong>{" "}
                       or click
                     </p>
                     <input
@@ -1543,7 +1543,7 @@ export default function AnalyticsUploadPage() {
                     <div className="flex items-center gap-3">
                       <FileSpreadsheet className="w-5 h-5 text-green" />
                       <div>
-                        <div className="text-[12px] font-semibold text-white">
+                        <div className="text-[12px] font-semibold text-[var(--ws-text)]">
                           {file.name}
                         </div>
                         <div className="text-[10px] text-gray-5">
@@ -1595,7 +1595,7 @@ export default function AnalyticsUploadPage() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <span className="font-display text-[13px] font-semibold text-white">
+                <span className="font-display text-[13px] font-semibold text-[var(--ws-text)]">
                   Confirm Upload Details
                 </span>
                 <span className="text-[10px] text-gray-5 ml-2">
@@ -1637,7 +1637,7 @@ export default function AnalyticsUploadPage() {
             {/* Detected metadata */}
             {detectedMeta && (
               <div className="pm-dash-card pm-dash-card-b mb-4">
-                <h4 className="font-display text-[11px] font-semibold text-white mb-3">
+                <h4 className="font-display text-[11px] font-semibold text-[var(--ws-text)] mb-3">
                   Detected from File
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1645,7 +1645,7 @@ export default function AnalyticsUploadPage() {
                     <span className="text-[9px] text-gray-5 uppercase">
                       Store
                     </span>
-                    <div className="text-[12px] text-white mt-1">
+                    <div className="text-[12px] text-[var(--ws-text)] mt-1">
                       {detectedMeta.store || "—"}
                     </div>
                   </div>
@@ -1653,7 +1653,7 @@ export default function AnalyticsUploadPage() {
                     <span className="text-[9px] text-gray-5 uppercase">
                       Supplier
                     </span>
-                    <div className="text-[12px] text-white mt-1">
+                    <div className="text-[12px] text-[var(--ws-text)] mt-1">
                       {detectedMeta.supplier || "—"}
                     </div>
                   </div>
@@ -1661,7 +1661,7 @@ export default function AnalyticsUploadPage() {
                     <span className="text-[9px] text-gray-5 uppercase">
                       Category
                     </span>
-                    <div className="text-[12px] text-white mt-1">
+                    <div className="text-[12px] text-[var(--ws-text)] mt-1">
                       {detectedMeta.category || "—"}
                     </div>
                   </div>
@@ -1669,7 +1669,7 @@ export default function AnalyticsUploadPage() {
                     <span className="text-[9px] text-gray-5 uppercase">
                       Date Range
                     </span>
-                    <div className="text-[12px] text-white mt-1">
+                    <div className="text-[12px] text-[var(--ws-text)] mt-1">
                       {detectedMeta.period || "—"}
                     </div>
                   </div>
@@ -1694,7 +1694,7 @@ export default function AnalyticsUploadPage() {
 
             {/* Dimension selections */}
             <div className="pm-dash-card pm-dash-card-b">
-              <h4 className="font-display text-[11px] font-semibold text-white mb-3">
+              <h4 className="font-display text-[11px] font-semibold text-[var(--ws-text)] mb-3">
                 Assign Dimensions
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1707,14 +1707,14 @@ export default function AnalyticsUploadPage() {
                     )}
                   </label>
                   {dimensionsLoading ? (
-                    <div className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
+                    <div className="w-full bg-black-3 border border-[var(--ws-border)] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
                       <Loader2 className="w-3 h-3 animate-spin" /> Loading...
                     </div>
                   ) : (
                     <select
                       value={selectedBranchId}
                       onChange={(e) => setSelectedBranchId(e.target.value)}
-                      className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
+                      className="w-full bg-black-3 border border-[var(--ws-border)] rounded px-3 py-2 text-[11px] text-[var(--ws-text)]"
                     >
                       <option value="">— Select branch —</option>
                       {branches.map((b) => (
@@ -1732,7 +1732,7 @@ export default function AnalyticsUploadPage() {
                     Category
                   </label>
                   {dimensionsLoading ? (
-                    <div className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
+                    <div className="w-full bg-black-3 border border-[var(--ws-border)] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
                       <Loader2 className="w-3 h-3 animate-spin" /> Loading...
                     </div>
                   ) : (
@@ -1742,7 +1742,7 @@ export default function AnalyticsUploadPage() {
                         setSelectedCategoryId(e.target.value);
                         setSelectedSubCategoryId("");
                       }}
-                      className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
+                      className="w-full bg-black-3 border border-[var(--ws-border)] rounded px-3 py-2 text-[11px] text-[var(--ws-text)]"
                     >
                       <option value="">— Select category —</option>
                       {categories.map((c) => (
@@ -1760,14 +1760,14 @@ export default function AnalyticsUploadPage() {
                     Sub-category
                   </label>
                   {dimensionsLoading ? (
-                    <div className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
+                    <div className="w-full bg-black-3 border border-[var(--ws-border)] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
                       <Loader2 className="w-3 h-3 animate-spin" /> Loading...
                     </div>
                   ) : (
                     <select
                       value={selectedSubCategoryId}
                       onChange={(e) => setSelectedSubCategoryId(e.target.value)}
-                      className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
+                      className="w-full bg-black-3 border border-[var(--ws-border)] rounded px-3 py-2 text-[11px] text-[var(--ws-text)]"
                       disabled={!selectedCategoryId && filteredSubcategories.length === 0}
                     >
                       <option value="">— Select sub-category —</option>
@@ -1789,7 +1789,7 @@ export default function AnalyticsUploadPage() {
                     Period <span className="text-red">*</span>
                   </label>
                   {dimensionsLoading ? (
-                    <div className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
+                    <div className="w-full bg-black-3 border border-[var(--ws-border)] rounded px-3 py-2 text-[11px] text-gray-5 flex items-center gap-2">
                       <Loader2 className="w-3 h-3 animate-spin" /> Loading periods...
                     </div>
                   ) : (
@@ -1806,7 +1806,7 @@ export default function AnalyticsUploadPage() {
                         <select
                           value={selectedPeriodId}
                           onChange={(e) => setSelectedPeriodId(e.target.value)}
-                          className="w-full bg-black-3 border border-[#252525] rounded px-3 py-2 text-[11px] text-white"
+                          className="w-full bg-black-3 border border-[var(--ws-border)] rounded px-3 py-2 text-[11px] text-[var(--ws-text)]"
                         >
                           <option value="">— Select period —</option>
                           {!periodRequired && (
@@ -1869,7 +1869,7 @@ Analytics Settings, then retry.
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <span className="font-display text-[13px] font-semibold text-white">
+                <span className="font-display text-[13px] font-semibold text-[var(--ws-text)]">
                   Raw Data Preview
                 </span>
                 <span className="text-[10px] text-gray-5 ml-2">
@@ -1881,16 +1881,16 @@ Analytics Settings, then retry.
               {storeMetadata && (
                 <div className="flex items-center gap-3 text-[10px]">
                   <span className="text-gray-5">Period:</span>
-                  <span className="text-white font-medium">{storeMetadata.period}</span>
+                  <span className="text-[var(--ws-text)] font-medium">{storeMetadata.period}</span>
                   <span className="text-gray-5">Store:</span>
-                  <span className="text-white font-medium">{storeMetadata.store}</span>
+                  <span className="text-[var(--ws-text)] font-medium">{storeMetadata.store}</span>
                   {storeMetadata.branchCode && (
                     <span className="px-2 py-0.5 rounded bg-green/10 text-green border border-green/30 text-[9px] font-mono">
                       → {storeMetadata.branchCode}
                     </span>
                   )}
                   <span className="text-gray-5">Category:</span>
-                  <span className="text-white font-medium">{storeMetadata.category}</span>
+                  <span className="text-[var(--ws-text)] font-medium">{storeMetadata.category}</span>
                 </div>
               )}
               <Button variant="primary" size="sm" onClick={goToMapping}>
@@ -1900,12 +1900,12 @@ Analytics Settings, then retry.
             <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden max-h-96 overflow-auto">
               <table className="w-full text-[10px]">
                 <thead>
-                  <tr className="text-gray-5 font-mono border-b border-[#252525] sticky top-0 bg-black-3">
+                  <tr className="text-gray-5 font-mono border-b border-[var(--ws-border)] sticky top-0 bg-black-3">
                     <th className="text-left px-3 py-2 font-normal w-8">#</th>
                     {rawHeaders.map((h) => (
                       <th
                         key={h}
-                        className="text-left px-3 py-2 font-normal min-w-[120px] max-w-[200px] truncate"
+                        className="text-left px-3 py-2 font-normal min-w-[120px] max-w-50 truncate"
                       >
                         {h}
                       </th>
@@ -1914,14 +1914,14 @@ Analytics Settings, then retry.
                 </thead>
                 <tbody>
                   {rawRows.slice(0, 20).map((r, i) => (
-                    <tr key={i} className="border-b border-[#1E1E1E]">
+                    <tr key={i} className="border-b border-[var(--ws-border)]">
                       <td className="px-3 py-2 text-gray-5 font-mono">
                         {i + 1}
                       </td>
                       {rawHeaders.map((h) => (
                         <td
                           key={h}
-                          className="px-3 py-2 text-gray-3 truncate max-w-[200px]"
+                          className="px-3 py-2 text-gray-3 truncate max-w-50"
                         >
                           {String(r[h] ?? "—")}
                         </td>
@@ -1951,7 +1951,7 @@ Analytics Settings, then retry.
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <span className="font-display text-[13px] font-semibold text-white">
+                <span className="font-display text-[13px] font-semibold text-[var(--ws-text)]">
                   Map Columns
                 </span>
                 <span className="text-[10px] text-gray-5 ml-2">
@@ -1973,16 +1973,16 @@ Analytics Settings, then retry.
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Source columns */}
               <div className="pm-dash-card pm-dash-card-b max-h-96 overflow-auto">
-                <h4 className="font-display text-[12px] font-semibold text-white mb-3">
+                <h4 className="font-display text-[12px] font-semibold text-[var(--ws-text)] mb-3">
                   Your Columns ({rawHeaders.length})
                 </h4>
                 <div className="space-y-2">
                   {rawHeaders.map((h) => (
                     <div
                       key={h}
-                      className="flex items-center gap-3 p-2 bg-black-2 rounded border border-[#1E1E1E]"
+                      className="flex items-center gap-3 p-2 bg-black-2 rounded border border-[var(--ws-border)]"
                     >
-                      <span className="font-mono text-[11px] text-white min-w-[150px] truncate">
+                      <span className="font-mono text-[11px] text-[var(--ws-text)] min-w-[150px] truncate">
                         {h}
                       </span>
                       <span className="text-[10px] text-gray-5 flex-1">
@@ -1997,7 +1997,7 @@ Analytics Settings, then retry.
                             [h]: e.target.value,
                           }))
                         }
-                        className="bg-black-3 border border-[#252525] rounded px-2 py-1 text-[11px] text-white w-48"
+                        className="bg-black-3 border border-[var(--ws-border)] rounded px-2 py-1 text-[11px] text-[var(--ws-text)] w-48"
                       >
                         <option value="">— Not mapped —</option>
                         {Object.entries(FIELD_DEFINITIONS).map(([key, def]) => (
@@ -2020,7 +2020,7 @@ Analytics Settings, then retry.
 
               {/* Required fields checklist */}
               <div className="pm-dash-card pm-dash-card-b max-h-96 overflow-auto">
-                <h4 className="font-display text-[12px] font-semibold text-white mb-3">
+                <h4 className="font-display text-[12px] font-semibold text-[var(--ws-text)] mb-3">
                   Required Fields Checklist
                 </h4>
                 <div className="space-y-2">
@@ -2045,7 +2045,7 @@ Analytics Settings, then retry.
                           <CheckCircle className="w-5 h-5" />
                         </div>
                         <div className="flex-1">
-                          <div className="font-medium text-[11px] text-white">
+                          <div className="font-medium text-[11px] text-[var(--ws-text)]">
                             {def.label}
                           </div>
                           <div className="text-[9px] text-gray-5">
@@ -2085,7 +2085,7 @@ Analytics Settings, then retry.
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <span className="font-display text-[13px] font-semibold text-white">
+                <span className="font-display text-[13px] font-semibold text-[var(--ws-text)]">
                   Mapped Data Review
                 </span>
                 <span className="text-[10px] text-gray-5 ml-2">
@@ -2127,7 +2127,7 @@ Analytics Settings, then retry.
               <div className="overflow-x-auto max-h-96">
                 <table className="w-full text-[10px]">
                   <thead>
-                    <tr className="text-gray-5 font-mono border-b border-[#252525] sticky top-0 bg-black-3">
+                    <tr className="text-gray-5 font-mono border-b border-[var(--ws-border)] sticky top-0 bg-black-3">
                       <th className="text-left px-3 py-2 font-normal w-8">
                         #
                       </th>
@@ -2159,17 +2159,17 @@ Analytics Settings, then retry.
                     {mappedRowsComputed.slice(0, 100).map((r) => (
                       <tr
                         key={r.row}
-                        className={`border-b border-[#1E1E1E] ${r.status === "error" ? "bg-red/5" : ""}`}
+                        className={`border-b border-[var(--ws-border)] ${r.status === "error" ? "bg-red/5" : ""}`}
                       >
                         <td className="px-3 py-2 text-gray-5 font-mono">
                           {r.row}
                         </td>
-                        <td className="px-3 py-2 text-white font-mono">
+                        <td className="px-3 py-2 text-[var(--ws-text)] font-mono">
                           {r.stock_code || (
                             <span className="text-red">—</span>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-gray-3 truncate max-w-[200px]">
+                        <td className="px-3 py-2 text-gray-3 truncate max-w-50">
                           {r.product_name || "—"}
                         </td>
                         <td className="px-3 py-2 text-right text-gray-3 font-mono">

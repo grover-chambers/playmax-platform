@@ -41,30 +41,27 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-
       {/* Panel */}
       <div
-        className={`relative w-full max-w-lg mx-4 bg-black-2 border border-[#252525] rounded-xl shadow-2xl ${className}`}
+        className={`relative w-full max-w-lg mx-4 bg-[var(--ws-surface)] border border-[var(--ws-border)] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1A1A1A]">
-          <h2 className="font-display text-[15px] font-bold">{title}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--ws-border)] flex-shrink-0">
+          <h2 className="font-display text-[15px] font-semibold text-[var(--ws-text)]">{title}</h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/5 text-gray-5 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg text-[var(--ws-text-muted)] hover:bg-[var(--ws-bg)] hover:text-[var(--ws-text)] transition-colors"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 max-h-[70vh] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           {children}
         </div>
       </div>

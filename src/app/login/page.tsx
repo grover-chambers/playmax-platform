@@ -254,7 +254,7 @@ function LoginForm() {
                   <br />
                   <span className="text-yellow">starts here.</span>
                 </h2>
-                <p className="text-[14px] leading-relaxed text-gray-5 max-w-[420px]">
+                <p className="text-[14px] leading-relaxed text-gray-5 max-w-105">
                   Sign in to your client portal to track projects, review
                   deliverables, and stay connected with your Market Link team.
                 </p>
@@ -286,7 +286,7 @@ function LoginForm() {
                   <br />
                   <span className="text-yellow">one gateway.</span>
                 </h2>
-                <p className="text-[14px] leading-relaxed text-gray-5 max-w-[420px]">
+                <p className="text-[14px] leading-relaxed text-gray-5 max-w-105">
                   Access the Market Link staff portal to manage pipelines, tasks,
                   reporting, and client work from a single dashboard.
                 </p>
@@ -314,10 +314,10 @@ function LoginForm() {
 
           {/* Footer quote */}
           <div className="border-t border-white/5 pt-6">
-            <p className="text-[11px] text-gray-5 italic leading-relaxed max-w-[400px]">
+            <p className="text-[11px] text-gray-5 italic leading-relaxed max-w-100">
               &ldquo;Market Link transformed how we understand the Kenyan market.
               Their insights changed our approach completely.&rdquo;
-              <span className="block text-[10px] not-italic text-gray-6 mt-1">
+              <span className="block text-[10px] not-italic text-gray-4 mt-1">
                 &mdash; Client, Nairobi
               </span>
             </p>
@@ -327,7 +327,7 @@ function LoginForm() {
 
       {/* ── LOGIN PANEL ─────────────────────────────── */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-[420px] mx-auto">
+        <div className="w-full max-w-105 mx-auto">
           {/* Mobile logo only */}
           <div className="lg:hidden text-center mb-10">
             <Image
@@ -619,7 +619,7 @@ function LoginForm() {
                 type="button"
                 disabled={loading}
                 onClick={handleGoogleLogin}
-                className="btn-secondary w-full justify-center text-[13px] !font-medium disabled:opacity-60"
+                className="btn-secondary w-full justify-center text-[13px] font-medium! disabled:opacity-60"
               >
                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                   <path

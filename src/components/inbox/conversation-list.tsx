@@ -48,7 +48,7 @@ function ConversationList({
               size="md"
             />
             <span
-              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0A0A0A] ${
+              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[var(--ws-surface)] ${
                 conv.channel === "whatsapp" ? "bg-wa-green" : "bg-blue"
               }`}
             />

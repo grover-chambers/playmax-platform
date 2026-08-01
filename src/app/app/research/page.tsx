@@ -191,7 +191,7 @@ export default function ResearchPage() {
   return (
     <div className="flex h-full">
       {/* ── LEFT PANEL: Research List ─────────────────── */}
-      <div className="w-[420px] border-r border-[#1E1E1E] pm-dash-card pm-dash-card-b-0 flex flex-col flex-shrink-0">
+      <div className="w-[420px] border-r border-[var(--ws-border)] pm-dash-card pm-dash-card-b-0 flex flex-col flex-shrink-0">
         <PageHeader
           title="Research & Data"
           subtitle={`${activeCount} active · ${reviewCount} pending review`}
@@ -228,10 +228,10 @@ export default function ResearchPage() {
             </>
           }
         />
-        <div className="px-4 py-3 border-b border-[#1E1E1E]">
+        <div className="px-4 py-3 border-b border-[var(--ws-border)]">
           <SearchBox placeholder="Search research..." value={search} onChange={setSearch} />
         </div>
-        <div className="px-4 py-2.5 border-b border-[#1E1E1E] flex gap-1.5 flex-wrap">
+        <div className="px-4 py-2.5 border-b border-[var(--ws-border)] flex gap-1.5 flex-wrap">
           {typeFilters.map((f) => (
             <FilterPill key={f} active={activeFilter === f} onClick={() => setActiveFilter(f)}>
               {f === "All" ? "All" : TYPE_LABELS[f] || f}
@@ -251,13 +251,13 @@ export default function ResearchPage() {
                 <div
                   key={project.id}
                   onClick={() => setSelectedId(project.id)}
-                  className={`bg-black-2 border rounded-lg p-4 cursor-pointer transition-all ${
-                    isActive ? "border-yellow ring-1 ring-yellow/20" : "border-[#252525] hover:border-[#3A3A3A]"
+                  className={`bg-[var(--ws-surface)] border rounded-lg p-4 cursor-pointer transition-all ${
+                    isActive ? "border-[var(--ws-accent)] ring-1 ring-[var(--ws-accent)]/20" : "border-[var(--ws-border)] hover:border-[var(--ws-accent)]/50"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2.5">
                     <div className="flex-1 min-w-0">
-                      <div className="font-display text-[13px] font-semibold leading-snug text-white">
+                      <div className="font-display text-[13px] font-semibold leading-snug text-[var(--ws-text)]">
                         {title}
                       </div>
                       <div className="text-[10px] text-gray-5 mt-0.5">
@@ -276,8 +276,8 @@ export default function ResearchPage() {
                           key={tag}
                           className={`font-mono text-[8px] font-bold px-1.5 py-[2px] rounded-full border ${
                             i === 0
-                              ? "bg-yellow/10 text-yellow border-yellow/20"
-                              : "bg-transparent text-gray-5 border-[#2A2A2A]"
+                              ? "bg-[var(--ws-accent)]/10 text-[var(--ws-accent)] border-[var(--ws-accent)]/20"
+                              : "bg-transparent text-gray-5 border-[var(--ws-border)]"
                           }`}
                         >
                           {tag}
@@ -315,10 +315,10 @@ export default function ResearchPage() {
           <>
             {/* ── Scrollable detail area ──────────────────── */}
             <div className="flex-1 overflow-y-auto">
-              <div className="px-7 py-5 border-b border-[#1E1E1E] bg-black-2">
+              <div className="px-7 py-5 border-b border-[var(--ws-border)] bg-[var(--ws-bg)]">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="font-display text-[18px] font-bold text-white">
+                    <h2 className="font-display text-[18px] font-bold text-[var(--ws-text)]">
                       {selected.metadata?.title || selected.project_name || TYPE_LABELS[selected.type] || selected.type}
                     </h2>
                     <p className="text-[12px] text-gray-4 mt-1">
@@ -338,13 +338,13 @@ export default function ResearchPage() {
                   </div>
                 </div>
                 {/* Tab bar */}
-                <div className="flex gap-1 mt-4 border-b border-[#1E1E1E] -mb-[1px]">
+                <div className="flex gap-1 mt-4 border-b border-[var(--ws-border)] -mb-[1px]">
                   <button
                     onClick={() => setDetailTab("summary")}
                     className={`px-3 py-2 text-[11px] font-medium border-b-2 transition-colors ${
                       detailTab === "summary"
-                        ? "border-yellow text-yellow"
-                        : "border-transparent text-gray-5 hover:text-gray-3"
+                        ? "border-[var(--ws-accent)] text-[var(--ws-accent)]"
+                        : "border-transparent text-gray-4 hover:text-[var(--ws-text)]"
                     }`}
                   >
                     <FileText size={12} className="inline mr-1.5" />
@@ -354,8 +354,8 @@ export default function ResearchPage() {
                     onClick={() => setDetailTab("analytics")}
                     className={`px-3 py-2 text-[11px] font-medium border-b-2 transition-colors ${
                       detailTab === "analytics"
-                        ? "border-yellow text-yellow"
-                        : "border-transparent text-gray-5 hover:text-gray-3"
+                        ? "border-[var(--ws-accent)] text-[var(--ws-accent)]"
+                        : "border-transparent text-gray-4 hover:text-[var(--ws-text)]"
                     }`}
                   >
                     <BarChart3 size={12} className="inline mr-1.5" />
@@ -371,7 +371,7 @@ export default function ResearchPage() {
                     <div className="pm-dash-krow grid grid-cols-2 gap-4">
                       {selected.metadata.kpis.map((kpi) => (
                         <div key={kpi.label} className="pm-dash-kcard">
-                          <div className="font-display text-[28px] font-bold text-yellow leading-none">{kpi.value}</div>
+                          <div className="font-display text-[28px] font-bold text-[var(--ws-accent)] leading-none">{kpi.value}</div>
                           <div className="text-[11px] text-gray-4 mt-1.5">{kpi.label}</div>
                         </div>
                       ))}
@@ -380,7 +380,7 @@ export default function ResearchPage() {
                   {selected.metadata?.summary && (
                     <div>
                       <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-2">Summary</h3>
-                      <p className="text-[13px] text-gray-3 leading-relaxed">{selected.metadata.summary}</p>
+                      <p className="text-[13px] text-gray-4 leading-relaxed">{selected.metadata.summary}</p>
                     </div>
                   )}
                   {selected.metadata?.chartItems && selected.metadata.chartItems.length > 0 && (
@@ -388,7 +388,7 @@ export default function ResearchPage() {
                       <h3 className="font-mono text-[10px] text-gray-5 uppercase tracking-wider mb-3">
                         {selected.metadata.chartLabel || "Chart"}
                       </h3>
-                      <div className="bg-black-3 border border-[#252525] rounded-lg p-5">
+                      <div className="bg-[var(--ws-bg)] border border-[var(--ws-border)] rounded-lg p-5">
                         <BarChart items={selected.metadata.chartItems} />
                       </div>
                     </div>
@@ -421,7 +421,7 @@ export default function ResearchPage() {
                                 <FileText size={14} className="text-gray-5 flex-shrink-0" />
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <div className="text-[12px] font-semibold text-white truncate">{report.title}</div>
+                                    <div className="text-[12px] font-semibold text-[var(--ws-text)] truncate">{report.title}</div>
                                     <span className={`text-[8px] font-mono font-bold px-1.5 py-[2px] rounded-full border ${
                                       report.kind === "ai_summary"
                                         ? "bg-purple/10 text-purple border-purple/20"
@@ -433,7 +433,7 @@ export default function ResearchPage() {
                                   <div className="text-[10px] text-gray-5 mt-0.5">
                                     {new Date(report.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                                     {report.storage_url && (
-                                      <> · <a href={report.storage_url} target="_blank" rel="noopener noreferrer" className="text-yellow hover:underline">View PDF</a></>
+                                      <> · <a href={report.storage_url} target="_blank" rel="noopener noreferrer" className="text-[var(--ws-accent)] hover:underline">View PDF</a></>
                                     )}
                                   </div>
                                 </div>
@@ -442,7 +442,7 @@ export default function ResearchPage() {
                                 {pubState === "none" && (
                                   <button
                                     onClick={() => setPublishTarget(report)}
-                                    className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border border-yellow/30 bg-yellow/5 text-yellow hover:bg-yellow/10 transition-colors cursor-pointer"
+                                    className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border border-[var(--ws-accent)]/30 bg-[var(--ws-accent)]/5 text-[var(--ws-accent)] hover:bg-[var(--ws-accent)]/10 transition-colors cursor-pointer"
                                   >
                                     Publish to client
                                   </button>
@@ -476,7 +476,7 @@ export default function ResearchPage() {
                 <div className="px-7 py-5 space-y-6">
                   {analyticsLoading ? (
                     <div className="flex items-center justify-center py-16">
-                      <Loader2 className="w-5 h-5 animate-spin text-yellow mr-2" />
+                      <Loader2 className="w-5 h-5 animate-spin text-[var(--ws-accent)] mr-2" />
                       <span className="text-[12px] text-gray-5">Loading analytics data...</span>
                     </div>
                   ) : analyticsData?.analytics ? (
@@ -490,7 +490,7 @@ export default function ResearchPage() {
                           <div className="text-[11px] text-gray-4 mt-1.5">Categories Tracked</div>
                         </div>
                         <div className="pm-dash-kcard">
-                          <div className="font-display text-[28px] font-bold text-yellow leading-none">
+                          <div className="font-display text-[28px] font-bold text-[var(--ws-accent)] leading-none">
                             {(analyticsData.analytics as Record<string, unknown[]>).competition_matrix?.length || 0}
                           </div>
                           <div className="text-[11px] text-gray-4 mt-1.5">Competitive Pairs</div>
@@ -505,8 +505,8 @@ export default function ResearchPage() {
                           </h3>
                           <div className="space-y-2">
                             {((analyticsData.analytics as Record<string, unknown[]>).category_analysis as Array<Record<string, unknown>>).slice(0, 10).map((cat, i) => (
-                              <div key={String(cat.category || i)} className="flex items-center justify-between text-[12px] px-3 py-2 rounded-lg bg-black-3 border border-[#252525]">
-                                <span className="text-gray-3 font-medium">{String(cat.category)}</span>
+                              <div key={String(cat.category || i)} className="flex items-center justify-between text-[12px] px-3 py-2 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)]">
+                                <span className="text-gray-4 font-medium">{String(cat.category)}</span>
                                 <span className="text-gray-4 font-mono">
                                   KES {Number(cat.total_revenue) >= 1000000
                                     ? `${(Number(cat.total_revenue) / 1000000).toFixed(1)}M`
@@ -530,14 +530,14 @@ export default function ResearchPage() {
                               .filter((g) => g.gap_status !== "BALANCED").slice(0, 8).map((gap, i) => (
                               <div key={i} className={`flex items-center justify-between text-[11px] px-3 py-2 rounded-lg border ${
                                 gap.gap_status === "NO_STOCK" || gap.gap_status === "UNDERSUPPLY"
-                                  ? "bg-red/5 border-red/20" : "bg-yellow/5 border-yellow/20"
+                                  ? "bg-red/5 border-red/20" : "bg-[var(--ws-accent)]/5 border-[var(--ws-accent)]/20"
                               }`}>
                                 <div>
-                                  <span className="text-gray-3">{String(gap.product_name)}</span>
+                                  <span className="text-gray-4">{String(gap.product_name)}</span>
                                   <span className="text-gray-5 ml-2">@{String(gap.branch_name)}</span>
                                 </div>
                                 <span className={`font-mono font-bold ${
-                                  gap.gap_status === "NO_STOCK" || gap.gap_status === "UNDERSUPPLY" ? "text-red" : "text-yellow"
+                                  gap.gap_status === "NO_STOCK" || gap.gap_status === "UNDERSUPPLY" ? "text-red" : "text-[var(--ws-accent)]"
                                 }`}>{String(gap.gap_status)}</span>
                               </div>
                             ))}
@@ -554,8 +554,8 @@ export default function ResearchPage() {
                           <div className="grid grid-cols-2 gap-2">
                             {Array.from(new Set(((analyticsData.analytics as Record<string, unknown[]>).branch_analysis as Array<Record<string, unknown>>).map((b) => b.branch_name)))
                               .slice(0, 6).map((branch) => (
-                              <div key={String(branch)} className="text-[11px] text-gray-4 px-3 py-2 rounded-lg bg-black-3 border border-[#252525]">
-                                <span className="font-medium text-gray-3">{String(branch)}</span>
+                              <div key={String(branch)} className="text-[11px] text-gray-4 px-3 py-2 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)]">
+                                <span className="font-medium text-gray-4">{String(branch)}</span>
                               </div>
                             ))}
                           </div>
@@ -564,7 +564,7 @@ export default function ResearchPage() {
                     </>
                   ) : (
                     <div className="text-center py-16 text-[12px] text-gray-5">
-                      <Database size={32} className="mx-auto mb-3 text-gray-6" />
+                      <Database size={32} className="mx-auto mb-3 text-gray-4" />
                       <p>{(analyticsData as Record<string, string>)?.summary || "No analytics data available for this project."}</p>
                     </div>
                   )}

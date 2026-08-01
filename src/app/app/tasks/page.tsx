@@ -29,7 +29,7 @@ const statusGroups = [
   {
     key: "in_progress" as const,
     label: "In Progress",
-    icon: <Clock size={13} className="text-yellow" />,
+    icon: <Clock size={13} className="text-[var(--ws-accent)]" />,
   },
   {
     key: "todo" as const,
@@ -50,8 +50,8 @@ const statusGroups = [
 
 const priorityLabels: Record<string, string> = {
   high: "bg-red/10 text-red border-red/20",
-  medium: "bg-yellow/10 text-yellow border-yellow/20",
-  low: "bg-gray-4/10 text-gray-4 border-[#2A2A2A]",
+  medium: "bg-[var(--ws-accent)]/10 text-[var(--ws-accent)] border-[var(--ws-accent)]/20",
+  low: "bg-gray-4/10 text-gray-4 border-[var(--ws-border)]",
 };
 
 function buildProjectFilters(tasks: Task[]): string[] {
@@ -110,7 +110,7 @@ export default function TasksPage() {
   }));
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       {loading ? (
         <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">Loading tasks…</div>
       ) : error ? (
@@ -130,7 +130,7 @@ export default function TasksPage() {
           </Button>
         }
       />
-      <div className="px-7 py-3 flex items-center gap-3 border-b border-white/5">
+      <div className="flex items-center gap-3 border-b border-[var(--ws-border)] pb-3">
         <SearchBox placeholder="Search tasks…" className="w-56" value={search} onChange={(val) => setSearch(val)} />
         <div className="flex items-center gap-1.5 ml-2 flex-wrap">
           {buildProjectFilters(data).map((filter) => (
@@ -145,42 +145,42 @@ export default function TasksPage() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {grouped.map((group) => (
-          <div key={group.key} className="pm-dash-card">
-            <div className="pm-dash-card-h">
+          <div key={group.key} className="ws-panel">
+            <div className="ws-panel-h">
               <div className="flex items-center gap-2">
                 {group.icon}
-                <span className="pm-dash-card-t">
+                <span className="ws-panel-t">
                   {group.label}
                 </span>
-                <span className="font-mono text-[9px] bg-black-4 text-gray-4 px-1.5 py-[2px] rounded-full">
+                <span className="font-mono text-[9px] bg-[var(--ws-bg)] text-gray-4 px-1.5 py-[2px] rounded-full">
                   {group.tasks.length}
                 </span>
               </div>
             </div>
-            <div className="pm-dash-card-b space-y-1.5">
+            <div className="ws-panel-b space-y-1.5">
               {group.tasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center gap-4 px-4 py-3 hover:border-[#333] transition-colors"
+                  className="flex items-center gap-4 px-4 py-3 hover:border-[var(--ws-accent)] transition-colors"
                 >
                   <div
                     className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
                       task.status === "done"
                         ? "border-green bg-green"
                         : task.status === "in_progress"
-                          ? "border-yellow"
-                          : "border-[#444]"
+                          ? "border-[var(--ws-accent)]"
+                          : "border-[var(--ws-border)]"
                     }`}
                   >
                     {task.status === "done" && (
-                      <span className="block w-1.5 h-1.5 bg-black rounded-full mx-auto mt-0.5" />
+                      <span className="block w-1.5 h-1.5 bg-white rounded-full mx-auto mt-0.5" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div
-                      className={`text-[12px] font-semibold ${task.status === "done" ? "text-gray-5 line-through" : "text-white"}`}
+                      className={`text-[12px] font-semibold ${task.status === "done" ? "text-gray-5 line-through" : "text-[var(--ws-text)]"}`}
                     >
                       {task.name}
                     </div>

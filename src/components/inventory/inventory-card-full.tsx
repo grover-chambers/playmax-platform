@@ -21,10 +21,10 @@ function InventoryCardFull({
   return (
     <div
       onClick={onClick}
-      className={`inventory-card ${isActive ? "!border-yellow" : ""}`}
+      className={`inventory-card ${isActive ? "border-[var(--ws-accent)]!" : ""}`}
     >
       <div
-        className={`inventory-card-img !h-[130px] ${item.imageGradient || "from-[#1a1a1a] to-[#2e2e2e]"}`}
+        className={`inventory-card-img h-[130px]! ${item.imageGradient || "from-[#1a1a1a] to-[#2e2e2e]"}`}
       >
         <MapPin className="w-10 h-10 text-gray-5" />
         <Badge
@@ -36,7 +36,7 @@ function InventoryCardFull({
       </div>
       <div className="inventory-card-body">
         <div className="inventory-type">{item.type}</div>
-        <div className="inventory-name !text-[14px] leading-tight">
+        <div className="inventory-name text-[14px]! leading-tight">
           {item.name}
         </div>
         <div className="inventory-location flex items-center gap-1">

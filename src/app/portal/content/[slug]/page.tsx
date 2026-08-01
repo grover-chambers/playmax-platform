@@ -78,7 +78,7 @@ export default function PortalContentArticlePage({ params }: { params: Promise<{
           )}
         </div>
 
-        <h1 className="font-display text-[22px] font-bold text-white leading-tight mb-3">{article.title}</h1>
+        <h1 className="font-display text-[22px] font-bold text-[var(--ws-text)] leading-tight mb-3">{article.title}</h1>
 
         {article.excerpt && (
           <p className="text-[14px] text-gray-4 leading-relaxed mb-6">{article.excerpt}</p>

@@ -49,18 +49,18 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader title="Settings" subtitle="System configuration & team management" />
 
-      <div className="border-b border-[#1E1E1E] flex">
+      <div className="border-b border-[var(--ws-border)] flex">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-5 py-3 text-[13px] font-display cursor-pointer transition-colors ${
               activeTab === tab
-                ? "text-yellow border-b-2 border-yellow font-semibold"
-                : "text-gray-4 hover:text-white font-medium border-b-2 border-transparent"
+                ? "text-[var(--ws-accent)] border-b-2 border-[var(--ws-accent)] font-semibold"
+                : "text-gray-4 hover:text-[var(--ws-text)] font-medium border-b-2 border-transparent"
             }`}
           >
             {tab}
@@ -94,11 +94,11 @@ export default function SettingsPage() {
                 className="flex items-center justify-between pm-dash-card px-4 py-3"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-yellow/15 text-yellow flex items-center justify-center font-display text-[11px] font-bold">
+                  <div className="w-8 h-8 rounded-full bg-[var(--ws-accent)]/10 text-[var(--ws-accent)] flex items-center justify-center font-display text-[11px] font-bold">
                     {member.initials}
                   </div>
                   <div>
-                    <p className="font-display text-[13px] font-semibold text-white">{member.name}</p>
+                    <p className="font-display text-[13px] font-semibold text-[var(--ws-text)]">{member.name}</p>
                     <p className="text-[11px] text-gray-5">{member.email}</p>
                   </div>
                 </div>
@@ -108,7 +108,7 @@ export default function SettingsPage() {
                     className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                       member.status === "active"
                         ? "bg-green/10 text-green border-green/20"
-                        : "bg-gray-4/10 text-gray-4 border-[#2A2A2A]"
+                        : "bg-gray-4/10 text-gray-4 border-[var(--ws-border)]"
                     }`}
                   >
                     {member.status}
@@ -127,7 +127,7 @@ export default function SettingsPage() {
                 className="flex items-center justify-between pm-dash-card px-4 py-4"
               >
                 <div className="flex-1 mr-4">
-                  <p className="font-display text-[13px] font-semibold text-white">{automation.label}</p>
+                  <p className="font-display text-[13px] font-semibold text-[var(--ws-text)]">{automation.label}</p>
                   <p className="text-[11px] text-gray-5 mt-0.5">{automation.description}</p>
                 </div>
                 <button
@@ -135,7 +135,7 @@ export default function SettingsPage() {
                     setToggles((prev) => ({ ...prev, [automation.id]: !prev[automation.id] }))
                   }
                   className={`w-10 h-5 rounded-full relative transition-colors cursor-pointer ${
-                    toggles[automation.id] ? "bg-yellow" : "bg-[#333]"
+                    toggles[automation.id] ? "bg-[var(--ws-accent)]" : "bg-[var(--ws-border)]"
                   }`}
                 >
                   <span
@@ -159,8 +159,8 @@ export default function SettingsPage() {
                 className="flex items-center justify-between pm-dash-card px-4 py-3"
               >
                 <div className="flex items-center gap-4 flex-1">
-                  <p className="font-display text-[13px] font-semibold text-white">{template.name}</p>
-                  <span className="font-mono text-[10px] text-gray-5 bg-[#1A1A1A] px-2 py-0.5 rounded-full border border-[#252525]">
+                  <p className="font-display text-[13px] font-semibold text-[var(--ws-text)]">{template.name}</p>
+                  <span className="font-mono text-[10px] text-gray-5 bg-[var(--ws-bg)] px-2 py-0.5 rounded-full border border-[var(--ws-border)]">
                     {template.type}
                   </span>
                 </div>
@@ -181,12 +181,12 @@ export default function SettingsPage() {
                 className="flex items-center justify-between pm-dash-card px-4 py-4"
               >
                 <div className="flex items-center gap-3">
-                  <p className="font-display text-[13px] font-semibold text-white">{integration.name}</p>
+                  <p className="font-display text-[13px] font-semibold text-[var(--ws-text)]">{integration.name}</p>
                   <span
                     className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                       integration.connected
                         ? "bg-green/10 text-green border-green/20"
-                        : "bg-gray-4/10 text-gray-4 border-[#2A2A2A]"
+                        : "bg-gray-4/10 text-gray-4 border-[var(--ws-border)]"
                     }`}
                   >
                     {integration.connected ? "Connected" : "Not Connected"}

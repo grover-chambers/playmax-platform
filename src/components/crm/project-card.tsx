@@ -88,7 +88,7 @@ export default function ProjectCard({
           <div className="lead-meta">
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-gray-5">{client}</span>
-              <span className="text-[10px] text-gray-6">·</span>
+              <span className="text-[10px] text-gray-4">·</span>
               <span className="text-[10px] text-gray-5">{deadline}</span>
             </div>
             <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full border capitalize ${statusStyles[status] || "text-gray-5 border-gray-5/30"}`}>{status.replace(/_/g, " ")}</span>

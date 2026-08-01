@@ -62,10 +62,10 @@ export default function AnalyticsDashboard() {
   ).size;
 
   const kpis = [
-    { icon: Store, value: loading ? "—" : String(branches.length), label: "Branches" },
-    { icon: Package, value: loading ? "—" : productCount.toLocaleString(), label: "Products" },
-    { icon: Upload, value: loading ? "—" : String(uploads.length), label: "Uploads" },
-    { icon: Calendar, value: loading ? "—" : String(activePeriods), label: "Periods" },
+    { icon: Store, value: loading ? "—" : String(branches.length), label: "Branches", color: "text-teal" },
+    { icon: Package, value: loading ? "—" : productCount.toLocaleString(), label: "Products", color: "text-blue" },
+    { icon: Upload, value: loading ? "—" : String(uploads.length), label: "Uploads", color: "text-green" },
+    { icon: Calendar, value: loading ? "—" : String(activePeriods), label: "Periods", color: "text-red" },
   ];
 
   useEffect(() => { startTransition(() => { setPage(1); }); }, [uploads.length]);
@@ -73,7 +73,7 @@ export default function AnalyticsDashboard() {
   const { paginated: recentUploads, total } = usePagination(uploads, page, 5);
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title="Analytics Dashboard"
         subtitle="FMCG market analysis engine — overview"
@@ -87,33 +87,37 @@ export default function AnalyticsDashboard() {
 
       {/* Error banner */}
       {error && (
-        <div className="mt-4 px-4 py-3 rounded-lg bg-red/10 border border-red/20 text-red text-[12px]">
+        <div className="px-4 py-3 rounded-lg bg-red/10 border border-red/20 text-red text-[12px]">
           {error}
         </div>
       )}
 
       {/* KPI Row */}
-      <div className="pm-dash-krow pm-dash-krow-4 mt-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <div key={kpi.label} className="pm-dash-kcard">
-              <div className="pm-dash-kl pm-dash-kl-icon">
-                {loading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Icon size={14} />
-                )}
-                {kpi.label}
+            <div key={kpi.label} className="ws-stat-card">
+              <div className="flex items-center gap-3">
+                <div className="ws-stat-icon">
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 text-gray-5 animate-spin" />
+                  ) : (
+                    <Icon className={`w-4 h-4 ${kpi.color}`} />
+                  )}
+                </div>
+                <div>
+                  <div className="ws-stat-value">{kpi.value}</div>
+                  <div className="ws-stat-label">{kpi.label}</div>
+                </div>
               </div>
-              <div className="pm-dash-kn">{kpi.value}</div>
             </div>
           );
         })}
       </div>
 
       {/* Main content */}
-      <div className="grid grid-cols-[2fr_1fr] gap-5 mt-5">
+      <div className="grid grid-cols-[2fr_1fr] gap-5">
         {/* Left: Recent uploads */}
         <div className="pm-dash-card">
           <div className="pm-dash-card-h">
@@ -148,8 +152,8 @@ export default function AnalyticsDashboard() {
                     </tr>
                   )}
                   {recentUploads.map((u) => (
-                    <tr key={u.id} className="border-t border-[#1E1E1E]">
-                      <td className="py-2.5 text-white font-medium truncate max-w-[180px]">{u.filename}</td>
+                    <tr key={u.id} className="border-t border-[var(--ws-border)]">
+                      <td className="py-2.5 text-[var(--ws-text)] font-medium truncate max-w-45">{u.filename}</td>
                       <td className="py-2.5 text-gray-4">{u.branch_name ?? "—"}</td>
                       <td className="py-2.5 text-gray-4">{u.period_label ?? "—"}</td>
                       <td className="py-2.5 text-right text-gray-4 font-mono">{u.total_rows.toLocaleString()}</td>
@@ -223,7 +227,7 @@ export default function AnalyticsDashboard() {
                 </div>
               ) : uploads.length > 0 ? (
                 <p className="text-[11px] text-gray-4">
-                  <strong className="text-white">{uploads.length}</strong> file{uploads.length !== 1 && "s"} uploaded.
+                  <strong className="text-[var(--ws-text)]">{uploads.length}</strong> file{uploads.length !== 1 && "s"} uploaded.
                   {uploads.some((u) => u.status === "imported") && " Data is ready for analysis."}
                   {uploads.some((u) => u.status === "failed") && (
                     <span className="text-red ml-1">{uploads.filter((u) => u.status === "failed").length} failed.</span>

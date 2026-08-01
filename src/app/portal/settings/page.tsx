@@ -155,7 +155,7 @@ export default function PortalSettingsPage() {
               type="text"
               value={profile.name}
               onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-              className="w-full bg-[#0D0D0D] border border-[#252525] rounded-lg px-3 py-2.5 text-[13px] text-white placeholder-gray-5 focus:outline-none focus:border-teal/50 transition-colors"
+              className="w-full w-full ws-input rounded-lg placeholder-gray-5 focus:border-[var(--ws-accent)]"
               placeholder="Your name"
             />
           </div>
@@ -167,7 +167,7 @@ export default function PortalSettingsPage() {
               type="email"
               value={profile.email}
               onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
-              className="w-full bg-[#0D0D0D] border border-[#252525] rounded-lg px-3 py-2.5 text-[13px] text-white placeholder-gray-5 focus:outline-none focus:border-teal/50 transition-colors"
+              className="w-full w-full ws-input rounded-lg placeholder-gray-5 focus:border-[var(--ws-accent)]"
               placeholder="you@company.com"
             />
           </div>
@@ -179,7 +179,7 @@ export default function PortalSettingsPage() {
               type="tel"
               value={profile.phone}
               onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
-              className="w-full bg-[#0D0D0D] border border-[#252525] rounded-lg px-3 py-2.5 text-[13px] text-white placeholder-gray-5 font-mono focus:outline-none focus:border-teal/50 transition-colors"
+              className="w-full w-full ws-input rounded-lg placeholder-gray-5 font-mono focus:border-[var(--ws-accent)]"
               placeholder="+254 7XX XXX XXX"
             />
           </div>
@@ -191,12 +191,12 @@ export default function PortalSettingsPage() {
               type="text"
               value={profile.company}
               readOnly
-              className="w-full bg-[#0D0D0D] border border-[#252525] rounded-lg px-3 py-2.5 text-[13px] text-gray-4 cursor-not-allowed"
+              className="w-full w-full ws-input rounded-lg text-gray-4 cursor-not-allowed"
             />
           </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-[#1A1A1A] flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-[var(--ws-border)] flex items-center justify-between">
           <div className="text-[10px] text-gray-5">
             Changes are saved to your client profile
           </div>
@@ -228,7 +228,7 @@ export default function PortalSettingsPage() {
             const key = NOTIF_KEYS[item.label];
             const checked = notifPrefs[key] ?? true;
             return (
-              <div key={item.label} className="flex items-center justify-between py-2 border-b border-[#1A1A1A] last:border-0">
+              <div key={item.label} className="flex items-center justify-between py-2 border-b border-[var(--ws-border)] last:border-0">
                 <div>
                   <div className="text-[12px] text-gray-3">{item.label}</div>
                   <div className="text-[10px] text-gray-5 mt-0.5">{item.desc}</div>
@@ -243,7 +243,7 @@ export default function PortalSettingsPage() {
                   />
                   <label
                     htmlFor={`notif-${key}`}
-                    className="w-9 h-5 bg-[#252525] rounded-full peer-checked:bg-teal transition-colors cursor-pointer block relative"
+                    className="w-9 h-5 bg-[var(--ws-border)] rounded-full peer-checked:bg-teal transition-colors cursor-pointer block relative"
                   >
                     <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-gray-4 rounded-full peer-checked:bg-white transition-all peer-checked:translate-x-4" />
                   </label>

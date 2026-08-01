@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, startTransition } from "react";
-import { Eye, LogOut, ExternalLink, Monitor, Smartphone } from "lucide-react";
+import { Eye, LogOut, ExternalLink, Monitor, Smartphone, FolderKanban, CheckCircle2, MessageSquare } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import Pagination, { usePagination } from "@/components/ui/pagination";
@@ -84,7 +84,7 @@ export default function PreviewClientPage() {
               }`}
             >
               {/* Mock client portal header */}
-              <div className="border-b border-[#1e1e1e] p-4">
+              <div className="border-b border-[var(--ws-border)] p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="font-display text-[14px] font-bold">
@@ -116,15 +116,22 @@ export default function PreviewClientPage() {
                 {/* KPI cards */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: "Active Projects", value: "3", color: "text-yellow" },
-                    { label: "Completed", value: "7", color: "text-green" },
-                    { label: "Unread Messages", value: "2", color: "text-blue" },
+                    { label: "Active Projects", value: "3", color: "text-yellow", Icon: FolderKanban },
+                    { label: "Completed", value: "7", color: "text-green", Icon: CheckCircle2 },
+                    { label: "Unread Messages", value: "2", color: "text-blue", Icon: MessageSquare },
                   ].map((kpi) => (
-                    <div key={kpi.label} className="pm-dash-card p-3">
-                      <div className={`font-display text-[20px] font-bold ${kpi.color}`}>
-                        {kpi.value}
+                    <div key={kpi.label} className="ws-stat-card p-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="ws-stat-icon">
+                          <kpi.Icon className={`w-4 h-4 ${kpi.color}`} />
+                        </div>
+                        <div>
+                          <div className={`font-display text-[20px] font-bold ${kpi.color}`}>
+                            {kpi.value}
+                          </div>
+                          <div className="text-[10px] text-gray-5 mt-1">{kpi.label}</div>
+                        </div>
                       </div>
-                      <div className="text-[10px] text-gray-5 mt-1">{kpi.label}</div>
                     </div>
                   ))}
                 </div>
@@ -153,7 +160,7 @@ export default function PreviewClientPage() {
                   ].map((r) => (
                     <div
                       key={r.title}
-                      className="flex items-center justify-between py-2.5 border-b border-[#1a1a1a] last:border-b-0"
+                      className="flex items-center justify-between py-2.5 border-b border-[var(--ws-border)] last:border-b-0"
                     >
                       <div>
                         <div className="text-[12px] font-medium">{r.title}</div>
@@ -175,7 +182,7 @@ export default function PreviewClientPage() {
                   ].map((inv) => (
                     <div
                       key={inv.inv}
-                      className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-b-0"
+                      className="flex items-center justify-between py-2 border-b border-[var(--ws-border)] last:border-b-0"
                     >
                       <div className="text-[11px]">{inv.inv}</div>
                       <div className="text-[11px] font-display font-semibold">
@@ -213,7 +220,7 @@ export default function PreviewClientPage() {
                   ].map((m) => (
                     <div
                       key={m.time}
-                      className="flex gap-2.5 py-2 border-b border-[#1a1a1a] last:border-b-0"
+                      className="flex gap-2.5 py-2 border-b border-[var(--ws-border)] last:border-b-0"
                     >
                       <div className="w-6 h-6 rounded-full bg-yellow/20 flex items-center justify-center text-[8px] font-bold text-yellow flex-shrink-0">
                         {m.from.split(" ").map((n) => n[0]).join("")}
@@ -236,7 +243,7 @@ export default function PreviewClientPage() {
         </div>
       ) : (
         /* ── Client Selection ── */
-        <div className="page-content">
+        <div className="page-content space-y-5">
           <PageHeader
             title="Preview Client Portal"
             subtitle="Select a client account to preview their exact portal view"
@@ -249,7 +256,7 @@ export default function PreviewClientPage() {
           />
 
           {/* Search */}
-          <div className="px-7 py-4 border-b border-[#1e1e1e]">
+          <div className="py-3 border-b border-[var(--ws-border)]">
             <input
               type="text"
               placeholder="Search client accounts..."
@@ -260,7 +267,7 @@ export default function PreviewClientPage() {
           </div>
 
           {/* Client grid */}
-          <div className="p-7 grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-5">
             {paginated.map((client) => (
               <button
                 key={client.id}

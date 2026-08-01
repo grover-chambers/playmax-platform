@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center px-4">
-      <div className="card !bg-black-2 p-8 w-full max-w-[400px] mx-auto">
+      <div className="card bg-black-2! p-8 w-full max-w-100 mx-auto">
         <div className="text-center mb-8">
           <h1 className="site-logo">
             PLAY<span className="site-logo-accent">MAX</span>

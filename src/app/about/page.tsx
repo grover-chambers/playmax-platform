@@ -40,7 +40,7 @@ export default function AboutPage() {
             <br />
             <span className="pm-accent">You own it.</span>
           </h1>
-          <p className="pm-hero-sub max-w-[620px]">
+          <p className="pm-hero-sub max-w-155">
             Market Link is a Kenyan market intelligence and brand
             activation firm. We help manufacturers, suppliers, and market
             entrants understand, enter, and dominate Kenyan and East African
@@ -128,7 +128,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
             {team.map((member) => (
               <div key={member.name} className="pm-stat-card text-center">
-                <div className="user-avatar !w-16 !h-16 !text-[16px] md:!text-[18px] mx-auto mb-4 md:mb-5">
+                <div className="user-avatar w-16! h-16! text-[16px]! md:text-[18px]! mx-auto mb-4 md:mb-5">
                   {member.initials}
                 </div>
                 <div className="text-[16px] md:text-[18px] font-semibold mb-1">
@@ -143,7 +143,7 @@ export default function AboutPage() {
 
       <section className="bg-transparent" style={{ color: "var(--pm-black)" }}>
         <div className="site-container section">
-          <div className="max-w-[500px] mx-auto text-center">
+          <div className="max-w-125 mx-auto text-center">
             <div
               className="pm-eyebrow mb-3 md:mb-4"
               style={{ color: "var(--pm-amber)" }}

@@ -233,7 +233,7 @@ export default function ContentDeskPage() {
       {/* ── Workflow Tabs ── */}
       <div style={{ padding: "0 22px 8px" }}>
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-white/40" />
+          <Filter className="w-4 h-4 text-gray-4" />
           {(["all", "draft", "review", "published"] as WorkflowTab[]).map(
             (tab) => (
               <button
@@ -241,8 +241,8 @@ export default function ContentDeskPage() {
                 onClick={() => setWorkflowTab(tab)}
                 className={`pm-dash-bdg cursor-pointer transition-colors ${
                   workflowTab === tab
-                    ? "bg-white/20 text-white"
-                    : "bg-white/5 text-white/40 hover:bg-white/10"
+                    ? "bg-[var(--ws-accent)] text-white"
+                    : "bg-[var(--ws-bg)] text-gray-4 hover:bg-[var(--ws-border)]"
                 }`}
                 style={{ textTransform: "capitalize" }}
               >
@@ -336,7 +336,7 @@ export default function ContentDeskPage() {
                     <div className="pm-dash-cq-icon">
                       <Icon
                         className="w-4 h-4"
-                        style={{ color: "var(--pm-gray-3)" }}
+                        style={{ color: "var(--ws-text-muted)" }}
                       />
                     </div>
                     <div className="pm-dash-cq-body">
@@ -381,7 +381,7 @@ export default function ContentDeskPage() {
                             className="btn-sm py-1! px-2! border-none!"
                             type="button"
                             title="Archive"
-                            style={{ color: "var(--pm-gray-4)" }}
+                            style={{ color: "var(--ws-text-muted)" }}
                             onClick={() =>
                               handleWorkflowAction(item.title, "archive")
                             }
@@ -392,7 +392,7 @@ export default function ContentDeskPage() {
                             className="btn-sm py-1! px-2! border-none!"
                             type="button"
                             title="Open"
-                            style={{ color: "var(--pm-gray-4)" }}
+                            style={{ color: "var(--ws-text-muted)" }}
                             onClick={() =>
                               router.push("/app/content/articles")
                             }
@@ -458,7 +458,7 @@ export default function ContentDeskPage() {
                   gap: 20,
                   marginTop: 16,
                   paddingTop: 12,
-                  borderTop: "1px solid #1a1a1a",
+                  borderTop: "1px solid var(--ws-border)",
                 }}
               >
                 {leadSources.map((src) => (
@@ -479,7 +479,7 @@ export default function ContentDeskPage() {
                       <div style={{ fontSize: 13, fontWeight: 600 }}>
                         {src.count}
                       </div>
-                      <div style={{ fontSize: 10, color: "var(--pm-gray-5)" }}>
+                      <div style={{ fontSize: 10, color: "var(--ws-text-muted)" }}>
                         {src.label}
                       </div>
                     </div>

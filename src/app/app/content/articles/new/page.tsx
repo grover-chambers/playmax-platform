@@ -39,7 +39,7 @@ export default function NewArticlePage() {
   }
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "var(--pm-black)" }}>
+    <div className="flex flex-col h-full" style={{ background: "var(--ws-bg)" }}>
       <PageHeader
         title="New Article"
         subtitle="Create a new blog post or insight"
@@ -57,7 +57,7 @@ export default function NewArticlePage() {
               Title
             </label>
             <input
-              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40"
+              className="w-full ws-input rounded-lg placeholder-gray-5"
               placeholder="e.g. How Outdoor Media is Evolving in 2026"
               value={title}
               onChange={(e) => {
@@ -74,7 +74,7 @@ export default function NewArticlePage() {
               Slug
             </label>
             <input
-              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40 font-mono"
+              className="w-full ws-input rounded-lg placeholder-gray-5 font-mono"
               placeholder="how-outdoor-media-is-evolving"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
@@ -93,8 +93,8 @@ export default function NewArticlePage() {
                   type="button"
                   className={`px-3 py-1.5 rounded-lg text-[10px] font-medium border transition-colors ${
                     category === c
-                      ? "bg-yellow/10 text-yellow border-yellow/30"
-                      : "bg-black text-gray-4 border-[#252525] hover:border-gray-6"
+                      ? "bg-[var(--ws-accent)]/10 text-[var(--ws-accent)] border-[var(--ws-accent)]/20"
+                      : "bg-[var(--ws-surface)] text-gray-4 border-[var(--ws-border)] hover:border-gray-4"
                   }`}
                   onClick={() => setCategory(c)}
                 >
@@ -109,7 +109,7 @@ export default function NewArticlePage() {
               Excerpt
             </label>
             <textarea
-              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40 resize-none"
+              className="w-full ws-input rounded-lg placeholder-gray-5 resize-none"
               rows={3}
               placeholder="Brief summary for preview cards"
               value={excerpt}
@@ -122,7 +122,7 @@ export default function NewArticlePage() {
               Body
             </label>
             <textarea
-              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40 resize-none"
+              className="w-full ws-input rounded-lg placeholder-gray-5 resize-none"
               rows={12}
               placeholder="Write your article content here..."
               value={content}

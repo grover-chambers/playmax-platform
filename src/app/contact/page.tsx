@@ -21,7 +21,7 @@ export default function ContactPage() {
                 <br />
                 <span className="pm-accent">your market?</span>
               </h1>
-              <p className="pm-hero-sub mb-8 md:mb-10 max-w-[520px]">
+              <p className="pm-hero-sub mb-8 md:mb-10 max-w-130">
                 Tell us what you&apos;re trying to achieve. We&apos;ll respond
                 within one business day with a project brief and a quote.
               </p>
@@ -29,7 +29,7 @@ export default function ContactPage() {
               <div className="flex flex-col gap-5 md:gap-6">
                 <div className="flex items-start gap-4">
                   <span
-                    className="pm-eyebrow !text-[11px] md:!text-[12px] w-24 flex-shrink-0"
+                    className="pm-eyebrow text-[11px]! md:text-[12px]! w-24 flex-shrink-0"
                     style={{ color: "var(--pm-amber)" }}
                   >
                     Phone
@@ -43,7 +43,7 @@ export default function ContactPage() {
                 </div>
                 <div className="flex items-start gap-4">
                   <span
-                    className="pm-eyebrow !text-[11px] md:!text-[12px] w-24 flex-shrink-0"
+                    className="pm-eyebrow text-[11px]! md:text-[12px]! w-24 flex-shrink-0"
                     style={{ color: "var(--pm-amber)" }}
                   >
                     Email
@@ -57,7 +57,7 @@ export default function ContactPage() {
                 </div>
                 <div className="flex items-start gap-4">
                   <span
-                    className="pm-eyebrow !text-[11px] md:!text-[12px] w-24 flex-shrink-0"
+                    className="pm-eyebrow text-[11px]! md:text-[12px]! w-24 flex-shrink-0"
                     style={{ color: "var(--pm-amber)" }}
                   >
                     Location
@@ -68,7 +68,7 @@ export default function ContactPage() {
                 </div>
                 <div className="flex items-start gap-4">
                   <span
-                    className="pm-eyebrow !text-[11px] md:!text-[12px] w-24 flex-shrink-0"
+                    className="pm-eyebrow text-[11px]! md:text-[12px]! w-24 flex-shrink-0"
                     style={{ color: "var(--pm-amber)" }}
                   >
                     Hours

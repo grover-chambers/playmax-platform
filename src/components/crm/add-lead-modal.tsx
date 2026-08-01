@@ -65,7 +65,7 @@ function AddLeadModal({ open, onClose }: AddLeadModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="card !bg-[#0D0D0D] w-full max-w-lg mx-4">
+      <div className="card bg-[#0D0D0D]! w-full max-w-lg mx-4">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#1E1E1E]">
           <h2 className="font-display text-sm font-bold">Add New Lead</h2>
           <button

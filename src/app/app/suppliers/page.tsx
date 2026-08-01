@@ -108,7 +108,7 @@ export default function SuppliersPage() {
   };
 
   return (
-    <div className="px-7 py-6">
+    <div className="page-content space-y-5">
       <PageHeader
         title="Suppliers"
         subtitle={`${suppliers.length} supplier${suppliers.length !== 1 ? "s" : ""} in analytics database`}
@@ -125,7 +125,7 @@ export default function SuppliersPage() {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={importLoading}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] text-white bg-gray-6 hover:bg-gray-7 disabled:opacity-50 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] text-white bg-gray-4 hover:bg-gray-5 disabled:opacity-50 transition-colors cursor-pointer"
         >
           {importLoading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
           Import CSV
@@ -242,7 +242,7 @@ export default function SuppliersPage() {
             </thead>
             <tbody>
               {suppliers.map((s) => (
-                <tr key={s.id} className="border-b border-[var(--ws-border,#e5e5e5)] last:border-0 hover:bg-white/5 transition-colors">
+                <tr key={s.id} className="border-b border-[var(--ws-border,#e5e5e5)] last:border-0 hover:bg-[var(--ws-bg)] transition-colors">
                   <td className="px-4 py-3">
                     <div className="text-[13px] font-medium">{s.name}</div>
                   </td>

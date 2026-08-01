@@ -47,7 +47,7 @@ export default function ArticlesListPage() {
   const { paginated, total } = usePagination(articles, page, 20);
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       {loading ? (
         <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">
           Loading articles…
@@ -72,15 +72,15 @@ export default function ArticlesListPage() {
             }
           />
 
-          <div className="pm-dash-card pm-dash-card-b-0">
+          <div className="ws-panel overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#1A1A1A]">
+                <tr className="border-b border-[var(--ws-border)] bg-[var(--ws-bg)]">
                   {["Title", "Category", "Date", "Read Time", "Status"].map(
                     (h) => (
                       <th
                         key={h}
-                        className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
+                        className="font-mono text-[10px] font-semibold text-gray-4 tracking-widest uppercase text-left px-4 py-3"
                       >
                         {h}
                       </th>
@@ -93,12 +93,12 @@ export default function ArticlesListPage() {
                 {paginated.map((a) => (
                   <tr
                     key={a.id}
-                    className="border-b border-[#1A1A1A] hover:bg-white/[0.02] transition-colors"
+                    className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <FileText className="w-4 h-4 flex-shrink-0 text-yellow" />
-                        <span className="text-[13px] font-medium truncate max-w-[300px]">
+                        <FileText className="w-4 h-4 flex-shrink-0 text-[var(--ws-accent)]" />
+                        <span className="text-[13px] font-medium truncate max-w-75 text-[var(--ws-text)]">
                           {a.title}
                         </span>
                       </div>
@@ -124,14 +124,14 @@ export default function ArticlesListPage() {
                         <Link
                           href={`/insights/${a.slug}`}
                           target="_blank"
-                          className="p-1.5 rounded-md hover:bg-white/[0.05] transition-colors text-gray-5 hover:text-gray-3"
+                          className="p-1.5 rounded-md hover:bg-[var(--ws-bg)] transition-colors text-gray-4 hover:text-[var(--ws-accent)]"
                           title="View on site"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </Link>
                         <Link
                           href={`/app/content/articles/${a.id}`}
-                          className="p-1.5 rounded-md hover:bg-white/[0.05] transition-colors text-gray-5 hover:text-gray-3"
+                          className="p-1.5 rounded-md hover:bg-[var(--ws-bg)] transition-colors text-gray-4 hover:text-[var(--ws-accent)]"
                           title="Edit"
                         >
                           <Eye className="w-3.5 h-3.5" />

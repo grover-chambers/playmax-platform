@@ -57,7 +57,7 @@ export default function CaseStudiesPage() {
           <h1 className="pm-hero-title mb-6 md:mb-8">
             Results that <span className="pm-accent">speak</span>
           </h1>
-          <p className="pm-hero-sub max-w-[560px]">
+          <p className="pm-hero-sub max-w-140">
             Real projects, real outcomes. Here&apos;s how we&apos;ve helped
             brands find their market and own it.
           </p>
@@ -77,7 +77,7 @@ export default function CaseStudiesPage() {
                 <div className="text-[14px] text-gray-5 mb-3 md:mb-4">
                   {cs.market}
                 </div>
-                <div className="pm-dash-bdg pm-dash-bdg-g !text-[13px] !font-medium !px-3 !py-2">
+                <div className="pm-dash-bdg pm-dash-bdg-g text-[13px]! font-medium! px-3! py-2!">
                   {cs.result}
                 </div>
                 <div className="mt-4 md:mt-5 flex items-center gap-1 text-[12px] text-gray-4 group-hover:text-yellow transition-colors">
@@ -88,7 +88,7 @@ export default function CaseStudiesPage() {
           </div>
 
           <div className="mt-16 md:mt-20">
-            <div className="pm-dash-card max-w-[540px] mx-auto text-center p-10">
+            <div className="pm-dash-card max-w-135 mx-auto text-center p-10">
               <div className="text-[16px] md:text-[18px] font-semibold mb-2">
                 More case studies coming soon
               </div>
@@ -98,7 +98,7 @@ export default function CaseStudiesPage() {
               </p>
               <a
                 href="/contact"
-                className="pm-btn-primary !text-[14px] !px-6 !py-2.5 no-underline"
+                className="pm-btn-primary text-[14px]! px-6! py-2.5! no-underline"
               >
                 Request a Case Study
               </a>

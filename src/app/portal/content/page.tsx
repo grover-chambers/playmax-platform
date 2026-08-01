@@ -70,7 +70,7 @@ export default function PortalContentPage() {
                   <FileText size={18} className="text-yellow" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-display text-[14px] font-semibold text-white leading-tight">
+                  <div className="font-display text-[14px] font-semibold text-[var(--ws-text)] leading-tight">
                     {a.title}
                   </div>
                   {a.excerpt && (

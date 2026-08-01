@@ -90,7 +90,7 @@ export default function PortalLayout({
       userExtra={
         <Link
           href="/portal/settings"
-          className="text-[11px] font-medium px-2 py-1 rounded border border-[#2A2A2A] text-gray-4 hover:text-teal hover:border-teal transition-all"
+          className="text-[11px] font-medium px-2 py-1 rounded border border-[var(--ws-border)] text-gray-4 hover:text-teal hover:border-teal transition-all"
         >
           Settings
         </Link>

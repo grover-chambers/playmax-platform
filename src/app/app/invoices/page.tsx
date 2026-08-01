@@ -214,7 +214,7 @@ export default function InvoicesPage() {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title="Invoices"
         subtitle={`${invoices.length} invoices · KES ${invoices
@@ -258,10 +258,10 @@ export default function InvoicesPage() {
       />
 
         {/* Table */}
-        <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
+        <div className="ws-panel overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#1A1A1A]">
+              <tr className="border-b border-[var(--ws-border)]">
                 {[
                   "Invoice",
                   "Client",
@@ -274,7 +274,7 @@ export default function InvoicesPage() {
                 ].map((h) => (
                   <th
                     key={h}
-                    className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
+                    className="font-mono text-[11px] text-gray-5 font-semibold tracking-widest uppercase text-left px-4 py-3"
                   >
                     {h}
                   </th>
@@ -295,18 +295,18 @@ export default function InvoicesPage() {
                 paginated.map((inv) => (
                   <tr
                     key={inv.id}
-                    className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors"
+                    className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors"
                   >
-                    <td className="px-4 py-3.5 text-[13px] font-semibold font-mono">
+                    <td className="px-4 py-3.5 text-[13px] font-semibold font-mono text-[var(--ws-text)]">
                       {inv.id}
                     </td>
-                    <td className="px-4 py-3.5 text-[13px] text-white font-medium">
+                    <td className="px-4 py-3.5 text-[13px] text-[var(--ws-text)] font-medium">
                       {inv.client}
                     </td>
-                    <td className="px-4 py-3.5 text-[13px] text-gray-3">
+                    <td className="px-4 py-3.5 text-[13px] text-gray-4">
                       {inv.project}
                     </td>
-                    <td className="px-4 py-3.5 text-[13px] font-display font-bold text-yellow">
+                    <td className="px-4 py-3.5 text-[13px] font-display font-bold text-[var(--ws-accent)]">
                       {inv.amount}
                     </td>
                     <td className="px-4 py-3.5">
@@ -329,7 +329,7 @@ export default function InvoicesPage() {
                     </td>
                     <td className="px-4 py-3.5">
                       <button
-                        className="text-[11px] text-gray-5 hover:text-yellow transition-colors font-medium flex items-center gap-1"
+                        className="text-[11px] text-gray-5 hover:text-[var(--ws-accent)] transition-colors font-medium flex items-center gap-1"
                         title="View details"
                         onClick={() => setDetailInvoice(inv)}
                       >
@@ -358,7 +358,7 @@ export default function InvoicesPage() {
           {/* Client */}
           <div>
             <label className="form-label">
-              Client <span className="text-yellow">*</span>
+              Client <span className="text-[var(--ws-accent)]">*</span>
             </label>
             <select
               className="form-select"
@@ -388,13 +388,13 @@ export default function InvoicesPage() {
           {/* Line items */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="form-label !mb-0">
-                Line items <span className="text-yellow">*</span>
+              <label className="form-label mb-0!">
+                Line items <span className="text-[var(--ws-accent)]">*</span>
               </label>
               <button
                 type="button"
                 onClick={addLineItem}
-                className="text-[10px] text-yellow hover:text-yellow/80 transition-colors flex items-center gap-1"
+                className="text-[10px] text-[var(--ws-accent)] hover:text-[var(--ws-accent)]/80 transition-colors flex items-center gap-1"
               >
                 <PlusCircle className="w-3 h-3" /> Add item
               </button>
@@ -466,7 +466,7 @@ export default function InvoicesPage() {
                 </span>
               </div>
             )}
-            <div className="flex justify-between text-[13px] font-display font-bold text-yellow border-t border-[#2a2a2a] pt-1.5 mt-1">
+            <div className="flex justify-between text-[13px] font-display font-bold text-[var(--ws-accent)] border-t border-[var(--ws-border)] pt-1.5 mt-1">
               <span>Total</span>
               <span className="font-mono">
                 KES {calcTotal().toLocaleString()}
@@ -478,7 +478,7 @@ export default function InvoicesPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="form-label">
-                Due date <span className="text-yellow">*</span>
+                Due date <span className="text-[var(--ws-accent)]">*</span>
               </label>
               <input
                 className="form-input"
@@ -504,16 +504,16 @@ export default function InvoicesPage() {
 
           {/* VAT toggle */}
           <div className="flex items-center gap-3">
-            <label className="form-label !mb-0">Apply VAT</label>
+            <label className="form-label mb-0!">Apply VAT</label>
             <button
               type="button"
               onClick={() => setFormApplyTax(!formApplyTax)}
               className={`w-10 h-5 rounded-full transition-colors relative ${
-                formApplyTax ? "bg-yellow" : "bg-[#333]"
+                formApplyTax ? "bg-[var(--ws-accent)]" : "bg-[var(--ws-border)]"
               }`}
             >
               <span
-                className={`absolute top-0.5 w-4 h-4 rounded-full bg-black transition-all ${
+                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${
                   formApplyTax ? "left-[22px]" : "left-[2px]"
                 }`}
               />

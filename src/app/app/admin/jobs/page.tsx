@@ -36,16 +36,14 @@ function KpiCard({
   color: string;
 }) {
   return (
-    <div className="pm-dash-kcard p-4">
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${color}`}>
-          {icon}
+    <div className="ws-stat-card">
+      <div className="flex items-center gap-3">
+        <div className={`ws-stat-icon ${color}`}>{icon}</div>
+        <div>
+          <div className="ws-stat-value">{value}</div>
+          <div className="ws-stat-label">{label}</div>
         </div>
-        <span className="font-mono text-[9px] text-gray-5 tracking-widest uppercase">
-          {label}
-        </span>
       </div>
-      <p className="font-display text-[28px] font-bold">{value}</p>
     </div>
   );
 }
@@ -167,7 +165,7 @@ export default function JobsPage() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           <KpiCard
             label="Queued"
             value={jobs.queued}
@@ -197,7 +195,7 @@ export default function JobsPage() {
         {/* Last Job Info */}
         <div className="pm-dash-card p-5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-white/5 text-gray-4 flex items-center justify-center">
+            <div className="ws-stat-icon text-gray-4">
               <Clock size={20} />
             </div>
             <div>
@@ -207,7 +205,7 @@ export default function JobsPage() {
               </p>
             </div>
           </div>
-          <div className="pm-dash-card bg-[#111] p-4 rounded-lg border border-[#1e1e1e]">
+          <div className="p-4 rounded-lg border border-[var(--ws-border)]">
             <p className="font-mono text-[13px]">
               {health?.lastJobAt
                 ? new Date(health.lastJobAt).toLocaleString()

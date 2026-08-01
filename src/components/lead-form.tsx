@@ -60,7 +60,7 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
       <div className="font-display text-[22px] font-bold mb-1.5">
         Send us a brief
       </div>
-      <p className="body-copy-sm !text-gray-5">
+      <p className="body-copy-sm text-gray-5!">
         We&apos;ll respond within one business day with a project brief and a
         quote.
       </p>
@@ -72,7 +72,7 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
           <input
             name="name"
             required
-            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 !rounded-none !border-t-0 !border-l-0 !border-r-0"
+            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 rounded-none! border-t-0! border-l-0! border-r-0!"
             placeholder="Jane Mwangi"
           />
         </div>
@@ -81,7 +81,7 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
           <input
             name="company"
             required
-            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 !rounded-none !border-t-0 !border-l-0 !border-r-0"
+            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 rounded-none! border-t-0! border-l-0! border-r-0!"
             placeholder="Acme Ltd"
           />
         </div>
@@ -95,7 +95,7 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
             name="email"
             type="email"
             required
-            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 !rounded-none !border-t-0 !border-l-0 !border-r-0"
+            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 rounded-none! border-t-0! border-l-0! border-r-0!"
             placeholder="jane@company.co.ke"
           />
         </div>
@@ -106,7 +106,7 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
           <input
             name="phone"
             type="tel"
-            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 !rounded-none !border-t-0 !border-l-0 !border-r-0"
+            className="form-input border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 rounded-none! border-t-0! border-l-0! border-r-0!"
             placeholder="+254 741 953 190"
           />
         </div>
@@ -119,7 +119,7 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
           name="service_interest"
           required
           defaultValue=""
-          className="form-select border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 !rounded-none !border-t-0 !border-l-0 !border-r-0"
+          className="form-select border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 rounded-none! border-t-0! border-l-0! border-r-0!"
         >
           <option value="" disabled>
             Select a service
@@ -144,7 +144,7 @@ export function LeadForm({ source = "website", intent }: LeadFormProps) {
         <textarea
           name="description"
           rows={4}
-          className="form-textarea border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 resize-none !rounded-none !border-t-0 !border-l-0 !border-r-0"
+          className="form-textarea border-b border-gray-300 focus:border-pm-yellow bg-transparent py-3 px-4 outline-none transition-colors duration-250 placeholder:text-gray-400 resize-none rounded-none! border-t-0! border-l-0! border-r-0!"
           placeholder="What market are you trying to reach, and what's the goal?"
         />
       </div>

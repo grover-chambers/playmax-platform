@@ -31,7 +31,7 @@ function LeadCard({
       </div>
       <span className="intent-tag mb-2">{intent}</span>
       {value && (
-        <div className="value-tag !text-yellow !font-bold mb-2">{value}</div>
+        <div className="value-tag text-yellow! font-bold! mb-2">{value}</div>
       )}
       <div className="lead-meta">
         <div className="flex items-center gap-2">

@@ -198,9 +198,9 @@ export default function BillingPage() {
             </div>
           </div>
 
-          <div className="pm-dash-card bg-[#111] p-4 rounded-lg border border-[#1e1e1e]">
+          <div className="p-4 rounded-lg border border-[var(--ws-border)]">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-8 rounded bg-white/5 border border-white/10 flex items-center justify-center text-[9px] font-bold text-gray-4 font-mono">
+              <div className="w-12 h-8 rounded bg-[var(--ws-bg)] border border-[var(--ws-border)] flex items-center justify-center text-[9px] font-bold text-gray-4 font-mono">
                 VISA
               </div>
               <div>
@@ -212,7 +212,7 @@ export default function BillingPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[#1e1e1e]">
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--ws-border)]">
             <Button
               variant="primary"
               size="sm"
@@ -257,7 +257,7 @@ export default function BillingPage() {
           <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#1e1e1e]">
+                <tr className="border-b border-[var(--ws-border)]">
                   {["Invoice #", "Date", "Amount", "Status"].map((h) => (
                     <th
                       key={h}
@@ -279,7 +279,7 @@ export default function BillingPage() {
                   paginated.map((invoice) => (
                     <tr
                       key={invoice.id}
-                      className="border-b border-[#1e1e1e] hover:bg-white/2 transition-colors"
+                      className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors"
                     >
                       <td className="px-4 py-3">
                         <span className="text-[12px] font-mono font-medium">
@@ -307,7 +307,7 @@ export default function BillingPage() {
             <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
 
             {/* Add payment method row */}
-            <div className="px-4 py-3 border-t border-[#1e1e1e]">
+            <div className="px-4 py-3 border-t border-[var(--ws-border)]">
               <button
                 className="flex items-center gap-2 text-[11px] text-yellow hover:underline"
                 onClick={() => setPaymentModal("add")}

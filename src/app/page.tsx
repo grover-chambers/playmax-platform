@@ -326,7 +326,7 @@ export default function HomePage() {
             <h2 className="pm-section-title mb-6">
               Thinking on the <span className="pm-accent">market</span>
             </h2>
-            <p className="pm-hero-sub max-w-[560px]">
+            <p className="pm-hero-sub max-w-140">
               Research, analysis, and opinion on market intelligence, brand
               strategy, and media in East Africa.
             </p>
@@ -404,7 +404,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-16 md:mt-20">
-            <div className="pm-dash-card max-w-[540px] mx-auto text-center p-10">
+            <div className="pm-dash-card max-w-135 mx-auto text-center p-10">
               <div className="text-[17px] md:text-[19px] font-semibold mb-2">
                 Subscribe to insights
               </div>
@@ -413,7 +413,7 @@ export default function HomePage() {
               </p>
               <a
                 href="/contact"
-                className="pm-btn-primary !text-[14px] !px-6 !py-2.5 no-underline"
+                className="pm-btn-primary text-[14px]! px-6! py-2.5! no-underline"
               >
                 Get Notified
               </a>
@@ -430,7 +430,7 @@ export default function HomePage() {
             <h2 className="pm-section-title mb-4">
               See your dashboard <span className="pm-accent">in action</span>
             </h2>
-            <p className="pm-hero-sub max-w-[540px] mx-auto">
+            <p className="pm-hero-sub max-w-135 mx-auto">
               Real-time market intelligence with competitor tracking, category
               breakdowns, branch performance, and pricing analysis.
             </p>

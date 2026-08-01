@@ -147,7 +147,7 @@ export default function InventoryPage() {
           <h1 className="pm-hero-title mb-6 md:mb-8">
             Available <span className="pm-accent">inventory</span>
           </h1>
-          <p className="pm-hero-sub max-w-[560px]">
+          <p className="pm-hero-sub max-w-140">
             Browse billboards, digital screens, and banner sites across Kenya.
             Filter by type and availability to find the right fit for your
             campaign.
@@ -196,7 +196,7 @@ export default function InventoryPage() {
           <h2 className="pm-section-title mb-6">
             Find your <span className="pm-accent">spot</span>
           </h2>
-          <p className="pm-hero-sub max-w-[560px] mb-8">
+          <p className="pm-hero-sub max-w-140 mb-8">
             Explore our media sites across Nairobi. Yellow pins are available, grey are booked.
           </p>
           <InventoryMap />
@@ -215,7 +215,7 @@ export default function InventoryPage() {
               const isAvailable = item.status === "available";
               return (
                 <div key={item.id} className="inventory-card">
-                  <div className="inventory-card-img !h-[180px]" style={{ overflow: "hidden" }}>
+                  <div className="inventory-card-img h-[180px]!" style={{ overflow: "hidden" }}>
                     <MiniMap coords={item.coords} status={item.status} />
                     <span
                       className={`inventory-card-badge badge ${isAvailable ? "badge-available" : "badge-booked"}`}
@@ -225,7 +225,7 @@ export default function InventoryPage() {
                   </div>
                   <div className="inventory-card-body">
                     <div className="inventory-type">{item.type}</div>
-                    <div className="inventory-name !text-[16px] md:!text-[18px]">
+                    <div className="inventory-name text-[16px]! md:text-[18px]!">
                       {item.name}
                     </div>
                     <div className="inventory-location mb-4">

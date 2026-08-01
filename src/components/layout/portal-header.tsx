@@ -19,7 +19,7 @@ function PortalHeader({
       className={`bg-black border-b border-[#1A1A1A] px-10 h-16 flex items-center justify-between ${className}`}
     >
       <div className="flex items-center gap-2">
-        <div className="sidebar-logo !pb-0 !border-none !mb-0 flex items-center gap-1.5">
+        <div className="sidebar-logo pb-0! border-none! mb-0! flex items-center gap-1.5">
           <span className="w-4 h-4 rounded-full border-2 border-[var(--pm-gold)] flex items-center justify-center">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--pm-gold)]" />
           </span>

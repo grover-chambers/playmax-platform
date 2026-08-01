@@ -109,7 +109,7 @@ export default async function ArticlePage({
               {article.title}
             </h1>
 
-            <p className="pm-hero-sub max-w-[560px]">{article.excerpt}</p>
+            <p className="pm-hero-sub max-w-140">{article.excerpt}</p>
           </div>
         </section>
 
@@ -139,7 +139,7 @@ export default async function ArticlePage({
         <section className="bg-transparent">
           <div className="site-container pb-12 md:pb-20">
             <div
-              className="max-w-[720px] mx-auto"
+              className="max-w-180 mx-auto"
               style={{ color: "var(--pm-white)" }}
             >
               {paragraphs.map((line, i) => {
@@ -299,7 +299,7 @@ export default async function ArticlePage({
           style={{ color: "var(--pm-black)", background: "var(--pm-white)" }}
         >
           <div className="site-container section">
-            <div className="max-w-[500px] mx-auto text-center">
+            <div className="max-w-125 mx-auto text-center">
               <div
                 className="pm-eyebrow mb-3 md:mb-4"
                 style={{ color: "var(--pm-amber)" }}

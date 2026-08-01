@@ -254,7 +254,7 @@ export default function NewEngagementModal({
 
           {/* Billable toggle */}
           <div className="flex items-center gap-3">
-            <label className="form-label !mb-0">Billable</label>
+            <label className="form-label mb-0!">Billable</label>
             <button
               type="button"
               onClick={() => handleChange("billable", !form.billable)}

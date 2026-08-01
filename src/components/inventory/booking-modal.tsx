@@ -97,8 +97,8 @@ function BookingModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="card !bg-black-2 w-[480px] max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1A1A1A]">
+      <div className="card bg-[var(--ws-surface)]! w-[480px] max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--ws-border)]">
           <div>
             <h2 className="font-display text-[15px] font-bold">
               Create Booking
@@ -107,7 +107,7 @@ function BookingModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-white/5 rounded transition-colors cursor-pointer"
+            className="p-1.5 hover:bg-[var(--ws-bg)] rounded transition-colors cursor-pointer"
           >
             <X className="w-4 h-4 text-gray-4" />
           </button>
@@ -177,18 +177,18 @@ function BookingModal({
           </div>
 
           {days > 0 && (
-            <div className="card !bg-black-3 px-4 py-3 space-y-2">
+            <div className="card bg-[var(--ws-bg)]! px-4 py-3 space-y-2">
               <div className="flex justify-between text-[12px]">
                 <span className="text-gray-4">Duration</span>
-                <span className="text-white font-semibold">{days} days</span>
+                <span className="text-[var(--ws-text)] font-semibold">{days} days</span>
               </div>
               <div className="flex justify-between text-[12px]">
                 <span className="text-gray-4">Daily rate</span>
-                <span className="text-white">
+                <span className="text-[var(--ws-text)]">
                   KES {Math.round(item.price / 30).toLocaleString()}/day
                 </span>
               </div>
-              <div className="divider !my-2" />
+              <div className="divider my-2!" />
               <div className="flex justify-between">
                 <span className="text-[13px] text-gray-3 font-semibold">
                   Total
@@ -202,7 +202,7 @@ function BookingModal({
 
           {itemBookings.length > 0 && (
             <div>
-              <h4 className="eyebrow !text-[9px] mb-2 flex items-center gap-1.5">
+              <h4 className="eyebrow text-[9px]! mb-2 flex items-center gap-1.5">
                 <Calendar className="w-3 h-3" />
                 Existing Bookings
               </h4>
@@ -223,11 +223,11 @@ function BookingModal({
           )}
         </div>
 
-        <div className="flex gap-3 px-6 py-4 border-t border-[#1A1A1A]">
+        <div className="flex gap-3 px-6 py-4 border-t border-[var(--ws-border)]">
           <Button
             variant="secondary"
             size="md"
-            className="!flex-1"
+            className="flex-1!"
             onClick={onClose}
           >
             Cancel
@@ -235,7 +235,7 @@ function BookingModal({
           <Button
             variant="primary"
             size="md"
-            className="!flex-1"
+            className="flex-1!"
             onClick={handleConfirm}
             disabled={hasConflict || !selectedClient || !startDate || !endDate}
           >

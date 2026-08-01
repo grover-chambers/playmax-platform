@@ -157,9 +157,14 @@ export default function SuperAdminDashboard() {
         {/* ── KPI row (4 columns) ─────────────────────────── */}
         <div className="pm-dash-krow pm-dash-krow-4">
           {/* Card 1 — Pipeline value */}
-          <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">{loading ? "..." : `KES ${((stats.pipelineValue ?? 0) / 1000000).toFixed(1)}M`}</div>
-            <div className="pm-dash-kl">Pipeline value</div>
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="ws-stat-icon" style={{ background: "rgba(15, 118, 110, 0.08)", color: "var(--pm-teal)" }}>
+                <TrendingUp className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="ws-stat-value">{loading ? "..." : `KES ${((stats.pipelineValue ?? 0) / 1000000).toFixed(1)}M`}</div>
+            <div className="ws-stat-label">Pipeline value</div>
             <div className="pm-dash-ksub">
               <TrendingUp className="inline-block w-3 h-3 trend-up align-text-bottom" />{" "}
               <span className="trend-up">{stats.totalLeads} total leads</span>
@@ -167,29 +172,44 @@ export default function SuperAdminDashboard() {
           </div>
 
           {/* Card 2 — Active projects */}
-          <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">{loading ? "..." : stats.activeProjects}</div>
-            <div className="pm-dash-kl">Active projects</div>
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="ws-stat-icon" style={{ background: "rgba(61, 143, 90, 0.1)", color: "var(--pm-green)" }}>
+                <FolderPlus className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="ws-stat-value">{loading ? "..." : stats.activeProjects}</div>
+            <div className="ws-stat-label">Active projects</div>
             <div className="pm-dash-ksub">
-              <Clock className="inline-block w-3 h-3 text-yellow align-text-bottom" />{" "}
+              <Clock className="inline-block w-3 h-3 align-text-bottom" style={{ color: "var(--pm-gray-4)" }} />{" "}
               {stats.staleLeads} stale leads need follow-up
             </div>
           </div>
 
-          {/* Card 3 — Collected this month (blue) */}
-          <div className="pm-dash-kcard blu">
-            <div className="pm-dash-kn blu">{loading ? "..." : `KES ${((stats.collectedThisMonth ?? 0) / 1000).toFixed(0)}K`}</div>
-            <div className="pm-dash-kl">Collected this month</div>
+          {/* Card 3 — Collected this month */}
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="ws-stat-icon" style={{ background: "rgba(59, 130, 246, 0.1)", color: "var(--pm-blue)" }}>
+                <TrendingUp className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="ws-stat-value" style={{ color: "var(--pm-blue)" }}>{loading ? "..." : `KES ${((stats.collectedThisMonth ?? 0) / 1000).toFixed(0)}K`}</div>
+            <div className="ws-stat-label">Collected this month</div>
             <div className="pm-dash-ksub">
               Target: KES 1.2M{" "}
-              <span className="text-[var(--pm-blue)]">· {Math.round((stats.collectedThisMonth / 1200000) * 100)}%</span>
+              <span style={{ color: "var(--pm-blue)" }}>· {Math.round((stats.collectedThisMonth / 1200000) * 100)}%</span>
             </div>
           </div>
 
-          {/* Card 4 — New leads today (red) */}
-          <div className="pm-dash-kcard red">
-            <div className="pm-dash-kn red">{loading ? "..." : stats.newLeadsToday}</div>
-            <div className="pm-dash-kl">New leads today</div>
+          {/* Card 4 — New leads today */}
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="ws-stat-icon" style={{ background: "rgba(185, 74, 72, 0.1)", color: "var(--pm-red)" }}>
+                <UserCheck className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="ws-stat-value" style={{ color: "var(--pm-red)" }}>{loading ? "..." : stats.newLeadsToday}</div>
+            <div className="ws-stat-label">New leads today</div>
             <div className="pm-dash-ksub">
               {stats.totalLeads} total leads in pipeline
             </div>

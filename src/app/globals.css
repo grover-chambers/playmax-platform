@@ -944,10 +944,10 @@ h6 {
     padding: 16px;
 }
 .platform-shell .section-gap {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 .platform-shell .section-gap-lg {
-    margin-bottom: 32px;
+    margin-bottom: 28px;
 }
 @media (min-width: 768px) {
     .platform-shell .page-content {
@@ -2642,7 +2642,8 @@ h6 {
    Grey sidebar, cream/ivory page background, white card surfaces,
    teal accents/buttons on light, ivory buttons on grey.
    Inspired by SNDBX dashboard layout. */
-.platform-shell {
+.platform-shell,
+.platform-workspace {
     --ws-bg: var(--pm-ivory);
     --ws-surface: var(--pm-white);
     --ws-border: var(--pm-cream-warm);
@@ -2650,6 +2651,11 @@ h6 {
     --ws-text-muted: var(--pm-gray-4);
     --ws-accent: var(--pm-teal);
     --ws-accent-hover: var(--pm-teal-dark);
+    --ws-radius: 12px;
+    --ws-radius-sm: 8px;
+    --ws-radius-lg: 16px;
+    --ws-shadow: 0 1px 2px rgba(10, 20, 40, 0.05);
+    --ws-shadow-hover: 0 4px 16px rgba(10, 20, 40, 0.06);
 }
 .platform-shell > main {
     background: var(--ws-bg);
@@ -2761,24 +2767,58 @@ h6 {
 .platform-shell .pm-dash-kcard {
     background: var(--ws-surface);
     border: 1px solid var(--ws-border);
+    border-radius: var(--ws-radius);
     backdrop-filter: none;
-    box-shadow: none;
+    box-shadow: var(--ws-shadow);
 }
 .platform-shell .pm-dash-card:hover,
 .platform-shell .pm-dash-kcard:hover {
     border-color: var(--ws-accent);
-    box-shadow: 0 4px 16px rgba(10, 20, 40, 0.06);
+    box-shadow: var(--ws-shadow-hover);
 }
 .platform-shell .pm-dash-card-h {
+    padding: 12px 16px;
     border-bottom: 1px solid var(--ws-border);
+}
+.platform-shell .pm-dash-card-t {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ws-text);
+    line-height: 1.3;
+}
+.platform-shell .pm-dash-card-b {
+    padding: 16px;
+}
+.platform-shell .pm-dash-kcard {
+    padding: 20px;
+}
+.platform-shell .pm-dash-krow {
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.platform-shell .pm-dash-krow-3 {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.platform-shell .pm-dash-krow-4 {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 .platform-shell .pm-dash-tbl-th {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
     color: var(--ws-text-muted);
-    border-bottom: 2px solid var(--ws-border);
+    padding: 12px 16px;
+    background: var(--ws-bg);
+    border-bottom: 1px solid var(--ws-border);
 }
 .platform-shell .pm-dash-tbl-td {
-    color: var(--ws-text);
+    padding: 12px 16px;
     border-bottom: 1px solid var(--ws-border);
+    font-size: 13px;
+    color: var(--ws-text);
+    transition: background var(--transition);
 }
 .platform-shell .pm-dash-tbl-td:hover {
     background: var(--ws-bg);
@@ -2786,11 +2826,42 @@ h6 {
 .platform-shell .pm-dash-qa-btn {
     border-color: var(--ws-border);
     color: var(--ws-text-muted);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: var(--ws-radius-sm);
+    background: var(--ws-surface);
 }
 .platform-shell .pm-dash-qa-btn:hover {
     color: var(--ws-accent);
     border-color: var(--ws-accent);
-    background: rgba(15, 118, 110, 0.08);
+    background: rgba(15, 118, 110, 0.06);
+}
+.platform-shell .pm-dash-bdg {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 2px 10px;
+    border-radius: var(--radius-full);
+}
+.platform-shell .pm-dash-welcome {
+    background: var(--ws-surface);
+    border-bottom: 1px solid var(--ws-border);
+    border-radius: 0;
+    padding: 16px 28px;
+}
+.platform-shell .pm-dash-welcome h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ws-text);
+}
+.platform-shell .pm-dash-welcome p {
+    font-size: 13px;
+    color: var(--ws-text-muted);
+    margin-top: 2px;
 }
 
 /* Divider lines */
@@ -2858,6 +2929,11 @@ h6 {
 .platform-shell .stat-card {
     background: var(--ws-surface);
     border: 1px solid var(--ws-border);
+    border-radius: var(--ws-radius);
+    box-shadow: var(--ws-shadow);
+}
+.platform-shell .stat-card:hover {
+    box-shadow: var(--ws-shadow-hover);
 }
 .platform-shell .stat-num {
     color: var(--ws-accent);
@@ -3056,4 +3132,454 @@ h6 {
 }
 .platform-shell .messages-chat .text-gray-1 {
     color: #e0e0e0 !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   NAMPARK LAYOUT PORT — spacing / panel / button shapes
+   Structure and rhythm borrowed from NAMPARK_RMS; every
+   color still resolves to the PlayMax --ws-* palette.
+   ══════════════════════════════════════════════════════ */
+
+/* ── Panel ────────────────────────────────────────── */
+.platform-shell .ws-panel {
+    background: var(--ws-surface);
+    border: 1px solid var(--ws-border);
+    border-radius: var(--ws-radius);
+    box-shadow: var(--ws-shadow);
+    overflow: hidden;
+}
+.platform-shell .ws-panel-h {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ws-border);
+}
+.platform-shell .ws-panel-t {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ws-text);
+    line-height: 1.3;
+}
+.platform-shell .ws-panel-b {
+    padding: 16px;
+}
+
+/* ── Stat card (icon tile + value + micro label) ─── */
+.platform-shell .ws-stat-card {
+    background: var(--ws-surface);
+    border: 1px solid var(--ws-border);
+    border-radius: var(--ws-radius);
+    padding: 20px;
+    box-shadow: var(--ws-shadow);
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.platform-shell .ws-stat-card:hover {
+    border-color: var(--ws-accent);
+    box-shadow: var(--ws-shadow-hover);
+}
+.platform-shell .ws-stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--ws-radius-sm);
+    flex-shrink: 0;
+}
+.platform-shell .ws-stat-value {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ws-text);
+    line-height: 1.2;
+}
+.platform-shell .ws-stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ws-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Button system (NAMPARK .btn, PlayMax colors) ── */
+.platform-shell .ws-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: var(--ws-radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    transition: all var(--transition);
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+}
+.platform-shell .ws-btn:active {
+    transform: scale(0.98);
+}
+.platform-shell .ws-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.platform-shell .ws-btn-primary {
+    background: var(--ws-accent);
+    color: var(--pm-white);
+}
+.platform-shell .ws-btn-primary:hover {
+    background: var(--ws-accent-hover);
+}
+.platform-shell .ws-btn-outline {
+    background: var(--ws-surface);
+    color: var(--ws-text-muted);
+    border: 1px solid var(--ws-border);
+}
+.platform-shell .ws-btn-outline:hover {
+    background: var(--ws-bg);
+    color: var(--ws-text);
+    border-color: var(--ws-accent);
+}
+.platform-shell .ws-btn-ghost {
+    background: transparent;
+    color: var(--ws-text-muted);
+}
+.platform-shell .ws-btn-ghost:hover {
+    background: var(--ws-bg);
+    color: var(--ws-text);
+}
+.platform-shell .ws-btn-danger {
+    background: #fef2f2;
+    color: var(--pm-red);
+    border: 1px solid #fecaca;
+}
+.platform-shell .ws-btn-danger:hover {
+    background: #fee2e2;
+}
+.platform-shell .ws-btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+.platform-shell .ws-btn-lg {
+    padding: 12px 24px;
+    font-size: 16px;
+}
+
+/* ── Existing .btn-* inside the workspace adopt the same
+      NAMPARK shape + workspace palette (teal primary,
+      outline secondary). Marketing site untouched. ─────── */
+.platform-shell .btn-primary {
+    background: var(--ws-accent);
+    color: var(--pm-white);
+    border: none;
+    border-radius: var(--ws-radius-sm);
+    font-family: var(--font-body);
+    padding: 10px 16px;
+    font-weight: 500;
+}
+.platform-shell .btn-primary:hover {
+    background: var(--ws-accent-hover);
+    transform: translateY(-1px);
+}
+.platform-shell .btn-secondary {
+    background: var(--ws-surface);
+    color: var(--ws-text-muted);
+    border: 1px solid var(--ws-border);
+    border-radius: var(--ws-radius-sm);
+    font-family: var(--font-body);
+    padding: 10px 16px;
+    font-weight: 500;
+}
+.platform-shell .btn-secondary:hover {
+    color: var(--ws-accent);
+    border-color: var(--ws-accent);
+    background: var(--ws-bg);
+}
+.platform-shell .btn-sm {
+    border-radius: var(--ws-radius-sm);
+    border-color: var(--ws-border);
+    background: var(--ws-surface);
+    color: var(--ws-text-muted);
+    font-family: var(--font-body);
+    font-weight: 500;
+}
+.platform-shell .btn-sm:hover {
+    background: var(--ws-bg);
+    color: var(--ws-accent);
+    border-color: var(--ws-accent);
+}
+.platform-shell .btn-sm-primary {
+    border-radius: var(--ws-radius-sm);
+    background: var(--ws-accent);
+    color: var(--pm-white);
+    font-family: var(--font-body);
+    font-weight: 500;
+}
+.platform-shell .btn-sm-primary:hover {
+    background: var(--ws-accent-hover);
+}
+
+/* ── Live clock chip (NAMPARK TopNav) ────────────── */
+.platform-shell .ws-clock-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ws-bg);
+    border: 1px solid var(--ws-border);
+    border-radius: var(--ws-radius-sm);
+    padding: 6px 12px;
+}
+.platform-shell .ws-clock-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--pm-green);
+    animation: pm-pulse 2.2s ease-out infinite;
+}
+@keyframes pm-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(61, 143, 90, 0.5); }
+    70% { box-shadow: 0 0 0 6px rgba(61, 143, 90, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(61, 143, 90, 0); }
+}
+.platform-shell .ws-clock {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--ws-text);
+    tabular-nums: auto;
+}
+
+/* ── Table (NAMPARK tinted thead) ─────────────────── */
+.platform-shell .ws-tbl {
+    width: 100%;
+    border-collapse: collapse;
+}
+.platform-shell .ws-tbl-th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ws-text-muted);
+    background: var(--ws-bg);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ws-border);
+    white-space: nowrap;
+}
+.platform-shell .ws-tbl-td {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--ws-text);
+    border-bottom: 1px solid var(--ws-border);
+}
+.platform-shell .ws-tbl tr:hover .ws-tbl-td {
+    background: var(--ws-bg);
+}
+.platform-shell .ws-tbl-tr:last-child .ws-tbl-td {
+    border-bottom: none;
+}
+
+/* ── Compact form controls (light, NAMPARK field shape) ─ */
+.platform-shell .ws-input,
+.platform-shell .ws-select {
+    background: var(--ws-surface);
+    border: 1px solid var(--ws-border);
+    border-radius: var(--ws-radius-sm);
+    color: var(--ws-text);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    padding: 6px 10px;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.platform-shell .ws-input:focus,
+.platform-shell .ws-select:focus {
+    border-color: var(--ws-accent);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+}
+.platform-shell .ws-input::placeholder {
+    color: var(--ws-text-muted);
+}
+.platform-shell .ws-select {
+    cursor: pointer;
+}
+
+/* ── Content desk (health bar / queue / bar chart) ──
+   Restyle the content/page.tsx sub-components from the
+   dark base into the light workspace surface. */
+.platform-shell .pm-dash-health-bar {
+    gap: 12px;
+    margin-bottom: 0;
+}
+.platform-shell .pm-dash-hb-item {
+    flex: 1;
+    text-align: center;
+    padding: 14px 12px;
+    border-radius: var(--ws-radius);
+    background: var(--ws-surface);
+    border: 1px solid var(--ws-border);
+}
+.platform-shell .pm-dash-hb-item.active {
+    border-color: var(--ws-accent);
+    background: rgba(15, 118, 110, 0.05);
+}
+.platform-shell .pm-dash-hb-item.warning {
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.05);
+}
+.platform-shell .pm-dash-hb-label,
+.platform-shell .pm-dash-hb-meta {
+    color: var(--ws-text-muted);
+}
+.platform-shell .pm-dash-hb-count {
+    color: var(--ws-text);
+}
+.platform-shell .pm-dash-cq-row {
+    border-bottom: 1px solid var(--ws-border);
+}
+.platform-shell .pm-dash-cq-icon {
+    background: var(--ws-bg);
+    color: var(--ws-text-muted);
+}
+.platform-shell .pm-dash-cq-title {
+    color: var(--ws-text);
+}
+.platform-shell .pm-dash-cq-meta {
+    color: var(--ws-text-muted);
+}
+.platform-shell .pm-dash-bbar {
+    background: var(--ws-accent);
+    opacity: 0.35;
+}
+.platform-shell .pm-dash-bbar.active {
+    background: var(--ws-accent);
+    opacity: 1;
+}
+.platform-shell .pm-dash-bbar-label {
+    color: var(--ws-text-muted);
+}
+
+/* ── Inbox: thread list → light surface ────────────────
+   The conversation list (thread-item*) moves to the light
+   workspace surface; the message panel stays dark (see
+   .inbox-chat below). */
+.platform-shell .thread-item {
+    border-bottom: 1px solid var(--ws-border);
+    padding: 12px 16px;
+}
+.platform-shell .thread-item:hover {
+    background: var(--ws-bg);
+}
+.platform-shell .thread-item.active {
+    background: rgba(15, 118, 110, 0.06);
+    border-left: 2px solid var(--ws-accent);
+}
+.platform-shell .thread-item.unread .thread-name {
+    color: var(--ws-text);
+}
+.platform-shell .thread-name {
+    color: var(--ws-text);
+}
+.platform-shell .thread-preview {
+    color: var(--ws-text-muted);
+}
+.platform-shell .thread-unread-dot {
+    background: var(--ws-accent);
+    color: var(--pm-white);
+}
+
+/* ── Inbox: chat panel stays dark (like .messages-chat) ─
+   The conversation header, message stream, and composer are
+   an intentionally dark chat surface inside the light page.
+   !important guards against the global bg-black migration. */
+.platform-shell .inbox-chat {
+    background: #0D0D0D !important;
+}
+.platform-shell .inbox-chat * {
+    border-color: #2a2a2a;
+}
+.platform-shell .inbox-chat .pm-chat-head,
+.platform-shell .inbox-chat .pm-chat-stream,
+.platform-shell .inbox-chat .pm-chat-compose {
+    background: #0D0D0D !important;
+}
+.platform-shell .inbox-chat .pm-chat-head {
+    border-bottom: 1px solid #2a2a2a !important;
+}
+.platform-shell .inbox-chat .pm-chat-compose {
+    border-top: 1px solid #2a2a2a !important;
+}
+.platform-shell .inbox-chat .message-bubble {
+    background: #1A1A1A !important;
+    border: 1px solid #2a2a2a !important;
+}
+.platform-shell .inbox-chat .message-bubble .text-gray-1 {
+    color: #E0E0E0 !important;
+}
+.platform-shell .inbox-chat .message-bubble .text-gray-5 {
+    color: #666 !important;
+}
+.platform-shell .inbox-chat .text-white,
+.platform-shell .inbox-chat textarea {
+    color: var(--pm-white) !important;
+}
+.platform-shell .inbox-chat .search-box {
+    background: #1A1A1A !important;
+    border-color: #2a2a2a !important;
+}
+.platform-shell .inbox-chat .search-box .text-gray-3 {
+    color: #9B9A94 !important;
+}
+.platform-shell .inbox-chat .text-yellow,
+.platform-shell .inbox-chat .search-box .text-yellow {
+    color: var(--pm-yellow) !important;
+}
+
+/* ── Inventory components → light surface ──────────────
+   Cards, spec tiles, and KPI tiles used by inventory/page
+   resolve to the workspace surface inside the shell. */
+.platform-shell .inventory-card {
+    background: var(--ws-surface);
+    border: 1px solid var(--ws-border);
+}
+.platform-shell .inventory-card:hover {
+    border-color: var(--ws-accent);
+}
+.platform-shell .inventory-card .inventory-type {
+    color: var(--ws-accent);
+}
+.platform-shell .inventory-card .inventory-name {
+    color: var(--ws-text);
+}
+.platform-shell .inventory-card .inventory-location {
+    color: var(--ws-text-muted);
+}
+.platform-shell .inventory-card .inventory-card-footer {
+    border-top-color: var(--ws-border);
+}
+.platform-shell .inventory-card .inventory-price {
+    color: var(--ws-accent);
+}
+.platform-shell .inventory-card .inventory-price-unit {
+    color: var(--ws-text-muted);
+}
+.platform-shell .kpi-big-card {
+    background: var(--ws-bg);
+}
+.platform-shell .kpi-big-num {
+    color: var(--ws-text);
+}
+.platform-shell .kpi-big-label {
+    color: var(--ws-text-muted);
+}
+.platform-shell .spec-item {
+    background: var(--ws-bg);
+}
+.platform-shell .spec-key {
+    color: var(--ws-text-muted);
+}
+.platform-shell .spec-value {
+    color: var(--ws-text);
 }

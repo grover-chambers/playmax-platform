@@ -32,7 +32,7 @@ function InventoryDetailPanel({ item, onBook }: InventoryDetailPanelProps) {
   });
 
   return (
-    <div className="w-[360px] border-l border-[#1A1A1A] bg-black flex flex-col overflow-y-auto flex-shrink-0">
+    <div className="w-[360px] border-l border-[var(--ws-border)] bg-[var(--ws-bg)] flex flex-col overflow-y-auto flex-shrink-0">
       <div
         className={`h-[200px] bg-gradient-to-br ${item.imageGradient || "from-[#1a1a1a] to-[#2e2e2e]"} flex items-center justify-center relative`}
       >
@@ -43,7 +43,7 @@ function InventoryDetailPanel({ item, onBook }: InventoryDetailPanelProps) {
         <Badge variant={isAvailable ? "available" : "booked"} className="mb-3">
           {isAvailable ? "AVAILABLE" : "BOOKED"}
         </Badge>
-        <div className="inventory-type !text-[9px]">{item.type}</div>
+        <div className="inventory-type text-[9px]!">{item.type}</div>
         <h2 className="font-display text-[16px] font-bold mb-1">{item.name}</h2>
         <div className="inventory-location flex items-center gap-1 mb-5">
           <MapPin className="w-3 h-3" />
@@ -51,7 +51,7 @@ function InventoryDetailPanel({ item, onBook }: InventoryDetailPanelProps) {
         </div>
 
         <div className="mb-5">
-          <h3 className="eyebrow !text-[9px] !text-gray-5 mb-3">
+          <h3 className="eyebrow text-[9px]! text-gray-5! mb-3">
             Specifications
           </h3>
           <div className="spec-grid">
@@ -90,7 +90,7 @@ function InventoryDetailPanel({ item, onBook }: InventoryDetailPanelProps) {
         )}
 
         <div className="mb-5">
-          <h3 className="eyebrow !text-[9px] !text-gray-5 mb-3 flex items-center gap-1.5">
+          <h3 className="eyebrow text-[9px]! text-gray-5! mb-3 flex items-center gap-1.5">
             <Calendar className="w-3 h-3" />
             Availability — July 2026
           </h3>
@@ -98,7 +98,7 @@ function InventoryDetailPanel({ item, onBook }: InventoryDetailPanelProps) {
         </div>
 
         <div className="mb-5">
-          <h3 className="eyebrow !text-[9px] !text-gray-5 mb-3 flex items-center gap-1.5">
+          <h3 className="eyebrow text-[9px]! text-gray-5! mb-3 flex items-center gap-1.5">
             <IndianRupee className="w-3 h-3" />
             Pricing
           </h3>
@@ -120,13 +120,13 @@ function InventoryDetailPanel({ item, onBook }: InventoryDetailPanelProps) {
           <Button
             variant="primary"
             size="md"
-            className="!w-full"
+            className="w-full!"
             onClick={onBook}
           >
             Create Booking
           </Button>
         ) : (
-          <Button variant="secondary" size="md" className="!w-full">
+          <Button variant="secondary" size="md" className="w-full!">
             Join Waitlist
           </Button>
         )}

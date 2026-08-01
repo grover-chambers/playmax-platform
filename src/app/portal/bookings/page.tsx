@@ -71,7 +71,7 @@ export default function PortalBookingsPage() {
         title="Bookings"
         subtitle={`${bookings.length} booking${bookings.length !== 1 ? "s" : ""}`}
         actions={
-          <div className="flex gap-1 bg-[#111] border border-[#252525] rounded p-0.5">
+          <div className="flex gap-1 bg-[var(--ws-bg)] border border-[var(--ws-border)] rounded p-0.5">
             <button
               onClick={() => setViewMode("list")}
               className={`p-1.5 rounded transition-colors cursor-pointer ${

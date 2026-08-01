@@ -19,7 +19,7 @@ function PageHeader({
         <h1 className="page-title">{title}</h1>
         {subtitle && <p className="page-subtitle">{subtitle}</p>}
       </div>
-      {actions && <div className="flex gap-2.5">{actions}</div>}
+      {actions && <div className="flex gap-2 items-center">{actions}</div>}
     </div>
   );
 }

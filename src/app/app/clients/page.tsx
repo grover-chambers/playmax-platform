@@ -101,7 +101,7 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       {loading ? (
         <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">Loading clients…</div>
       ) : error ? (
@@ -127,7 +127,7 @@ export default function ClientsPage() {
           </>
         }
       />
-      <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1E1E1E]">
+      <div className="flex items-center gap-3 border-b border-[var(--ws-border)] pb-3">
         <SearchBox
           placeholder="Search clients…"
           className="w-56"
@@ -148,13 +148,13 @@ export default function ClientsPage() {
         <div className="ml-auto flex items-center gap-1">
           <button
             onClick={() => setView("list")}
-            className={`p-1.5 rounded cursor-pointer transition-colors ${view === "list" ? "text-yellow" : "text-gray-5 hover:text-white"}`}
+            className={`p-1.5 rounded cursor-pointer transition-colors ${view === "list" ? "text-[var(--ws-accent)]" : "text-gray-5 hover:text-gray-8"}`}
           >
             <List size={14} />
           </button>
           <button
             onClick={() => setView("grid")}
-            className={`p-1.5 rounded cursor-pointer transition-colors ${view === "grid" ? "text-yellow" : "text-gray-5 hover:text-white"}`}
+            className={`p-1.5 rounded cursor-pointer transition-colors ${view === "grid" ? "text-[var(--ws-accent)]" : "text-gray-5 hover:text-gray-8"}`}
           >
             <Grid3X3 size={14} />
           </button>
@@ -162,58 +162,58 @@ export default function ClientsPage() {
       </div>
 
       {view === "list" ? (
-        <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
+        <div className="ws-panel overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="text-[10px] font-mono text-gray-5 uppercase tracking-wider border-b border-[#1E1E1E]">
-                <th className="text-left py-2.5 font-medium">Company</th>
-                <th className="text-left py-2.5 font-medium">Industry</th>
-                <th className="text-left py-2.5 font-medium">Account Owner</th>
-                <th className="text-center py-2.5 font-medium">
+              <tr className="text-[11px] font-mono text-gray-5 font-semibold uppercase tracking-wider border-b border-[var(--ws-border)]">
+                <th className="text-left py-3 px-4 font-medium">Company</th>
+                <th className="text-left py-3 px-4 font-medium">Industry</th>
+                <th className="text-left py-3 px-4 font-medium">Account Owner</th>
+                <th className="text-center py-3 px-4 font-medium">
                   Active Projects
                 </th>
-                <th className="text-right py-2.5 font-medium">Total Value</th>
-                <th className="text-right py-2.5 font-medium">Last Activity</th>
+                <th className="text-right py-3 px-4 font-medium">Total Value</th>
+                <th className="text-right py-3 px-4 font-medium">Last Activity</th>
               </tr>
             </thead>
             <tbody>
               {paginated.map((client) => (
                 <tr
                   key={client.id}
-                  className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors cursor-pointer"
+                  className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors cursor-pointer"
                 >
-                  <td className="py-3">
+                  <td className="py-3 px-4">
                     <Link
                       href={`/app/clients/${client.id}`}
-                      className="font-display text-[13px] font-semibold text-white hover:text-yellow transition-colors"
+                      className="font-display text-[13px] font-semibold text-[var(--ws-text)] hover:text-[var(--ws-accent)] transition-colors"
                     >
                       {client.company}
                     </Link>
                   </td>
-                  <td className="py-3 text-[12px] text-gray-4">
+                  <td className="py-3 px-4 text-[12px] text-gray-4">
                     {client.industry}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       <Avatar
                         initials={client.ownerInitials}
                         variant="yellow"
                         size="sm"
                       />
-                      <span className="text-[12px] text-gray-3">
+                      <span className="text-[12px] text-gray-4">
                         {client.owner}
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 text-center">
-                    <span className="font-mono text-[11px] text-white">
+                  <td className="py-3 px-4 text-center">
+                    <span className="font-mono text-[11px] text-[var(--ws-text)]">
                       {client.activeProjects}
                     </span>
                   </td>
-                  <td className="py-3 text-right font-display text-[12px] font-semibold text-yellow">
+                  <td className="py-3 px-4 text-right font-display text-[12px] font-semibold text-[var(--ws-accent)]">
                     {client.totalValue}
                   </td>
-                  <td className="py-3 text-right flex items-center justify-end gap-2">
+                  <td className="py-3 px-4 text-right flex items-center justify-end gap-2">
                     <StatusBadge variant={client.status}>
                       {client.status}
                     </StatusBadge>
@@ -227,12 +227,12 @@ export default function ClientsPage() {
           </table>
         </div>
       ) : (
-        <div className="px-7 py-5 grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {paginated.map((client) => (
             <Link key={client.id} href={`/app/clients/${client.id}`}>
-              <div className="pm-dash-card p-4 hover:border-yellow transition-colors cursor-pointer">
+              <div className="ws-panel p-5 hover:border-[var(--ws-accent)] transition-colors cursor-pointer">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-display text-[13px] font-semibold">
+                  <span className="font-display text-[13px] font-semibold text-[var(--ws-text)]">
                     {client.company}
                   </span>
                   <StatusBadge variant={client.status}>
@@ -242,7 +242,7 @@ export default function ClientsPage() {
                 <div className="text-[11px] text-gray-5 mb-2">
                   {client.industry}
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-[#1E1E1E]">
+                <div className="flex items-center justify-between pt-2 border-t border-[var(--ws-border)]">
                   <div className="flex items-center gap-1.5">
                     <Avatar
                       initials={client.ownerInitials}
@@ -253,7 +253,7 @@ export default function ClientsPage() {
                       {client.owner}
                     </span>
                   </div>
-                  <span className="font-display text-[11px] font-bold text-yellow">
+                  <span className="font-display text-[11px] font-bold text-[var(--ws-accent)]">
                     {client.totalValue}
                   </span>
                 </div>
@@ -262,7 +262,7 @@ export default function ClientsPage() {
           ))}
         </div>
       )}
-      <div className="px-7 pb-5">
+      <div className="pb-5">
         <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
       </div>
       </>

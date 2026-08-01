@@ -57,7 +57,7 @@ export default function UpgradePage() {
   const router = useRouter();
 
   return (
-    <div>
+    <div className="page-content">
       <PageHeader
         title="Upgrade Plan"
         subtitle="Choose the plan that fits your agency"
@@ -68,24 +68,24 @@ export default function UpgradePage() {
         }
       />
 
-      <div className="px-7 py-6">
-        <div className="grid grid-cols-3 gap-6 max-w-5xl">
+      <div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 max-w-5xl">
           {plans.map((plan) => (
             <div
               key={plan.name}
               className={`rounded-xl border p-6 flex flex-col ${
                 plan.active
-                  ? "border-yellow/40 bg-yellow/5"
-                  : "border-[#1e1e1e] bg-black-2"
+                  ? "border-[var(--ws-accent)] bg-[var(--ws-accent)]/5"
+                  : "border-[var(--ws-border)] bg-[var(--ws-surface)]"
               }`}
             >
-              <h3 className="font-display text-lg font-bold text-white">
+              <h3 className="font-display text-lg font-bold text-[var(--ws-text)]">
                 {plan.name}
               </h3>
               <p className="text-[11px] text-gray-5 mt-1">{plan.desc}</p>
 
               <div className="mt-4 mb-6">
-                <span className="font-display text-3xl font-bold text-white">
+                <span className="font-display text-3xl font-bold text-[var(--ws-text)]">
                   {plan.price}
                 </span>
                 <span className="text-[11px] text-gray-5 ml-1">

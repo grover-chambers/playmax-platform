@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Pagination, { usePagination } from "@/components/ui/pagination";
 import { useRouter } from "next/navigation";
-import { Plus, RefreshCw, Eye, RotateCcw, Link, Loader2 } from "lucide-react";
+import { Plus, RefreshCw, Eye, RotateCcw, Link, Loader2, CheckCircle, Clock, XCircle, MessageSquare } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import ConfirmActionModal from "@/components/modals/confirm-action-modal";
 import Button from "@/components/ui/button";
@@ -135,34 +135,54 @@ export default function WhatsAppTemplatesPage() {
       />
 
       {/* KPI Strip */}
-      <div className="pm-dash-krow pm-dash-krow-4 mb-6 mt-4">
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kn grn">{approvedCount}</div>
-          <div className="pm-dash-kl">Approved Templates</div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><CheckCircle className="w-4 h-4 text-green" /></div>
+            <div>
+              <div className="ws-stat-value">{approvedCount}</div>
+              <div className="ws-stat-label">Approved Templates</div>
+            </div>
+          </div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kn">{pendingCount}</div>
-          <div className="pm-dash-kl">Pending Review</div>
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><Clock className="w-4 h-4 text-blue" /></div>
+            <div>
+              <div className="ws-stat-value">{pendingCount}</div>
+              <div className="ws-stat-label">Pending Review</div>
+            </div>
+          </div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kn red">{rejectedCount}</div>
-          <div className="pm-dash-kl">Rejected</div>
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><XCircle className="w-4 h-4 text-red" /></div>
+            <div>
+              <div className="ws-stat-value">{rejectedCount}</div>
+              <div className="ws-stat-label">Rejected</div>
+            </div>
+          </div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kn">{templates.length}</div>
-          <div className="pm-dash-kl">Total Templates</div>
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><MessageSquare className="w-4 h-4 text-teal" /></div>
+            <div>
+              <div className="ws-stat-value">{templates.length}</div>
+              <div className="ws-stat-label">Total Templates</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Templates Table */}
-      <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
+      <div className="ws-panel overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#1A1A1A]">
+            <tr className="border-b border-[var(--ws-border)]">
               {["Template Name", "Type", "Status", "Last Updated", "Actions"].map((h) => (
                 <th
                   key={h}
-                  className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
+                  className="font-mono text-[11px] text-gray-5 font-semibold tracking-widest uppercase text-left px-4 py-3"
                 >
                   {h}
                 </th>
@@ -173,7 +193,7 @@ export default function WhatsAppTemplatesPage() {
             {paginated.map((tmpl) => (
               <tr
                 key={tmpl.id}
-                className="border-b border-[#1A1A1A] hover:bg-white/2 transition-colors"
+                className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors"
               >
                 <td className="px-4 py-3">
                   <span className="font-display text-[13px] font-semibold">
@@ -234,7 +254,7 @@ export default function WhatsAppTemplatesPage() {
       </div>
 
       {/* API Connection Status */}
-      <div className="pm-dash-card px-6 py-5 mt-4 mb-8">
+      <div className="ws-panel p-6">
         <h3 className="font-display text-[15px] font-bold mb-4">
           API Connection Status
         </h3>
@@ -242,7 +262,7 @@ export default function WhatsAppTemplatesPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-gray-5 font-mono">WABA ID</span>
-            <span className="text-[12px] font-mono">
+            <span className="text-[12px] font-mono text-[var(--ws-text)]">
               {wabaIdHidden ? "••••••••••" : "Not configured"}
               <button
                 onClick={() => setWabaIdHidden((prev) => !prev)}
@@ -267,7 +287,7 @@ export default function WhatsAppTemplatesPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 mt-5 pt-4 border-t border-[#1e1e1e]">
+        <div className="flex gap-3 mt-5 pt-4 border-t border-[var(--ws-border)]">
           <Button variant="secondary" size="sm" onClick={() => setConfirmAction("rotate")}>
             <RotateCcw className="w-3 h-3 mr-1" /> Rotate API Key
           </Button>

@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Button from "@/components/ui/button";
+import PageHeader from "@/components/layout/page-header";
 import Modal from "@/components/ui/modal";
 import StatusBadge from "@/components/ui/status-badge";
 import Pagination, { usePagination } from "@/components/ui/pagination";
@@ -125,57 +126,74 @@ export default function AutomationPage() {
   /* ── Render ──────────────────────────────────────────── */
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display text-[18px] font-bold">Automation Rules</h1>
-          <p className="text-[11px] text-gray-5 mt-0.5">
-            {activeCount} active · {rules.length} total
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setShowLog(true)}>
-            <History className="w-3.5 h-3.5" />
-            Run log
-          </Button>
-          <Button variant="primary" size="sm" onClick={() => setShowNewRule(true)}>
-            <Plus className="w-3.5 h-3.5" />
-            New rule
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Automation Rules"
+        subtitle={`${activeCount} active · ${rules.length} total`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setShowLog(true)}>
+              <History className="w-3.5 h-3.5" />
+              Run log
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => setShowNewRule(true)}>
+              <Plus className="w-3.5 h-3.5" />
+              New rule
+            </Button>
+          </div>
+        }
+      />
 
       {/* KPI strip */}
-      <div className="pm-dash-krow pm-dash-krow-4 mb-6">
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kn">{activeCount}</div>
-          <div className="pm-dash-kl">Active rules</div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><Zap className="w-4 h-4 text-teal" /></div>
+            <div>
+              <div className="ws-stat-value">{activeCount}</div>
+              <div className="ws-stat-label">Active rules</div>
+            </div>
+          </div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kn grn">{rules.length}</div>
-          <div className="pm-dash-kl">Total rules</div>
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><History className="w-4 h-4 text-green" /></div>
+            <div>
+              <div className="ws-stat-value">{rules.length}</div>
+              <div className="ws-stat-label">Total rules</div>
+            </div>
+          </div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kn blu">{pausedCount}</div>
-          <div className="pm-dash-kl">Paused</div>
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><ToggleLeft className="w-4 h-4 text-blue" /></div>
+            <div>
+              <div className="ws-stat-value">{pausedCount}</div>
+              <div className="ws-stat-label">Paused</div>
+            </div>
+          </div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kn red">0</div>
-          <div className="pm-dash-kl">Errors</div>
-
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><ToggleRight className="w-4 h-4 text-red" /></div>
+            <div>
+              <div className="ws-stat-value">0</div>
+              <div className="ws-stat-label">Errors</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Rules list */}
-      <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
+      <div className="ws-panel overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#1A1A1A]">
+            <tr className="border-b border-[var(--ws-border)]">
               {["Rule", "Type", "Status", "Last Triggered", "Toggle"].map((h) => (
                 <th
                   key={h}
-                  className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
+                  className="font-mono text-[11px] text-gray-5 font-semibold tracking-widest uppercase text-left px-4 py-3"
                 >
                   {h}
                 </th>
@@ -193,7 +211,7 @@ export default function AutomationPage() {
               paginated.map((rule) => (
                 <tr
                   key={rule.id}
-                  className="border-b border-[#1A1A1A] hover:bg-white/[.02] transition-colors items-center"
+                  className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors items-center"
                 >
                   <td className="px-4 py-3">
                     <div className="text-[13px] font-medium">{rule.name}</div>
@@ -252,101 +270,73 @@ export default function AutomationPage() {
 
       {/* ── New Rule Modal ──────────────────────────────── */}
       <Modal open={showNewRule} onClose={() => setShowNewRule(false)} title="New Automation Rule">
-        <div className="w-full max-w-lg mx-auto">
-          <div className="pm-dash-card">
-            <div className="pm-dash-card-h flex items-center justify-between">
-              <h2 className="font-display text-[15px] font-bold">New Automation Rule</h2>
-              <button
-                onClick={() => setShowNewRule(false)}
-                className="text-gray-5 hover:text-white bg-transparent border-none cursor-pointer text-lg"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="form-label">Rule name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. New lead WhatsApp acknowledgement"
-                />
-              </div>
-              <div>
-                <label className="form-label">Type</label>
-                <select className="form-select">
-                  <option value="notification">Notification</option>
-                  <option value="assignment">Assignment</option>
-                  <option value="reminder">Reminder</option>
-                  <option value="follow_up">Follow-up</option>
-                  <option value="escalation">Escalation</option>
-                </select>
-              </div>
-              <div className="flex gap-3 justify-end pt-2">
-                <Button variant="secondary" size="sm" onClick={() => setShowNewRule(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={async () => {
-                    // TODO: Collect form values and insert into automations table
-                    setShowNewRule(false);
-                  }}
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                  Create rule
-                </Button>
-              </div>
-            </div>
+        <div className="space-y-4">
+          <div>
+            <label className="form-label">Rule name</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. New lead WhatsApp acknowledgement"
+            />
+          </div>
+          <div>
+            <label className="form-label">Type</label>
+            <select className="form-select">
+              <option value="notification">Notification</option>
+              <option value="assignment">Assignment</option>
+              <option value="reminder">Reminder</option>
+              <option value="follow_up">Follow-up</option>
+              <option value="escalation">Escalation</option>
+            </select>
+          </div>
+          <div className="flex gap-3 justify-end pt-2">
+            <Button variant="secondary" size="sm" onClick={() => setShowNewRule(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={async () => {
+                // TODO: Collect form values and insert into automations table
+                setShowNewRule(false);
+              }}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              Create rule
+            </Button>
           </div>
         </div>
       </Modal>
 
       {/* ── Run Log Modal ───────────────────────────────── */}
       <Modal open={showLog} onClose={() => setShowLog(false)} title="Trigger Log">
-        <div className="w-full max-w-lg mx-auto">
-          <div className="pm-dash-card">
-            <div className="pm-dash-card-h flex items-center justify-between">
-              <h2 className="font-display text-[15px] font-bold">Trigger Log</h2>
-              <button
-                onClick={() => setShowLog(false)}
-                className="text-gray-5 hover:text-white bg-transparent border-none cursor-pointer text-lg"
-              >
-                ✕
-              </button>
-            </div>
-            <div>
-              {rules.filter((r) => r.last_triggered_at).length === 0 ? (
-                <div className="py-8 text-center text-[13px] text-gray-5">
-                  No trigger history yet. Rules will log activity when they execute.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {rules
-                    .filter((r) => r.last_triggered_at)
-                    .slice(0, 10)
-                    .map((rule) => (
-                      <div key={rule.id} className="pm-dash-feed-item">
-                        <div className={`pm-dash-feed-dot ${rule.enabled ? "g" : "y"}`} />
-                        <div className="flex-1 min-w-0">
-                          <div className="pm-dash-feed-text text-[12px] font-medium">
-                            {rule.name}
-                          </div>
-                          <div className="pm-dash-feed-time text-[10px] font-mono mt-0.5">
-                            {timeAgo(rule.last_triggered_at)}
-                          </div>
-                        </div>
-                        <StatusBadge variant={rule.enabled ? "active" : "review"}>
-                          {rule.enabled ? "success" : "skipped"}
-                        </StatusBadge>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
+        {rules.filter((r) => r.last_triggered_at).length === 0 ? (
+          <div className="py-8 text-center text-[13px] text-gray-5">
+            No trigger history yet. Rules will log activity when they execute.
           </div>
-        </div>
+        ) : (
+          <div className="space-y-3">
+            {rules
+              .filter((r) => r.last_triggered_at)
+              .slice(0, 10)
+              .map((rule) => (
+                <div key={rule.id} className="pm-dash-feed-item">
+                  <div className={`pm-dash-feed-dot ${rule.enabled ? "g" : "y"}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="pm-dash-feed-text text-[12px] font-medium">
+                      {rule.name}
+                    </div>
+                    <div className="pm-dash-feed-time text-[10px] font-mono mt-0.5">
+                      {timeAgo(rule.last_triggered_at)}
+                    </div>
+                  </div>
+                  <StatusBadge variant={rule.enabled ? "active" : "review"}>
+                    {rule.enabled ? "success" : "skipped"}
+                  </StatusBadge>
+                </div>
+              ))}
+          </div>
+        )}
       </Modal>
     </div>
   );

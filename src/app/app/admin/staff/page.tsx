@@ -157,7 +157,7 @@ export default function StaffManagementPage() {
   const activeCount = staff.filter((s) => s.status === "active").length;
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title="Staff Management"
         subtitle={`${activeCount} active · ${staff.length} total`}
@@ -173,41 +173,47 @@ export default function StaffManagementPage() {
       />
 
       {/* ── KPI row ────────────────────────────────────── */}
-      <div className="pm-dash-krow pm-dash-krow-4">
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kl pm-dash-kl-icon">
-            <Users size={14} />
-            Total Staff
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><Users className="w-4 h-4 text-teal" /></div>
+            <div>
+              <div className="ws-stat-value">{loading ? "…" : staff.length}</div>
+              <div className="ws-stat-label">Total Staff</div>
+            </div>
           </div>
-          <div className="pm-dash-kn">{loading ? "…" : staff.length}</div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kl pm-dash-kl-icon">
-            <UserCheck size={14} />
-            Active
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><UserCheck className="w-4 h-4 text-green" /></div>
+            <div>
+              <div className="ws-stat-value">{loading ? "…" : activeCount}</div>
+              <div className="ws-stat-label">Active</div>
+            </div>
           </div>
-          <div className="pm-dash-kn grn">{loading ? "…" : activeCount}</div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kl pm-dash-kl-icon">
-            <UserX size={14} />
-            Inactive
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><UserX className="w-4 h-4 text-red" /></div>
+            <div>
+              <div className="ws-stat-value">{loading ? "…" : staff.length - activeCount}</div>
+              <div className="ws-stat-label">Inactive</div>
+            </div>
           </div>
-          <div className="pm-dash-kn red">{loading ? "…" : staff.length - activeCount}</div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kl pm-dash-kl-icon">
-            <Mail size={14} />
-            Roles Used
-          </div>
-          <div className="pm-dash-kn blu">
-            {loading ? "…" : new Set(staff.map((s) => s.role)).size}
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><Mail className="w-4 h-4 text-blue" /></div>
+            <div>
+              <div className="ws-stat-value">{loading ? "…" : new Set(staff.map((s) => s.role)).size}</div>
+              <div className="ws-stat-label">Roles Used</div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Filter bar ─────────────────────────────────── */}
-      <div className="flex items-center gap-3 border-b border-[#1E1E1E]">
+      <div className="flex items-center gap-3 border-b border-[var(--ws-border)]">
         <SearchBox
           placeholder="Search staff…"
           value={search}
@@ -230,7 +236,7 @@ export default function StaffManagementPage() {
       {/* ── Invite modal ───────────────────────────────── */}
       {showInvite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="pm-dash-card w-full max-w-md mx-4 p-6 shadow-lg">
+          <div className="ws-panel w-full max-w-md mx-4 p-6 shadow-2xl">
             <h3 className="pm-dash-card-t mb-1">
               Invite Staff Member
             </h3>
@@ -408,10 +414,10 @@ export default function StaffManagementPage() {
                   <td className="pm-dash-tbl-td">
                     <button
                       onClick={() => toggleStatus(member)}
-                      className={`pm-dash-qa-btn !py-1 !px-2.5 text-[10px] ${
+                      className={`pm-dash-qa-btn py-1! px-2.5! text-[10px] ${
                         member.status === "active"
-                          ? "hover:!text-[var(--pm-red)]"
-                          : "hover:!text-[var(--pm-green)]"
+                          ? "hover:text-[var(--pm-red)]!"
+                          : "hover:text-[var(--pm-green)]!"
                       }`}
                       title={
                         member.status === "active" ? "Deactivate" : "Activate"

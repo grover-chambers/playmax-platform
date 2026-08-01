@@ -5,6 +5,7 @@ import {
   Download, Save, Loader2, Eye, EyeOff, ChevronRight,
 } from "lucide-react";
 import Button from "@/components/ui/button";
+import Modal from "@/components/ui/modal";
 import PageHeader from "@/components/layout/page-header";
 import { AnalyticsChart } from "@/components/charts/analytics-chart";
 import { transformChartData } from "@/lib/analytics-transform";
@@ -409,10 +410,10 @@ export default function AnalyticsReportsPage() {
         <div key={key} className="flex items-center gap-2">
           <label className="font-mono text-[9px] text-gray-5 uppercase whitespace-nowrap">{label}</label>
           <input type="date" value={filters.date_start} onChange={(e) => setFilters((f) => ({ ...f, date_start: e.target.value }))}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none" />
+            className="ws-input" />
           <span className="text-[11px] text-gray-5">to</span>
           <input type="date" value={filters.date_end} onChange={(e) => setFilters((f) => ({ ...f, date_end: e.target.value }))}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none" />
+            className="ws-input" />
         </div>
       );
     }
@@ -422,7 +423,7 @@ export default function AnalyticsReportsPage() {
         <div key={key} className="flex items-center gap-2">
           <label className="font-mono text-[9px] text-gray-5 uppercase whitespace-nowrap">{label}</label>
           <select value={filters.category} onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value, subcategory: "" }))}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none cursor-pointer">
+            className="ws-select">
             <option value="">All</option>
             {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
           </select>
@@ -435,7 +436,7 @@ export default function AnalyticsReportsPage() {
         <div key={key} className="flex items-center gap-2">
           <label className="font-mono text-[9px] text-gray-5 uppercase whitespace-nowrap">{label}</label>
           <select value={filters.subcategory} onChange={(e) => setFilters((f) => ({ ...f, subcategory: e.target.value }))}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none cursor-pointer">
+            className="ws-select">
             <option value="">All</option>
             {filteredSubcategories.map((sc) => <option key={sc.id} value={sc.name}>{sc.name}</option>)}
           </select>
@@ -451,7 +452,7 @@ export default function AnalyticsReportsPage() {
             const vals = Array.from(e.target.selectedOptions, (o) => o.value);
             setFilters((f) => ({ ...f, branch_multi: vals }));
           }}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none max-h-[120px]">
+            className="ws-input max-h-[120px]">
             {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </div>
@@ -463,7 +464,7 @@ export default function AnalyticsReportsPage() {
         <div key={key} className="flex items-center gap-2">
           <label className="font-mono text-[9px] text-gray-5 uppercase whitespace-nowrap">{label}</label>
           <select value={filters.branch} onChange={(e) => setFilters((f) => ({ ...f, branch: e.target.value }))}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none cursor-pointer">
+            className="ws-select">
             <option value="">All</option>
             {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
@@ -476,7 +477,7 @@ export default function AnalyticsReportsPage() {
         <div key={key} className="flex items-center gap-2">
           <label className="font-mono text-[9px] text-gray-5 uppercase whitespace-nowrap">{label}</label>
           <select value={filters.supplier} onChange={(e) => setFilters((f) => ({ ...f, supplier: e.target.value }))}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none cursor-pointer">
+            className="ws-select">
             <option value="">Select supplier</option>
             {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
@@ -492,7 +493,7 @@ export default function AnalyticsReportsPage() {
             const vals = Array.from(e.target.selectedOptions, (o) => o.value);
             setFilters((f) => ({ ...f, suppliers_multi: vals }));
           }}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none max-h-[120px]">
+            className="ws-input max-h-[120px]">
             {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
@@ -505,7 +506,7 @@ export default function AnalyticsReportsPage() {
           <label className="font-mono text-[9px] text-gray-5 uppercase whitespace-nowrap">{label}</label>
           <input type="text" placeholder="Product ID" value={filters.product_id}
             onChange={(e) => setFilters((f) => ({ ...f, product_id: e.target.value }))}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none w-[200px]" />
+            className="ws-input w-[200px]" />
         </div>
       );
     }
@@ -515,7 +516,7 @@ export default function AnalyticsReportsPage() {
         <div key={key} className="flex items-center gap-2">
           <label className="font-mono text-[9px] text-gray-5 uppercase whitespace-nowrap">{label}</label>
           <select value={filters.metric} onChange={(e) => setFilters((f) => ({ ...f, metric: e.target.value }))}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none cursor-pointer">
+            className="ws-select">
             <option value="revenue">Revenue</option>
             <option value="units">Units</option>
           </select>
@@ -555,7 +556,7 @@ export default function AnalyticsReportsPage() {
         <div key={key} className="flex items-center gap-2">
           <label className="font-mono text-[9px] text-gray-5 uppercase whitespace-nowrap">{label}</label>
           <input type="number" value={filters.lead_time} onChange={(e) => setFilters((f) => ({ ...f, lead_time: Number(e.target.value) || 7 }))}
-            className="bg-black-3 border border-white/6 rounded px-2 py-1 text-[12px] text-white font-mono outline-none w-[80px]" />
+            className="ws-input w-[80px]" />
         </div>
       );
     }
@@ -610,7 +611,7 @@ export default function AnalyticsReportsPage() {
   /* ══════════════════════════════════════════════════════════════ */
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title="Analytics Reports"
         subtitle="Build, preview, and publish reports for internal use or client sharing"
@@ -699,7 +700,7 @@ export default function AnalyticsReportsPage() {
 
           {/* ── Filter bar ── */}
           {currentSubtype && (
-            <div className="flex items-center gap-3 flex-wrap pb-4 border-b border-white/6 mb-4">
+            <div className="flex items-center gap-3 flex-wrap pb-4 border-b border-[var(--ws-border)] mb-4">
               {currentSubtype.filters.map(renderFilter)}
 
               <div className="flex items-end gap-2 ml-auto">
@@ -816,7 +817,7 @@ export default function AnalyticsReportsPage() {
                     <input type="text" value={reportName}
                       onChange={(e) => setReportName(e.target.value)}
                       placeholder="Enter report name..."
-                      className="bg-black-3 border border-white/6 rounded px-3 py-1.5 text-[12px] text-white font-mono outline-none w-[280px]"
+                      className="ws-input w-[280px]"
                     />
                   </div>
                   <div>
@@ -824,7 +825,7 @@ export default function AnalyticsReportsPage() {
                       Client
                     </label>
                     <select value={selectedClientId} onChange={(e) => setSelectedClientId(e.target.value)}
-                      className="bg-black-3 border border-white/6 rounded px-2 py-1.5 text-[12px] text-white font-mono outline-none cursor-pointer"
+                      className="ws-select"
                     >
                       <option value="">No client (internal only)</option>
                       {clients.map((c) => (
@@ -876,55 +877,55 @@ export default function AnalyticsReportsPage() {
         </div>
       </div>
 
-      {linkModalReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setLinkModalReport(null)}>
-          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-6 w-[400px] max-h-[500px] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-[14px] font-semibold text-white mb-4">Link Report to Project</h3>
-            {linkModalProjects.length === 0 ? (
-              <p className="text-[12px] text-gray-5">No projects found.</p>
-            ) : (
-              <div className="space-y-2">
-                {linkModalProjects.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => handleLinkToProject(p.id)}
-                    disabled={linking}
-                    className="w-full text-left p-3 rounded-lg border border-white/6 hover:border-yellow/30 hover:bg-yellow/5 transition-colors text-[12px] text-white disabled:opacity-50"
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            )}
-            <button onClick={() => setLinkModalReport(null)} className="mt-4 text-[11px] text-gray-5 hover:text-white transition-colors">Cancel</button>
+      <Modal
+        open={!!linkModalReport}
+        onClose={() => setLinkModalReport(null)}
+        title="Link Report to Project"
+        className="max-w-md"
+      >
+        {linkModalProjects.length === 0 ? (
+          <p className="text-[12px] text-gray-5">No projects found.</p>
+        ) : (
+          <div className="space-y-2">
+            {linkModalProjects.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => handleLinkToProject(p.id)}
+                disabled={linking}
+                className="w-full text-left p-3 rounded-lg border border-[var(--ws-border)] hover:border-yellow/30 hover:bg-yellow/5 transition-colors text-[12px] text-[var(--ws-text)] disabled:opacity-50"
+              >
+                {p.name}
+              </button>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+        <button onClick={() => setLinkModalReport(null)} className="mt-4 text-[11px] text-gray-5 hover:text-[var(--ws-text)] transition-colors">Cancel</button>
+      </Modal>
 
-      {confirmNoClient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setConfirmNoClient(false)}>
-          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-6 w-[380px]" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-[14px] font-semibold text-white mb-3">No client selected</h3>
-            <p className="text-[12px] text-gray-4 leading-relaxed mb-5">
-              This report will only be visible internally and won&rsquo;t appear on any client&rsquo;s portal. Continue?
-            </p>
-            <div className="flex items-center gap-3 justify-end">
-              <button
-                onClick={() => setConfirmNoClient(false)}
-                className="text-[11px] px-4 py-1.5 rounded-lg border border-white/6 text-gray-4 hover:text-white hover:border-white/20 transition-colors cursor-pointer bg-transparent"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveNoClientConfirm}
-                className="text-[11px] px-4 py-1.5 rounded-lg bg-yellow text-black font-semibold hover:bg-yellow/90 transition-colors cursor-pointer"
-              >
-                Save as internal
-              </button>
-            </div>
-          </div>
+      <Modal
+        open={confirmNoClient}
+        onClose={() => setConfirmNoClient(false)}
+        title="No client selected"
+        className="max-w-sm"
+      >
+        <p className="text-[12px] text-gray-4 leading-relaxed mb-5">
+          This report will only be visible internally and won&rsquo;t appear on any client&rsquo;s portal. Continue?
+        </p>
+        <div className="flex items-center gap-3 justify-end">
+          <button
+            onClick={() => setConfirmNoClient(false)}
+            className="text-[11px] px-4 py-1.5 rounded-lg border border-[var(--ws-border)] text-gray-4 hover:text-[var(--ws-text)] hover:border-white/20 transition-colors cursor-pointer bg-transparent"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSaveNoClientConfirm}
+            className="text-[11px] px-4 py-1.5 rounded-lg bg-yellow text-black font-semibold hover:bg-yellow/90 transition-colors cursor-pointer"
+          >
+            Save as internal
+          </button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -181,7 +181,7 @@ export default function UploadDetailPage({
   const emptyRows = rows.filter((r) => !r.stock_code);
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title={upload.filename}
         subtitle={`${FILE_TYPE_LABELS[upload.file_type] ?? upload.file_type} — uploaded ${new Date(upload.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`}
@@ -223,7 +223,7 @@ export default function UploadDetailPage({
 
       {/* Import result */}
       {importResult && (
-        <div className={`mt-4 p-4 rounded-lg border ${
+        <div className={`p-4 rounded-lg border ${
           importResult.errors.length === 0
             ? "bg-green/5 border-green/20 text-green"
             : "bg-yellow/5 border-yellow/20 text-yellow"
@@ -256,10 +256,10 @@ export default function UploadDetailPage({
       )}
 
       {/* Upload metadata */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="pm-dash-card pm-dash-card-b">
-          <div className="text-[9px] text-gray-5 uppercase font-mono">Status</div>
-          <div className="text-[12px] text-white mt-1 flex items-center gap-1.5">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
+        <div className="ws-stat-card">
+          <div className="ws-stat-label">Status</div>
+          <div className="text-[var(--ws-text)] mt-1 flex items-center gap-1.5 text-[14px] font-medium">
             {upload.status === "imported" ? (
               <CheckCircle className="w-3 h-3 text-green" />
             ) : upload.status === "failed" ? (
@@ -270,28 +270,28 @@ export default function UploadDetailPage({
             <span className="capitalize">{upload.status.replace(/_/g, " ")}</span>
           </div>
         </div>
-        <div className="pm-dash-card pm-dash-card-b">
-          <div className="text-[9px] text-gray-5 uppercase font-mono">Period</div>
-          <div className="text-[12px] text-white mt-1">{upload.period_label ?? "—"}</div>
+        <div className="ws-stat-card">
+          <div className="ws-stat-label">Period</div>
+          <div className="text-[var(--ws-text)] mt-1 text-[14px] font-medium">{upload.period_label ?? "—"}</div>
         </div>
-        <div className="pm-dash-card pm-dash-card-b">
-          <div className="text-[9px] text-gray-5 uppercase font-mono">Branch</div>
-          <div className="text-[12px] text-white mt-1">{upload.branch_name ?? "—"}</div>
+        <div className="ws-stat-card">
+          <div className="ws-stat-label">Branch</div>
+          <div className="text-[var(--ws-text)] mt-1 text-[14px] font-medium">{upload.branch_name ?? "—"}</div>
         </div>
-        <div className="pm-dash-card pm-dash-card-b">
-          <div className="text-[9px] text-gray-5 uppercase font-mono">Total Rows</div>
-          <div className="text-[12px] text-white mt-1 font-mono">{upload.total_rows.toLocaleString()}</div>
+        <div className="ws-stat-card">
+          <div className="ws-stat-label">Total Rows</div>
+          <div className="text-[var(--ws-text)] mt-1 font-mono text-[14px] font-medium">{upload.total_rows.toLocaleString()}</div>
         </div>
-        <div className="pm-dash-card pm-dash-card-b">
-          <div className="text-[9px] text-gray-5 uppercase font-mono">Errors</div>
-          <div className={`text-[12px] mt-1 font-mono ${upload.error_rows > 0 ? "text-red" : "text-white"}`}>
+        <div className="ws-stat-card">
+          <div className="ws-stat-label">Errors</div>
+          <div className={`text-[14px] mt-1 font-mono font-medium ${upload.error_rows > 0 ? "text-red" : "text-[var(--ws-text)]"}`}>
             {upload.error_rows}
           </div>
         </div>
       </div>
 
       {/* Row stats */}
-      <div className="mt-4 flex items-center gap-4 text-[11px] text-gray-5">
+      <div className="flex items-center gap-4 text-[11px] text-gray-5">
         <span>{rows.length.toLocaleString()} staging rows</span>
         <span>•</span>
         <span className="text-green">{okRows.length} with stock code</span>
@@ -310,10 +310,10 @@ export default function UploadDetailPage({
       </div>
 
       {/* Staging rows table */}
-      <div className="mt-3 pm-dash-card pm-dash-card-b-0 overflow-hidden">
+      <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
         <table className="w-full text-[11px]">
           <thead>
-            <tr className="text-gray-5 font-mono border-b border-[#252525]">
+            <tr className="text-gray-5 font-mono border-b border-[var(--ws-border)]">
               <th className="text-left px-4 py-2.5 font-normal w-12">#</th>
               <th className="text-left px-4 py-2.5 font-normal">Stock Code</th>
               <th className="text-left px-4 py-2.5 font-normal">Product Name</th>
@@ -328,15 +328,15 @@ export default function UploadDetailPage({
             {paginated.map((r) => (
               <tr
                 key={r.id}
-                className={`border-b border-[#1E1E1E] last:border-0 ${
+                className={`border-b border-[var(--ws-border)] last:border-0 ${
                   !r.stock_code ? "bg-yellow/5" : ""
                 }`}
               >
                 <td className="px-4 py-2 text-gray-5 font-mono">{r.row_number}</td>
-                <td className={`px-4 py-2 font-mono ${r.stock_code ? "text-white" : "text-red"}`}>
+                <td className={`px-4 py-2 font-mono ${r.stock_code ? "text-[var(--ws-text)]" : "text-red"}`}>
                   {r.stock_code ?? "—"}
                 </td>
-                <td className="px-4 py-2 text-gray-4 truncate max-w-[200px]">{r.product_name ?? "—"}</td>
+                <td className="px-4 py-2 text-gray-4 truncate max-w-50">{r.product_name ?? "—"}</td>
                 <td className="px-4 py-2 text-gray-4">{r.sub_category ?? "—"}</td>
                 <td className="px-4 py-2 text-right text-gray-4 font-mono">{r.quantity ?? "—"}</td>
                 <td className="px-4 py-2 text-right text-gray-4 font-mono">
@@ -346,7 +346,7 @@ export default function UploadDetailPage({
                   {r.total_amount != null ? Number(r.total_amount).toLocaleString() : "—"}
                 </td>
                 {showRaw && (
-                  <td className="px-4 py-2 text-gray-5 font-mono text-[9px] max-w-[300px] truncate">
+                  <td className="px-4 py-2 text-gray-5 font-mono text-[9px] max-w-75 truncate">
                     {r.raw_data ? JSON.stringify(r.raw_data).substring(0, 80) + "..." : "—"}
                   </td>
                 )}
@@ -363,7 +363,7 @@ export default function UploadDetailPage({
           </tbody>
         </table>
         {total > 25 && (
-          <div className="px-4 py-2 border-t border-[#252525]">
+          <div className="px-4 py-2 border-t border-[var(--ws-border)]">
             <Pagination page={page} pageSize={25} total={total} onPageChange={setPage} />
           </div>
         )}

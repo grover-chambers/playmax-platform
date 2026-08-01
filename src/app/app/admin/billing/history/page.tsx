@@ -54,11 +54,11 @@ export default function BillingHistoryPage() {
         }
       />
 
-      <div className="flex items-center gap-3 mt-4 mb-4">
+      <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-5" />
           <input
-            className="w-full bg-black border border-[#252525] rounded-lg pl-9 pr-3 py-2 text-[12px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40"
+            className="ws-input w-full pl-9"
             placeholder="Search invoices..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -76,14 +76,14 @@ export default function BillingHistoryPage() {
         </Button>
       </div>
 
-      <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
+      <div className="ws-panel overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#1e1e1e]">
+            <tr className="border-b border-[var(--ws-border)]">
               {["Invoice", "Date", "Amount", "Status"].map((h) => (
                 <th
                   key={h}
-                  className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3"
+                  className="font-mono text-[11px] text-gray-5 font-semibold tracking-widest uppercase text-left px-4 py-3"
                 >
                   {h}
                 </th>
@@ -94,13 +94,13 @@ export default function BillingHistoryPage() {
             {paginated.map((inv) => (
               <tr
                 key={inv.id}
-                className="border-b border-[#1e1e1e] hover:bg-white/2 transition-colors"
+                className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors"
               >
-                <td className="px-4 py-3 text-[12px] font-mono font-medium text-white">
+                <td className="px-4 py-3 text-[12px] font-mono font-medium text-[var(--ws-text)]">
                   {inv.id}
                 </td>
                 <td className="px-4 py-3 text-[12px] text-gray-5 font-mono">{inv.date}</td>
-                <td className="px-4 py-3 font-display text-[13px] font-semibold text-white">
+                <td className="px-4 py-3 font-display text-[13px] font-semibold text-[var(--ws-text)]">
                   {inv.amount}
                 </td>
                 <td className="px-4 py-3">

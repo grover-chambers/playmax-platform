@@ -10,12 +10,12 @@ interface AvatarProps {
 }
 
 const variantStyles: Record<AvatarVariant, string> = {
-  yellow: "!bg-yellow !text-black",
-  dark: "!bg-black-4 !text-yellow",
+  yellow: "bg-yellow! text-black!",
+  dark: "bg-black-4! text-yellow!",
 };
 
 const sizeStyles: Record<string, string> = {
-  sm: "!w-[18px] !h-[18px] !text-[8px]",
+  sm: "w-[18px]! h-[18px]! text-[8px]!",
   md: "user-avatar",
   lg: "thread-avatar",
 };

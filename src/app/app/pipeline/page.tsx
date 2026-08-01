@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, startTransition } from "react";
-import { Download, Plus, ArrowUpRight } from "lucide-react";
+import { Download, Plus, ArrowUpRight, FolderKanban, CheckCircle2, Layers, DollarSign } from "lucide-react";
 import Link from "next/link";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
@@ -187,7 +187,7 @@ export default function PipelinePage() {
   }
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title="Project Pipeline"
         subtitle={`${totalProjects} projects in pipeline`}
@@ -204,27 +204,47 @@ export default function PipelinePage() {
       />
 
       {/* ── Pipeline KPIs ── */}
-      <div className="px-7 pt-5 pb-1">
+      <div>
         <div className="pm-dash-krow pm-dash-krow-4">
-          <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">{projects.filter((p) => p.status === "active" || p.status === "in_progress").length}</div>
-            <div className="pm-dash-kl">Active projects</div>
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="ws-stat-icon" style={{ background: "rgba(15, 118, 110, 0.08)", color: "var(--pm-teal)" }}>
+                <FolderKanban className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="ws-stat-value">{projects.filter((p) => p.status === "active" || p.status === "in_progress").length}</div>
+            <div className="ws-stat-label">Active projects</div>
             <div className="pm-dash-ksub">{projects.filter((p) => p.status === "draft").length} in draft</div>
           </div>
-          <div className="pm-dash-kcard grn">
-            <div className="pm-dash-kn grn">{projects.filter((p) => p.status === "completed").length}</div>
-            <div className="pm-dash-kl">Completed</div>
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="ws-stat-icon" style={{ background: "rgba(61, 143, 90, 0.1)", color: "var(--pm-green)" }}>
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="ws-stat-value" style={{ color: "var(--pm-green)" }}>{projects.filter((p) => p.status === "completed").length}</div>
+            <div className="ws-stat-label">Completed</div>
             <div className="pm-dash-ksub">{projects.filter((p) => p.status === "review").length} in review</div>
           </div>
-          <div className="pm-dash-kcard red">
-            <div className="pm-dash-kn red">{projects.length}</div>
-            <div className="pm-dash-kl">Total projects</div>
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="ws-stat-icon" style={{ background: "rgba(185, 74, 72, 0.1)", color: "var(--pm-red)" }}>
+                <Layers className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="ws-stat-value" style={{ color: "var(--pm-red)" }}>{projects.length}</div>
+            <div className="ws-stat-label">Total projects</div>
             <div className="pm-dash-ksub" style={{ color: "var(--pm-red)" }}>
               {projects.filter((p) => p.progress < 25 && p.status !== "completed").length} behind schedule
             </div>
           </div>
-          <div className="pm-dash-kcard neu">
-            <div className="pm-dash-kn" style={{ color: "var(--pm-gray-3)" }}>
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="ws-stat-icon" style={{ background: "rgba(154, 157, 142, 0.12)", color: "var(--pm-gray-4)" }}>
+                <DollarSign className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="ws-stat-value" style={{ color: "var(--pm-gray-3)" }}>
               {projects.filter((p) => p.status === "completed").length > 0
                 ? `KES ${(
                     projects
@@ -233,14 +253,14 @@ export default function PipelinePage() {
                   ).toFixed(0)}K`
                 : "—"}
             </div>
-            <div className="pm-dash-kl">Completed value</div>
+            <div className="ws-stat-label">Completed value</div>
             <div className="pm-dash-ksub">{projects.filter((p) => p.status === "completed").length} projects done</div>
           </div>
         </div>
       </div>
 
       {/* ── Search & Type Filters ── */}
-      <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1E1E1E]">
+      <div className="py-3 flex items-center gap-3 border-b border-[var(--ws-border)]">
         <SearchBox placeholder="Search projects…" className="w-56" onChange={(val) => setSearch(val)} />
         <div className="flex items-center gap-1.5 ml-2">
           {typeFilters.map((filter) => (
@@ -256,7 +276,7 @@ export default function PipelinePage() {
       </div>
 
       {/* ── Kanban Board ── */}
-      <div className="flex gap-4 p-7 overflow-x-auto">
+      <div className="flex gap-4 py-1 overflow-x-auto">
         {stageOrder.map((stage) => {
           const stageProjects = grouped[stage] || [];
           return (
@@ -280,7 +300,7 @@ export default function PipelinePage() {
       </div>
 
       {/* ── Staff Performance + Client Health Grid ── */}
-      <div className="px-7 pb-7">
+      <div>
         <div className="grid grid-cols-2 gap-5">
           <div className="pm-dash-card">
             <div className="pm-dash-card-h">

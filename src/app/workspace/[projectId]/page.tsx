@@ -388,11 +388,11 @@ export default function WorkspacePage({
   }, {});
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen bg-[#0A0A0A] text-gray-5 text-[12px]">Loading…</div>;
+    return <div className="flex items-center justify-center min-h-screen bg-[var(--ws-bg)] text-gray-4 text-[12px]">Loading…</div>;
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#0A0A0A] flex">
+    <div className="h-screen w-screen overflow-hidden bg-[var(--ws-bg)] flex">
       {/* ════════ CANVAS (full background) ════════ */}
       <div
         ref={canvasRef}
@@ -407,7 +407,7 @@ export default function WorkspacePage({
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+            backgroundImage: `radial-gradient(circle, rgba(15,118,110,0.14) 1px, transparent 1px)`,
             backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
             transform: `translate(${pan.x}px, ${pan.y}px)`,
           }}
@@ -481,36 +481,36 @@ export default function WorkspacePage({
         {/* ── Top bar overlay ── */}
         <div className="fixed top-0 left-0 right-0 z-40 flex items-center px-4 py-3 pointer-events-none">
           <div className="flex items-center gap-3 pointer-events-auto">
-            <button onClick={() => router.push(`/app/projects/${projectId}`)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-gray-4 hover:text-white hover:border-yellow/40 transition-all">
+            <button onClick={() => router.push(`/app/projects/${projectId}`)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--ws-surface)]/90 backdrop-blur-sm border border-[var(--ws-border)] text-gray-4 hover:text-[var(--ws-accent)] hover:border-[var(--ws-accent)]/40 transition-all">
               <ArrowLeft size={16} />
             </button>
-            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm border border-white/10 rounded-lg px-3.5 py-1.5">
-              <span className="text-[13px] font-semibold text-white">{project?.name || "Workspace"}</span>
+            <div className="flex items-center gap-2 bg-[var(--ws-surface)]/90 backdrop-blur-sm border border-[var(--ws-border)] rounded-lg px-3.5 py-1.5">
+              <span className="text-[13px] font-semibold text-[var(--ws-text)]">{project?.name || "Workspace"}</span>
               {currentUser?.role === "crm_staff" && (
-                <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full border border-yellow/30 text-yellow bg-yellow/10">My Workspace</span>
+                <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full border border-[var(--ws-accent)]/30 text-[var(--ws-accent)] bg-[var(--ws-accent)]/10">My Workspace</span>
               )}
-              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full border capitalize ${project?.status === "active" ? "text-green border-green/30 bg-green/10" : "text-gray-5 border-gray-5/30"}`}>{project?.status || "draft"}</span>
+              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full border capitalize ${project?.status === "active" ? "text-green border-green/30 bg-green/10" : "text-gray-4 border-[var(--ws-border)]"}`}>{project?.status || "draft"}</span>
             </div>
           </div>
         </div>
 
         {/* ── Bottom text buttons ── */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-black/60 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-2 pointer-events-auto">
-          <button onClick={addNote} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/10 text-gray-3 hover:text-white transition-all text-[11px] font-medium">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-[var(--ws-surface)]/90 backdrop-blur-sm border border-[var(--ws-border)] rounded-xl px-3 py-2 pointer-events-auto shadow-[0_4px_16px_rgba(10,20,40,0.08)]">
+          <button onClick={addNote} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-[var(--ws-bg)] text-gray-4 hover:text-[var(--ws-accent)] transition-all text-[11px] font-medium">
             <StickyNote size={13} /> Add Note
           </button>
-          <div className="w-px h-4 bg-white/10" />
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/10 text-gray-3 hover:text-white transition-all text-[11px] font-medium">
+          <div className="w-px h-4 bg-[var(--ws-border)]" />
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-[var(--ws-bg)] text-gray-4 hover:text-[var(--ws-accent)] transition-all text-[11px] font-medium">
             <Type size={13} /> Text
           </button>
-          <div className="w-px h-4 bg-white/10" />
-          <span className="text-[10px] font-mono text-gray-6 px-2">{Math.round(zoom * 100)}%</span>
+          <div className="w-px h-4 bg-[var(--ws-border)]" />
+          <span className="text-[10px] font-mono text-gray-4 px-2">{Math.round(zoom * 100)}%</span>
         </div>
 
         {/* ── Floating + button ── */}
         <button
           onClick={addNote}
-          className="fixed bottom-24 right-6 z-40 w-12 h-12 rounded-full bg-yellow text-black flex items-center justify-center hover:bg-yellow/90 transition-all shadow-lg shadow-yellow/20 pointer-events-auto"
+          className="fixed bottom-24 right-6 z-40 w-12 h-12 rounded-full bg-[var(--ws-accent)] text-white flex items-center justify-center hover:bg-[var(--ws-accent-hover)] transition-all shadow-lg shadow-[var(--ws-accent)]/25 pointer-events-auto"
         >
           <Plus size={20} />
         </button>
@@ -519,16 +519,16 @@ export default function WorkspacePage({
       {/* ════════ RIGHT PANEL ════════ */}
       <div
         data-panel
-        className={`h-screen bg-[#0D0D0D] border-l border-[#1E1E1E] flex flex-col transition-all duration-200 z-30 ${panelOpen ? "w-[340px]" : "w-0 overflow-hidden"}`}
+        className={`h-screen bg-[var(--ws-surface)] border-l border-[var(--ws-border)] flex flex-col transition-all duration-200 z-30 ${panelOpen ? "w-[340px]" : "w-0 overflow-hidden"}`}
       >
         {/* Panel header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#1E1E1E]">
-          <h3 className="text-[12px] font-semibold text-white">Workspace</h3>
-          <button onClick={() => setPanelOpen(false)} className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/5 text-gray-5"><X size={14} /></button>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--ws-border)]">
+          <h3 className="text-[12px] font-semibold text-[var(--ws-text)]">Workspace</h3>
+          <button onClick={() => setPanelOpen(false)} className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--ws-bg)] text-gray-5"><X size={14} /></button>
         </div>
 
         {/* Panel tabs */}
-        <div className="flex border-b border-[#1E1E1E]">
+        <div className="flex border-b border-[var(--ws-border)]">
           {[
             { key: "team" as RightTab, label: "Team", icon: Users },
             { key: "tasks" as RightTab, label: "Tasks", icon: CheckSquare },
@@ -538,7 +538,7 @@ export default function WorkspacePage({
               key={tab.key}
               onClick={() => setRightTab(tab.key)}
               className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] py-2.5 border-b-2 transition-colors ${
-                rightTab === tab.key ? "text-yellow border-yellow" : "text-gray-5 border-transparent hover:text-white"
+                rightTab === tab.key ? "text-[var(--ws-accent)] border-[var(--ws-accent)]" : "text-gray-5 border-transparent hover:text-[var(--ws-text)]"
               }`}
             >
               <tab.icon size={12} />
@@ -552,20 +552,20 @@ export default function WorkspacePage({
           {/* ══ TEAM ══ */}
           {rightTab === "team" && (
             <div className="p-4 space-y-3">
-              <p className="text-[10px] font-mono text-gray-5 uppercase tracking-wider mb-3">Project Team</p>
+              <p className="text-[10px] font-mono text-gray-4 uppercase tracking-wider mb-3">Project Team</p>
               {team.map((m) => (
-                <div key={m.id} className="flex items-center gap-3 bg-[#0A0A0A] rounded-lg px-3.5 py-3 border border-[#1E1E1E]">
-                  <div className="w-8 h-8 rounded-full bg-yellow/10 flex items-center justify-center text-[10px] font-bold text-yellow">
+                <div key={m.id} className="flex items-center gap-3 bg-[var(--ws-bg)] rounded-lg px-3.5 py-3 border border-[var(--ws-border)]">
+                  <div className="w-8 h-8 rounded-full bg-[var(--ws-accent)]/10 flex items-center justify-center text-[10px] font-bold text-[var(--ws-accent)]">
                     {m.initials}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-medium text-white truncate">{m.name}</div>
-                    <div className="text-[10px] text-gray-5 font-mono">{m.role}</div>
+                    <div className="text-[12px] font-medium text-[var(--ws-text)] truncate">{m.name}</div>
+                    <div className="text-[10px] text-gray-4 font-mono">{m.role}</div>
                   </div>
                   <div className="w-2 h-2 rounded-full bg-green" />
                 </div>
               ))}
-              {team.length === 0 && <p className="text-[12px] text-gray-5">No team members yet.</p>}
+              {team.length === 0 && <p className="text-[12px] text-gray-4">No team members yet.</p>}
             </div>
           )}
 
@@ -573,23 +573,23 @@ export default function WorkspacePage({
           {rightTab === "tasks" && (
             <div className="p-4 space-y-4">
               {Object.keys(tasksByAssignee).length === 0 && (
-                <p className="text-[12px] text-gray-5 text-center py-8">{currentUser?.role === "crm_staff" ? "You have no assigned tasks yet." : "No tasks yet. Drop a sticky note on the board!"}</p>
+                <p className="text-[12px] text-gray-4 text-center py-8">{currentUser?.role === "crm_staff" ? "You have no assigned tasks yet." : "No tasks yet. Drop a sticky note on the board!"}</p>
               )}
               {Object.entries(tasksByAssignee).map(([assignee, ts]) => (
                 <div key={assignee}>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-5 h-5 rounded-full bg-yellow/10 flex items-center justify-center text-[7px] font-bold text-yellow">{initials(assignee)}</div>
-                    <span className="text-[11px] font-semibold text-white">{assignee}</span>
-                    <span className="text-[9px] font-mono text-gray-6 ml-auto">{ts.length}</span>
+                    <div className="w-5 h-5 rounded-full bg-[var(--ws-accent)]/10 flex items-center justify-center text-[7px] font-bold text-[var(--ws-accent)]">{initials(assignee)}</div>
+                    <span className="text-[11px] font-semibold text-[var(--ws-text)]">{assignee}</span>
+                    <span className="text-[9px] font-mono text-gray-4 ml-auto">{ts.length}</span>
                   </div>
                   <div className="space-y-1">
                     {ts.map((t) => (
-                      <div key={t.id} className="flex items-center gap-2 px-3 py-2 bg-[#0A0A0A] rounded-lg border border-[#1E1E1E]">
-                        <div className={`w-3 h-3 rounded border flex items-center justify-center flex-shrink-0 ${t.done ? "bg-yellow border-yellow" : "border-gray-5"}`}>
-                          {t.done && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                      <div key={t.id} className="flex items-center gap-2 px-3 py-2 bg-[var(--ws-bg)] rounded-lg border border-[var(--ws-border)]">
+                        <div className={`w-3 h-3 rounded border flex items-center justify-center flex-shrink-0 ${t.done ? "bg-[var(--ws-accent)] border-[var(--ws-accent)]" : "border-gray-5"}`}>
+                          {t.done && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
-                        <span className={`text-[11px] flex-1 ${t.done ? "text-gray-6 line-through" : "text-gray-3"}`}>{t.name}</span>
-                        {t.due_date && <span className="text-[8px] font-mono text-gray-6">{new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
+                        <span className={`text-[11px] flex-1 ${t.done ? "text-gray-4 line-through" : "text-[var(--ws-text)]"}`}>{t.name}</span>
+                        {t.due_date && <span className="text-[8px] font-mono text-gray-4">{new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
                       </div>
                     ))}
                   </div>
@@ -604,13 +604,13 @@ export default function WorkspacePage({
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.map((msg) => (
                   <div key={msg.id} className="flex items-start gap-2.5">
-                    <div className="w-6 h-6 rounded-full bg-yellow/10 flex items-center justify-center text-[8px] font-bold text-yellow flex-shrink-0 mt-0.5">
+                    <div className="w-6 h-6 rounded-full bg-[var(--ws-accent)]/10 flex items-center justify-center text-[8px] font-bold text-[var(--ws-accent)] flex-shrink-0 mt-0.5">
                       {initials(msg.author_name)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-white">{msg.author_name}</span>
-                        <span className="text-[8px] font-mono text-gray-6">{msg.time}</span>
+                        <span className="text-[10px] font-semibold text-[var(--ws-text)]">{msg.author_name}</span>
+                        <span className="text-[8px] font-mono text-gray-4">{msg.time}</span>
                       </div>
                       <p className="text-[11px] text-gray-4 leading-relaxed mt-0.5">{msg.text}</p>
                     </div>
@@ -618,15 +618,15 @@ export default function WorkspacePage({
                 ))}
                 <div ref={chatEndRef} />
               </div>
-              <div className="p-3 border-t border-[#1E1E1E] flex items-center gap-2">
+              <div className="p-3 border-t border-[var(--ws-border)] flex items-center gap-2">
                 <input
-                  className="flex-1 bg-[#0A0A0A] border border-[#252525] rounded-lg px-3 py-2 text-[11px] text-white placeholder:text-gray-6 outline-none focus:border-yellow/40 transition-colors"
+                  className="flex-1 bg-[var(--ws-surface)] border border-[var(--ws-border)] rounded-lg px-3 py-2 text-[11px] text-[var(--ws-text)] placeholder:text-gray-4 outline-none focus:border-[var(--ws-accent)] transition-colors"
                   placeholder="Type a message…"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                 />
-                <button onClick={sendMessage} disabled={!chatInput.trim()} className="w-7 h-7 flex items-center justify-center rounded-lg bg-yellow text-black hover:bg-yellow/90 disabled:opacity-30 transition-all flex-shrink-0">
+                <button onClick={sendMessage} disabled={!chatInput.trim()} className="w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--ws-accent)] text-white hover:bg-[var(--ws-accent-hover)] disabled:opacity-30 transition-all flex-shrink-0">
                   <Send size={12} />
                 </button>
               </div>
@@ -639,7 +639,7 @@ export default function WorkspacePage({
       {!panelOpen && (
         <button
           onClick={() => setPanelOpen(true)}
-          className="fixed top-3 right-3 z-40 w-8 h-8 flex items-center justify-center rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-gray-4 hover:text-white hover:border-yellow/40 transition-all"
+          className="fixed top-3 right-3 z-40 w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--ws-surface)]/90 backdrop-blur-sm border border-[var(--ws-border)] text-gray-4 hover:text-[var(--ws-accent)] hover:border-[var(--ws-accent)]/40 transition-all"
         >
           <PanelRightOpen size={16} />
         </button>

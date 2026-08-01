@@ -33,7 +33,7 @@ export default function InsightsPage() {
             Thinking on the{" "}
             <span className="pm-accent">market</span>
           </h1>
-          <p className="pm-hero-sub max-w-[560px]">
+          <p className="pm-hero-sub max-w-140">
             Research, analysis, and opinion on market intelligence, brand
             strategy,             and media in East Africa. Written by the Market Link team.
           </p>
@@ -162,7 +162,7 @@ export default function InsightsPage() {
       >
         <div className="site-container section">
           <div
-            className="max-w-[500px] mx-auto text-center"
+            className="max-w-125 mx-auto text-center"
             style={{ color: "var(--pm-black)" }}
           >
             <div

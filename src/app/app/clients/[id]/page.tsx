@@ -11,11 +11,13 @@ import {
   FileText,
   Loader2,
   Users,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import PageHeader from "@/components/layout/page-header";
 import Avatar from "@/components/ui/avatar";
+import Button from "@/components/ui/button";
 
 import Pagination, { usePagination } from "@/components/ui/pagination";
 import { createClient } from "@/lib/supabase/browser";
@@ -100,7 +102,7 @@ function statusDotColor(status: string | null): string {
   if (!status) return "bg-gray-5";
   const s = status.toLowerCase();
   if (s === "active" || s === "paid" || s === "completed" || s === "open") return "bg-green";
-  if (s === "in_progress" || s === "in progress" || s === "review" || s === "pending") return "bg-yellow";
+  if (s === "in_progress" || s === "in progress" || s === "review" || s === "pending") return "bg-[var(--ws-accent)]";
   return "bg-gray-5";
 }
 
@@ -152,6 +154,7 @@ interface ActivityItem {
 
 export default function ClientDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -329,7 +332,7 @@ export default function ClientDetailPage() {
     return (
       <div className="page-content">
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 size={20} className="animate-spin text-yellow" />
+          <Loader2 size={20} className="animate-spin text-[var(--ws-accent)]" />
           <span className="text-[13px] text-gray-5">Loading client…</span>
         </div>
       </div>
@@ -341,7 +344,7 @@ export default function ClientDetailPage() {
       <div className="page-content">
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <span className="text-[13px] text-red">{error || "Client not found"}</span>
-          <Link href="/app/clients" className="text-[12px] text-yellow hover:underline">
+          <Link href="/app/clients" className="text-[12px] text-[var(--ws-accent)] hover:underline">
             ← Back to clients
           </Link>
         </div>
@@ -371,30 +374,26 @@ export default function ClientDetailPage() {
         subtitle={`${c.industry || "—"} · Client since ${clientSince}`}
         actions={
           <>
-            <Link href="/app/clients">
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono font-medium rounded-full border border-[rgba(255,255,255,0.1)] text-gray-4 hover:text-white hover:border-white/20 transition-colors cursor-pointer">
-                <ArrowLeft size={12} /> Back
-              </button>
-            </Link>
-            <Link href={`/app/projects/new?client_id=${c.id}`}>
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono font-medium rounded-full bg-yellow text-black hover:bg-yellow/90 transition-colors cursor-pointer">
-                + New Project
-              </button>
-            </Link>
+            <Button variant="secondary" size="sm" onClick={() => router.push("/app/clients")}>
+              <ArrowLeft size={12} className="mr-1" /> Back
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => router.push(`/app/projects/new?client_id=${c.id}`)}>
+              <Plus size={12} className="mr-1" /> New Project
+            </Button>
           </>
         }
       />
 
       {/* ── Tab Navigation ─────────────────────── */}
-      <div className="px-7 py-3 flex items-center gap-1 border-b border-[#1E1E1E]">
+      <div className="flex items-center gap-1 border-b border-[var(--ws-border)]">
         {tabItems.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`text-[12px] px-4 py-2 border-b-2 transition-colors cursor-pointer ${
               activeTab === tab.key
-                ? "text-yellow border-yellow"
-                : "text-gray-4 border-transparent hover:text-white"
+                ? "text-[var(--ws-accent)] border-[var(--ws-accent)]"
+                : "text-gray-4 border-transparent hover:text-[var(--ws-text)]"
             }`}
           >
             {tab.label}
@@ -402,47 +401,51 @@ export default function ClientDetailPage() {
         ))}
       </div>
 
-      <div className="p-7">
+      <div>
         {/* ═══════════════════════════════════════════ OVERVIEW ═══════ */}
         {activeTab === "overview" && (
           <>
             {/* ── KPI Row ────────────────────────── */}
-            <div className="pm-dash-krow pm-dash-krow-4 mb-5">
-              <div className="pm-dash-kcard">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-3.5 h-3.5 text-gray-5" />
-                  <span className="pm-dash-kl">Projects</span>
-                </div>
-                <div className="pm-dash-kn">{activeProjectCount}</div>
-                <div className="pm-dash-ksub">{projects.length} total</div>
-              </div>
-              <div className="pm-dash-kcard grn">
-                <div className="flex items-center gap-2 mb-1">
-                  <MessageSquare className="w-3.5 h-3.5 text-green" />
-                  <span className="pm-dash-kl">Conversations</span>
-                </div>
-                <div className="pm-dash-kn grn">{conversations.length}</div>
-                <div className="pm-dash-ksub">
-                  {conversations.filter((cv) => cv.status === "open").length} open
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+              <div className="ws-stat-card">
+                <div className="flex items-center gap-3">
+                  <div className="ws-stat-icon"><FileText className="w-4 h-4 text-teal" /></div>
+                  <div>
+                    <div className="ws-stat-value">{activeProjectCount}</div>
+                    <div className="ws-stat-label">Projects · {projects.length} total</div>
+                  </div>
                 </div>
               </div>
-              <div className="pm-dash-kcard">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-3.5 h-3.5 text-yellow" />
-                  <span className="pm-dash-kl">Invoices</span>
-                </div>
-                <div className="pm-dash-kn">{invoices.length}</div>
-                <div className="pm-dash-ksub">
-                  {invoices.filter((i) => i.status === "overdue").length} overdue
+              <div className="ws-stat-card">
+                <div className="flex items-center gap-3">
+                  <div className="ws-stat-icon"><MessageSquare className="w-4 h-4 text-green" /></div>
+                  <div>
+                    <div className="ws-stat-value">{conversations.length}</div>
+                    <div className="ws-stat-label">
+                      Conversations · {conversations.filter((cv) => cv.status === "open").length} open
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="pm-dash-kcard blu">
-                <div className="flex items-center gap-2 mb-1">
-                  <Globe className="w-3.5 h-3.5 text-blue" />
-                  <span className="pm-dash-kl">Total Value</span>
+              <div className="ws-stat-card">
+                <div className="flex items-center gap-3">
+                  <div className="ws-stat-icon"><FileText className="w-4 h-4 text-blue" /></div>
+                  <div>
+                    <div className="ws-stat-value">{invoices.length}</div>
+                    <div className="ws-stat-label">
+                      Invoices · {invoices.filter((i) => i.status === "overdue").length} overdue
+                    </div>
+                  </div>
                 </div>
-                <div className="pm-dash-kn blu">{formatCurrency(totalProjectValue)}</div>
-                <div className="pm-dash-ksub">{formatCurrency(totalInvoiceValue)} invoiced</div>
+              </div>
+              <div className="ws-stat-card">
+                <div className="flex items-center gap-3">
+                  <div className="ws-stat-icon"><Globe className="w-4 h-4 text-teal" /></div>
+                  <div>
+                    <div className="ws-stat-value">{formatCurrency(totalProjectValue)}</div>
+                    <div className="ws-stat-label">{formatCurrency(totalInvoiceValue)} invoiced</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -461,38 +464,38 @@ export default function ClientDetailPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2.5">
                         <MapPin size={13} className="text-gray-5" />
-                        <span className="text-[12px] text-gray-3">
+                        <span className="text-[12px] text-gray-4">
                           {c.industry || "—"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5">
                         <Globe size={13} className="text-gray-5" />
-                        <span className="text-[12px] text-gray-3">
+                        <span className="text-[12px] text-gray-4">
                           {c.website || "—"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5">
                         <Mail size={13} className="text-gray-5" />
-                        <span className="text-[12px] text-gray-3">
+                        <span className="text-[12px] text-gray-4">
                           {c.email || "—"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5">
                         <Phone size={13} className="text-gray-5" />
-                        <span className="text-[12px] text-gray-3">
+                        <span className="text-[12px] text-gray-4">
                           {c.phone || "—"}
 
                         </span>
                       </div>
                     </div>
                     {/* Supplier Link */}
-                    <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-[rgba(255,255,255,0.04)]">
+                    <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-[var(--ws-border)]">
                       <svg className="w-3.5 h-3.5 text-gray-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21V8a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v13"/><path d="M15 13h2"/><path d="M9 13H7"/><circle cx="12" cy="5" r="2"/></svg>
                       <select
                         value={c.linked_supplier_id || ""}
                         onChange={(e) => handleLinkSupplier(e.target.value)}
                         disabled={linkingSupplier}
-                        className="flex-1 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] rounded-lg px-2.5 py-1.5 text-[12px] text-gray-3 outline-none focus:border-yellow/40 transition-colors cursor-pointer disabled:opacity-50"
+                        className="ws-select flex-1"
                       >
                         <option value="">No supplier linked</option>
                         {suppliers.map((s) => (
@@ -512,7 +515,7 @@ export default function ClientDetailPage() {
                         e.preventDefault();
                         setActiveTab("projects");
                       }}
-                      className="text-[10px] text-yellow hover:underline"
+                      className="text-[10px] text-[var(--ws-accent)] hover:underline"
 
                     >
                       View all
@@ -553,7 +556,7 @@ export default function ClientDetailPage() {
                         e.preventDefault();
                         setActiveTab("communications");
                       }}
-                      className="text-[10px] text-yellow hover:underline"
+                      className="text-[10px] text-[var(--ws-accent)] hover:underline"
                     >
                       View all
                     </Link>
@@ -565,7 +568,7 @@ export default function ClientDetailPage() {
                       <div className="space-y-0">
                         {conversations.slice(0, 5).map((conv) => (
                           <div key={conv.id} className="pm-dash-li">
-                            <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center text-[10px] font-mono text-yellow flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-[var(--ws-bg)] flex items-center justify-center text-[10px] font-mono text-[var(--ws-accent)] flex-shrink-0">
                               {(conv.channel || "M")[0].toUpperCase()}
                             </div>
                             <div className="pm-dash-li-body">
@@ -609,7 +612,7 @@ export default function ClientDetailPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Avatar initials={owner.initials} variant="yellow" size="sm" />
-                        <span className="text-[12px] text-gray-3">{owner.name}</span>
+                        <span className="text-[12px] text-gray-4">{owner.name}</span>
                       </div>
                     </div>
                     <div>
@@ -628,10 +631,10 @@ export default function ClientDetailPage() {
                         {activeProjectCount}
                       </span>
                     </div>
-                    <div className="pt-2 border-t border-[rgba(255,255,255,0.04)]">
+                    <div className="pt-2 border-t border-[var(--ws-border)]">
                       <Link
                         href={`/app/clients/${c.id}/users`}
-                        className="inline-flex items-center gap-1.5 text-[11px] text-yellow hover:underline"
+                        className="inline-flex items-center gap-1.5 text-[11px] text-[var(--ws-accent)] hover:underline"
                       >
                         <Users size={12} />
                         Manage Team
@@ -650,7 +653,7 @@ export default function ClientDetailPage() {
                         e.preventDefault();
                         setActiveTab("invoices");
                       }}
-                      className="text-[10px] text-yellow hover:underline"
+                      className="text-[10px] text-[var(--ws-accent)] hover:underline"
                     >
                       View all
                     </Link>
@@ -671,7 +674,7 @@ export default function ClientDetailPage() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-[11px] font-semibold text-yellow">
+                              <div className="text-[11px] font-semibold text-[var(--ws-accent)]">
                                 {formatCurrency(inv.amount)}
                               </div>
                               <span className={`pm-dash-bdg ${statusBadgeClass(inv.status)}`}>
@@ -714,14 +717,14 @@ export default function ClientDetailPage() {
                       {p.assigned_to && (
                         <div className="flex items-center gap-2 mb-3">
                           <Avatar initials={projectOwner.initials} variant="yellow" size="sm" />
-                          <span className="text-[11px] text-gray-3">{projectOwner.name}</span>
+                          <span className="text-[11px] text-gray-4">{projectOwner.name}</span>
                         </div>
                       )}
-                      <div className="flex items-center justify-between pt-2 border-t border-[rgba(255,255,255,0.04)]">
+                      <div className="flex items-center justify-between pt-2 border-t border-[var(--ws-border)]">
                         <span className="text-[11px] text-gray-5">
                           Due {formatDate(p.end_date)}
                         </span>
-                        <span className="font-display text-[11px] font-bold text-yellow">
+                        <span className="font-display text-[11px] font-bold text-[var(--ws-accent)]">
                           {formatCurrency(parseInt(String(p.value).replace(/[^0-9]/g, "")) || 0)}
                         </span>
                       </div>
@@ -751,7 +754,7 @@ export default function ClientDetailPage() {
                 <div className="space-y-0">
                   {conversations.map((conv) => (
                     <div key={conv.id} className="pm-dash-li">
-                      <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center text-[10px] font-mono text-yellow flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-[var(--ws-bg)] flex items-center justify-center text-[10px] font-mono text-[var(--ws-accent)] flex-shrink-0">
                         {(conv.channel || "M")[0].toUpperCase()}
                       </div>
                       <div className="pm-dash-li-body">
@@ -804,7 +807,7 @@ export default function ClientDetailPage() {
                     <tbody>
                       {paginatedInvoices.map((inv) => (
                         <tr key={inv.id}>
-                          <td className="pm-dash-tbl-td text-white font-semibold">
+                          <td className="pm-dash-tbl-td text-[var(--ws-text)] font-semibold">
                             {inv.invoice_number || inv.id.slice(0, 8)}
                           </td>
                           <td className="pm-dash-tbl-td">
@@ -813,7 +816,7 @@ export default function ClientDetailPage() {
                           <td className="pm-dash-tbl-td">
                             {formatDate(inv.due_date)}
                           </td>
-                          <td className="pm-dash-tbl-td text-right font-display font-semibold text-yellow">
+                          <td className="pm-dash-tbl-td text-right font-display font-semibold text-[var(--ws-accent)]">
                             {formatCurrency(inv.amount)}
                           </td>
                           <td className="pm-dash-tbl-td text-right">
@@ -858,13 +861,13 @@ export default function ClientDetailPage() {
                   {paginatedActivity.map((a, i) => (
                     <div key={a.id} className="pm-dash-li">
                       <div className="flex flex-col items-center mt-1">
-                        <div className="w-2 h-2 rounded-full bg-yellow flex-shrink-0" />
+                        <div className="w-2 h-2 rounded-full bg-[var(--ws-accent)] flex-shrink-0" />
                         {i < paginatedActivity.length - 1 && (
-                          <div className="w-px h-full bg-[rgba(255,255,255,0.04)] mt-1" />
+                          <div className="w-px h-full bg-[var(--ws-border)] mt-1" />
                         )}
                       </div>
                       <div className="pm-dash-li-body">
-                        <div className="text-[12px] text-white">
+                        <div className="text-[12px] text-[var(--ws-text)]">
                           <span className="font-semibold">{a.action}</span>
                           <span className="text-gray-4"> — {a.detail}</span>
                         </div>

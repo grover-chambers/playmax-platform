@@ -189,7 +189,7 @@ export default function InboxPage() {
     <div className="page-content flex h-full">
       {/* ── Left panel: conversations ──────────────── */}
       <div className="pm-dash-card w-[300px] flex flex-col flex-shrink-0 overflow-hidden mr-4">
-        <div className="px-4 py-4 border-b border-[rgba(255,255,255,0.04)]">
+        <div className="px-4 py-4 border-b border-[var(--ws-border)]">
 
           <h1 className="font-display text-[15px] font-bold mb-3">Inbox</h1>
           <SearchBox
@@ -198,7 +198,7 @@ export default function InboxPage() {
             onChange={setSearch}
           />
         </div>
-        <div className="flex gap-1 px-4 py-2.5 border-b border-[rgba(255,255,255,0.04)]">
+        <div className="flex gap-1 px-4 py-2.5 border-b border-[var(--ws-border)]">
           {tabs.map((tab) => (
             <FilterPill
               key={tab}

@@ -435,7 +435,7 @@ export default function NewProjectModal({
           {/* Milestones */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="form-label !mb-0">Milestones</label>
+              <label className="form-label mb-0!">Milestones</label>
               <button
                 type="button"
                 onClick={addMilestone}

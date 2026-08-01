@@ -105,7 +105,7 @@ export default function ServicesPage() {
             <br />
             <span className="pm-accent">intelligence & activation</span>
           </h1>
-          <p className="pm-hero-sub max-w-[560px]">
+          <p className="pm-hero-sub max-w-140">
             From the first research question to your brand appearing on
             Nairobi&apos;s busiest streets — we handle every step.
           </p>
@@ -127,7 +127,7 @@ export default function ServicesPage() {
             <div className="site-container section">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20">
                 <div>
-                  <div className="pm-service-icon !mb-6 md:!mb-8">
+                  <div className="pm-service-icon mb-6! md:mb-8!">
                     <svc.icon className="w-6 h-6 text-black" />
                   </div>
                   <div className="pm-eyebrow mb-3 md:mb-4">{svc.tagline}</div>
@@ -135,7 +135,7 @@ export default function ServicesPage() {
                   <p className="pm-body-sm">{svc.desc}</p>
                 </div>
                 <div>
-                  <div className="pm-eyebrow !text-dimmer mb-4 md:mb-6">
+                  <div className="pm-eyebrow text-dimmer! mb-4 md:mb-6">
                     What&apos;s included
                   </div>
                   <ul className="flex flex-col gap-3 md:gap-4">
@@ -170,7 +170,7 @@ export default function ServicesPage() {
 
       <section className="bg-transparent" style={{ color: "var(--pm-black)" }}>
         <div className="site-container section">
-          <div className="max-w-[500px] mx-auto text-center">
+          <div className="max-w-125 mx-auto text-center">
             <div
               className="pm-eyebrow mb-3 md:mb-4"
               style={{ color: "var(--pm-amber)" }}

@@ -121,7 +121,7 @@ export default function PortalInvoicesPage() {
         <div className="pm-dash-card pm-dash-card-b-0 overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#1A1A1A]">
+              <tr className="border-b border-[var(--ws-border)]">
                 {["Invoice #", "Project", "Amount", "Status", "Issued", "Due", ""].map((h) => (
                   <th key={h} className="font-mono text-[9px] text-gray-5 tracking-widest uppercase text-left px-4 py-3">
                     {h}
@@ -131,10 +131,10 @@ export default function PortalInvoicesPage() {
             </thead>
             <tbody>
               {invoices.map((inv) => (
-                <tr key={inv.id} className="border-b border-[#1A1A1A] transition-colors">
+                <tr key={inv.id} className="border-b border-[var(--ws-border)] transition-colors">
                   <td className="px-4 py-3.5 text-[13px] font-semibold font-mono">{inv.invoice_number}</td>
                   <td className="px-4 py-3.5 text-[13px] text-gray-3">{inv.projects?.[0]?.name || "—"}</td>
-                  <td className="px-4 py-3.5 text-[13px] font-display font-bold text-yellow">
+                  <td className="px-4 py-3.5 text-[13px] font-display font-bold text-[var(--ws-accent)]">
                     {formatCurrency(inv.amount)}
                   </td>
                   <td className="px-4 py-3.5">
@@ -146,7 +146,7 @@ export default function PortalInvoicesPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setPreviewInvoice(inv)}
-                        className="px-2 py-1 text-[10px] font-medium text-gray-4 hover:text-white border border-[#2A2A2A] rounded-lg hover:border-gray-5 transition-colors"
+                        className="px-2 py-1 text-[10px] font-medium text-gray-4 hover:text-[var(--ws-text)] border border-[var(--ws-border)] rounded-lg hover:border-[var(--ws-accent)] transition-colors"
                         title="Preview / Download PDF"
                       >
                         <Download size={11} />
@@ -180,7 +180,7 @@ export default function PortalInvoicesPage() {
               placeholder="0712 345 678"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              className="flex-1 bg-[#0D0D0D] border border-[#2A2A2A] rounded-lg px-3 py-2 text-[13px] text-white placeholder-gray-5 font-mono focus:outline-none focus:border-teal/50"
+              className="flex-1 flex-1 ws-input rounded-lg placeholder-gray-5 font-mono focus:border-[var(--ws-accent)]"
             />
             <button
               onClick={() => handleMpesaPayment(payingInvoice)}
@@ -190,7 +190,7 @@ export default function PortalInvoicesPage() {
             </button>
             <button
               onClick={() => { setPayingInvoice(null); setPhoneNumber(""); setPaymentMsg(null); }}
-              className="px-3 py-2 text-[12px] text-gray-4 hover:text-white transition-colors"
+              className="px-3 py-2 text-[12px] text-gray-4 hover:text-[var(--ws-text)] transition-colors"
             >
               Cancel
             </button>

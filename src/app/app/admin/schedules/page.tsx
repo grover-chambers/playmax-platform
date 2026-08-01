@@ -103,12 +103,12 @@ export default function SchedulesPage() {
       />
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-white/50">
+        <p className="text-[12px] text-gray-5">
           {schedules.length} schedule{schedules.length !== 1 && "s"}
         </p>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="pm-btn-green flex items-center gap-2"
+          className="ws-btn ws-btn-primary text-[13px]"
         >
           {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           {showForm ? "Cancel" : "New Schedule"}
@@ -116,75 +116,75 @@ export default function SchedulesPage() {
       </div>
 
       {showForm && (
-        <div className="pm-dash-card p-6 space-y-4">
-          <h3 className="text-white font-semibold">Create Schedule</h3>
+        <div className="ws-panel p-6 space-y-4">
+          <h3 className="text-[var(--ws-text)] font-semibold">Create Schedule</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               placeholder="Client ID"
               value={form.client_id}
               onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-              className="pm-input"
+              className="ws-input w-full"
             />
             <input
               placeholder="Schedule Name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="pm-input"
+              className="ws-input w-full"
             />
             <input
               placeholder="Report Type (e.g. monthly-analytics)"
               value={form.report_type}
               onChange={(e) => setForm({ ...form, report_type: e.target.value })}
-              className="pm-input"
+              className="ws-input w-full"
             />
             <select
               value={form.frequency}
               onChange={(e) => setForm({ ...form, frequency: e.target.value })}
-              className="pm-input"
+              className="ws-select w-full"
             >
               <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
               <option value="quarterly">Quarterly</option>
             </select>
           </div>
-          <button onClick={handleCreate} className="pm-btn-green">
+          <button onClick={handleCreate} className="ws-btn ws-btn-primary text-[13px]">
             Create Schedule
           </button>
         </div>
       )}
 
       {loading ? (
-        <div className="pm-dash-card p-8 text-center text-white/50">
+        <div className="ws-panel p-8 text-center text-gray-5">
           <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2" />
           Loading schedules...
         </div>
       ) : schedules.length === 0 ? (
-        <div className="pm-dash-card p-8 text-center text-white/50">
+        <div className="ws-panel p-8 text-center text-gray-5">
           <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
           No report schedules yet. Create one to automate delivery.
         </div>
       ) : (
-        <div className="pm-dash-card overflow-x-auto">
+        <div className="ws-panel overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/10 text-left">
-                <th className="p-4 text-white/50 font-medium">Name</th>
-                <th className="p-4 text-white/50 font-medium">Client</th>
-                <th className="p-4 text-white/50 font-medium">Type</th>
-                <th className="p-4 text-white/50 font-medium">Frequency</th>
-                <th className="p-4 text-white/50 font-medium">Next Run</th>
-                <th className="p-4 text-white/50 font-medium">Status</th>
-                <th className="p-4 text-white/50 font-medium">Actions</th>
+              <tr className="border-b border-[var(--ws-border)] text-left">
+                <th className="p-4 text-gray-5 font-semibold text-[11px] uppercase tracking-wider">Name</th>
+                <th className="p-4 text-gray-5 font-semibold text-[11px] uppercase tracking-wider">Client</th>
+                <th className="p-4 text-gray-5 font-semibold text-[11px] uppercase tracking-wider">Type</th>
+                <th className="p-4 text-gray-5 font-semibold text-[11px] uppercase tracking-wider">Frequency</th>
+                <th className="p-4 text-gray-5 font-semibold text-[11px] uppercase tracking-wider">Next Run</th>
+                <th className="p-4 text-gray-5 font-semibold text-[11px] uppercase tracking-wider">Status</th>
+                <th className="p-4 text-gray-5 font-semibold text-[11px] uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
               {schedules.map((s) => (
-                <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                  <td className="p-4 text-white">{s.name}</td>
-                  <td className="p-4 text-white/70">{s.client_name}</td>
-                  <td className="p-4 text-white/70">{s.report_type}</td>
+                <tr key={s.id} className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)]">
+                  <td className="p-4 text-[var(--ws-text)]">{s.name}</td>
+                  <td className="p-4 text-gray-4">{s.client_name}</td>
+                  <td className="p-4 text-gray-4">{s.report_type}</td>
                   <td className="p-4">{freqBadge(s.frequency)}</td>
-                  <td className="p-4 text-white/50">
+                  <td className="p-4 text-gray-5">
                     {s.next_run_at
                       ? new Date(s.next_run_at).toLocaleDateString()
                       : "—"}
@@ -201,8 +201,8 @@ export default function SchedulesPage() {
                         </>
                       ) : (
                         <>
-                          <ToggleLeft className="w-5 h-5 text-white/40" />
-                          <span className="text-white/40 text-xs">Paused</span>
+                          <ToggleLeft className="w-5 h-5 text-gray-4" />
+                          <span className="text-gray-4 text-xs">Paused</span>
                         </>
                       )}
                     </button>

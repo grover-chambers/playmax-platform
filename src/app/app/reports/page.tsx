@@ -61,7 +61,7 @@ export default function ReportsPage() {
   }, []);
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title="Reports & Analytics"
         subtitle="Org-wide KPIs across all clients, projects, and channels"
@@ -80,7 +80,7 @@ export default function ReportsPage() {
       />
 
       {/* Period filter */}
-      <div className="px-7 py-3 flex items-center gap-3 border-b border-[#1e1e1e]">
+      <div className="py-3 flex items-center gap-3 border-b border-[var(--ws-border)]">
         {periodFilters.map((p) => (
           <FilterPill
             key={p}
@@ -137,7 +137,7 @@ export default function ReportsPage() {
               className="pm-dash-kcard"
             >
               <div className="flex items-center gap-2 mb-3">
-                <kpi.icon className="w-4 h-4 text-yellow" />
+                <kpi.icon className="w-4 h-4 text-[var(--ws-accent)]" />
                 <span className="text-[11px] text-gray-5">{kpi.label}</span>
               </div>
               <div className="font-display text-[26px] font-bold">
@@ -186,14 +186,14 @@ export default function ReportsPage() {
                       key={m.label}
                       className="flex-1 flex flex-col items-center gap-1"
                     >
-                      <span className="text-[9px] font-mono text-yellow">
+                      <span className="text-[9px] font-mono text-[var(--ws-accent)]">
                         KES {((m.value ?? 0) / 1000).toFixed(0)}K
                       </span>
                       <div
                         className="w-full rounded-t-sm"
                         style={{
                           height: `${h}%`,
-                          background: "var(--pm-yellow)",
+                          background: "var(--ws-accent)",
                           opacity: 0.8,
                           minHeight: "8px",
                         }}
@@ -224,18 +224,18 @@ export default function ReportsPage() {
                   <div key={item.label}>
                     <div className="flex items-center justify-between text-[11px] mb-1">
                       <span className="text-gray-3">{item.label}</span>
-                      <span className="font-mono text-yellow text-[10px]">
+                      <span className="font-mono text-[var(--ws-accent)] text-[10px]">
                         {item.value}
                       </span>
                     </div>
-                    <div className="h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <div className="h-2 bg-[var(--ws-border)] rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full"
                         style={{
                           width: `${item.pct}%`,
                           background:
                             item.label === "Billboard Rental"
-                              ? "var(--pm-yellow)"
+                              ? "var(--ws-accent)"
                               : item.label === "Research & Data"
                                 ? "var(--pm-blue)"
                                 : item.label === "Brand Campaign"
@@ -271,14 +271,14 @@ export default function ReportsPage() {
               ].map((stage) => (
                 <div
                   key={stage.stage}
-                  className="flex items-center gap-3 py-2 border-b border-[#1a1a1a] last:border-b-0"
+                  className="flex items-center gap-3 py-2 border-b border-[var(--ws-border)] last:border-b-0"
                 >
                   <div className="w-24 text-[11px] text-gray-4">
                     {stage.stage}
                   </div>
-                  <div className="flex-1 h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-[var(--ws-border)] rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-yellow"
+                      className="h-full rounded-full bg-[var(--ws-accent)]"
                       style={{ width: `${stage.pct}%` }}
                     />
                   </div>
@@ -324,9 +324,9 @@ export default function ReportsPage() {
               ].map((p) => (
                 <div
                   key={p.name}
-                  className="flex items-center gap-3 py-2.5 border-b border-[#1a1a1a] last:border-b-0"
+                  className="flex items-center gap-3 py-2.5 border-b border-[var(--ws-border)] last:border-b-0"
                 >
-                  <div className="w-8 h-8 rounded-full bg-yellow/10 flex items-center justify-center text-[10px] font-bold text-yellow">
+                  <div className="w-8 h-8 rounded-full bg-[var(--ws-accent)]/10 flex items-center justify-center text-[10px] font-bold text-[var(--ws-accent)]">
                     {p.name
                       .split(" ")
                       .map((n) => n[0])
@@ -337,7 +337,7 @@ export default function ReportsPage() {
                     <div className="text-[10px] text-gray-5">{p.role}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[11px] font-mono text-yellow">
+                    <div className="text-[11px] font-mono text-[var(--ws-accent)]">
                       {p.revenue}
                     </div>
                     <div className="text-[10px] text-gray-5">{p.deals} deals</div>
@@ -354,7 +354,7 @@ export default function ReportsPage() {
             </div>
             <div className="pm-dash-card-b">
               {[
-                { source: "Website", pct: 40, color: "var(--pm-yellow)" },
+                { source: "Website", pct: 40, color: "var(--ws-accent)" },
                 { source: "WhatsApp", pct: 25, color: "var(--pm-green)" },
                 { source: "Referral", pct: 20, color: "var(--pm-blue)" },
                 { source: "Walk-in", pct: 10, color: "var(--pm-red)" },
@@ -367,7 +367,7 @@ export default function ReportsPage() {
                       {s.pct}%
                     </span>
                   </div>
-                  <div className="h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                  <div className="h-2 bg-[var(--ws-border)] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
                       style={{ width: `${s.pct}%`, background: s.color }}
@@ -382,7 +382,7 @@ export default function ReportsPage() {
         {/* ── Row 4: Research Reports ── */}
         <div className="pm-dash-card">
           <div className="pm-dash-card-h">
-            <BarChart3 className="w-4 h-4 text-yellow" />
+            <BarChart3 className="w-4 h-4 text-[var(--ws-accent)]" />
             <h3 className="pm-dash-card-t">Research Reports</h3>
           </div>
           <div className="pm-dash-card-b">
@@ -395,7 +395,7 @@ export default function ReportsPage() {
                 {reports.slice(0, 5).map((r) => (
                   <div
                     key={r.id}
-                    className="flex items-center justify-between py-2.5 border-b border-[#1a1a1a] last:border-b-0"
+                    className="flex items-center justify-between py-2.5 border-b border-[var(--ws-border)] last:border-b-0"
                   >
                     <div className="flex items-center gap-3">
                       <FileText className="w-3.5 h-3.5 text-gray-5" />
@@ -435,7 +435,7 @@ export default function ReportsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-[10px] font-mono text-gray-5 uppercase tracking-wider border-b border-[#1e1e1e]">
+                  <tr className="text-[10px] font-mono text-gray-5 uppercase tracking-wider border-b border-[var(--ws-border)]">
                     <th className="text-left py-3 px-5 font-medium">Date</th>
                     <th className="text-left py-3 px-5 font-medium">Event</th>
                     <th className="text-left py-3 px-5 font-medium">
@@ -449,7 +449,7 @@ export default function ReportsPage() {
                   {paginated.map((row, i) => (
                     <tr
                       key={i}
-                      className="border-b border-[#1a1a1a] hover:bg-white/[.02]"
+                      className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)]"
                     >
                       <td className="py-3 px-5 text-[11px] text-gray-5 font-mono">
                         {row.date}
@@ -458,7 +458,7 @@ export default function ReportsPage() {
                       <td className="py-3 px-5 text-[12px] text-gray-4">
                         {row.client}
                       </td>
-                      <td className="py-3 px-5 text-right text-[12px] font-mono text-yellow">
+                      <td className="py-3 px-5 text-right text-[12px] font-mono text-[var(--ws-accent)]">
                         {row.value}
                       </td>
                       <td className="py-3 px-5 text-right text-[11px] text-gray-5">

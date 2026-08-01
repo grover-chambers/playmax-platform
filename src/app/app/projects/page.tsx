@@ -154,7 +154,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       {loading ? (
         <div className="flex items-center justify-center py-20 text-gray-5 text-[13px]">Loading projects…</div>
       ) : error ? (
@@ -179,7 +179,7 @@ export default function ProjectsPage() {
           </>
         }
       />
-      <div className="px-7 py-3 flex items-center gap-3 border-b border-white/5">
+      <div className="flex items-center gap-3 border-b border-[var(--ws-border)] pb-3">
         <SearchBox placeholder="Search projects…" className="w-56" onChange={(val) => setSearch(val)} />
         <div className="flex items-center gap-1.5 ml-2">
           {typeFilters.map((filter) => (
@@ -205,18 +205,18 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      <div className="py-5 grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {paginated.map((project) => (
           <Link key={project.id} href={`/workspace/${project.id}`}>
-            <div className="pm-dash-card pm-dash-card-b-0">
+            <div className="ws-panel p-5 hover:border-[var(--ws-accent)] transition-colors">
               <div className="flex items-center justify-between mb-2.5">
-                <span className="font-display text-[13px] font-semibold text-white leading-tight">
+                <span className="font-display text-[13px] font-semibold text-[var(--ws-text)] leading-tight">
                   {project.name}
                 </span>
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <span
-                  className={`font-mono text-[8px] font-bold px-1.5 py-[2px] rounded-full border ${typeColors[project.type] || "bg-black-4 text-gray-4 border-black-4"}`}
+                  className={`font-mono text-[8px] font-bold px-1.5 py-[2px] rounded-full border ${typeColors[project.type] || "bg-[var(--ws-bg)] text-gray-4 border-[var(--ws-border)]"}`}
                 >
                   {project.type}
                 </span>
@@ -228,11 +228,11 @@ export default function ProjectsPage() {
                 {project.client}
               </div>
               <ProgressBar value={project.progress} />
-              <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-white/5">
+              <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--ws-border)]">
                 <span className="text-[10px] text-gray-5">
                   {project.deadline}
                 </span>
-                <span className="font-display text-[11px] font-bold text-yellow">
+                <span className="font-display text-[11px] font-bold text-[var(--ws-accent)]">
                   {project.value}
                 </span>
               </div>

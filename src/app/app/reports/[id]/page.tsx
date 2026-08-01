@@ -127,12 +127,12 @@ export default function ReportDetailPage({
   if (!report) return null;
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => router.push("/app/reports")}
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/5 text-gray-5 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--ws-bg)] text-gray-5 transition-colors"
         >
           <ArrowLeft size={16} />
         </button>
@@ -169,7 +169,7 @@ export default function ReportDetailPage({
       <div className="pm-dash-card">
         <div className="pm-dash-card-h">
           <div className="flex items-center gap-2">
-            <BarChart3 size={14} className="text-yellow" />
+            <BarChart3 size={14} className="text-[var(--ws-accent)]" />
             <h2 className="pm-dash-card-t">Metrics</h2>
           </div>
           <Button variant="secondary" size="sm" onClick={() => setShowAddMetric(true)}>
@@ -180,7 +180,7 @@ export default function ReportDetailPage({
 
         <div className="pm-dash-card-b">
           {(report.metrics || []).length === 0 ? (
-            <div className="text-[12px] text-gray-5 py-8 text-center border border-dashed border-[#1e1e1e] rounded-lg">
+            <div className="text-[12px] text-gray-5 py-8 text-center border border-dashed border-[var(--ws-border)] rounded-lg">
               No metrics yet. Add your first metric to track report data.
             </div>
           ) : (
@@ -188,7 +188,7 @@ export default function ReportDetailPage({
               {paginated.map((m) => (
                 <div
                   key={m.id}
-                  className="bg-[#0D0D0D] border border-[#1E1E1E] rounded-lg p-4 relative group"
+                  className="bg-[var(--ws-surface)] border border-[var(--ws-border)] rounded-lg p-4 relative group"
                 >
                   <button
                     onClick={() => deleteMetric(m.metric_key)}
@@ -199,7 +199,7 @@ export default function ReportDetailPage({
                   <div className="text-[10px] text-gray-5 uppercase tracking-wider font-mono mb-1">
                     {m.metric_label}
                   </div>
-                  <div className="text-[22px] font-display font-bold text-white">
+                  <div className="text-[22px] font-display font-bold text-[var(--ws-text)]">
                     {m.unit === "KES"
                       ? `KES ${((m.metric_value ?? 0) / 1000).toFixed(0)}K`
                       : m.unit === "%"
@@ -225,7 +225,7 @@ export default function ReportDetailPage({
               Key
             </label>
             <input
-              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40"
+              className="w-full ws-input rounded-lg placeholder-gray-5"
               placeholder="e.g. total_reach"
               value={newKey}
               onChange={(e) => setNewKey(e.target.value)}
@@ -236,7 +236,7 @@ export default function ReportDetailPage({
               Label
             </label>
             <input
-              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40"
+              className="w-full ws-input rounded-lg placeholder-gray-5"
               placeholder="e.g. Total Reach"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
@@ -249,7 +249,7 @@ export default function ReportDetailPage({
             <input
               type="number"
               step="any"
-              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white outline-none focus:border-yellow/40"
+              className="w-full ws-input rounded-lg"
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
             />
@@ -260,7 +260,7 @@ export default function ReportDetailPage({
                 Unit
               </label>
               <select
-                className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white outline-none focus:border-yellow/40"
+                className="w-full ws-input rounded-lg"
                 value={newUnit}
                 onChange={(e) => setNewUnit(e.target.value)}
               >
@@ -275,7 +275,7 @@ export default function ReportDetailPage({
                 Chart Type
               </label>
               <select
-                className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white outline-none focus:border-yellow/40"
+                className="w-full ws-input rounded-lg"
                 value={newChart}
                 onChange={(e) => setNewChart(e.target.value)}
               >
@@ -285,7 +285,7 @@ export default function ReportDetailPage({
               </select>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1A1A1A]">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--ws-border)]">
             <Button
               variant="secondary"
               size="sm"

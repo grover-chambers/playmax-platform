@@ -126,9 +126,9 @@ export default function PortalMessagesPage() {
       >
         <div className="flex h-full">
           {/* Sidebar */}
-          <div className="w-[220px] border-r border-[#1A1A1A] flex flex-col flex-shrink-0">
-            <div className="px-4 py-3 border-b border-[#1A1A1A]">
-              <span className="eyebrow !text-[9px] !text-gray-5">Conversations</span>
+          <div className="w-[220px] border-r border-[var(--ws-border)] flex flex-col flex-shrink-0">
+            <div className="px-4 py-3 border-b border-[var(--ws-border)]">
+              <span className="eyebrow text-[9px]! text-gray-5!">Conversations</span>
             </div>
             <div className="px-3 py-3 flex-1 overflow-y-auto">
               {loadingConvs ? (
@@ -142,7 +142,7 @@ export default function PortalMessagesPage() {
                   <button
                     key={conv.id}
                     onClick={() => { setLoadingMsgs(true); setActiveConvId(conv.id); }}
-                    className={`w-full text-left pm-dash-card !bg-teal/5 !border-teal/20 px-3 py-2.5 cursor-pointer flex items-center gap-2.5 mb-2 ${
+                    className={`w-full text-left pm-dash-card bg-teal/5! border-teal/20! px-3 py-2.5 cursor-pointer flex items-center gap-2.5 mb-2 ${
                       activeConvId === conv.id ? "ring-1 ring-teal" : ""
                     }`}
                   >

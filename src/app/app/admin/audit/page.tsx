@@ -179,7 +179,7 @@ export default function AuditLogPage() {
   // so we display what the API returned for this page.
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       {/* ── Header ── */}
       <PageHeader
         title="Audit Log"
@@ -192,34 +192,38 @@ export default function AuditLogPage() {
       />
 
       {/* ── KPI row ── */}
-      <div className="pm-dash-krow pm-dash-krow-3">
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kl pm-dash-kl-icon">
-            <ClipboardList size={14} />
-            Total Entries
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><ClipboardList className="w-4 h-4 text-teal" /></div>
+            <div>
+              <div className="ws-stat-value">{loading ? "…" : total}</div>
+              <div className="ws-stat-label">Total Entries</div>
+            </div>
           </div>
-          <div className="pm-dash-kn">{loading ? "…" : total}</div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kl pm-dash-kl-icon">
-            <Search size={14} />
-            Current Page
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><Search className="w-4 h-4 text-blue" /></div>
+            <div>
+              <div className="ws-stat-value">{loading ? "…" : page}</div>
+              <div className="ws-stat-label">Current Page</div>
+            </div>
           </div>
-          <div className="pm-dash-kn blu">{loading ? "…" : page}</div>
         </div>
-        <div className="pm-dash-kcard">
-          <div className="pm-dash-kl pm-dash-kl-icon">
-            <Download size={14} />
-            Showing
-          </div>
-          <div className="pm-dash-kn grn">
-            {loading ? "…" : entries.length}
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><Download className="w-4 h-4 text-green" /></div>
+            <div>
+              <div className="ws-stat-value">{loading ? "…" : entries.length}</div>
+              <div className="ws-stat-label">Showing</div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Filter bar ── */}
-      <div className="flex items-center gap-3 border-b border-[#1E1E1E]">
+      <div className="flex items-center gap-3 border-b border-[var(--ws-border)]">
         {/* Entity type dropdown */}
         <select
           value={entityType}
@@ -303,7 +307,7 @@ export default function AuditLogPage() {
 
                     {/* User */}
                     <td className="pm-dash-tbl-td">
-                      <div className="text-[12px] font-medium text-white">
+                      <div className="text-[12px] font-medium text-[var(--ws-text)]">
                         {entry.user_email?.split("@")[0] ?? "—"}
                       </div>
                       <div className="text-[10px] text-gray-5 font-mono mt-0.5">

@@ -194,7 +194,7 @@ function statusDot(status: string, size = 18) {
     case "completed":
       return <CheckCircle2 size={size} className="text-teal" />;
     case "in_progress":
-      return <Clock size={size} className="text-yellow" />;
+      return <Clock size={size} className="text-[var(--ws-accent)]" />;
     case "cancelled":
       return <XCircle size={size} className="text-red" />;
     default:
@@ -209,7 +209,7 @@ function priorityColor(p: string): string {
     case "high":
       return "text-orange bg-orange/10 border-orange/20";
     case "medium":
-      return "text-yellow bg-yellow/10 border-yellow/20";
+      return "text-[var(--ws-accent)] bg-[var(--ws-accent)]/10 border-yellow/20";
     default:
       return "text-gray-4 bg-gray-4/10 border-gray-4/20";
   }
@@ -372,7 +372,7 @@ export default function ProjectDetailPage({
     return (
       <div className="page-content flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 size={24} className="animate-spin text-yellow" />
+          <Loader2 size={24} className="animate-spin text-[var(--ws-accent)]" />
           <span className="text-[12px] text-gray-5">Loading project…</span>
         </div>
       </div>
@@ -414,7 +414,7 @@ export default function ProjectDetailPage({
   );
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title={p.name}
         subtitle={`${clientName} · ${p.type} · Due ${formatDate(p.end_date)}`}
@@ -426,7 +426,7 @@ export default function ProjectDetailPage({
               </Button>
             </Link>
             <span
-              className={`font-mono text-[8px] font-bold px-1.5 py-[2px] rounded-full border bg-yellow/10 text-yellow border-yellow/20`}
+              className={`font-mono text-[8px] font-bold px-1.5 py-[2px] rounded-full border bg-[var(--ws-accent)]/10 text-[var(--ws-accent)] border-[var(--ws-accent)]/20`}
             >
               {p.type}
             </span>
@@ -442,76 +442,68 @@ export default function ProjectDetailPage({
         }
       />
 
-      <div className="pm-dash-krow pm-dash-krow-4 px-7 py-4 border-b border-[#1E1E1E]">
-        <div className="pm-dash-kcard flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-black-4 flex items-center justify-center">
-            <Calendar size={15} className="text-yellow" />
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider">
-              Timeline
-            </div>
-            <div className="text-[12px] text-white font-semibold">
-              {formatDate(p.start_date)} — {formatDate(p.end_date)}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><Calendar className="w-4 h-4 text-teal" /></div>
+            <div>
+              <div className="ws-stat-label mb-1">Timeline</div>
+              <div className="text-[12px] font-semibold text-[var(--ws-text)]">
+                {formatDate(p.start_date)} — {formatDate(p.end_date)}
+              </div>
             </div>
           </div>
         </div>
-        <div className="pm-dash-kcard flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-black-4 flex items-center justify-center">
-            <DollarSign size={15} className="text-yellow" />
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider">
-              Budget
-            </div>
-            <div className="text-[12px] text-white font-semibold">
-              KES {(p.value || 0).toLocaleString()}
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><DollarSign className="w-4 h-4 text-green" /></div>
+            <div>
+              <div className="ws-stat-label mb-1">Budget</div>
+              <div className="text-[12px] font-semibold text-[var(--ws-text)]">
+                KES {(p.value || 0).toLocaleString()}
+              </div>
             </div>
           </div>
         </div>
-        <div className="pm-dash-kcard flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-black-4 flex items-center justify-center">
-            <Users size={15} className="text-yellow" />
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider">
-              Team
-            </div>
-            <div className="text-[12px] text-white font-semibold">
-              {data.members.length} member{data.members.length !== 1 ? "s" : ""}
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><Users className="w-4 h-4 text-blue" /></div>
+            <div>
+              <div className="ws-stat-label mb-1">Team</div>
+              <div className="text-[12px] font-semibold text-[var(--ws-text)]">
+                {data.members.length} member{data.members.length !== 1 ? "s" : ""}
+              </div>
             </div>
           </div>
         </div>
-        <div className="pm-dash-kcard flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-black-4 flex items-center justify-center">
-            <FileText size={15} className="text-yellow" />
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider">
-              Progress
-            </div>
-            <div className="text-[12px] text-white font-semibold">
-              {p.progress}% complete
+        <div className="ws-stat-card">
+          <div className="flex items-center gap-3">
+            <div className="ws-stat-icon"><FileText className="w-4 h-4 text-teal" /></div>
+            <div>
+              <div className="ws-stat-label mb-1">Progress</div>
+              <div className="text-[12px] font-semibold text-[var(--ws-text)]">
+                {p.progress}% complete
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="px-7 py-3 flex items-center gap-1 border-b border-[#1E1E1E]">
+      <div className="flex items-center gap-1 border-b border-[var(--ws-border)]">
         {tabItems.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`text-[12px] px-4 py-2 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === tab.key
-                ? "text-yellow border-yellow"
-                : "text-gray-4 border-transparent hover:text-white"
+                ? "text-[var(--ws-accent)] border-[var(--ws-accent)]"
+                : "text-gray-4 border-transparent hover:text-[var(--ws-text)]"
             }`}
           >
             <tab.icon size={13} />
             {tab.label}
             {tab.key === "tasks" && data.tasks.length > 0 && (
-              <span className="ml-0.5 text-[9px] bg-yellow/15 text-yellow px-1.5 py-0.5 rounded-full font-mono">
+              <span className="ml-0.5 text-[9px] bg-[var(--ws-accent)]/15 text-[var(--ws-accent)] px-1.5 py-0.5 rounded-full font-mono">
                 {data.tasks.length}
               </span>
             )}
@@ -519,7 +511,7 @@ export default function ProjectDetailPage({
         ))}
       </div>
 
-      <div className="pm-dash-card pm-dash-card-b mt-4">
+      <div className="ws-panel">
         {activeTab === "overview" && (
           <div className="grid grid-cols-3 gap-5 p-5">
             <div className="col-span-2 space-y-5">
@@ -527,7 +519,7 @@ export default function ProjectDetailPage({
                 <h3 className="font-display text-[13px] font-semibold mb-3">
                   Project Brief
                 </h3>
-                <p className="text-[12px] text-gray-3 leading-relaxed">
+                <p className="text-[12px] text-gray-4 leading-relaxed">
                   {p.brief || "No brief provided."}
                 </p>
               </div>
@@ -548,12 +540,12 @@ export default function ProjectDetailPage({
                     {data.deliverables.slice(0, 5).map((d) => (
                       <div
                         key={d.id}
-                        className="flex items-center justify-between py-2 border-b border-[#1E1E1E] last:border-0"
+                        className="flex items-center justify-between py-2 border-b border-[var(--ws-border)] last:border-0"
                       >
                         <div className="flex items-center gap-2">
                           <FileText size={14} className="text-gray-5" />
                           <div>
-                            <div className="text-[12px] font-semibold text-white">
+                            <div className="text-[12px] font-semibold text-[var(--ws-text)]">
                               {d.title}
                             </div>
                             <div className="text-[10px] text-gray-5 mt-0.5">
@@ -581,7 +573,7 @@ export default function ProjectDetailPage({
                     <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-0.5">
                       Type
                     </div>
-                    <span className="font-mono text-[8px] font-bold px-1.5 py-[2px] rounded-full border bg-yellow/10 text-yellow border-yellow/20">
+                    <span className="font-mono text-[8px] font-bold px-1.5 py-[2px] rounded-full border bg-[var(--ws-accent)]/10 text-[var(--ws-accent)] border-[var(--ws-accent)]/20">
                       {p.type}
                     </span>
                   </div>
@@ -589,7 +581,7 @@ export default function ProjectDetailPage({
                     <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-0.5">
                       Client
                     </div>
-                    <span className="text-[12px] text-gray-3">{clientName}</span>
+                    <span className="text-[12px] text-gray-4">{clientName}</span>
                   </div>
                   <div>
                     <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-0.5">
@@ -603,7 +595,7 @@ export default function ProjectDetailPage({
                     <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-0.5">
                       Value
                     </div>
-                    <span className="font-display text-[18px] font-bold text-yellow">
+                    <span className="font-display text-[18px] font-bold text-[var(--ws-accent)]">
                       KES {(p.value || 0).toLocaleString()}
                     </span>
                   </div>
@@ -611,7 +603,7 @@ export default function ProjectDetailPage({
                     <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-0.5">
                       Created
                     </div>
-                    <span className="text-[12px] text-gray-3">
+                    <span className="text-[12px] text-gray-4">
                       {formatDate(p.created_at)}
                     </span>
                   </div>
@@ -626,11 +618,11 @@ export default function ProjectDetailPage({
                   <div className="space-y-2.5">
                     {data.members.map((m) => (
                       <div key={m.id} className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-yellow flex items-center justify-center text-[9px] font-bold text-black flex-shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-[var(--ws-accent)] flex items-center justify-center text-[9px] font-bold text-[var(--ws-text)] flex-shrink-0">
                           {memberInitials(m)}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[11px] text-white truncate">
+                          <div className="text-[11px] text-[var(--ws-text)] truncate">
                             {memberName(m)}
                           </div>
                           <div className="text-[9px] text-gray-5 uppercase font-mono">
@@ -681,7 +673,7 @@ export default function ProjectDetailPage({
                           </div>
                           <div className="text-[11px] text-gray-5 mt-0.5 flex items-center gap-2">
                             {category && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow/10 text-yellow">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--ws-accent)]/10 text-[var(--ws-accent)]">
                                 {category.label}
                               </span>
                             )}
@@ -722,8 +714,8 @@ export default function ProjectDetailPage({
                 {data.research.map((rp) => (
                   <div key={rp.id} className="pm-dash-card p-5">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-yellow/10 flex items-center justify-center">
-                        <BookOpen size={14} className="text-yellow" />
+                      <div className="w-8 h-8 rounded-lg bg-[var(--ws-accent)]/10 flex items-center justify-center">
+                        <BookOpen size={14} className="text-[var(--ws-accent)]" />
                       </div>
                       <div>
                         <div className="font-display text-[14px] font-semibold">
@@ -745,7 +737,7 @@ export default function ProjectDetailPage({
                             <span className="text-[10px] text-gray-5 uppercase font-mono tracking-wider">
                               {kpi.label}
                             </span>
-                            <span className="text-[16px] font-display font-bold text-yellow mt-1">
+                            <span className="text-[16px] font-display font-bold text-[var(--ws-accent)] mt-1">
                               {kpi.value}
                             </span>
                           </div>
@@ -758,7 +750,7 @@ export default function ProjectDetailPage({
                         <h4 className="text-[11px] text-gray-5 uppercase font-mono tracking-wider mb-2">
                           Summary
                         </h4>
-                        <p className="text-[12px] text-gray-3 leading-relaxed">
+                        <p className="text-[12px] text-gray-4 leading-relaxed">
                           {rp.metadata.summary}
                         </p>
                       </div>
@@ -781,12 +773,12 @@ export default function ProjectDetailPage({
                                   : 0;
                               return (
                                 <div key={i} className="flex items-center gap-3">
-                                  <span className="text-[11px] text-gray-3 w-32 truncate text-right">
+                                  <span className="text-[11px] text-gray-4 w-32 truncate text-right">
                                     {item.label}
                                   </span>
-                                  <div className="flex-1 h-4 bg-black-4 rounded overflow-hidden">
+                                  <div className="flex-1 h-4 bg-[var(--ws-bg)] rounded overflow-hidden">
                                     <div
-                                      className="h-full bg-yellow rounded"
+                                      className="h-full bg-[var(--ws-accent)] rounded"
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
@@ -818,12 +810,12 @@ export default function ProjectDetailPage({
                 {data.deliverables.map((d) => (
                   <div
                     key={d.id}
-                    className="flex items-center justify-between py-3 px-4 border-b border-[#1E1E1E] last:border-0 hover:bg-white/[0.02] transition-colors rounded"
+                    className="flex items-center justify-between py-3 px-4 border-b border-[var(--ws-border)] last:border-0 hover:bg-[var(--ws-bg)] transition-colors rounded"
                   >
                     <div className="flex items-center gap-3">
                       <FileText size={16} className="text-gray-5 shrink-0" />
                       <div>
-                        <div className="text-[12px] font-semibold text-white">
+                        <div className="text-[12px] font-semibold text-[var(--ws-text)]">
                           {d.title}
                         </div>
                         <div className="text-[10px] text-gray-5 mt-0.5">
@@ -845,11 +837,11 @@ export default function ProjectDetailPage({
                       <button
                         onClick={() => toggleVisible(d.id, d.visible_to_client)}
                         disabled={togglingVisibility === d.id}
-                        className="text-[10px] flex items-center gap-1 hover:text-white transition-colors cursor-pointer disabled:opacity-40"
+                        className="text-[10px] flex items-center gap-1 hover:text-[var(--ws-text)] transition-colors cursor-pointer disabled:opacity-40"
                         title={d.visible_to_client ? "Visible to client — click to hide" : "Hidden from client — click to show"}
                       >
                         {togglingVisibility === d.id ? (
-                          <Loader2 size={12} className="animate-spin text-yellow" />
+                          <Loader2 size={12} className="animate-spin text-[var(--ws-accent)]" />
                         ) : d.visible_to_client ? (
                           <Eye size={12} className="text-teal" />
                         ) : (
@@ -860,7 +852,7 @@ export default function ProjectDetailPage({
                         <a
                           href={`data:application/pdf;base64,${d.pdf_base64}`}
                           download={`${d.title}.pdf`}
-                          className="text-[10px] text-yellow flex items-center gap-1 hover:text-white transition-colors"
+                          className="text-[10px] text-[var(--ws-accent)] flex items-center gap-1 hover:text-[var(--ws-text)] transition-colors"
                           title="Download PDF"
                         >
                           <Download size={12} /> PDF
@@ -898,7 +890,7 @@ export default function ProjectDetailPage({
                     <div key={group}>
                       <h4 className="text-[11px] text-gray-5 uppercase font-mono tracking-wider mb-3 flex items-center gap-2">
                         {TASK_GROUP_LABELS[group]}
-                        <span className="text-[9px] bg-white/5 px-1.5 py-0.5 rounded-full">
+                        <span className="text-[9px] bg-[var(--ws-border)] px-1.5 py-0.5 rounded-full">
                           {tasks.length}
                         </span>
                       </h4>
@@ -906,26 +898,26 @@ export default function ProjectDetailPage({
                         {tasks.map((t) => (
                           <div
                             key={t.id}
-                            className="flex items-center gap-3 py-2.5 px-3 border-b border-[#1E1E1E] last:border-0 hover:bg-white/[0.02] transition-colors rounded"
+                            className="flex items-center gap-3 py-2.5 px-3 border-b border-[var(--ws-border)] last:border-0 hover:bg-[var(--ws-bg)] transition-colors rounded"
                           >
                             <button
                               onClick={() => handleToggleTask(t)}
                               disabled={togglingTask === t.id}
                               className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer ${
                                 t.status === "done" || t.status === "completed"
-                                  ? "bg-yellow border-yellow"
-                                  : "border-[#444] hover:border-yellow"
+                                  ? "bg-[var(--ws-accent)] border-[var(--ws-accent)]"
+                                  : "border-[var(--ws-border)] hover:border-[var(--ws-accent)]"
                               }`}
                               title={`Mark as ${toggleTaskStatus(t.status).replace(/_/g, " ")}`}
                             >
                               {(t.status === "done" ||
                                 t.status === "completed") && (
-                                <Check size={11} className="text-black" />
+                                <Check size={11} className="text-white" />
                               )}
                               {togglingTask === t.id && (
                                 <Loader2
                                   size={11}
-                                  className="animate-spin text-black"
+                                  className="animate-spin text-white"
                                 />
                               )}
                             </button>
@@ -934,7 +926,7 @@ export default function ProjectDetailPage({
                                 className={`text-[12px] ${
                                   t.status === "done" || t.status === "completed"
                                     ? "text-gray-5 line-through"
-                                    : "text-white"
+                                    : "text-[var(--ws-text)]"
                                 }`}
                               >
                                 {t.title}
@@ -982,18 +974,18 @@ export default function ProjectDetailPage({
               </div>
             ) : (
               <div className="relative max-w-2xl">
-                <div className="absolute left-[17px] top-3 bottom-3 w-px bg-[#2A2A2A]" />
+                <div className="absolute left-[17px] top-3 bottom-3 w-px bg-[var(--ws-border)]" />
                 <div className="space-y-0">
                   {sortedMilestones.map((m, i) => {
                     const isLast = i === sortedMilestones.length - 1;
                     return (
                       <div key={m.id} className="flex gap-4">
                         <div className="flex flex-col items-center">
-                          <div className="relative z-10 bg-[#0D0D0D] p-0.5 rounded-full">
+                          <div className="relative z-10 bg-[var(--ws-surface)] p-0.5 rounded-full">
                             {statusDot(m.status)}
                           </div>
                           {!isLast && (
-                            <div className="flex-1 w-px bg-[#2A2A2A]" />
+                            <div className="flex-1 w-px bg-[var(--ws-border)]" />
                           )}
                         </div>
                         <div className={`pb-6 flex-1`}>
@@ -1005,8 +997,8 @@ export default function ProjectDetailPage({
                                   : m.status === "cancelled"
                                     ? "text-red"
                                     : m.status === "in_progress"
-                                      ? "text-yellow"
-                                      : "text-gray-3"
+                                      ? "text-[var(--ws-accent)]"
+                                      : "text-gray-4"
                               }`}
                             >
                               {m.title}

@@ -68,7 +68,7 @@ export default async function ServicePage({
         <div className="site-container pt-28 md:pt-36 pb-12 md:pb-16">
           <div className="pm-eyebrow mb-3 md:mb-4">{service.name}</div>
           <h1 className="pm-hero-title mb-6 md:mb-8">{service.tagline}</h1>
-          <p className="pm-hero-sub max-w-[560px]">
+          <p className="pm-hero-sub max-w-140">
             {service.desc}
           </p>
         </div>
@@ -79,7 +79,7 @@ export default async function ServicePage({
         <div className="site-container section">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20">
             <div>
-              <div className="pm-service-icon !mb-6 md:!mb-8">
+              <div className="pm-service-icon mb-6! md:mb-8!">
                 <IconComponent className="w-6 h-6 text-black" />
               </div>
               <h2 className="pm-section-title mb-4 md:mb-6">Overview</h2>
@@ -87,7 +87,7 @@ export default async function ServicePage({
             </div>
             <div className="flex flex-col gap-8">
               <div>
-                <div className="pm-eyebrow !text-dimmer mb-4 md:mb-6">
+                <div className="pm-eyebrow text-dimmer! mb-4 md:mb-6">
                   <Users className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                   Who this is for
                 </div>
@@ -101,7 +101,7 @@ export default async function ServicePage({
                 </ul>
               </div>
               <div>
-                <div className="pm-eyebrow !text-dimmer mb-4 md:mb-6">
+                <div className="pm-eyebrow text-dimmer! mb-4 md:mb-6">
                   <Layers className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                   What&apos;s included
                 </div>
@@ -133,7 +133,7 @@ export default async function ServicePage({
             <h2 className="pm-section-title mb-6">
               Browse our <span className="pm-accent">inventory</span>
             </h2>
-            <p className="pm-hero-sub max-w-[560px] mb-8">
+            <p className="pm-hero-sub max-w-140 mb-8">
               Explore our media sites across Kenya. Yellow pins are available, grey are booked.
             </p>
             <InventoryMapWrapper />
@@ -164,7 +164,7 @@ export default async function ServicePage({
       {/* ═══ GET STARTED ════════════════════════════ */}
       <section className="bg-transparent" style={{ color: "var(--pm-black)" }}>
         <div className="site-container section">
-          <div className="max-w-[500px] mx-auto text-center">
+          <div className="max-w-125 mx-auto text-center">
             <div
               className="pm-eyebrow mb-3 md:mb-4"
               style={{ color: "var(--pm-amber)" }}

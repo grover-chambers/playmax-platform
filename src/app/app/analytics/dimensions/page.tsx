@@ -114,8 +114,8 @@ export default function DimensionsPage() {
                   )}
                   {paginatedBranches.map((b) => (
                     <tr key={b.id}>
-                      <td className="pm-dash-tbl-td font-mono text-white">{b.code}</td>
-                      <td className="pm-dash-tbl-td text-white font-medium">{b.name}</td>
+                      <td className="pm-dash-tbl-td font-mono text-[var(--ws-text)]">{b.code}</td>
+                      <td className="pm-dash-tbl-td text-[var(--ws-text)] font-medium">{b.name}</td>
                       <td className="pm-dash-tbl-td">{b.city ?? "—"}</td>
                       <td className="pm-dash-tbl-td">{b.region ?? "—"}</td>
                       <td className="pm-dash-tbl-td">
@@ -161,7 +161,7 @@ export default function DimensionsPage() {
                   )}
                   {paginatedCategories.map((c) => (
                     <tr key={c.id}>
-                      <td className="pm-dash-tbl-td text-white font-medium">{c.name}</td>
+                      <td className="pm-dash-tbl-td text-[var(--ws-text)] font-medium">{c.name}</td>
                       <td className="pm-dash-tbl-td">{c.description ?? "—"}</td>
                     </tr>
                   ))}
@@ -195,7 +195,7 @@ export default function DimensionsPage() {
                   )}
                   {paginatedManufacturers.map((m) => (
                     <tr key={m.id}>
-                      <td className="pm-dash-tbl-td text-white font-medium">{m.name}</td>
+                      <td className="pm-dash-tbl-td text-[var(--ws-text)] font-medium">{m.name}</td>
                       <td className="pm-dash-tbl-td font-mono">{m.code ?? "—"}</td>
                     </tr>
                   ))}
@@ -230,7 +230,7 @@ export default function DimensionsPage() {
                   )}
                   {paginatedSuppliers.map((s) => (
                     <tr key={s.id}>
-                      <td className="pm-dash-tbl-td text-white font-medium">{s.name}</td>
+                      <td className="pm-dash-tbl-td text-[var(--ws-text)] font-medium">{s.name}</td>
                       <td className="pm-dash-tbl-td font-mono">{s.code ?? "—"}</td>
                       <td className="pm-dash-tbl-td">
                         <span className={`pm-dash-bdg ${s.active ? "pm-dash-bdg-g" : "pm-dash-bdg-r"}`}>
@@ -274,8 +274,8 @@ export default function DimensionsPage() {
                   )}
                   {paginatedProducts.map((p) => (
                     <tr key={p.id}>
-                      <td className="pm-dash-tbl-td font-mono text-white">{p.stock_code}</td>
-                      <td className="pm-dash-tbl-td text-white font-medium">{p.name}</td>
+                      <td className="pm-dash-tbl-td font-mono text-[var(--ws-text)]">{p.stock_code}</td>
+                      <td className="pm-dash-tbl-td text-[var(--ws-text)] font-medium">{p.name}</td>
                       <td className="pm-dash-tbl-td">{p.category_name ?? "—"}</td>
                       <td className="pm-dash-tbl-td">{p.manufacturer_name ?? "—"}</td>
                       <td className="pm-dash-tbl-td">{p.sub_category ?? "—"}</td>
@@ -297,7 +297,7 @@ export default function DimensionsPage() {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content space-y-5">
       <PageHeader
         title="Dimensions"
         subtitle="Manage branches, categories, manufacturers, and products"
@@ -305,22 +305,42 @@ export default function DimensionsPage() {
 
       {/* ── KPI row ── */}
       {!loading && (
-        <div className="pm-dash-krow pm-dash-krow-4">
-          <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">{branches.length}</div>
-            <div className="pm-dash-kl">Branches</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3">
+              <div className="ws-stat-icon"><Store className="w-4 h-4 text-teal" /></div>
+              <div>
+                <div className="ws-stat-value">{branches.length}</div>
+                <div className="ws-stat-label">Branches</div>
+              </div>
+            </div>
           </div>
-          <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">{categories.length}</div>
-            <div className="pm-dash-kl">Categories</div>
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3">
+              <div className="ws-stat-icon"><Tags className="w-4 h-4 text-blue" /></div>
+              <div>
+                <div className="ws-stat-value">{categories.length}</div>
+                <div className="ws-stat-label">Categories</div>
+              </div>
+            </div>
           </div>
-          <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">{manufacturers.length}</div>
-            <div className="pm-dash-kl">Manufacturers</div>
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3">
+              <div className="ws-stat-icon"><Building2 className="w-4 h-4 text-green" /></div>
+              <div>
+                <div className="ws-stat-value">{manufacturers.length}</div>
+                <div className="ws-stat-label">Manufacturers</div>
+              </div>
+            </div>
           </div>
-          <div className="pm-dash-kcard">
-            <div className="pm-dash-kn">{products.length}</div>
-            <div className="pm-dash-kl">Products</div>
+          <div className="ws-stat-card">
+            <div className="flex items-center gap-3">
+              <div className="ws-stat-icon"><Package className="w-4 h-4 text-red" /></div>
+              <div>
+                <div className="ws-stat-value">{products.length}</div>
+                <div className="ws-stat-label">Products</div>
+              </div>
+            </div>
           </div>
         </div>
       )}

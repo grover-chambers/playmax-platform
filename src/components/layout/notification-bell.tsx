@@ -156,7 +156,7 @@ export default function NotificationBell() {
                       <span className="font-medium text-white">{n.title}</span>
                       {n.message && <span className="block text-gray-5 mt-0.5">{n.message}</span>}
                     </div>
-                    <div className="text-[9px] font-mono text-gray-6 mt-1">{formatTimeAgo(n.created_at)}</div>
+                    <div className="text-[9px] font-mono text-gray-4 mt-1">{formatTimeAgo(n.created_at)}</div>
                   </div>
                   {!n.read && (
                     <div className="w-2 h-2 rounded-full bg-yellow flex-shrink-0 mt-1.5" />

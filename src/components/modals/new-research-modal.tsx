@@ -84,7 +84,7 @@ export default function NewResearchModal({ open, onClose, onCreated }: NewResear
             Project Title
           </label>
           <input
-            className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40"
+            className="w-full ws-input rounded-lg placeholder-gray-5"
             placeholder="e.g. Q3 Market Sentiment Analysis"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -97,7 +97,7 @@ export default function NewResearchModal({ open, onClose, onCreated }: NewResear
             Client
           </label>
           <select
-            className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white outline-none focus:border-yellow/40"
+            className="w-full ws-input rounded-lg"
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
             required
@@ -127,8 +127,8 @@ export default function NewResearchModal({ open, onClose, onCreated }: NewResear
                 type="button"
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-medium border transition-colors ${
                   type === t.value
-                    ? "bg-yellow/10 text-yellow border-yellow/30"
-                    : "bg-black text-gray-4 border-[#252525] hover:border-gray-6"
+                    ? "bg-[var(--ws-accent)]/10 text-[var(--ws-accent)] border-[var(--ws-accent)]/20"
+                    : "bg-[var(--ws-surface)] text-gray-4 border-[var(--ws-border)] hover:border-gray-4"
                 }`}
                 onClick={() => setType(t.value)}
               >
@@ -145,7 +145,7 @@ export default function NewResearchModal({ open, onClose, onCreated }: NewResear
             </label>
             <input
               type="number"
-              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-gray-5 outline-none focus:border-yellow/40"
+              className="w-full ws-input rounded-lg placeholder-gray-5"
               placeholder="0"
               value={value}
               onChange={(e) => setValue(e.target.value)}
@@ -157,7 +157,7 @@ export default function NewResearchModal({ open, onClose, onCreated }: NewResear
             </label>
             <input
               type="date"
-              className="w-full bg-black border border-[#252525] rounded-lg px-3 py-2 text-[13px] text-white outline-none focus:border-yellow/40"
+              className="w-full ws-input rounded-lg"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
             />

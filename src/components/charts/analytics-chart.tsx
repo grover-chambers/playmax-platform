@@ -35,13 +35,13 @@ export interface ChartProps {
 }
 
 export function AnalyticsChart({ type, labels, datasets, rawData, height = 250 }: ChartProps) {
-  const gridConfig = { grid: { color: "rgba(255,255,255,0.06)" }, ticks: { color: "#aaa", font: { size: 10 } } };
+  const gridConfig = { grid: { color: "rgba(46,51,70,0.08)" }, ticks: { color: "#70716C", font: { size: 10 } } };
 
   const opt = (extra?: Record<string, unknown>) => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: "#ccc", font: { size: 11 }, boxWidth: 12, padding: 12 } },
+      legend: { labels: { color: "#70716C", font: { size: 11 }, boxWidth: 12, padding: 12 } },
     },
     ...extra,
   });
@@ -122,7 +122,7 @@ export function AnalyticsChart({ type, labels, datasets, rawData, height = 250 }
         pointHoverRadius: 8,
       })),
     };
-    return <Scatter data={data} options={opt({ scales: { x: { ...gridConfig, title: { display: true, text: "Value", color: "#aaa" } }, y: { ...gridConfig, title: { display: true, text: "Value", color: "#aaa" } } } })} height={height} />;
+    return <Scatter data={data} options={opt({ scales: { x: { ...gridConfig, title: { display: true, text: "Value", color: "#70716C" } }, y: { ...gridConfig, title: { display: true, text: "Value", color: "#70716C" } } } })} height={height} />;
   }
 
   if (type === "radar") {
@@ -142,7 +142,7 @@ export function AnalyticsChart({ type, labels, datasets, rawData, height = 250 }
   // Table-based chart types (table, table_flag, table_trend, table_bar)
   if (["table", "table_flag", "table_trend", "table_bar"].includes(type)) {
     if (!rawData || rawData.length === 0) {
-      return <div style={{ color: "#888", fontSize: 13, textAlign: "center", padding: 24 }}>No data</div>;
+      return <div style={{ color: "#9B9A94", fontSize: 13, textAlign: "center", padding: 24 }}>No data</div>;
     }
     const keys = Object.keys(rawData[0]);
     const flagKey = keys.find(k => k.toLowerCase().includes("flag") || k.toLowerCase().includes("trend"));
@@ -150,23 +150,23 @@ export function AnalyticsChart({ type, labels, datasets, rawData, height = 250 }
       <div style={{ overflowX: "auto", fontSize: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ borderBottom: "2px solid #333" }}>
-              {keys.map(k => <th key={k} style={{ textAlign: "left", padding: "8px 10px", fontWeight: 600, color: "#aaa", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k.replace(/_/g, " ")}</th>)}
+            <tr style={{ borderBottom: "2px solid #E8E2CC" }}>
+              {keys.map(k => <th key={k} style={{ textAlign: "left", padding: "8px 10px", fontWeight: 600, color: "#6B6B65", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k.replace(/_/g, " ")}</th>)}
             </tr>
           </thead>
           <tbody>
             {rawData.slice(0, 25).map((row, i) => {
               const flagVal = flagKey ? String(row[flagKey] ?? "") : "";
-              const rowColor = flagVal === "SHORTAGE" || flagVal === "RISING" ? "#3b1a1a" : flagVal === "OVERSTOCK" || flagVal === "FALLING" ? "#3b3510" : flagVal === "BALANCED" || flagVal === "STABLE" ? "#143d1a" : "transparent";
+              const rowColor = flagVal === "SHORTAGE" || flagVal === "RISING" ? "#FEF2F2" : flagVal === "OVERSTOCK" || flagVal === "FALLING" ? "#FFFBEB" : flagVal === "BALANCED" || flagVal === "STABLE" ? "#F0FDF4" : "transparent";
               return (
-                <tr key={i} style={{ borderBottom: "1px solid #222", background: rowColor || "transparent" }}>
+                <tr key={i} style={{ borderBottom: "1px solid #E8E2CC", background: rowColor || "transparent" }}>
                   {keys.map(k => (
-                    <td key={k} style={{ padding: "6px 10px", color: "#ccc" }}>
+                    <td key={k} style={{ padding: "6px 10px", color: "#2E3346" }}>
                       {k === "flag" || k === "trend" || k === "gap" || k === "share_pct" || k === "margin_pct"
                         ? <span style={{
                             fontWeight: 600,
                             color: typeof row[k] === "number" && (row[k] as number) < 0 ? "#EF4444"
-                              : typeof row[k] === "number" && (row[k] as number) > 0 ? "#22C55E" : "#ccc",
+                              : typeof row[k] === "number" && (row[k] as number) > 0 ? "#22C55E" : "#2E3346",
                           }}>{String(row[k] ?? "")}</span>
                         : String(row[k] ?? "")
                       }
@@ -177,11 +177,11 @@ export function AnalyticsChart({ type, labels, datasets, rawData, height = 250 }
             })}
           </tbody>
         </table>
-        {rawData.length > 25 && <div style={{ textAlign: "center", padding: 8, color: "#888", fontSize: 11 }}>Showing 25 of {rawData.length} rows</div>}
+        {rawData.length > 25 && <div style={{ textAlign: "center", padding: 8, color: "#9B9A94", fontSize: 11 }}>Showing 25 of {rawData.length} rows</div>}
       </div>
     );
   }
 
   // Fallback
-  return <div style={{ color: "#888", fontSize: 13, textAlign: "center", padding: 24 }}>Chart type &ldquo;{type}&rdquo; not yet implemented</div>;
+  return <div style={{ color: "#9B9A94", fontSize: 13, textAlign: "center", padding: 24 }}>Chart type &ldquo;{type}&rdquo; not yet implemented</div>;
 }
