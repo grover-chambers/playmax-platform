@@ -26,6 +26,7 @@ import { ANALYTICS_COLORS, CHART_COLORS } from "@/lib/analytics-colors";
 import { competitorLabel, competitorColor } from "@/lib/competitor-utils";
 import { KpiSkeleton, CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import Modal from "@/components/ui/modal";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -118,6 +119,14 @@ function fmtNum(n: number | null | undefined): string {
   return Math.round(n ?? 0).toLocaleString("en-GB");
 }
 
+function fmtExact(n: number | null | undefined): string {
+  return `KES ${Math.round(n ?? 0).toLocaleString("en-GB")}`;
+}
+
+function fmtPrice(n: number | null | undefined): string {
+  return `KES ${Number(n ?? 0).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function fmtPct(n: number | null | undefined): string {
   return `${(n ?? 0).toFixed(1)}%`;
 }
@@ -139,7 +148,7 @@ function TrendArrow({ value, label }: { value: number | null; label?: string }) 
 function HorizontalBar({ value, max, color, height = 18 }: { value: number; max: number; color: string; height?: number }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
-    <div className="w-full rounded overflow-hidden" style={{ height, background: "#1A1A1A" }}>
+    <div className="w-full rounded overflow-hidden" style={{ height, background: "var(--ws-border,#e5e5e5)" }}>
       <div
         className="h-full rounded transition-all duration-500"
         style={{ width: `${pct}%`, background: color }}
@@ -194,6 +203,7 @@ function DonutChart({ segments, size = 140, strokeWidth = 16 }: {
 
 function ReportViewer({ report }: { report: SavedReport }) {
   const reportCategory = findCategory(report.report_type);
+  const [selectedRow, setSelectedRow] = useState<Record<string, unknown> | null>(null);
 
   const gd = report.generated_data as { data?: Record<string, unknown>[]; chart_type?: string } | undefined;
   const rawData = gd?.data ?? [];
@@ -202,7 +212,7 @@ function ReportViewer({ report }: { report: SavedReport }) {
     : null;
 
   return (
-    <div className="pm-dash-card p-5">
+    <div className="pm-dash-card p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="font-display text-[15px] font-semibold">{report.name}</div>
@@ -244,7 +254,11 @@ function ReportViewer({ report }: { report: SavedReport }) {
                 </thead>
                 <tbody>
                   {rawData.slice(0, 25).map((row, i) => (
-                    <tr key={i} className="border-b border-[var(--ws-border,#e5e5e5)] hover:bg-white/2">
+                    <tr
+                      key={i}
+                      onClick={() => setSelectedRow(row)}
+                      className="border-b border-[var(--ws-border,#e5e5e5)] hover:bg-[var(--ws-bg)] transition-colors cursor-pointer"
+                    >
                       {Object.values(row).map((v, j) => (
                         <td key={j} className={`px-2 py-1.5 ${typeof v === "number" ? "font-mono text-right" : ""}`}
                           style={{ color: typeof v === "number" ? "#ccc" : "#999" }}>
@@ -279,6 +293,35 @@ function ReportViewer({ report }: { report: SavedReport }) {
             : "This report has been saved but does not yet contain generated data."}
         </div>
       )}
+
+      {/* Row detail modal */}
+      <Modal open={!!selectedRow} onClose={() => setSelectedRow(null)} title="Row Details">
+        {selectedRow && (
+          <div className="space-y-2.5">
+            {Object.entries(selectedRow).map(([k, v]) => (
+              <div
+                key={k}
+                className="flex items-center justify-between gap-4 border-b border-[var(--ws-border,#e5e5e5)] pb-2.5 last:border-0 last:pb-0"
+              >
+                <span className="text-[10px] uppercase tracking-wider text-gray-5 font-mono">
+                  {k.replace(/_/g, " ")}
+                </span>
+                <span
+                  className={`text-[13px] font-medium text-right max-w-[60%] break-words ${
+                    typeof v === "number" ? "font-mono text-[var(--ws-text,#1A1C23)]" : "text-gray-3"
+                  }`}
+                >
+                  {typeof v === "number"
+                    ? Number.isInteger(v)
+                      ? v.toLocaleString("en-GB")
+                      : v.toFixed(2)
+                    : String(v ?? "—")}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
@@ -302,6 +345,8 @@ export default function PortalAnalyticsPage() {
   const [allCategories, setAllCategories] = useState<{ id: string; name: string }[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [selectedCategory, setSelectedCategory] = useState<CategoryPerf | null>(null);
+  const [selectedPricing, setSelectedPricing] = useState<PricingPoint | null>(null);
 
   const fetchData = async () => {
     try {
@@ -599,6 +644,12 @@ export default function PortalAnalyticsPage() {
   const maxLeaderboardSales = Math.max(...leaderboardCompetitors.map((c) => c.total_sales), 1);
 
   const activeReport = selectedReport ? reports.find((r) => r.id === selectedReport) : null;
+
+  const catShare = (cat: CategoryPerf) => (s.totalSales > 0 ? (cat.total_sales / s.totalSales) * 100 : 0);
+  const catRank = (cat: CategoryPerf) => categories.findIndex((c) => c.category === cat.category) + 1;
+  const marginHealth = (m: number) => (m >= 15 ? "text-green" : m >= 8 ? "text-yellow" : "text-red");
+  const marginLabel = (m: number) => (m >= 15 ? "Healthy" : m >= 8 ? "Moderate" : "Low margin");
+  const marginHex = (m: number) => (m >= 15 ? "#22C55E" : m >= 8 ? "#F4C300" : "#EF4444");
 
   return (
     <div className="page-content">
@@ -1113,7 +1164,11 @@ export default function PortalAnalyticsPage() {
                   {categories.map((cat) => {
                     const share = s.totalSales > 0 ? (cat.total_sales / s.totalSales) * 100 : 0;
                     return (
-                      <tr key={cat.category} className="border-b border-[var(--ws-border,#e5e5e5)] hover:bg-white/2 transition-colors">
+                      <tr
+                        key={cat.category}
+                        onClick={() => setSelectedCategory(cat)}
+                        className="border-b border-[var(--ws-border,#e5e5e5)] hover:bg-[var(--ws-bg)] transition-colors cursor-pointer"
+                      >
                         <td className="px-3 py-2.5 text-[12px] font-semibold text-gray-3">{cat.category}</td>
                         <td className="px-3 py-2.5 text-[12px] font-display font-bold" style={{ color: clientColor }}>
                           {fmt(cat.total_sales)}
@@ -1292,7 +1347,20 @@ export default function PortalAnalyticsPage() {
                         {(maizeData.pricing as Array<Record<string, unknown>>).slice(0, 10).map((p, i) => {
                           const margin = Number(p.margin_pct);
                           return (
-                            <tr key={i} className="border-b border-[var(--ws-border,#e5e5e5)]">
+                            <tr
+                              key={i}
+                              onClick={() =>
+                                setSelectedPricing({
+                                  product: String(p.product),
+                                  stock_code: String(p.stock_code ?? ""),
+                                  branch: String(p.branch ?? ""),
+                                  selling_price: Number(p.selling_price),
+                                  standard_cost: Number(p.standard_cost),
+                                  margin_pct: margin,
+                                })
+                              }
+                              className="border-b border-[var(--ws-border,#e5e5e5)] hover:bg-[var(--ws-bg)] transition-colors cursor-pointer"
+                            >
                               <td className="px-2 py-2 text-gray-3">{String(p.product)}</td>
                               <td className="px-2 py-2 text-gray-5">{String(p.branch)}</td>
                               <td className="px-2 py-2 font-mono text-gray-3">KES {Number(p.selling_price).toFixed(0)}</td>
@@ -1370,6 +1438,132 @@ export default function PortalAnalyticsPage() {
           )}
         </>
       )}
+
+      {/* ── Category detail modal ───────────────────────────── */}
+      <Modal open={!!selectedCategory} onClose={() => setSelectedCategory(null)} title="Category Details">
+        {selectedCategory && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="font-display text-[16px] font-bold">{selectedCategory.category}</div>
+                <div className="text-[11px] text-gray-5 mt-0.5">Revenue share of all tracked sales</div>
+              </div>
+              <span
+                className="text-[10px] font-mono px-2.5 py-1 rounded-full shrink-0"
+                style={{ background: `${clientColor}15`, color: clientColor }}
+              >
+                #{catRank(selectedCategory)} of {categories.length} categories
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-[var(--ws-border,#e5e5e5)] bg-[var(--ws-bg,#f5f5f2)] p-3">
+                <div className="text-[10px] uppercase tracking-wider text-gray-5 font-mono">Revenue</div>
+                <div className="text-[17px] font-display font-bold mt-1" style={{ color: clientColor }}>
+                  {fmtExact(selectedCategory.total_sales)}
+                </div>
+              </div>
+              <div className="rounded-xl border border-[var(--ws-border,#e5e5e5)] bg-[var(--ws-bg,#f5f5f2)] p-3">
+                <div className="text-[10px] uppercase tracking-wider text-gray-5 font-mono">Units Sold</div>
+                <div className="text-[17px] font-display font-bold mt-1">{fmtNum(selectedCategory.total_units)}</div>
+              </div>
+              <div className="rounded-xl border border-[var(--ws-border,#e5e5e5)] bg-[var(--ws-bg,#f5f5f2)] p-3">
+                <div className="text-[10px] uppercase tracking-wider text-gray-5 font-mono">Avg Unit Price</div>
+                <div className="text-[17px] font-display font-bold mt-1">{fmtPrice(selectedCategory.avg_unit_price)}</div>
+              </div>
+              <div className="rounded-xl border border-[var(--ws-border,#e5e5e5)] bg-[var(--ws-bg,#f5f5f2)] p-3">
+                <div className="text-[10px] uppercase tracking-wider text-gray-5 font-mono">Products</div>
+                <div className="text-[17px] font-display font-bold mt-1">{selectedCategory.product_count}</div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5 text-[11px]">
+                <span className="text-gray-5">Revenue share</span>
+                <span className="font-mono font-semibold">{fmtPct(catShare(selectedCategory))}</span>
+              </div>
+              <div className="w-full h-2.5 rounded bg-[var(--ws-border,#e5e5e5)] overflow-hidden">
+                <div
+                  className="h-full rounded transition-all duration-500"
+                  style={{ width: `${Math.min(100, catShare(selectedCategory))}%`, background: clientColor }}
+                />
+              </div>
+            </div>
+
+            <div className="text-[12px] text-gray-5 leading-relaxed border-t border-[var(--ws-border,#e5e5e5)] pt-3">
+              {selectedCategory.category} generated {fmtExact(selectedCategory.total_sales)} from{" "}
+              {fmtNum(selectedCategory.total_units)} units across {selectedCategory.product_count} products —{" "}
+              {fmtPct(catShare(selectedCategory))} of all portal-tracked revenue.
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Pricing detail modal ────────────────────────────── */}
+      <Modal open={!!selectedPricing} onClose={() => setSelectedPricing(null)} title="Pricing Details">
+        {selectedPricing && (
+          <div className="space-y-5">
+            <div>
+              <div className="font-display text-[16px] font-bold">{selectedPricing.product}</div>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {selectedPricing.stock_code && (
+                  <span className="text-[11px] font-mono text-gray-5">{selectedPricing.stock_code}</span>
+                )}
+                <span className="text-[10px] px-2 py-0.5 rounded-full border border-[var(--ws-border,#e5e5e5)] text-gray-5">
+                  {selectedPricing.branch || "All branches"}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-[var(--ws-border,#e5e5e5)] bg-[var(--ws-bg,#f5f5f2)] p-3">
+                <div className="text-[10px] uppercase tracking-wider text-gray-5 font-mono">Selling Price</div>
+                <div className="text-[17px] font-display font-bold mt-1">{fmtPrice(selectedPricing.selling_price)}</div>
+              </div>
+              <div className="rounded-xl border border-[var(--ws-border,#e5e5e5)] bg-[var(--ws-bg,#f5f5f2)] p-3">
+                <div className="text-[10px] uppercase tracking-wider text-gray-5 font-mono">Standard Cost</div>
+                <div className="text-[17px] font-display font-bold mt-1">{fmtPrice(selectedPricing.standard_cost)}</div>
+              </div>
+              <div className="rounded-xl border border-[var(--ws-border,#e5e5e5)] bg-[var(--ws-bg,#f5f5f2)] p-3">
+                <div className="text-[10px] uppercase tracking-wider text-gray-5 font-mono">Profit / Unit</div>
+                <div className="text-[17px] font-display font-bold mt-1 text-green">
+                  {fmtPrice(selectedPricing.selling_price - selectedPricing.standard_cost)}
+                </div>
+              </div>
+              <div className="rounded-xl border border-[var(--ws-border,#e5e5e5)] bg-[var(--ws-bg,#f5f5f2)] p-3">
+                <div className="text-[10px] uppercase tracking-wider text-gray-5 font-mono">Margin</div>
+                <div className={`text-[17px] font-display font-bold mt-1 ${marginHealth(selectedPricing.margin_pct)}`}>
+                  {fmtPct(selectedPricing.margin_pct)}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5 text-[11px]">
+                <span className="text-gray-5">Margin level</span>
+                <span className={`font-mono font-semibold ${marginHealth(selectedPricing.margin_pct)}`}>
+                  {marginLabel(selectedPricing.margin_pct)}
+                </span>
+              </div>
+              <div className="w-full h-2.5 rounded bg-[var(--ws-border,#e5e5e5)] overflow-hidden">
+                <div
+                  className="h-full rounded transition-all duration-500"
+                  style={{
+                    width: `${Math.min(100, selectedPricing.margin_pct)}%`,
+                    background: marginHex(selectedPricing.margin_pct),
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="text-[12px] text-gray-5 leading-relaxed border-t border-[var(--ws-border,#e5e5e5)] pt-3">
+              Sold at {fmtPrice(selectedPricing.selling_price)} against a standard cost of{" "}
+              {fmtPrice(selectedPricing.standard_cost)} leaves {fmtPrice(selectedPricing.selling_price - selectedPricing.standard_cost)}{" "}
+              per unit — {marginLabel(selectedPricing.margin_pct).toLowerCase()} margin.
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

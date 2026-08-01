@@ -64,8 +64,8 @@ export default function BookingsCalendar({ bookings }: BookingsCalendarProps) {
     cells.push(
       <div
         key={key}
-        className={`h-24 border border-[#1A1A1A] rounded-lg p-1.5 overflow-hidden transition-colors ${
-          isToday ? "border-teal/50 bg-teal/5" : "hover:border-[#333]"
+        className={`h-24 border border-[var(--ws-border)] rounded-lg p-1.5 overflow-hidden transition-colors ${
+          isToday ? "border-teal/50 bg-teal/5" : "hover:border-[var(--ws-accent)]"
         }`}
       >
         <div className={`text-[10px] font-mono mb-1 ${isToday ? "text-teal font-semibold" : "text-gray-5"}`}>
@@ -91,11 +91,11 @@ export default function BookingsCalendar({ bookings }: BookingsCalendarProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-1.5 rounded hover:bg-white/5 transition-colors">
+        <button onClick={prevMonth} className="p-1.5 rounded hover:bg-[var(--ws-bg)] transition-colors">
           <ChevronLeft size={16} className="text-gray-4" />
         </button>
         <span className="text-[14px] font-display font-semibold">{monthLabel}</span>
-        <button onClick={nextMonth} className="p-1.5 rounded hover:bg-white/5 transition-colors">
+        <button onClick={nextMonth} className="p-1.5 rounded hover:bg-[var(--ws-bg)] transition-colors">
           <ChevronRight size={16} className="text-gray-4" />
         </button>
       </div>

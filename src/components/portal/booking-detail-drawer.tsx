@@ -53,10 +53,10 @@ export default function BookingDetailDrawer({ booking, onClose }: BookingDetailD
   return (
     <>
       <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[#111] border-l border-[#2A2A2A] z-50 shadow-2xl overflow-y-auto">
-        <div className="sticky top-0 bg-[#111] border-b border-[#2A2A2A] px-5 py-4 flex items-center justify-between z-10">
-          <h2 className="font-display text-[15px] font-bold text-white">Booking Details</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--ws-surface)] border-l border-[var(--ws-border)] z-50 shadow-2xl overflow-y-auto">
+        <div className="sticky top-0 bg-[var(--ws-surface)] border-b border-[var(--ws-border)] px-5 py-4 flex items-center justify-between z-10">
+          <h2 className="font-display text-[15px] font-bold text-[var(--ws-text)]">Booking Details</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--ws-bg)] transition-colors">
             <X size={18} className="text-gray-4" />
           </button>
         </div>
@@ -67,7 +67,7 @@ export default function BookingDetailDrawer({ booking, onClose }: BookingDetailD
               <Calendar size={22} className="text-yellow" />
             </div>
             <div>
-              <div className="font-display text-[16px] font-bold text-white">
+              <div className="font-display text-[16px] font-bold text-[var(--ws-text)]">
                 {booking.inventory?.name || "Booking"}
               </div>
               <StatusBadge variant={mapStatus(booking.status)}>
@@ -91,7 +91,7 @@ export default function BookingDetailDrawer({ booking, onClose }: BookingDetailD
             </div>
           </div>
 
-          <div className="border-t border-[#2A2A2A] pt-4">
+          <div className="border-t border-[var(--ws-border)] pt-4">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] text-gray-5 uppercase tracking-wider">Duration</span>
               <span className="text-[13px] text-gray-3 font-mono">
@@ -107,16 +107,16 @@ export default function BookingDetailDrawer({ booking, onClose }: BookingDetailD
           </div>
 
           {booking.notes && (
-            <div className="border-t border-[#2A2A2A] pt-4">
+            <div className="border-t border-[var(--ws-border)] pt-4">
               <div className="text-[11px] text-gray-5 uppercase tracking-wider mb-2">Notes</div>
               <div className="text-[13px] text-gray-3 leading-relaxed">{booking.notes}</div>
             </div>
           )}
 
-          <div className="border-t border-[#2A2A2A] pt-4">
+          <div className="border-t border-[var(--ws-border)] pt-4">
             <button
               onClick={onClose}
-              className="w-full py-2.5 px-4 rounded-lg border border-[#2A2A2A] text-[12px] text-gray-3 hover:text-white hover:border-gray-5 transition-all"
+              className="w-full py-2.5 px-4 rounded-lg border border-[var(--ws-border)] text-[12px] text-gray-3 hover:text-[var(--ws-text)] hover:border-gray-5 transition-all"
             >
               Close
             </button>

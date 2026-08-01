@@ -154,7 +154,7 @@ export default function PortalInvoicesPage() {
                       {canPay(inv.status) && (
                         <button
                           onClick={() => setPayingInvoice(payingInvoice === inv.id ? null : inv.id)}
-                          className="px-2 py-1 text-[10px] font-medium text-teal hover:text-white border border-teal/30 rounded-lg hover:bg-teal/10 transition-colors"
+                          className="px-2 py-1 text-[10px] font-medium text-teal border border-teal/30 rounded-lg hover:bg-teal/10 transition-colors"
                           title="Pay with M-Pesa"
                         >
                           <Smartphone size={11} />

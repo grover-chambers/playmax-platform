@@ -104,7 +104,7 @@ export default function PortalProjectsPage() {
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="bg-black-3 rounded-full h-1.5 w-20 border border-[#1E1E1E]">
+                      <div className="bg-[var(--ws-bg)] rounded-full h-1.5 w-20 border border-[var(--ws-border)]">
                         <div
                           className="bg-teal rounded-full h-1.5"
                           style={{ width: `${p.progress}%` }}

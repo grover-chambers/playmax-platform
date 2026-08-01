@@ -941,18 +941,59 @@ h6 {
 
 /* Section spacing within workspace pages */
 .platform-shell .page-content {
-    padding: 16px;
+    padding: 14px;
 }
 .platform-shell .section-gap {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 .platform-shell .section-gap-lg {
-    margin-bottom: 28px;
+    margin-bottom: 14px;
 }
-@media (min-width: 768px) {
-    .platform-shell .page-content {
-        padding: 24px;
-    }
+
+/* ── Uniform 14px panel rhythm ─────────────────────────────
+   Panel-to-panel spacing and page-edge padding use 14px
+   everywhere across the platform (app, portal, workspace).
+   All layout-level margin/gap/space utilities resolve to
+   the same 14px value for a uniform grid. */
+.platform-shell .mb-3,
+.platform-shell .mb-4,
+.platform-shell .mb-5,
+.platform-shell .mb-6,
+.platform-workspace .mb-3,
+.platform-workspace .mb-4,
+.platform-workspace .mb-5,
+.platform-workspace .mb-6 {
+    margin-bottom: 14px;
+}
+.platform-shell .mt-3,
+.platform-shell .mt-4,
+.platform-shell .mt-5,
+.platform-shell .mt-6,
+.platform-workspace .mt-3,
+.platform-workspace .mt-4,
+.platform-workspace .mt-5,
+.platform-workspace .mt-6 {
+    margin-top: 14px;
+}
+.platform-shell .gap-3,
+.platform-shell .gap-4,
+.platform-shell .gap-5,
+.platform-shell .gap-6,
+.platform-workspace .gap-3,
+.platform-workspace .gap-4,
+.platform-workspace .gap-5,
+.platform-workspace .gap-6 {
+    gap: 14px;
+}
+.platform-shell .space-y-3 > :not([hidden]) ~ :not([hidden]),
+.platform-shell .space-y-4 > :not([hidden]) ~ :not([hidden]),
+.platform-shell .space-y-5 > :not([hidden]) ~ :not([hidden]),
+.platform-shell .space-y-6 > :not([hidden]) ~ :not([hidden]),
+.platform-workspace .space-y-3 > :not([hidden]) ~ :not([hidden]),
+.platform-workspace .space-y-4 > :not([hidden]) ~ :not([hidden]),
+.platform-workspace .space-y-5 > :not([hidden]) ~ :not([hidden]),
+.platform-workspace .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 14px;
 }
 
 /* Platform toolbar */
@@ -2794,8 +2835,8 @@ h6 {
     padding: 20px;
 }
 .platform-shell .pm-dash-krow {
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 14px;
+    margin-bottom: 14px;
 }
 .platform-shell .pm-dash-krow-3 {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

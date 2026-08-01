@@ -77,7 +77,7 @@ export default function PortalContentPage() {
                     <div className="text-[12px] text-gray-4 mt-1 line-clamp-2">{a.excerpt}</div>
                   )}
                   <div className="flex items-center gap-3 mt-2">
-                    <span className="text-[9px] font-mono text-gray-5 uppercase tracking-wider px-2 py-0.5 rounded bg-[#1A1A1A]">
+                    <span className="text-[9px] font-mono text-gray-5 uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--ws-bg)] border border-[var(--ws-border)]">
                       {a.category.replace(/_/g, " ")}
                     </span>
                     {a.published_at && (

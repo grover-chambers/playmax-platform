@@ -64,17 +64,17 @@ export default function MilestoneTimeline({ projectId }: MilestoneTimelineProps)
 
   return (
     <div className="relative">
-      <div className="absolute left-[17px] top-3 bottom-3 w-px bg-[#2A2A2A]" />
+      <div className="absolute left-[17px] top-3 bottom-3 w-px bg-[var(--ws-border)]" />
       <div className="space-y-0">
         {milestones.map((m, i) => {
           const isLast = i === milestones.length - 1;
           return (
             <div key={m.id} className="flex gap-4">
               <div className="flex flex-col items-center">
-                <div className="relative z-10 bg-[#0D0D0D] p-0.5 rounded-full">
+                <div className="relative z-10 bg-[var(--ws-surface)] p-0.5 rounded-full">
                   {statusIcon(m.status)}
                 </div>
-                {!isLast && <div className="flex-1 w-px bg-[#2A2A2A]" />}
+                {!isLast && <div className="flex-1 w-px bg-[var(--ws-border)]" />}
               </div>
               <div className={`pb-6 ${isLast ? "" : ""} flex-1`}>
                 <div className="flex items-center gap-2">

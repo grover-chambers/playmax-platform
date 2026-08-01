@@ -119,21 +119,21 @@ export default function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-lg hover:bg-white/5 transition-colors"
+        className="relative p-2 rounded-lg hover:bg-[var(--ws-bg)] transition-colors"
         aria-label="Notifications"
       >
         <Bell size={18} className="text-gray-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[9px] font-bold text-white bg-red rounded-full">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[9px] font-bold text-[var(--ws-text)] bg-red rounded-full">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-[#111] border border-[#2A2A2A] rounded-xl shadow-2xl z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#2A2A2A]">
-            <span className="text-[13px] font-semibold text-white">Notifications</span>
+        <div className="absolute right-0 top-full mt-2 w-80 bg-[var(--ws-surface)] border border-[var(--ws-border)] rounded-xl shadow-2xl z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--ws-border)]">
+            <span className="text-[13px] font-semibold text-[var(--ws-text)]">Notifications</span>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
@@ -157,7 +157,7 @@ export default function NotificationBell() {
               notifications.map((n) => {
                 const content = (
                   <div
-                    className={`flex items-start gap-3 px-4 py-3 transition-colors cursor-pointer hover:bg-white/5 ${
+                    className={`flex items-start gap-3 px-4 py-3 transition-colors cursor-pointer hover:bg-[var(--ws-bg)] ${
                       !n.read ? "bg-yellow/5" : ""
                     }`}
                     onClick={() => {
@@ -167,7 +167,7 @@ export default function NotificationBell() {
                   >
                     <span className="text-[16px] mt-0.5">{typeIcon(n.type)}</span>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[12px] ${!n.read ? "font-semibold text-white" : "text-gray-3"}`}>
+                      <div className={`text-[12px] ${!n.read ? "font-semibold text-[var(--ws-text)]" : "text-gray-3"}`}>
                         {n.title}
                       </div>
                       {n.message && (

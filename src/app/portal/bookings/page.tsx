@@ -111,11 +111,11 @@ export default function PortalBookingsPage() {
               className="pm-dash-card pm-dash-card-b flex items-start justify-between gap-4 cursor-pointer hover:border-yellow/20 transition-colors"
             >
               <div className="flex items-start gap-4 flex-1 min-w-0">
-                <div className="w-12 h-12 rounded-lg bg-black-3 border border-[#2A2A2A] flex items-center justify-center flex-shrink-0">
-                  <Calendar size={20} className="text-yellow" />
+                <div className="w-12 h-12 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)] flex items-center justify-center flex-shrink-0">
+                  <Calendar size={20} className="text-[var(--ws-accent)]" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-display text-[15px] font-bold text-white leading-tight">
+                  <div className="font-display text-[15px] font-bold text-[var(--ws-text)] leading-tight">
                     {b.inventory?.name || "Booking"}
                   </div>
                   <div className="flex items-center gap-4 mt-2 flex-wrap">
