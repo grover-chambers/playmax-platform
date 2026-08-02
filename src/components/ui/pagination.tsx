@@ -39,7 +39,7 @@ export default function Pagination({ page, total, limit, pageSize, onChange, onP
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-[#1A1A1A]">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--ws-border)]">
       <div className="text-[11px] text-gray-5 font-mono">
         {total} result{total !== 1 ? "s" : ""}
       </div>
@@ -47,7 +47,7 @@ export default function Pagination({ page, total, limit, pageSize, onChange, onP
         <button
           onClick={() => change(page - 1)}
           disabled={page <= 1}
-          className="p-1.5 rounded hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 rounded hover:bg-[var(--ws-bg)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft size={14} className="text-gray-4" />
         </button>
@@ -61,7 +61,7 @@ export default function Pagination({ page, total, limit, pageSize, onChange, onP
               className={`min-w-[28px] h-7 rounded text-[11px] font-mono transition-colors ${
                 p === page
                   ? "bg-teal/20 text-teal font-semibold"
-                  : "text-gray-4 hover:text-white hover:bg-white/5"
+                  : "text-gray-4 hover:text-[var(--ws-text)] hover:bg-[var(--ws-bg)]"
               }`}
             >
               {p}
@@ -71,7 +71,7 @@ export default function Pagination({ page, total, limit, pageSize, onChange, onP
         <button
           onClick={() => change(page + 1)}
           disabled={page >= totalPages}
-          className="p-1.5 rounded hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 rounded hover:bg-[var(--ws-bg)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight size={14} className="text-gray-4" />
         </button>

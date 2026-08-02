@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { X, Calendar, MapPin, Clock, FileText } from "lucide-react";
 import StatusBadge from "@/components/ui/status-badge";
 
@@ -44,6 +44,19 @@ function mapStatus(status: string): "active" | "review" | "draft" {
 }
 
 export default function BookingDetailDrawer({ booking, onClose }: BookingDetailDrawerProps) {
+  useEffect(() => {
+    if (!booking) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [booking, onClose]);
+
   if (!booking) return null;
 
   const start = new Date(booking.start_date);

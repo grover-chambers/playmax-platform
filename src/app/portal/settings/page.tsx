@@ -203,7 +203,7 @@ export default function PortalSettingsPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 text-[12px] font-medium bg-teal text-black rounded-lg hover:bg-teal/90 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-[12px] font-medium bg-teal text-white rounded-lg hover:bg-teal/90 transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
             Save Changes

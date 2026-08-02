@@ -261,7 +261,7 @@ function ReportViewer({ report }: { report: SavedReport }) {
                     >
                       {Object.values(row).map((v, j) => (
                         <td key={j} className={`px-2 py-1.5 ${typeof v === "number" ? "font-mono text-right" : ""}`}
-                          style={{ color: typeof v === "number" ? "#ccc" : "#999" }}>
+                          style={{ color: typeof v === "number" ? "var(--ws-text,#1A1C23)" : "var(--ws-text-muted,#70716C)" }}>
                           {typeof v === "number"
                             ? v >= 1000000
                               ? `KES ${(v / 1000000).toFixed(1)}M`
@@ -757,7 +757,7 @@ export default function PortalAnalyticsPage() {
                 className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
                   autoRefresh
                     ? "border-teal bg-teal/10 text-teal"
-                    : "border-[var(--ws-border,#e5e5e5)] hover:bg-white/5 text-[var(--ws-text,#1A1C23)]"
+                    : "border-[var(--ws-border,#e5e5e5)] hover:bg-[var(--ws-bg)] text-[var(--ws-text,#1A1C23)]"
                 }`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? "bg-teal animate-pulse" : "bg-gray-5"}`} />
@@ -765,7 +765,7 @@ export default function PortalAnalyticsPage() {
               </button>
               <button
                 onClick={fetchData}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[var(--ws-border,#e5e5e5)] hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--ws-text,#1A1C23)]"
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[var(--ws-border,#e5e5e5)] hover:bg-[var(--ws-bg)] transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--ws-text,#1A1C23)]"
               >
                 <Loader2 size={12} className={loading ? "animate-spin" : ""} />
                 Refresh
@@ -792,7 +792,7 @@ export default function PortalAnalyticsPage() {
                   a.click();
                   URL.revokeObjectURL(url);
                 }}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[var(--ws-border,#e5e5e5)] hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--ws-text,#1A1C23)]"
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[var(--ws-border,#e5e5e5)] hover:bg-[var(--ws-bg)] transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--ws-text,#1A1C23)]"
               >
                 <FileText size={12} />
                 CSV
@@ -802,7 +802,7 @@ export default function PortalAnalyticsPage() {
                   // PDF export via browser print
                   window.print();
                 }}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[var(--ws-border,#e5e5e5)] hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--ws-text,#1A1C23)]"
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[var(--ws-border,#e5e5e5)] hover:bg-[var(--ws-bg)] transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--ws-text,#1A1C23)]"
               >
                 PDF
               </button>
@@ -907,7 +907,7 @@ export default function PortalAnalyticsPage() {
                         <div className="flex items-center justify-between mb-1">
                           <span
                             className="text-[12px] truncate font-medium"
-                            style={{ color: comp.is_client ? clientColor : "#e5e5e5" }}
+                            style={{ color: comp.is_client ? clientColor : "var(--ws-text,#1A1C23)" }}
                           >
                             {displayName}
                             {comp.is_client && (

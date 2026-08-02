@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 
 interface ModalProps {
@@ -18,6 +18,8 @@ export default function Modal({
   children,
   className = "",
 }: ModalProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
   // Close on Escape
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -28,25 +30,33 @@ export default function Modal({
 
   useEffect(() => {
     if (open) {
+      const previouslyFocused = document.activeElement as HTMLElement | null;
       document.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
+      panelRef.current?.focus();
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+        document.body.style.overflow = "";
+        previouslyFocused?.focus?.();
+      };
     }
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
   }, [open, handleKeyDown]);
 
   if (!open) return null;
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       {/* Panel */}
       <div
-        className={`relative w-full max-w-lg mx-4 bg-[var(--ws-surface)] border border-[var(--ws-border)] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] ${className}`}
+        ref={panelRef}
+        tabIndex={-1}
+        className={`relative w-full max-w-lg mx-4 bg-[var(--ws-surface)] border border-[var(--ws-border)] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] outline-none ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -54,6 +64,7 @@ export default function Modal({
           <h2 className="font-display text-[15px] font-semibold text-[var(--ws-text)]">{title}</h2>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="p-1.5 rounded-lg text-[var(--ws-text-muted)] hover:bg-[var(--ws-bg)] hover:text-[var(--ws-text)] transition-colors"
           >
             <X size={18} />

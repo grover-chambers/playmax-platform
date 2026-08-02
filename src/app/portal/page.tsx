@@ -451,9 +451,9 @@ export default function PortalOverviewPage() {
       )}
 
       {/* ── Two-column layout ──────────────────────── */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* ══════════ LEFT (2/3) ════════════ */}
-        <div className="col-span-2 space-y-6">
+        <div className="md:col-span-2 space-y-6">
           {/* ── Recent projects ────────────────── */}
           {recentProjects.length > 0 && recentProjects.map((project) => (
             <div key={project.id} className="pm-dash-proj-card">

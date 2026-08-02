@@ -921,9 +921,10 @@ h6 {
 
 /* SNDBX-style page content (scoped to platform shell) */
 .platform-shell .page-header {
-    padding: 24px 28px 20px;
+    padding: 14px;
     background: transparent;
     border-bottom: 1px solid var(--ws-border);
+    margin-bottom: 14px;
 }
 .platform-shell .page-title {
     font-family: var(--font-display);
@@ -985,15 +986,15 @@ h6 {
 .platform-workspace .gap-6 {
     gap: 14px;
 }
-.platform-shell .space-y-3 > :not([hidden]) ~ :not([hidden]),
-.platform-shell .space-y-4 > :not([hidden]) ~ :not([hidden]),
-.platform-shell .space-y-5 > :not([hidden]) ~ :not([hidden]),
-.platform-shell .space-y-6 > :not([hidden]) ~ :not([hidden]),
-.platform-workspace .space-y-3 > :not([hidden]) ~ :not([hidden]),
-.platform-workspace .space-y-4 > :not([hidden]) ~ :not([hidden]),
-.platform-workspace .space-y-5 > :not([hidden]) ~ :not([hidden]),
-.platform-workspace .space-y-6 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 14px;
+.platform-shell .space-y-3 > :not(:last-child),
+.platform-shell .space-y-4 > :not(:last-child),
+.platform-shell .space-y-5 > :not(:last-child),
+.platform-shell .space-y-6 > :not(:last-child),
+.platform-workspace .space-y-3 > :not(:last-child),
+.platform-workspace .space-y-4 > :not(:last-child),
+.platform-workspace .space-y-5 > :not(:last-child),
+.platform-workspace .space-y-6 > :not(:last-child) {
+    margin-block-end: 14px;
 }
 
 /* Platform toolbar */
@@ -2944,6 +2945,69 @@ h6 {
     background: var(--ws-accent);
 }
 
+/* KPI numbers keep their semantic colors (green/red/blue/gold)
+   instead of being flattened to navy by the generic override */
+.platform-shell .pm-dash-kn.grn {
+    color: var(--pm-green, #22C55E);
+}
+.platform-shell .pm-dash-kn.blu {
+    color: var(--pm-blue, #3B82F6);
+}
+.platform-shell .pm-dash-kn.red {
+    color: var(--pm-red, #EF4444);
+}
+.platform-shell .pm-dash-kn.yel {
+    color: var(--pm-yellow, #F4C300);
+}
+
+/* Alert banners — readable light variants (y = warning, g = success,
+   b = info, r = error) */
+.platform-shell .pm-dash-alert-y {
+    background: rgba(244, 195, 0, 0.1);
+    border: 1px solid rgba(244, 195, 0, 0.35);
+    color: var(--ws-text);
+}
+.platform-shell .pm-dash-alert-g {
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: var(--pm-green, #22C55E);
+}
+.platform-shell .pm-dash-alert-b {
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    color: var(--pm-blue, #3B82F6);
+}
+.platform-shell .pm-dash-alert-r {
+    background: rgba(185, 74, 72, 0.06);
+    border: 1px solid rgba(185, 74, 72, 0.25);
+    color: var(--pm-red, #EF4444);
+}
+
+/* Project cards on the portal overview (were missing CSS entirely) */
+.platform-shell .pm-dash-proj-card {
+    background: var(--ws-surface);
+    border: 1px solid var(--ws-border);
+    border-radius: var(--ws-radius);
+    padding: 16px;
+    box-shadow: var(--ws-shadow);
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.platform-shell .pm-dash-proj-card:hover {
+    border-color: var(--ws-accent);
+    box-shadow: var(--ws-shadow-hover);
+}
+.platform-shell .pm-dash-proj-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ws-text);
+}
+.platform-shell .pm-dash-proj-type {
+    font-size: 12px;
+    color: var(--ws-text-muted);
+    margin-top: 2px;
+}
+
 /* Shared components reused from the marketing site — light variant
    scoped to the dashboard so public pages stay untouched */
 .platform-shell .card {
@@ -3140,6 +3204,9 @@ h6 {
 /* Yellow tint containers → teal tint on light bg */
 .platform-shell > main .bg-yellow\/10 {
     background: rgba(15, 118, 110, 0.08) !important;
+}
+.platform-shell > main .bg-yellow\/5 {
+    background: rgba(15, 118, 110, 0.06) !important;
 }
 .platform-shell > main .border-yellow\/20 {
     border-color: rgba(15, 118, 110, 0.2) !important;
