@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         return NextResponse.json({ error: "Invalid role" }, { status: 400 });
       }
       const { error: roleError } = await adminClient.auth.admin.updateUserById(id, {
-        user_metadata: { role },
+        app_metadata: { role },
       });
       if (roleError) return NextResponse.json({ error: sanitizeError(roleError) }, { status: 500 });
     }

@@ -38,7 +38,8 @@ export default function PortalLayout({
   const router = useRouter();
   const [user, setUser] = useState<{
     email?: string;
-    user_metadata?: { name?: string; role?: string };
+    user_metadata?: { name?: string };
+    app_metadata?: Record<string, unknown>;
   } | null>(null);
 
   useEffect(() => {
@@ -52,7 +53,8 @@ export default function PortalLayout({
     init();
   }, []);
 
-  const role: UserRole = (user?.user_metadata?.role as UserRole) || "client";
+  const role: UserRole =
+    (user?.app_metadata?.role as UserRole) || "client";
 
   // Redirect staff users to admin dashboard — portal is client-only
   useEffect(() => {

@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
       // Otherwise, check user role to pick the right default
       const { data: { user } } = await supabase.auth.getUser();
-      const role = user?.user_metadata?.role;
+      const role = user?.app_metadata?.role;
       if (role === "client") {
         return NextResponse.redirect(`${origin}/portal`);
       }

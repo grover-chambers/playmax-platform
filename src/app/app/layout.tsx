@@ -241,7 +241,7 @@ export default function PlatformLayout({
     router.push("/login");
   };
 
-  const role = (user?.user_metadata?.role as UserRole) || null;
+  const role = (user?.app_metadata?.role as UserRole) || null;
 
   const navSections: DashboardNavSection[] = allNavSections
     .map((section) => ({

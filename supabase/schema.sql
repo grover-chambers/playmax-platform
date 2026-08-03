@@ -234,9 +234,11 @@ ALTER TABLE public.templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.engagements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_log ENABLE ROW LEVEL SECURITY;
 
--- Helper: extract user role from JWT metadata
+-- Helper: extract user role from JWT metadata.
+-- Roles live in app_metadata (server-controlled via the Admin API),
+-- NOT user_metadata (which any user can write via auth.updateUser).
 CREATE OR REPLACE FUNCTION public.user_role() RETURNS text AS $$
-  SELECT COALESCE(auth.jwt() -> 'user_metadata' ->> 'role', 'client');
+  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role', 'client');
 $$ LANGUAGE sql STABLE;
 
 -- Helper: check if user has an admin-level role

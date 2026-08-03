@@ -71,7 +71,7 @@ export default function PipelinePage() {
         const supabase = createClient();
         const { data: userData } = await supabase.auth.getUser();
         const userId = userData?.user?.id;
-        const role = userData?.user?.user_metadata?.role as string | undefined;
+        const role = userData?.user?.app_metadata?.role as string | undefined;
 
         let query = supabase.from("projects").select("*, clients(company)");
         if (role === "crm_staff" && userId) {
@@ -103,7 +103,7 @@ export default function PipelinePage() {
       const supabase = createClient();
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
-      const role = userData?.user?.user_metadata?.role as string | undefined;
+      const role = userData?.user?.app_metadata?.role as string | undefined;
 
       let query = supabase.from("projects").select("*, clients(company)");
       if (role === "crm_staff" && userId) {

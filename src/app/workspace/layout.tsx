@@ -19,7 +19,7 @@ export default function WorkspaceLayout({
       try {
         const supabase = createClient();
         const { data } = await supabase.auth.getUser();
-        const role = data?.user?.user_metadata?.role;
+        const role = data?.user?.app_metadata?.role;
         if (data?.user && ALLOWED_ROLES.includes(role)) {
           setAuthed(true);
           return;

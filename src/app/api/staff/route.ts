@@ -65,11 +65,11 @@ export async function GET() {
     // Map auth users → StaffMember, filter to staff roles only
     const staffMembers: StaffMember[] = (data?.users ?? [])
       .filter((u) => {
-        const role = (u.user_metadata?.role as UserRole) || "client";
+        const role = (u.app_metadata?.role as UserRole) || "client";
         return STAFF_ROLES.includes(role);
       })
       .map((u) => {
-        const role = (u.user_metadata?.role as UserRole) || "crm_staff";
+        const role = (u.app_metadata?.role as UserRole) || "crm_staff";
         return {
           id: u.id,
           email: u.email ?? "",

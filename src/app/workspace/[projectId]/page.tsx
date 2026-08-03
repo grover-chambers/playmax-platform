@@ -119,7 +119,7 @@ export default function WorkspacePage({
         const supabase = createClient();
         const { data: authData } = await supabase.auth.getUser();
         const userId = authData?.user?.id ?? null;
-        const userRole = authData?.user?.user_metadata?.role as string | undefined;
+        const userRole = authData?.user?.app_metadata?.role as string | undefined;
         const userName = authData?.user?.user_metadata?.name as string | undefined;
         if (userId) setCurrentUser({ id: userId, role: userRole || "", name: userName || "You" });
 

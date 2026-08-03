@@ -48,7 +48,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     init();
   }, []);
 
-  const metadata = (user?.user_metadata as Record<string, unknown>) ?? {};
+  const metadata = (user?.app_metadata as Record<string, unknown>) ?? {};
   const role = (metadata?.role as UserRole) ?? null;
   const adminRoles: UserRole[] = ["super_admin", "crm_admin", "cms_admin"];
   const isAdmin = !!role && adminRoles.includes(role);

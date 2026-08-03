@@ -39,7 +39,7 @@ export async function getCurrentUser(supabase: Awaited<ReturnType<typeof getAuth
 
   return {
     id: user.id,
-    role: (user.user_metadata?.role as UserRole) || "client",
+    role: (user.app_metadata?.role as UserRole) || "client",
     email: user.email,
   };
 }

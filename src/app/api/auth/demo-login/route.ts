@@ -92,20 +92,22 @@ export async function POST(request: NextRequest) {
       );
 
       if (existingUser) {
-        // User exists — update metadata if role is missing or wrong
-        const currentRole = existingUser.user_metadata?.role;
+        // User exists — update role in app_metadata if missing or wrong
+        const currentRole = existingUser.app_metadata?.role;
         if (currentRole !== account.role) {
           await adminClient.auth.admin.updateUserById(existingUser.id, {
-            user_metadata: { name: account.name, role: account.role },
+            app_metadata: { role: account.role },
+            user_metadata: { name: account.name },
           });
         }
       } else {
-        // User doesn't exist — create with metadata + email confirmed
+        // User doesn't exist — create with app_metadata role + email confirmed
         await adminClient.auth.admin.createUser({
           email: account.email,
           password: DEMO_PASSWORD,
           email_confirm: true,
-          user_metadata: { name: account.name, role: account.role },
+          app_metadata: { role: account.role },
+          user_metadata: { name: account.name },
         });
       }
     }
@@ -139,6 +141,9 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Fallback: try sign-up (for when service role key is not available) ──
+    // NOTE: without the service-role key we cannot write app_metadata, so this
+    // fallback only works for dev/demo. The `role` here is informational only —
+    // all authorization reads app_metadata, so this cannot grant access.
     if (!serviceRoleKey) {
       const { data: signUpData } = await supabase.auth.signUp({
         email: account.email,

@@ -101,20 +101,11 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [staffRole, setStaffRole] = useState("");
   const [view] = useState<"client" | "staff">(
     searchParams.get("mode") === "staff" ? "staff" : "client"
   );
 
   const supabase = createClient();
-
-  const STAFF_ROLE_OPTIONS = [
-    { value: "super_admin", label: "Super Admin" },
-    { value: "crm_admin", label: "CRM Admin" },
-    { value: "crm_staff", label: "CRM Staff" },
-    { value: "cms_admin", label: "CMS Admin" },
-    { value: "finance", label: "Finance" },
-  ];
 
   const STAFF_REDIRECTS: Record<string, string> = {
     super_admin: "/app",
@@ -124,16 +115,15 @@ function LoginForm() {
     finance: "/app/invoices",
   };
 
+  // Role comes from app_metadata (server-assigned via the Admin API).
+  // Users can no longer pick their own role — that was a privilege
+  // escalation vector. The middleware + layouts enforce access.
   const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!staffRole) {
-      setError("Select your role before signing in.");
-      return;
-    }
     setError("");
     setLoading(true);
 
-    const { error: authErr } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -144,28 +134,15 @@ function LoginForm() {
       return;
     }
 
-    // Set the role in user_metadata so the session token carries it
-    const { error: updateErr } = await supabase.auth.updateUser({
-      data: { role: staffRole },
-    });
+    const role = (authData.user?.app_metadata?.role as string) || "";
+    const redirect = STAFF_REDIRECTS[role] || "/app/pipeline";
 
-    if (updateErr) {
-      setError("Failed to set session role. Try again.");
-      setLoading(false);
-      await supabase.auth.signOut();
-      return;
-    }
-
-    // Refresh the session so the new metadata is baked into the cookie
-    // before redirecting — otherwise the middleware reads stale user_metadata.
-    await supabase.auth.refreshSession();
-
-    if (nextPath && !nextPath.startsWith("/login")) {
+    if (nextPath && nextPath.startsWith("/app")) {
       router.push(nextPath);
       return;
     }
 
-    router.push(STAFF_REDIRECTS[staffRole] || "/app");
+    router.push(redirect);
   };
 
   const handleClientLogin = async (e: React.FormEvent) => {
@@ -183,10 +160,6 @@ function LoginForm() {
       setLoading(false);
       return;
     }
-
-    // Ensure client role is set in session metadata
-    await supabase.auth.updateUser({ data: { role: "client" } });
-    await supabase.auth.refreshSession();
 
     router.push("/portal");
   };
@@ -474,29 +447,6 @@ function LoginForm() {
                 </div>
               )}
 
-              {/* Role selector — must pick before credentials */}
-              <div className="mb-5">
-                <label className="font-mono text-[9px] text-gray-5 uppercase tracking-wider block mb-2">
-                  Select your role
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {STAFF_ROLE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => { setStaffRole(opt.value); setError(""); }}
-                      className={`py-2 px-3 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
-                        staffRole === opt.value
-                          ? "bg-yellow/10 text-yellow border-yellow/40"
-                          : "bg-black-3 border-white/6 text-gray-4 hover:text-white hover:border-white/20"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <form onSubmit={handleStaffLogin} className="space-y-4">
                 <div>
                   <input
@@ -504,10 +454,9 @@ function LoginForm() {
                     placeholder="Staff email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={`form-input ${!staffRole ? "opacity-40 pointer-events-none" : ""}`}
+                    className="form-input"
                     required
-                    disabled={!staffRole}
-                    autoFocus={!!staffRole}
+                    autoFocus
                   />
                 </div>
                 <div>
@@ -516,10 +465,9 @@ function LoginForm() {
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`form-input ${!staffRole ? "opacity-40 pointer-events-none" : ""}`}
+                    className="form-input"
                     required
                     minLength={6}
-                    disabled={!staffRole}
                   />
                 </div>
                 <div className="text-right">
@@ -532,7 +480,7 @@ function LoginForm() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading || !staffRole}
+                  disabled={loading}
                   className="form-submit disabled:opacity-60"
                 >
                   {loading ? "Signing in..." : "Sign In"}
@@ -573,17 +521,8 @@ function LoginForm() {
                               access_token: data.session.access_token,
                               refresh_token: data.session.refresh_token,
                             });
-                            const {
-                              data: { user },
-                            } = await supabase.auth.getUser();
-                            if (user?.user_metadata?.role !== d.role) {
-                              await supabase.auth.updateUser({
-                                data: {
-                                  role: d.role,
-                                  name: d.label,
-                                },
-                              });
-                            }
+                            // Role was already set server-side in app_metadata
+                            // by the demo-login API — never update it client-side.
                             window.location.href = data.redirect;
                           } else if (data.requiresConfirmation) {
                             setError(

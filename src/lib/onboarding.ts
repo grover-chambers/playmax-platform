@@ -38,14 +38,16 @@ export async function onboardClient({ email, name, company }: OnboardClientParam
   if (alreadyExists) {
     await adminClient.auth.admin.updateUserById(alreadyExists.id, {
       password: tempPassword,
-      user_metadata: { name, role: "client", company },
+      app_metadata: { role: "client" },
+      user_metadata: { name, company },
     });
   } else {
     const { error } = await adminClient.auth.admin.createUser({
       email,
       password: tempPassword,
       email_confirm: true,
-      user_metadata: { name, role: "client", company },
+      app_metadata: { role: "client" },
+      user_metadata: { name, company },
     });
     if (error) throw new Error(error.message);
   }
