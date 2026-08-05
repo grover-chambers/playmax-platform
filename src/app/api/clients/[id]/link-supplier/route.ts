@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { forbidden, internalError, unauthorized } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +11,8 @@ export async function PATCH(
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser || !isAdmin(currentUser.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!currentUser) return unauthorized();
+    if (!isAdmin(currentUser.role)) return forbidden();
 
     const { id } = await params;
     const { supplier_id } = await request.json();
@@ -23,11 +23,11 @@ export async function PATCH(
       .eq("id", id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalError(error);
     }
 
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return internalError(new Error("Failed to link supplier"));
   }
 }

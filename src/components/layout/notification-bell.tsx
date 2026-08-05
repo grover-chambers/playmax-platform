@@ -111,6 +111,8 @@ export default function NotificationBell() {
       <button
         onClick={() => setOpen(!open)}
         className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-gray-4 hover:text-white transition-all"
+        aria-label="Notifications"
+        aria-expanded={open}
       >
         <Bell size={16} />
         {unreadCount > 0 && (

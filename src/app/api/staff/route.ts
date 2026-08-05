@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import {
@@ -92,6 +92,80 @@ export async function GET() {
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch staff" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+
+    if (!currentUser || !isAdmin(currentUser.role)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const role = body.role;
+
+    if (!email) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    }
+    if (typeof role !== "string" || !STAFF_ROLES.includes(role)) {
+      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    }
+
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      return NextResponse.json(
+        { error: "Server misconfigured — missing service role key" },
+        { status: 500 },
+      );
+    }
+
+    const cookieStore = await cookies();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+    const adminClient = createServerClient(supabaseUrl, serviceRoleKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll() {},
+      },
+    });
+
+    // inviteUserByEmail only accepts user_metadata (`data`); roles must live in
+    // app_metadata, so set the role with a follow-up Admin API call.
+    const { data: inviteData, error: inviteErr } =
+      await adminClient.auth.admin.inviteUserByEmail(email, {
+        data: { name: name || undefined },
+      });
+    if (inviteErr) {
+      return NextResponse.json(
+        { error: sanitizeError(inviteErr) },
+        { status: 500 },
+      );
+    }
+
+    const { error: roleErr } = await adminClient.auth.admin.updateUserById(
+      inviteData.user.id,
+      { app_metadata: { role } },
+    );
+    if (roleErr) {
+      return NextResponse.json(
+        { error: sanitizeError(roleErr) },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ success: true }, { status: 201 });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to invite staff member" },
       { status: 500 },
     );
   }

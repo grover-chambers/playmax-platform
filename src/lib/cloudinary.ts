@@ -18,12 +18,18 @@ export async function uploadToCloudinary(file: File): Promise<{ url: string; pub
   }
 }
 
-export async function deleteFromCloudinary(publicId: string): Promise<boolean> {
+/**
+ * Delete a Cloudinary asset for a stored document.
+ * Pass the document row id — the server loads the row, verifies the caller
+ * is allowed to see it, and destroys only the public_id stored on that row.
+ * A raw public_id must never be sent to the delete endpoint.
+ */
+export async function deleteFromCloudinary(documentId: string): Promise<boolean> {
   try {
     const res = await fetch("/api/documents/delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ public_id: publicId }),
+      body: JSON.stringify({ id: documentId }),
     });
     return res.ok;
   } catch {

@@ -49,7 +49,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const metadata = (user?.app_metadata as Record<string, unknown>) ?? {};
-  const role = (metadata?.role as UserRole) ?? null;
+  // A missing app_metadata.role (OAuth users, invites that wrote user_metadata,
+  // pre-migration users) resolves to the least-privilege "client" role so the
+  // portal renders instead of crashing or redirect-looping. Explicit roles are
+  // preserved verbatim.
+  const role = (metadata?.role as UserRole) ?? "client";
   const adminRoles: UserRole[] = ["super_admin", "crm_admin", "cms_admin"];
   const isAdmin = !!role && adminRoles.includes(role);
 

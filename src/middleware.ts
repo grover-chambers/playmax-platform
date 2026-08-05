@@ -44,11 +44,21 @@ export async function middleware(request: NextRequest) {
 
   const role = user.app_metadata?.role as UserRole | undefined;
 
+  // A missing role must NEVER bounce an authenticated user back to /login.
+  // The auth callback backfills `client` via the Admin API (service-role key);
+  // between sign-in and that backfill, treat the user as a client.
+  // The /app staff area is still protected: a role-less user goes to /portal,
+  // never /login — so there is no redirect chain that loops.
   if (!role) {
-    console.warn(`[middleware] No role found for user ${user.id} on path ${pathname} — redirecting to login`);
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    if (pathname.startsWith("/app")) {
+      console.warn(`[middleware] No role for user ${user.id} on staff path ${pathname} — redirecting to portal`);
+      const url = request.nextUrl.clone();
+      url.pathname = "/portal";
+      return NextResponse.redirect(url);
+    }
+    // /portal (and anything else) is safe for a role-less authenticated user:
+    // the portal layout and user-context default to "client".
+    return supabaseResponse;
   }
 
   if (!canAccess(role, pathname)) {

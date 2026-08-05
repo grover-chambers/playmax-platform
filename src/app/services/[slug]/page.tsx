@@ -18,6 +18,9 @@ import { LeadForm } from "@/components/lead-form";
 import { SERVICES, getServiceBySlug } from "@/lib/services-data";
 import { InventoryMapWrapper } from "@/components/InventoryMapWrapper";
 
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
 const iconMap: Record<string, typeof Search> = {
   search: Search,
   sparkles: Sparkles,

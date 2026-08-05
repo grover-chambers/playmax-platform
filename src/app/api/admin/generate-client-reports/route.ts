@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
+import { query } from "@/lib/db";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { withLogging } from "@/lib/request-log";
 import {
   generateEnrichedMarketShareReport,
   generateEnrichedSupplierCompetitionReport,
@@ -25,7 +28,7 @@ import {
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-export async function POST(request: Request) {
+export const POST = withLogging(async function POST(request: Request) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
@@ -33,7 +36,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { client_id } = await request.json();
+    // Rate limit + per-user concurrency guard keyed on the admin user id.
+    const rl = await rateLimit(
+      "admin-generate-client-reports",
+      request,
+      { windowSec: 300, maxRequests: 5 },
+      currentUser.id,
+    );
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
+
+    try {
+      await query("INSERT INTO report_generation_locks (client_id) VALUES ($1)", [currentUser.id]);
+    } catch (lockErr) {
+      if ((lockErr as { code?: string })?.code === "23505") {
+        return NextResponse.json(
+          {
+            error: {
+              code: "already_generating",
+              message:
+                "Report generation is already in progress for this user. Please wait.",
+            },
+          },
+          { status: 429 },
+        );
+      }
+      throw lockErr;
+    }
+
+    try {
+      const { client_id } = await request.json();
     if (!client_id) {
       return NextResponse.json({ error: "client_id is required" }, { status: 400 });
     }
@@ -367,7 +398,18 @@ export async function POST(request: Request) {
       documents: createdDocs,
       reports: generatedReports,
     });
+    } finally {
+      await query(
+        "DELETE FROM report_generation_locks WHERE client_id = $1",
+        [currentUser.id],
+      ).catch((lockErr) =>
+        console.error(
+          "[generate-client-reports] failed to release lock:",
+          lockErr,
+        ),
+      );
+    }
   } catch (e) {
     return NextResponse.json({ error: sanitizeError(e) }, { status: 500 });
   }
-}
+});

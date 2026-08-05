@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, startTransition } from "react";
 import { CheckCircle2, Circle, Clock, Loader2, XCircle } from "lucide-react";
+import { announce } from "./live-region";
 
 interface Milestone {
   id: string;
@@ -47,7 +48,10 @@ export default function MilestoneTimeline({ projectId }: MilestoneTimelineProps)
           setLoading(false);
         });
       })
-      .catch(() => startTransition(() => setLoading(false)));
+      .catch(() => {
+        startTransition(() => setLoading(false));
+        announce("Failed to load milestones");
+      });
   }, [projectId]);
 
   if (loading) {

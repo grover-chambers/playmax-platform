@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,10 @@ export async function PUT(
 
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // Leads are internal CRM records — staff route only.
+    if (!isStaff(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;

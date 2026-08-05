@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, startTransition } from "react";
+import { announce } from "./live-region";
 
 interface PortalClient {
   id: string;
@@ -61,6 +62,11 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
     };
     fetchClient();
   }, []);
+
+  // Announce discrete load failures to screen readers
+  useEffect(() => {
+    if (error) announce(error);
+  }, [error]);
 
   return (
     <PortalContext.Provider value={{ client, loading, error }}>

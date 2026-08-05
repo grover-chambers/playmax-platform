@@ -1,6 +1,9 @@
 import { ArrowUpRight } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/layout";
 
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
 const caseStudies = [
   {
     client: "Unga Group",

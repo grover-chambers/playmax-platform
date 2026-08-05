@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { X, Calendar, MapPin, Clock, FileText } from "lucide-react";
 import StatusBadge from "@/components/ui/status-badge";
 
@@ -43,17 +43,69 @@ function mapStatus(status: string): "active" | "review" | "draft" {
   }
 }
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
 export default function BookingDetailDrawer({ booking, onClose }: BookingDetailDrawerProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!booking) return;
+
+    const panel = panelRef.current;
+    // Save the trigger only once per open — repeated parent re-renders
+    // while the dialog is open must not clobber the original trigger.
+    if (!previouslyFocusedRef.current || previouslyFocusedRef.current === document.body) {
+      previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // Close on Escape
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      // Trap Tab within the dialog while open
+      if (e.key === "Tab" && panel) {
+        const focusables = Array.from(
+          panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+        );
+        if (focusables.length === 0) {
+          // No focusable elements inside — keep focus on the close button/panel
+          e.preventDefault();
+          return;
+        }
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey) {
+          if (active === first || active === panel || !panel.contains(active)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else if (active === last || active === panel || !panel.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
+
     document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
+
+    // Move focus into the dialog (close button, or panel if none found)
+    const closeButton = panel?.querySelector<HTMLElement>('[aria-label="Close booking details"]');
+    const focusTarget = closeButton ?? panel;
+    requestAnimationFrame(() => focusTarget?.focus());
+
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
+      // Restore focus to the previously-focused trigger element
+      previouslyFocusedRef.current?.focus?.();
+      previouslyFocusedRef.current = null;
     };
   }, [booking, onClose]);
 
@@ -62,14 +114,28 @@ export default function BookingDetailDrawer({ booking, onClose }: BookingDetailD
   const start = new Date(booking.start_date);
   const end = new Date(booking.end_date);
   const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  const dialogLabel = booking.inventory?.name
+    ? `Booking details — ${booking.inventory.name}`
+    : "Booking details";
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--ws-surface)] border-l border-[var(--ws-border)] z-50 shadow-2xl overflow-y-auto">
+      <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={dialogLabel}
+        tabIndex={-1}
+        className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--ws-surface)] border-l border-[var(--ws-border)] z-50 shadow-2xl overflow-y-auto"
+      >
         <div className="sticky top-0 bg-[var(--ws-surface)] border-b border-[var(--ws-border)] px-5 py-4 flex items-center justify-between z-10">
           <h2 className="font-display text-[15px] font-bold text-[var(--ws-text)]">Booking Details</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--ws-bg)] transition-colors">
+          <button
+            onClick={onClose}
+            aria-label="Close booking details"
+            className="p-1.5 rounded-lg hover:bg-[var(--ws-bg)] transition-colors"
+          >
             <X size={18} className="text-gray-4" />
           </button>
         </div>

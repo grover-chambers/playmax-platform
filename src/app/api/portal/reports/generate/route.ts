@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { getPortalClient } from "@/lib/portal";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { query } from "@/lib/db";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { withLogging } from "@/lib/request-log";
 import {
   generateMarketShareReport,
   generateCategoryAnalysisReport,
@@ -44,7 +47,7 @@ interface RawSalesRow {
   category: { name: string };
 }
 
-export async function POST() {
+export const POST = withLogging(async function POST(request: Request) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
@@ -53,7 +56,36 @@ export async function POST() {
     const client = await getPortalClient(supabase, currentUser.id);
     if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
 
-    const admin = getAdminClient();
+    // Per-client rate limit (1 generation per 5 min) + concurrency guard via
+    // report_generation_locks so a client cannot trigger parallel PDF builds.
+    const rl = await rateLimit(
+      "portal-report-generate",
+      request,
+      { windowSec: 300, maxRequests: 1 },
+      client.id,
+    );
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
+
+    try {
+      await query("INSERT INTO report_generation_locks (client_id) VALUES ($1)", [client.id]);
+    } catch (lockErr) {
+      if ((lockErr as { code?: string })?.code === "23505") {
+        return NextResponse.json(
+          {
+            error: {
+              code: "already_generating",
+              message:
+                "Reports are already being generated for this account. Please wait.",
+            },
+          },
+          { status: 429 },
+        );
+      }
+      throw lockErr;
+    }
+
+    try {
+      const admin = getAdminClient();
 
     const clientDisplayName = client.company || client.name || "Client";
     const clientNameLower = clientDisplayName.toLowerCase();
@@ -258,8 +290,17 @@ export async function POST() {
       count: createdDeliverables.length,
       deliverables: createdDeliverables,
     });
+    } finally {
+      // Always release the per-client lock, including early returns/throws.
+      await query(
+        "DELETE FROM report_generation_locks WHERE client_id = $1",
+        [client.id],
+      ).catch((lockErr) =>
+        console.error("[reports/generate] failed to release lock:", lockErr),
+      );
+    }
   } catch (err) {
     console.error("[reports/generate]", err);
     return NextResponse.json({ error: "Failed to generate reports" }, { status: 500 });
   }
-}
+});

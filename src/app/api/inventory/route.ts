@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +10,10 @@ export async function GET() {
     const currentUser = await getCurrentUser(supabase);
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // Inventory is internal staff data — admin route only.
+    if (!isAdmin(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     let query = supabase
@@ -45,6 +49,11 @@ export async function POST(request: Request) {
     const currentUser = await getCurrentUser(supabase);
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // POST previously only checked authentication — any client could create
+    // inventory. Admin-only like the GET guard.
+    if (!isAdmin(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();

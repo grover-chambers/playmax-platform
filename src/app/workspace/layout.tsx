@@ -27,7 +27,9 @@ export default function WorkspaceLayout({
       } catch {
         // fallback below
       }
-      router.push("/login");
+      // Role-less or non-staff users: send to the client portal, never back to
+      // /login (an authenticated user hitting /login would loop).
+      router.push("/portal");
     };
     check();
   }, [router]);

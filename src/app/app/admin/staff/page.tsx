@@ -7,7 +7,6 @@ import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import SearchBox from "@/components/ui/search-box";
 import FilterPill from "@/components/ui/filter-pill";
-import { createClient } from "@/lib/supabase/browser";
 import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/types";
 import type { UserRole, StaffMember } from "@/lib/types";
 
@@ -72,19 +71,24 @@ export default function StaffManagementPage() {
     setInviting(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.admin.inviteUserByEmail(
-        inviteEmail,
-        {
-          data: {
-            name: inviteName,
-            role: inviteRole,
-          },
-        },
-      );
+      // Invites go through a server route: auth.admin requires the service-role
+      // key, which must never be exposed to the browser. The route sets the
+      // role in app_metadata (service-role-writable) — not user_metadata.
+      const res = await fetch("/api/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: inviteEmail,
+          name: inviteName,
+          role: inviteRole,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
 
-      if (error) {
-        setInviteError(error.message);
+      if (!res.ok) {
+        setInviteError(
+          data.error || "Failed to send invitation. Check your permissions.",
+        );
       } else {
         setInviteSuccess(`Invitation sent to ${inviteEmail}`);
         setInviteEmail("");

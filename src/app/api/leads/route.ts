@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isStaff } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,10 @@ export async function GET() {
 
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // Leads contain prospect PII — internal staff route only.
+    if (!isStaff(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     let query = supabase
@@ -38,6 +43,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // Public form endpoint — #1 spam/DB-fill vector. Throttle per IP before
+  // parsing the body or touching the database.
+  const rl = await rateLimit("leads", request, {
+    windowSec: 60,
+    maxRequests: 5,
+  });
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
+
   try {
     const body = await request.json();
     const {

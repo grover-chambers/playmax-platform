@@ -19,6 +19,7 @@ import DashboardLayout from "@/components/layout/dashboard-layout";
 import type { DashboardNavItem } from "@/components/layout/dashboard-layout";
 import { PortalProvider } from "@/components/portal/portal-provider";
 import NotificationBell from "@/components/portal/notification-bell";
+import LiveRegion from "@/components/portal/live-region";
 
 const portalNavItems: DashboardNavItem[] = [
   { icon: Home, label: "Overview", href: "/portal" },
@@ -79,26 +80,35 @@ export default function PortalLayout({
     "?";
 
   return (
-    <DashboardLayout
-      navItems={portalNavItems}
-      topBar={<NotificationBell />}
-      user={{
-        initials,
-        name: user?.user_metadata?.name || user?.email || "Client",
-        role: getRoleLabel(role),
-      }}
-      onSignOut={handleSignOut}
-      logoSubtitle="Portal"
-      userExtra={
-        <Link
-          href="/portal/settings"
-          className="text-[11px] font-medium px-2 py-1 rounded border border-[var(--ws-border)] text-gray-4 hover:text-teal hover:border-teal transition-all"
-        >
-          Settings
-        </Link>
-      }
-    >
-      <PortalProvider>{children}</PortalProvider>
-    </DashboardLayout>
+    <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-[var(--ws-accent)] focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:text-sm focus:font-semibold"
+      >
+        Skip to content
+      </a>
+      <LiveRegion />
+      <DashboardLayout
+        navItems={portalNavItems}
+        topBar={<NotificationBell />}
+        user={{
+          initials,
+          name: user?.user_metadata?.name || user?.email || "Client",
+          role: getRoleLabel(role),
+        }}
+        onSignOut={handleSignOut}
+        logoSubtitle="Portal"
+        userExtra={
+          <Link
+            href="/portal/settings"
+            className="text-[11px] font-medium px-2 py-1 rounded border border-[var(--ws-border)] text-gray-4 hover:text-teal hover:border-teal transition-all"
+          >
+            Settings
+          </Link>
+        }
+      >
+        <PortalProvider>{children}</PortalProvider>
+      </DashboardLayout>
+    </>
   );
 }

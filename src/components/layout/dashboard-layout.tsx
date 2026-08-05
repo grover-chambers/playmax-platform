@@ -235,6 +235,7 @@ export default function DashboardLayout({
                       onClick={onSignOut}
                       className="btn-sm p-1.5! border-none! hover:bg-red/20! hover:text-red! transition-colors"
                       title="Sign out"
+                      aria-label="Sign out"
                     >
                       <LogOut className="w-4 h-4" />
                     </button>
@@ -246,6 +247,7 @@ export default function DashboardLayout({
                   onClick={onSignOut}
                   className="w-full py-2 text-center text-red hover:bg-red/10 rounded transition-colors"
                   title="Sign out"
+                  aria-label="Sign out"
                 >
                   <LogOut className="w-5 h-5 mx-auto" />
                 </button>
@@ -274,7 +276,7 @@ export default function DashboardLayout({
       </button>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto min-h-screen">
+      <main id="main-content" className="flex-1 overflow-y-auto min-h-screen">
         <div className="sticky top-0 z-30 border-b border-[var(--ws-border)] bg-[var(--ws-surface)]/90 backdrop-blur-sm">
           <div className="flex items-center justify-between h-14 px-4 md:px-6 gap-4">
             <div className="min-w-0">

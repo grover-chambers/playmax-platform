@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
+import { getPortalClient } from "@/lib/portal";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    if (!isAdmin(currentUser.role) && !data.visible_to_client) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isStaff(currentUser.role)) {
+      // Clients may only read reports that are published AND belong to
+      // their own client record — otherwise a client could fetch another
+      // client's published report by guessing ids.
+      if (!data.visible_to_client) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const portalClient = await getPortalClient(supabase, currentUser.id);
+      if (!portalClient) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      if (data.client_id && data.client_id !== portalClient.id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     return NextResponse.json({ data });

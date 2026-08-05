@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
+import { getPortalClient } from "@/lib/portal";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,25 @@ export async function GET(request: Request) {
 
     if (currentUser.role === "crm_staff") {
       query = query.in("project_id", (await supabase.from("projects").select("id").eq("assigned_to", currentUser.id)).data?.map(p => p.id) || []);
+    } else if (!isAdmin(currentUser.role)) {
+      // Portal clients see only their own documents — never trust a
+      // client-supplied project_id/client_id filter to scope the query.
+      const client = await getPortalClient(supabase, currentUser.id);
+      if (!client) {
+        return NextResponse.json({ data: [] });
+      }
+      const { data: clientProjects } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("client_id", client.id);
+      const projectIds = (clientProjects || []).map((p) => p.id);
+
+      query = query.in("client_id", [client.id]);
+      if (projectIds.length > 0) {
+        query = query.or(`project_id.in.(${projectIds.join(",")}),project_id.is.null`);
+      } else {
+        query = query.is("project_id", null);
+      }
     }
 
     const { data, error } = await query;
@@ -49,6 +69,25 @@ export async function POST(request: Request) {
 
     if (!project_id || !name || !url) {
       return NextResponse.json({ error: "project_id, name, and url are required" }, { status: 400 });
+    }
+
+    // Non-staff (portal clients) may only attach documents to their own
+    // client's projects — otherwise a client could write into another
+    // client's project by supplying an arbitrary project_id.
+    if (!isStaff(currentUser.role)) {
+      const client = await getPortalClient(supabase, currentUser.id);
+      if (!client) {
+        return NextResponse.json({ error: "Client account not found" }, { status: 403 });
+      }
+      const { data: project } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("id", project_id)
+        .eq("client_id", client.id)
+        .maybeSingle();
+      if (!project) {
+        return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      }
     }
 
     const { data, error } = await supabase

@@ -6,6 +6,9 @@ import { SiteHeader, SiteFooter } from "@/components/layout";
 import { LeadForm } from "@/components/lead-form";
 import { ARTICLES } from "@/lib/articles-data";
 
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Insights — Market Link | Market Research & Brand Strategy Blog",
   description:

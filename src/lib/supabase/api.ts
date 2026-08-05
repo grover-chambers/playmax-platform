@@ -45,9 +45,19 @@ export async function getCurrentUser(supabase: Awaited<ReturnType<typeof getAuth
 }
 
 const ADMIN_ROLES = ["super_admin", "crm_admin", "cms_admin"];
+const STAFF_ROLES = [...ADMIN_ROLES, "crm_staff", "finance"];
 
 export function isAdmin(role: UserRole): boolean {
   return ADMIN_ROLES.includes(role);
+}
+
+/**
+ * True for any non-client role (admin + finance + crm_staff).
+ * Used to guard internal staff-only API routes so that portal
+ * client users cannot read or mutate staff data.
+ */
+export function isStaff(role: UserRole): boolean {
+  return STAFF_ROLES.includes(role);
 }
 
 export function isCrmStaff(role: UserRole): boolean {

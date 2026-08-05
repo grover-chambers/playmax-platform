@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, startTransition, useCallback } from
 import Link from "next/link";
 import { Bell, CheckCheck, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import { announce } from "./live-region";
 
 interface Notification {
   id: string;
@@ -68,20 +69,30 @@ export default function NotificationBell() {
   }, []);
 
   const handleMarkAllRead = async () => {
-    await fetch("/api/portal/notifications", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ markAllRead: true }),
-    });
+    try {
+      await fetch("/api/portal/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ markAllRead: true }),
+      });
+      announce("All notifications marked as read");
+    } catch {
+      announce("Failed to update notifications");
+    }
     fetchNotifications();
   };
 
   const handleMarkRead = async (id: string) => {
-    await fetch("/api/portal/notifications", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notificationId: id }),
-    });
+    try {
+      await fetch("/api/portal/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationId: id }),
+      });
+      announce("Notification marked as read");
+    } catch {
+      announce("Failed to update notification");
+    }
     fetchNotifications();
   };
 
@@ -121,6 +132,7 @@ export default function NotificationBell() {
         onClick={() => setOpen(!open)}
         className="relative p-2 rounded-lg hover:bg-[var(--ws-bg)] transition-colors"
         aria-label="Notifications"
+        aria-expanded={open}
       >
         <Bell size={18} className="text-gray-4" />
         {unreadCount > 0 && (

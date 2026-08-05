@@ -11,6 +11,9 @@ import { SiteHeader, SiteFooter } from "@/components/layout";
 import { LeadForm } from "@/components/lead-form";
 import { InventoryMapWrapper } from "@/components/InventoryMapWrapper";
 
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
 const services = [
   {
     icon: Search,

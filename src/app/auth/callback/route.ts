@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { ensureDefaultRole } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -10,15 +11,29 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // Backfill the default `client` role for users who never got one in
+      // app_metadata (OAuth sign-ups, invites that wrote user_metadata, and
+      // pre-migration users). This runs BEFORE any redirect so middleware can
+      // never bounce these users in a login loop. Idempotent: only fires when
+      // the role is missing, and merges existing app_metadata.
+      const role = user?.app_metadata?.role as string | undefined;
+      if (user && !role) {
+        await ensureDefaultRole(user);
+      }
+
       // If an explicit next path was provided and it's portal-safe, use it
       if (next && (next.startsWith("/portal") || next === "/login")) {
         return NextResponse.redirect(`${origin}${next}`);
       }
 
-      // Otherwise, check user role to pick the right default
-      const { data: { user } } = await supabase.auth.getUser();
-      const role = user?.app_metadata?.role;
-      if (role === "client") {
+      // Otherwise, check user role to pick the right default. A user without a
+      // role (just backfilled, or service-role key unavailable) lands on the
+      // client portal — never a staff area.
+      if (role === "client" || !role) {
         return NextResponse.redirect(`${origin}/portal`);
       }
       return NextResponse.redirect(`${origin}${next || "/app/pipeline"}`);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { getPortalClient } from "@/lib/portal";
+import { internalError, notFound, unauthorized } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -8,10 +9,10 @@ export async function GET() {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!currentUser) return unauthorized();
 
     const client = await getPortalClient(supabase, currentUser.id);
-    if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
+    if (!client) return notFound("No client account linked");
 
     // Fetch published reports for this client
     const { data: reports, error } = await supabase
@@ -22,11 +23,11 @@ export async function GET() {
       .order("updated_at", { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalError(error);
     }
 
     return NextResponse.json({ reports: reports || [] });
   } catch {
-    return NextResponse.json({ error: "Failed to fetch reports" }, { status: 500 });
+    return internalError(new Error("Failed to fetch reports"));
   }
 }

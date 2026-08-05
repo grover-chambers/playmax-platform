@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 import { onboardClient } from "@/lib/onboarding";
 
@@ -12,6 +12,10 @@ export async function GET() {
 
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // Client records are internal CRM data — staff route only.
+    if (!isStaff(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     let query = supabase

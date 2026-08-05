@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { REPORT_CATEGORIES } from "@/lib/report-types";
 import type { ChartType } from "@/lib/report-types";
+import { withLogging } from "@/lib/request-log";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+export const POST = withLogging(async function POST(request: Request) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
-}
+});
 
 const subtypeTypeMap: Record<string, string> = {
   market_share: "market_share",

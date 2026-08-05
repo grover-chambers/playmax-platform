@@ -241,12 +241,29 @@ export async function GET(request: NextRequest) {
       : sharing;
 
     const periodIds = [...new Set(filteredSharing.map((s) => s.period_id))];
+
+    // ── Allowlist-derived scope (SECURITY) ──────────────────────────────
+    // portal_analytics_sharing rows are the ONLY source of truth for what
+    // this client may see. A NULL branch_id/category_id on ANY sharing row
+    // means "ALL branches/categories" for that dimension.
+    const sharingAllowsAllBranches = filteredSharing.some((s) => s.branch_id === null);
+    const sharingAllowsAllCategories = filteredSharing.some((s) => s.category_id === null);
+
+    const allowedBranchIds: string[] | null = sharingAllowsAllBranches
+      ? null
+      : [...new Set(filteredSharing.map((s) => s.branch_id).filter((b): b is string => Boolean(b)))];
+    const allowedCategoryIds: string[] | null = sharingAllowsAllCategories
+      ? null
+      : [...new Set(filteredSharing.map((s) => s.category_id).filter((c): c is string => Boolean(c)))];
+
+    // Intersect any client-requested filters with the allowlist so a client
+    // can never read data that was not shared with them.
     const branchIds = filterBranchIds && filterBranchIds.length > 0
-      ? filterBranchIds
-      : [...new Set(filteredSharing.map((s) => s.branch_id).filter(Boolean))] as string[];
+      ? (allowedBranchIds === null ? filterBranchIds : filterBranchIds.filter((b) => allowedBranchIds.includes(b)))
+      : (allowedBranchIds ?? []);
     const categoryIds = filterCategoryIds && filterCategoryIds.length > 0
-      ? filterCategoryIds
-      : [...new Set(filteredSharing.map((s) => s.category_id).filter(Boolean))] as string[];
+      ? (allowedCategoryIds === null ? filterCategoryIds : filterCategoryIds.filter((c) => allowedCategoryIds.includes(c)))
+      : (allowedCategoryIds ?? []);
 
     // Fetch current period sales
     const allSales = await fetchAllSalesWithJoinsFallback(
@@ -306,7 +323,15 @@ export async function GET(request: NextRequest) {
       );
       if (allPeriods.length > 0) {
         const prevPeriodId = allPeriods[0].id;
-        const prevSales = await fetchAllSalesWithJoinsFallback(supabase, [prevPeriodId]);
+        // Apply the same allowlist-derived branch/category scope as the
+        // current-period query so the trend comparison cannot leak data
+        // the client was not shared.
+        const prevSales = await fetchAllSalesWithJoinsFallback(
+          supabase,
+          [prevPeriodId],
+          branchIds.length > 0 ? branchIds : undefined,
+          categoryIds.length > 0 ? categoryIds : undefined,
+        );
         const prevRows = (prevSales || []) as unknown as RawSalesRow[];
         prevTotalSales = prevRows.reduce((s, r) => s + (Number(r.total_amount) || 0), 0);
         prevTotalUnits = prevRows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);

@@ -5,7 +5,7 @@ import { OnboardingEmail } from "@/emails/onboarding";
 import { ResetPasswordEmail } from "@/emails/reset-password";
 import { NotificationEmail } from "@/emails/notification";
 import { sanitizeError } from "@/lib/errors";
-import { rateLimit, rateLimitResponse, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +16,11 @@ const EMAIL_TYPES = {
 } as const;
 
 export async function POST(request: Request) {
-  const ip = getClientIp(request);
-  const rl = rateLimit(`email:${ip}`, { windowMs: 60_000, maxRequests: 5 });
-  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs);
+  const rl = await rateLimit("email", request, {
+    windowSec: 60,
+    maxRequests: 5,
+  });
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
 
   try {
     const supabase = await getAuthenticatedClient();

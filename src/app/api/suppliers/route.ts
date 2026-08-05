@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { withPgFallback } from "@/lib/db-fallback";
 import { queryMany } from "@/lib/db";
+import { apiError, forbidden, internalError, unauthorized } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -9,9 +10,8 @@ export async function GET() {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser || !isAdmin(currentUser.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!currentUser) return unauthorized();
+    if (!isAdmin(currentUser.role)) return forbidden();
 
     const suppliers = await withPgFallback(
       async () => {
@@ -38,15 +38,14 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser || !isAdmin(currentUser.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!currentUser) return unauthorized();
+    if (!isAdmin(currentUser.role)) return forbidden();
 
     const body = await request.json();
     const { name, code, contact_person, phone, email } = body;
 
     if (!name || !name.trim()) {
-      return NextResponse.json({ error: "Supplier name is required" }, { status: 400 });
+      return apiError("validation", "Supplier name is required");
     }
 
     const { data, error } = await supabase
@@ -56,11 +55,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalError(error);
     }
 
     return NextResponse.json({ supplier: data });
   } catch {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return internalError(new Error("Failed to create supplier"));
   }
 }

@@ -11,6 +11,9 @@ import {
   getLatestArticles,
 } from "@/lib/articles-data";
 
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
 export function generateStaticParams() {
   return ARTICLES.map((a) => ({ slug: a.slug }));
 }

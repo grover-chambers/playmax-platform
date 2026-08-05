@@ -19,6 +19,7 @@ function FilterPill({
     <button
       className={`filter-pill ${active ? "active" : ""} ${className}`}
       onClick={onClick}
+      aria-pressed={active}
     >
       {children}
     </button>

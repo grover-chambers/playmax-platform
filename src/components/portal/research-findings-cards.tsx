@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, startTransition } from "react";
 import { BarChart3, TrendingUp, Loader2 } from "lucide-react";
+import { announce } from "./live-region";
 
 interface Finding {
   id: string;
@@ -47,7 +48,10 @@ export default function ResearchFindingsCards({ clientId }: ResearchFindingsCard
           setLoading(false);
         });
       })
-      .catch(() => startTransition(() => setLoading(false)));
+      .catch(() => {
+        startTransition(() => setLoading(false));
+        announce("Failed to load research findings");
+      });
   }, [clientId]);
 
   if (loading) {

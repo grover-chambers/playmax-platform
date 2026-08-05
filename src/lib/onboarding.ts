@@ -52,7 +52,7 @@ export async function onboardClient({ email, name, company }: OnboardClientParam
     if (error) throw new Error(error.message);
   }
 
-  const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/portal/login`;
+  const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/login`;
 
   await sendEmail({
     to: email,

@@ -3,6 +3,7 @@ import { getStripe } from "@/lib/stripe";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { queryOne } from "@/lib/db";
 import { sanitizeError } from "@/lib/errors";
+import { withLogging } from "@/lib/request-log";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ interface ClientRow {
   stripe_subscription_id: string | null;
 }
 
-export async function POST(request: Request) {
+export const POST = withLogging(async function POST(request: Request) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
@@ -80,4 +81,4 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
-}
+});

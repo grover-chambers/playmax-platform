@@ -91,11 +91,11 @@ export default function BookingsCalendar({ bookings }: BookingsCalendarProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-1.5 rounded hover:bg-[var(--ws-bg)] transition-colors">
+        <button onClick={prevMonth} aria-label="Previous month" className="p-1.5 rounded hover:bg-[var(--ws-bg)] transition-colors">
           <ChevronLeft size={16} className="text-gray-4" />
         </button>
         <span className="text-[14px] font-display font-semibold">{monthLabel}</span>
-        <button onClick={nextMonth} className="p-1.5 rounded hover:bg-[var(--ws-bg)] transition-colors">
+        <button onClick={nextMonth} aria-label="Next month" className="p-1.5 rounded hover:bg-[var(--ws-bg)] transition-colors">
           <ChevronRight size={16} className="text-gray-4" />
         </button>
       </div>
