@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
-import { getPortalClient } from "@/lib/portal";
+import { requirePortalClient } from "@/lib/portal-guard";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +12,13 @@ export async function PUT(
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
+    // currentUser is used beyond the client guard (reviewed_by audit field),
+    // so keep the explicit null check for type narrowing.
     if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const client = await getPortalClient(supabase, currentUser.id);
-    if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
+    const portal = await requirePortalClient(supabase, currentUser);
+    if (portal.response) return portal.response;
+    const client = portal.client;
 
     const { id } = await params;
     const body = await req.json();

@@ -25,8 +25,14 @@ export async function GET(request: Request) {
         await ensureDefaultRole(user);
       }
 
-      // If an explicit next path was provided and it's portal-safe, use it
-      if (next && (next.startsWith("/portal") || next === "/login")) {
+      // Portal next paths are honored only for clients; staff are sent to their default
+      if (next?.startsWith("/portal") && role === "client") {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+      if (next?.startsWith("/portal") && role) {
+        return NextResponse.redirect(`${origin}/app/pipeline`);
+      }
+      if (next === "/login") {
         return NextResponse.redirect(`${origin}${next}`);
       }
 

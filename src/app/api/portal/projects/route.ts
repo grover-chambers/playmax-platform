@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
-import { getPortalClient } from "@/lib/portal";
+import { requirePortalClient } from "@/lib/portal-guard";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const client = await getPortalClient(supabase, currentUser.id);
-    if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
+    const portal = await requirePortalClient(supabase, currentUser);
+    if (portal.response) return portal.response;
+    const client = portal.client;
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));

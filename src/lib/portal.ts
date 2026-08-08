@@ -13,6 +13,7 @@ export interface PortalClient {
   created_at: string;
   notification_prefs?: Record<string, boolean>;
   linked_supplier_id: string | null;
+  subscription_tier: string | null;
   portal_role?: string;
 }
 
@@ -26,7 +27,7 @@ export async function getPortalClient(
   supabase: SupabaseClient,
   userId: string
 ): Promise<PortalClient | null> {
-  const CLIENT_COLS = "id, name, email, company, industry, phone, status, created_at, notification_prefs, linked_supplier_id";
+  const CLIENT_COLS = "id, name, email, company, industry, phone, status, created_at, notification_prefs, linked_supplier_id, subscription_tier";
 
   // Try junction table first
   const junction = await withPgFallback(
@@ -58,7 +59,7 @@ export async function getPortalClient(
         if (error) throw error;
         return data;
       },
-      () => queryOne<{ id: string; name: string; email: string | null; company: string | null; industry: string | null; phone: string | null; status: string; created_at: string; notification_prefs: unknown; linked_supplier_id: string | null }>(
+      () => queryOne<{ id: string; name: string; email: string | null; company: string | null; industry: string | null; phone: string | null; status: string; created_at: string; notification_prefs: unknown; linked_supplier_id: string | null; subscription_tier: string | null }>(
         `SELECT ${CLIENT_COLS} FROM clients WHERE id = $1 LIMIT 1`,
         [junction.client_id],
       ),
@@ -80,7 +81,7 @@ export async function getPortalClient(
       if (error) throw error;
       return data;
     },
-    () => queryOne<{ id: string; name: string; email: string | null; company: string | null; industry: string | null; phone: string | null; status: string; created_at: string; notification_prefs: unknown; linked_supplier_id: string | null }>(
+    () => queryOne<{ id: string; name: string; email: string | null; company: string | null; industry: string | null; phone: string | null; status: string; created_at: string; notification_prefs: unknown; linked_supplier_id: string | null; subscription_tier: string | null }>(
       `SELECT ${CLIENT_COLS} FROM clients WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1`,
       [userId],
     ),
@@ -89,4 +90,15 @@ export async function getPortalClient(
 
   if (!client) return null;
   return { ...client, portal_role: "admin", notification_prefs: (client.notification_prefs as Record<string, boolean>) || undefined };
+}
+
+/**
+ * Subscription gate for paid market-analytics endpoints.
+ * Only 'pro' and 'enterprise' tiers unlock market analytics; 'free' (or
+ * missing/legacy NULL) means the client has no active paid subscription.
+ */
+export function isAnalyticsSubscriptionAllowed(
+  tier: string | null | undefined,
+): boolean {
+  return tier === "pro" || tier === "enterprise";
 }

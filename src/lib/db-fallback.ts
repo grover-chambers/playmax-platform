@@ -65,14 +65,14 @@ export async function getClientByUserId(db: SupabaseClient, userId: string) {
     async () => {
       const { data, error } = await db
         .from("clients")
-        .select("id, name, email, company, industry, phone, status, created_at, notification_prefs, linked_supplier_id")
+        .select("id, name, email, company, industry, phone, status, created_at, notification_prefs, linked_supplier_id, subscription_tier")
         .eq("user_id", userId)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
     () => queryOne(
-      `SELECT id, name, email, company, industry, phone, status, created_at, notification_prefs, linked_supplier_id
+      `SELECT id, name, email, company, industry, phone, status, created_at, notification_prefs, linked_supplier_id, subscription_tier
        FROM clients WHERE user_id = $1 LIMIT 1`,
       [userId],
     ),
@@ -174,6 +174,29 @@ export async function getCategoriesByIds(db: SupabaseClient, ids: string[]) {
     ),
     "getCategoriesByIds",
   );
+}
+
+export async function getClientProductCategoryIds(supplierId: string): Promise<string[]> {
+  const junctionRows = await queryMany<{ category_id: string | null }>(
+    `SELECT DISTINCT p.category_id
+     FROM analytics_supplier_products sp
+     JOIN analytics_products p ON p.id = sp.product_id
+     WHERE sp.supplier_id = $1 AND p.category_id IS NOT NULL`,
+    [supplierId],
+  );
+  const junctionCategoryIds = junctionRows
+    .map((r) => r.category_id)
+    .filter((c): c is string => Boolean(c));
+  if (junctionCategoryIds.length > 0) return junctionCategoryIds;
+
+  const salesRows = await queryMany<{ category_id: string | null }>(
+    `SELECT DISTINCT category_id FROM analytics_fact_sales
+     WHERE supplier_id = $1 AND category_id IS NOT NULL`,
+    [supplierId],
+  );
+  return salesRows
+    .map((r) => r.category_id)
+    .filter((c): c is string => Boolean(c));
 }
 
 /* ── Report generation: fetchAllSales with pg fallback ──────── */

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
-import { getPortalClient } from "@/lib/portal";
+import { isAnalyticsSubscriptionAllowed } from "@/lib/portal";
+import { requirePortalClient, subscriptionRequiredResponse } from "@/lib/portal-guard";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { query } from "@/lib/db";
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
@@ -52,10 +53,16 @@ export const POST = withLogging(async function POST(request: Request) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const client = await getPortalClient(supabase, currentUser.id);
-    if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
+    const portal = await requirePortalClient(supabase, currentUser);
+    if (portal.response) return portal.response;
+    const client = portal.client;
+
+    // Paid market-analytics gate: report generation is a paid market-info
+    // feature, so block free tier before rate limiting / lock / any data fetch.
+    if (!isAnalyticsSubscriptionAllowed(client.subscription_tier)) {
+      return subscriptionRequiredResponse();
+    }
 
     // Per-client rate limit (1 generation per 5 min) + concurrency guard via
     // report_generation_locks so a client cannot trigger parallel PDF builds.

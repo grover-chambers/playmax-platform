@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
-import { getPortalClient } from "@/lib/portal";
-import { internalError, notFound, unauthorized } from "@/lib/errors";
+import { isAnalyticsSubscriptionAllowed } from "@/lib/portal";
+import { requirePortalClient, subscriptionRequiredResponse } from "@/lib/portal-guard";
+import { internalError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +10,15 @@ export async function GET() {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser) return unauthorized();
 
-    const client = await getPortalClient(supabase, currentUser.id);
-    if (!client) return notFound("No client account linked");
+    const portal = await requirePortalClient(supabase, currentUser);
+    if (portal.response) return portal.response;
+    const client = portal.client;
+
+    // Paid market-analytics gate: free tier cannot read saved market reports.
+    if (!isAnalyticsSubscriptionAllowed(client.subscription_tier)) {
+      return subscriptionRequiredResponse();
+    }
 
     // Fetch published reports for this client
     const { data: reports, error } = await supabase

@@ -61,16 +61,14 @@ export function canAccess(
 ): boolean {
   if (!role) return false;
 
+  // Portal is client-only
+  if (pathname.startsWith("/portal")) return role === "client";
+
   // Super admin can access everything
   if (role === "super_admin") return true;
 
   // Client can only access portal
-  if (role === "client") {
-    return pathname.startsWith("/portal") || pathname === "/login";
-  }
-
-  // Portal is accessible by clients + all staff
-  if (pathname.startsWith("/portal")) return true;
+  if (role === "client") return pathname === "/login";
 
   const base = getBasePath(pathname);
   const allowed = routePermissions[base];

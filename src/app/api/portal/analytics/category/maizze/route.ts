@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
-import { getPortalClient } from "@/lib/portal";
+import { isAnalyticsSubscriptionAllowed } from "@/lib/portal";
+import { requirePortalClient, subscriptionRequiredResponse } from "@/lib/portal-guard";
 import {
   getSharingRecords,
   getCategoriesByNamePg,
@@ -16,10 +17,15 @@ export async function GET() {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const client = await getPortalClient(supabase, currentUser.id);
-    if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
+    const portal = await requirePortalClient(supabase, currentUser);
+    if (portal.response) return portal.response;
+    const client = portal.client;
+
+    // Paid market-analytics gate: free tier cannot read market analytics.
+    if (!isAnalyticsSubscriptionAllowed(client.subscription_tier)) {
+      return subscriptionRequiredResponse();
+    }
 
     // Sharing records (with pg fallback)
     const sharing = await getSharingRecords(supabase, client.id);

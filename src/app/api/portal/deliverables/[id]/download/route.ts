@@ -4,7 +4,7 @@ import {
   getCurrentUser,
 } from "@/lib/supabase/api";
 import { queryOne } from "@/lib/db";
-import { getPortalClient } from "@/lib/portal";
+import { requirePortalClient } from "@/lib/portal-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -16,14 +16,10 @@ export async function POST(
     const { id } = await params;
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    const portalClient = await getPortalClient(supabase, currentUser.id);
-    if (!portalClient) {
-      return NextResponse.json({ error: "Client not found" }, { status: 404 });
-    }
+    const portal = await requirePortalClient(supabase, currentUser);
+    if (portal.response) return portal.response;
+    const portalClient = portal.client;
 
     const doc = await queryOne<{ id: string; url: string; client_id: string }>(
       `UPDATE deliverables

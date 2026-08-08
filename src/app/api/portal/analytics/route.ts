@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
-import { getPortalClient } from "@/lib/portal";
+import { isAnalyticsSubscriptionAllowed } from "@/lib/portal";
+import { requirePortalClient, subscriptionRequiredResponse } from "@/lib/portal-guard";
 import {
   getSharingRecords,
   fetchAllSalesWithJoinsFallback,
@@ -10,6 +11,7 @@ import {
   getClientColorPg,
   withPgFallback,
   getAllBranchesPg,
+  getClientProductCategoryIds,
 } from "@/lib/db-fallback";
 
 export const dynamic = "force-dynamic";
@@ -204,10 +206,15 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const client = await getPortalClient(supabase, currentUser.id);
-    if (!client) return NextResponse.json({ error: "No client account linked" }, { status: 404 });
+    const portal = await requirePortalClient(supabase, currentUser);
+    if (portal.response) return portal.response;
+    const client = portal.client;
+
+    // Paid market-analytics gate: free tier cannot read market analytics.
+    if (!isAnalyticsSubscriptionAllowed(client.subscription_tier)) {
+      return subscriptionRequiredResponse();
+    }
 
     const { searchParams } = new URL(request.url);
     const filterPeriodId = searchParams.get("period_id");
@@ -253,14 +260,53 @@ export async function GET(request: NextRequest) {
     const allowedBranchIds: string[] = [...new Set(filteredSharing.map((s) => s.branch_id).filter((b): b is string => Boolean(b)))];
     const allowedCategoryIds: string[] = [...new Set(filteredSharing.map((s) => s.category_id).filter((c): c is string => Boolean(c)))];
 
+    // client-category scope
+    const clientCategoryIds = client.linked_supplier_id ? await getClientProductCategoryIds(client.linked_supplier_id) : [];
+    const hasClientCategoryScope = clientCategoryIds.length > 0;
+    const effectiveCategoryIds = hasClientCategoryScope
+      ? (allowedCategoryIds.length === 0 ? clientCategoryIds : clientCategoryIds.filter((c) => allowedCategoryIds.includes(c)))
+      : allowedCategoryIds;
+
+    if (hasClientCategoryScope && effectiveCategoryIds.length === 0) {
+      let periods: { id: string; label: string }[] = [];
+      if (periodIds.length > 0) {
+        const { rows: periodRows } = await import("@/lib/db").then((m) =>
+          m.query<{ id: string; label: string }>(
+            `SELECT id, label FROM analytics_periods WHERE id = ANY($1) ORDER BY year DESC, month DESC, quarter DESC`,
+            [periodIds],
+          ),
+        );
+        periods = periodRows;
+      }
+      let allBranches: { id: string; name: string }[] = [];
+      allBranches = await getAllBranchesPg(allowedBranchIds.length > 0 ? allowedBranchIds : undefined);
+
+      return NextResponse.json({
+        sharing: filteredSharing,
+        sales: [],
+        inventory: [],
+        competitors: [],
+        categories: [],
+        branches: [],
+        topProducts: [],
+        bottomProducts: [],
+        pricing: [],
+        dashboardColor: "#0F6E56",
+        periods,
+        allBranches,
+        allCategories: [],
+        summary: { totalSales: 0, totalUnits: 0, totalInventoryValue: 0, totalProducts: 0, prevTotalSales: 0, prevTotalUnits: 0 },
+      });
+    }
+
     // Intersect any client-requested filters with the allowlist so a client
     // can never read data that was not shared with them.
     const branchIds = filterBranchIds && filterBranchIds.length > 0
       ? (allowedBranchIds.length === 0 ? filterBranchIds : filterBranchIds.filter((b) => allowedBranchIds.includes(b)))
       : allowedBranchIds;
     const categoryIds = filterCategoryIds && filterCategoryIds.length > 0
-      ? (allowedCategoryIds.length === 0 ? filterCategoryIds : filterCategoryIds.filter((c) => allowedCategoryIds.includes(c)))
-      : allowedCategoryIds;
+      ? (effectiveCategoryIds.length === 0 ? filterCategoryIds : filterCategoryIds.filter((c) => effectiveCategoryIds.includes(c)))
+      : effectiveCategoryIds;
 
     // Fetch current period sales
     const allSales = await fetchAllSalesWithJoinsFallback(
@@ -325,7 +371,9 @@ export async function GET(request: NextRequest) {
         // the client was not shared.
         const prevSharing = sharing.filter((s) => s.period_id === prevPeriodId);
         const prevBranchIds = [...new Set(prevSharing.map((s) => s.branch_id).filter((b): b is string => Boolean(b)))];
-        const prevCategoryIds = [...new Set(prevSharing.map((s) => s.category_id).filter((c): c is string => Boolean(c)))];
+        const prevCategoryIds = hasClientCategoryScope
+          ? effectiveCategoryIds
+          : [...new Set(prevSharing.map((s) => s.category_id).filter((c): c is string => Boolean(c)))];
         const prevSales = await fetchAllSalesWithJoinsFallback(
           supabase,
           [prevPeriodId],
