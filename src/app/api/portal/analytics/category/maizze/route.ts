@@ -28,9 +28,6 @@ export async function GET() {
       return NextResponse.json({ maize: null, summary: "No analytics sharing configured" });
     }
 
-    const periodIds = [...new Set(sharing.map((s) => s.period_id))];
-    const branchIds = [...new Set(sharing.map((s) => s.branch_id).filter(Boolean))] as string[];
-
     // Find the Maize category (with pg fallback)
     let catId: string | null = null;
     const cats = await withPgFallback(
@@ -58,6 +55,15 @@ export async function GET() {
     if (!catId) {
       return NextResponse.json({ maize: null, summary: "Maize/maizze category not found in analytics_categories" });
     }
+
+    // scope fix: only sharing rows that permit this category (NULL category =
+    // all categories) count — any other sharing row does not grant maize data.
+    const maizeSharing = sharing.filter((s) => s.category_id === null || s.category_id === catId);
+    if (maizeSharing.length === 0) {
+      return NextResponse.json({ maize: null, summary: "Maize category is not shared with your account" });
+    }
+    const periodIds = [...new Set(maizeSharing.map((s) => s.period_id))];
+    const branchIds = [...new Set(maizeSharing.map((s) => s.branch_id).filter((b): b is string => Boolean(b)))] as string[];
 
     // Fetch sales (pg fallback — joins done in SQL)
     const salesRows = await fetchMaizzeSalesPg(periodIds, catId, branchIds.length > 0 ? branchIds : undefined);
@@ -123,8 +129,8 @@ export async function GET() {
     }
     const branches = Array.from(branchGrouped.values()).sort((a, b) => b.total - a.total);
 
-    // Pricing within Maize (pg fallback)
-    const pricingRaw = await fetchPricingByCategoryPg(catId);
+    // Pricing within Maize (pg fallback, scoped to allowed branches)
+    const pricingRaw = await fetchPricingByCategoryPg(catId, branchIds.length > 0 ? branchIds : undefined);
     const pricing = pricingRaw.map((p) => {
       const prod = p.product as { name: string; stock_code: string } | undefined;
       const branch = p.branch as { name: string; code: string } | undefined;

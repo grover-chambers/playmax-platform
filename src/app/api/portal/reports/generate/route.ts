@@ -26,6 +26,7 @@ import {
   getDeliverablesByCategoryPg,
   deleteDeliverablesPg,
   insertDeliverablePg,
+  acquireReportLock,
 } from "@/lib/db-fallback";
 
 export const dynamic = "force-dynamic";
@@ -67,7 +68,8 @@ export const POST = withLogging(async function POST(request: Request) {
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
 
     try {
-      await query("INSERT INTO report_generation_locks (client_id) VALUES ($1)", [client.id]);
+      // scope fix: acquireReportLock clears stale locks from crashed runs
+      await acquireReportLock(client.id);
     } catch (lockErr) {
       if ((lockErr as { code?: string })?.code === "23505") {
         return NextResponse.json(

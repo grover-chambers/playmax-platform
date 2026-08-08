@@ -35,12 +35,13 @@ export async function getPortalClient(
         .from("client_users")
         .select("client_id, portal_role")
         .eq("user_id", userId)
+        .order("created_at", { ascending: true })
         .maybeSingle();
       if (error) throw error;
       return data;
     },
     () => queryOne<{ client_id: string; portal_role: string }>(
-      `SELECT client_id, portal_role FROM client_users WHERE user_id = $1 LIMIT 1`,
+      `SELECT client_id, portal_role FROM client_users WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1`,
       [userId],
     ),
     "getPortalClient-junction",
@@ -74,12 +75,13 @@ export async function getPortalClient(
         .from("clients")
         .select(CLIENT_COLS)
         .eq("user_id", userId)
+        .order("created_at", { ascending: true })
         .maybeSingle();
       if (error) throw error;
       return data;
     },
     () => queryOne<{ id: string; name: string; email: string | null; company: string | null; industry: string | null; phone: string | null; status: string; created_at: string; notification_prefs: unknown; linked_supplier_id: string | null }>(
-      `SELECT ${CLIENT_COLS} FROM clients WHERE user_id = $1 LIMIT 1`,
+      `SELECT ${CLIENT_COLS} FROM clients WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1`,
       [userId],
     ),
     "getPortalClient-legacy",

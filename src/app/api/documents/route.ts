@@ -74,6 +74,7 @@ export async function POST(request: Request) {
     // Non-staff (portal clients) may only attach documents to their own
     // client's projects — otherwise a client could write into another
     // client's project by supplying an arbitrary project_id.
+    let effectiveClientId = client_id;
     if (!isStaff(currentUser.role)) {
       const client = await getPortalClient(supabase, currentUser.id);
       if (!client) {
@@ -88,13 +89,15 @@ export async function POST(request: Request) {
       if (!project) {
         return NextResponse.json({ error: "Project not found" }, { status: 404 });
       }
+      // scope fix: force client_id to the authenticated client — never trust the body
+      effectiveClientId = client.id;
     }
 
     const { data, error } = await supabase
       .from("documents")
       .insert({
         project_id,
-        client_id,
+        client_id: effectiveClientId,
         name,
         type: type || "other",
         url,

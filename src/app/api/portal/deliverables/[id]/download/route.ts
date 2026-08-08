@@ -28,7 +28,8 @@ export async function POST(
     const doc = await queryOne<{ id: string; url: string; client_id: string }>(
       `UPDATE deliverables
        SET download_count = download_count + 1
-       WHERE id = $1 AND visible_to_client = true AND (client_id = $2 OR $2 IS NULL)
+       WHERE id = $1 AND visible_to_client = true
+         AND (client_id = $2 OR project_id IN (SELECT id FROM projects WHERE client_id = $2))
        RETURNING id, url, client_id`,
       [id, portalClient.id],
     );

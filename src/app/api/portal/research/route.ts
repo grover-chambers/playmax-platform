@@ -23,6 +23,27 @@ export async function GET(req: NextRequest) {
       .order("sort_order", { ascending: true });
 
     if (reportId) {
+      // scope fix: explicit ownership check — the report must belong to this
+      // client directly or via a project the client owns (mirrors RLS).
+      const { data: report } = await supabase
+        .from("reports")
+        .select("id, client_id, project_id")
+        .eq("id", reportId)
+        .maybeSingle();
+
+      let owned = !!report && report.client_id === client.id;
+      if (!owned && report?.project_id) {
+        const { data: project } = await supabase
+          .from("projects")
+          .select("id")
+          .eq("id", report.project_id)
+          .eq("client_id", client.id)
+          .maybeSingle();
+        owned = !!project;
+      }
+      if (!owned) {
+        return NextResponse.json({ findings: [] });
+      }
       query = query.eq("report_id", reportId);
     } else {
       const { data: reports } = await supabase

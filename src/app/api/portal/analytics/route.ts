@@ -244,26 +244,23 @@ export async function GET(request: NextRequest) {
 
     // ── Allowlist-derived scope (SECURITY) ──────────────────────────────
     // portal_analytics_sharing rows are the ONLY source of truth for what
-    // this client may see. A NULL branch_id/category_id on ANY sharing row
-    // means "ALL branches/categories" for that dimension.
-    const sharingAllowsAllBranches = filteredSharing.some((s) => s.branch_id === null);
-    const sharingAllowsAllCategories = filteredSharing.some((s) => s.category_id === null);
-
-    const allowedBranchIds: string[] | null = sharingAllowsAllBranches
-      ? null
-      : [...new Set(filteredSharing.map((s) => s.branch_id).filter((b): b is string => Boolean(b)))];
-    const allowedCategoryIds: string[] | null = sharingAllowsAllCategories
-      ? null
-      : [...new Set(filteredSharing.map((s) => s.category_id).filter((c): c is string => Boolean(c)))];
+    // this client may see. A NULL branch_id/category_id on a row means "ALL
+    // branches/categories for that row's period". Resolution is CONSERVATIVE:
+    // the effective sets are the union of explicitly-shared values; an empty
+    // set means the dimension is unrestricted (NULL row present). Multiple
+    // rows are applied as a JOIN (branch set ∩ category set) so the NULL
+    // cross-product can never widen a client's view.
+    const allowedBranchIds: string[] = [...new Set(filteredSharing.map((s) => s.branch_id).filter((b): b is string => Boolean(b)))];
+    const allowedCategoryIds: string[] = [...new Set(filteredSharing.map((s) => s.category_id).filter((c): c is string => Boolean(c)))];
 
     // Intersect any client-requested filters with the allowlist so a client
     // can never read data that was not shared with them.
     const branchIds = filterBranchIds && filterBranchIds.length > 0
-      ? (allowedBranchIds === null ? filterBranchIds : filterBranchIds.filter((b) => allowedBranchIds.includes(b)))
-      : (allowedBranchIds ?? []);
+      ? (allowedBranchIds.length === 0 ? filterBranchIds : filterBranchIds.filter((b) => allowedBranchIds.includes(b)))
+      : allowedBranchIds;
     const categoryIds = filterCategoryIds && filterCategoryIds.length > 0
-      ? (allowedCategoryIds === null ? filterCategoryIds : filterCategoryIds.filter((c) => allowedCategoryIds.includes(c)))
-      : (allowedCategoryIds ?? []);
+      ? (allowedCategoryIds.length === 0 ? filterCategoryIds : filterCategoryIds.filter((c) => allowedCategoryIds.includes(c)))
+      : allowedCategoryIds;
 
     // Fetch current period sales
     const allSales = await fetchAllSalesWithJoinsFallback(
@@ -286,9 +283,7 @@ export async function GET(request: NextRequest) {
         periods = periodRows;
       }
       let allBranches: { id: string; name: string }[] = [];
-      if (branchIds.length > 0) {
-        allBranches = await getAllBranchesPg();
-      }
+      allBranches = await getAllBranchesPg(allowedBranchIds.length > 0 ? allowedBranchIds : undefined);
 
       return NextResponse.json({
         sharing: filteredSharing,
@@ -314,11 +309,13 @@ export async function GET(request: NextRequest) {
     let prevTotalSales = 0;
     let prevTotalUnits = 0;
     if (periodIds.length === 1) {
-      // Find a period that comes before the current one
+      // The comparison period must come from THIS client's sharing allowlist,
+      // never the global latest period across all clients' data.
+      const sharedPeriodIds = [...new Set(sharing.map((s) => s.period_id))];
       const { rows: allPeriods } = await import("@/lib/db").then((m) =>
         m.query<{ id: string }>(
-          `SELECT id FROM analytics_periods WHERE id != ALL($1) ORDER BY year DESC, month DESC, quarter DESC LIMIT 1`,
-          [periodIds],
+          `SELECT id FROM analytics_periods WHERE id = ANY($1) AND id != ALL($2) ORDER BY year DESC, month DESC, quarter DESC LIMIT 1`,
+          [sharedPeriodIds, periodIds],
         ),
       );
       if (allPeriods.length > 0) {
@@ -326,11 +323,14 @@ export async function GET(request: NextRequest) {
         // Apply the same allowlist-derived branch/category scope as the
         // current-period query so the trend comparison cannot leak data
         // the client was not shared.
+        const prevSharing = sharing.filter((s) => s.period_id === prevPeriodId);
+        const prevBranchIds = [...new Set(prevSharing.map((s) => s.branch_id).filter((b): b is string => Boolean(b)))];
+        const prevCategoryIds = [...new Set(prevSharing.map((s) => s.category_id).filter((c): c is string => Boolean(c)))];
         const prevSales = await fetchAllSalesWithJoinsFallback(
           supabase,
           [prevPeriodId],
-          branchIds.length > 0 ? branchIds : undefined,
-          categoryIds.length > 0 ? categoryIds : undefined,
+          prevBranchIds.length > 0 ? prevBranchIds : undefined,
+          prevCategoryIds.length > 0 ? prevCategoryIds : undefined,
         );
         const prevRows = (prevSales || []) as unknown as RawSalesRow[];
         prevTotalSales = prevRows.reduce((s, r) => s + (Number(r.total_amount) || 0), 0);
@@ -339,10 +339,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Inventory data
-    const inventory = await fetchInventoryFallback(supabase, branchIds.length > 0 ? branchIds : undefined);
+    const inventory = await fetchInventoryFallback(supabase, branchIds.length > 0 ? branchIds : undefined, categoryIds.length > 0 ? categoryIds : undefined, periodIds.length > 0 ? periodIds : undefined);
 
     // Pricing data
-    const pricingRaw = await fetchPricingFallback(supabase, branchIds.length > 0 ? branchIds : undefined);
+    const pricingRaw = await fetchPricingFallback(supabase, branchIds.length > 0 ? branchIds : undefined, categoryIds.length > 0 ? categoryIds : undefined, periodIds.length > 0 ? periodIds : undefined);
 
     // Fetch supplier names
     const salesRows = sales as unknown as RawSalesRow[];
@@ -449,11 +449,9 @@ export async function GET(request: NextRequest) {
       periods = periodRows;
     }
 
-    // Branches
+    // Branches (scoped to the client's sharing allowlist; NULL = all)
     let allBranches: { id: string; name: string }[] = [];
-    if (allBranchIds.length > 0) {
-      allBranches = await getAllBranchesPg();
-    }
+    allBranches = await getAllBranchesPg(allBranchIds.length > 0 ? allBranchIds : undefined);
 
     // Categories
     const uniqueCats = [...new Set(salesRows.map((r) => r.category?.name).filter(Boolean))];

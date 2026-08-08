@@ -27,14 +27,25 @@ export async function PUT(
 
     const { data: deliverable, error: fetchError } = await supabase
       .from("deliverables")
-      .select("id, client_id, title, approval_status")
+      .select("id, client_id, project_id, title, approval_status")
       .eq("id", id)
       .single();
 
     if (fetchError || !deliverable) {
       return NextResponse.json({ error: "Deliverable not found" }, { status: 404 });
     }
-    if (deliverable.client_id !== client.id) {
+    // Owned via direct client_id OR via a project whose client is this client.
+    let owned = deliverable.client_id === client.id;
+    if (!owned && deliverable.project_id) {
+      const { data: project } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("id", deliverable.project_id)
+        .eq("client_id", client.id)
+        .maybeSingle();
+      owned = !!project;
+    }
+    if (!owned) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

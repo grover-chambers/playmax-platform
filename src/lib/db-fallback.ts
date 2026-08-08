@@ -316,22 +316,24 @@ export async function fetchAllSalesWithJoinsPg(
 
 /* ── Inventory with joins via pg ────────────────────────────── */
 
-export async function fetchInventoryFallback(db: SupabaseClient, branchIds?: string[]) {
+export async function fetchInventoryFallback(db: SupabaseClient, branchIds?: string[], categoryIds?: string[], periodIds?: string[]) {
   return withPgFallback(
     async () => {
       let q = db
         .from("analytics_fact_inventory")
         .select("id, closing_stock, stock_value, product:analytics_products(name, stock_code), branch:analytics_branches(name, code), period:analytics_periods(end_date)");
       if (branchIds && branchIds.length > 0) q = q.in("branch_id", branchIds);
+      if (categoryIds && categoryIds.length > 0) q = q.in("category_id", categoryIds);
+      if (periodIds && periodIds.length > 0) q = q.in("period_id", periodIds);
       const { data } = await q.order("period_id", { ascending: false }).limit(500);
       return data ?? [];
     },
-    () => fetchInventoryPg(branchIds),
+    () => fetchInventoryPg(branchIds, categoryIds, periodIds),
     "fetchInventory",
   );
 }
 
-export async function fetchInventoryPg(branchIds?: string[]): Promise<Record<string, unknown>[]> {
+export async function fetchInventoryPg(branchIds?: string[], categoryIds?: string[], periodIds?: string[]): Promise<Record<string, unknown>[]> {
   let sql = `
     SELECT
       i.id, i.closing_stock, i.stock_value,
@@ -344,10 +346,21 @@ export async function fetchInventoryPg(branchIds?: string[]): Promise<Record<str
     LEFT JOIN analytics_periods pe ON pe.id = i.period_id
   `;
   const params: unknown[] = [];
+  const conds: string[] = [];
+  let idx = 1;
   if (branchIds && branchIds.length > 0) {
-    sql += ` WHERE i.branch_id = ANY($1)`;
+    conds.push(`i.branch_id = ANY($${idx++})`);
     params.push(branchIds);
   }
+  if (categoryIds && categoryIds.length > 0) {
+    conds.push(`i.category_id = ANY($${idx++})`);
+    params.push(categoryIds);
+  }
+  if (periodIds && periodIds.length > 0) {
+    conds.push(`i.period_id = ANY($${idx++})`);
+    params.push(periodIds);
+  }
+  if (conds.length > 0) sql += ` WHERE ${conds.join(" AND ")}`;
   sql += ` ORDER BY i.period_id DESC LIMIT 500`;
   const { rows } = await query(sql, params);
   return rows.map((r: Record<string, unknown>) => ({
@@ -362,22 +375,24 @@ export async function fetchInventoryPg(branchIds?: string[]): Promise<Record<str
 
 /* ── Pricing with joins via pg ──────────────────────────────── */
 
-export async function fetchPricingFallback(db: SupabaseClient, branchIds?: string[]) {
+export async function fetchPricingFallback(db: SupabaseClient, branchIds?: string[], categoryIds?: string[], periodIds?: string[]) {
   return withPgFallback(
     async () => {
       let q = db
         .from("analytics_fact_pricing")
         .select("id, standard_cost, selling_price, effective_date, product:analytics_products(name, stock_code), branch:analytics_branches(name, code)");
       if (branchIds && branchIds.length > 0) q = q.in("branch_id", branchIds);
+      if (categoryIds && categoryIds.length > 0) q = q.in("category_id", categoryIds);
+      if (periodIds && periodIds.length > 0) q = q.in("period_id", periodIds);
       const { data } = await q.order("effective_date", { ascending: false }).limit(200);
       return data ?? [];
     },
-    () => fetchPricingPg(branchIds),
+    () => fetchPricingPg(branchIds, categoryIds, periodIds),
     "fetchPricing",
   );
 }
 
-export async function fetchPricingPg(branchIds?: string[]): Promise<Record<string, unknown>[]> {
+export async function fetchPricingPg(branchIds?: string[], categoryIds?: string[], periodIds?: string[]): Promise<Record<string, unknown>[]> {
   let sql = `
     SELECT
       pr.id, pr.standard_cost, pr.selling_price, pr.effective_date,
@@ -388,10 +403,21 @@ export async function fetchPricingPg(branchIds?: string[]): Promise<Record<strin
     LEFT JOIN analytics_branches b ON b.id = pr.branch_id
   `;
   const params: unknown[] = [];
+  const conds: string[] = [];
+  let idx = 1;
   if (branchIds && branchIds.length > 0) {
-    sql += ` WHERE pr.branch_id = ANY($1)`;
+    conds.push(`pr.branch_id = ANY($${idx++})`);
     params.push(branchIds);
   }
+  if (categoryIds && categoryIds.length > 0) {
+    conds.push(`pr.category_id = ANY($${idx++})`);
+    params.push(categoryIds);
+  }
+  if (periodIds && periodIds.length > 0) {
+    conds.push(`pr.period_id = ANY($${idx++})`);
+    params.push(periodIds);
+  }
+  if (conds.length > 0) sql += ` WHERE ${conds.join(" AND ")}`;
   sql += ` ORDER BY pr.effective_date DESC LIMIT 200`;
   const { rows } = await query(sql, params);
   return rows.map((r: Record<string, unknown>) => ({
@@ -406,20 +432,25 @@ export async function fetchPricingPg(branchIds?: string[]): Promise<Record<strin
 
 /* ── Pricing by category (maizze route) via pg ──────────────── */
 
-export async function fetchPricingByCategoryPg(categoryId: string): Promise<Record<string, unknown>[]> {
-  const { rows } = await query(
-    `SELECT
+export async function fetchPricingByCategoryPg(categoryId: string, branchIds?: string[]): Promise<Record<string, unknown>[]> {
+  let sql = `
+    SELECT
        pr.id, pr.standard_cost, pr.selling_price, pr.effective_date,
        p.name AS product_name, p.stock_code AS product_stock_code,
        b.name AS branch_name, b.code AS branch_code
      FROM analytics_fact_pricing pr
      LEFT JOIN analytics_products p ON p.id = pr.product_id
      LEFT JOIN analytics_branches b ON b.id = pr.branch_id
-     WHERE p.category_id = $1
+     WHERE p.category_id = $1`;
+  const params: unknown[] = [categoryId];
+  if (branchIds && branchIds.length > 0) {
+    sql += ` AND pr.branch_id = ANY($2)`;
+    params.push(branchIds);
+  }
+  sql += `
      ORDER BY pr.effective_date DESC
-     LIMIT 100`,
-    [categoryId],
-  );
+     LIMIT 100`;
+  const { rows } = await query(sql, params);
   return rows.map((r: Record<string, unknown>) => ({
     id: r.id,
     standard_cost: r.standard_cost,
@@ -598,7 +629,13 @@ export async function fetchMaizzeSalesPg(
 
 /* ── Branches + Products lookups via pg ─────────────────────── */
 
-export async function getAllBranchesPg(): Promise<{ id: string; name: string }[]> {
+export async function getAllBranchesPg(branchIds?: string[]): Promise<{ id: string; name: string }[]> {
+  if (branchIds && branchIds.length > 0) {
+    return queryMany<{ id: string; name: string }>(
+      `SELECT id, name FROM analytics_branches WHERE id = ANY($1)`,
+      [branchIds],
+    );
+  }
   return queryMany<{ id: string; name: string }>(`SELECT id, name FROM analytics_branches`);
 }
 
@@ -615,4 +652,21 @@ export async function getPeriodLabelsPg(periodIds: string[]): Promise<{ label: s
     `SELECT label FROM analytics_periods WHERE id = ANY($1) ORDER BY year ASC, month ASC`,
     [periodIds],
   );
+}
+
+/* ── Report generation locks (staleness-guarded) ────────────── */
+
+/**
+ * Acquire the per-client report_generation_lock. Clears any stale lock
+ * (a crashed run leaves the row behind) before inserting so a dead lock
+ * can never block report generation forever. Unique constraint on
+ * client_id is preserved — a concurrent fresh run still raises 23505.
+ */
+export async function acquireReportLock(clientId: string, staleSeconds = 120): Promise<void> {
+  await query(
+    `DELETE FROM report_generation_locks
+     WHERE client_id = $1 AND started_at < now() - $2::interval`,
+    [clientId, `${staleSeconds} seconds`],
+  );
+  await query("INSERT INTO report_generation_locks (client_id) VALUES ($1)", [clientId]);
 }
