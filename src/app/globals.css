@@ -772,6 +772,30 @@ h6 {
     background: #0d0d0d;
 }
 
+/* Zone chips — visible marker distinguishing the STAFF portal from the
+   CLIENT portal even though both use the same DashboardLayout shell. */
+.pm-zone-chip {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: var(--radius-full);
+    border: 1px solid;
+    white-space: nowrap;
+    font-weight: 600;
+}
+.pm-zone-chip-staff {
+    color: var(--pm-teal);
+    border-color: rgba(15, 118, 110, 0.35);
+    background: rgba(15, 118, 110, 0.08);
+}
+.pm-zone-chip-client {
+    color: #B45309;
+    border-color: rgba(180, 83, 9, 0.35);
+    background: rgba(180, 83, 9, 0.08);
+}
+
 /* Sidebar */
 .sidebar {
     background: var(--pm-sidebar);

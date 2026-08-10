@@ -176,27 +176,60 @@ export async function getCategoriesByIds(db: SupabaseClient, ids: string[]) {
   );
 }
 
-export async function getClientProductCategoryIds(supplierId: string): Promise<string[]> {
-  const junctionRows = await queryMany<{ category_id: string | null }>(
-    `SELECT DISTINCT p.category_id
-     FROM analytics_supplier_products sp
-     JOIN analytics_products p ON p.id = sp.product_id
-     WHERE sp.supplier_id = $1 AND p.category_id IS NOT NULL`,
-    [supplierId],
-  );
-  const junctionCategoryIds = junctionRows
-    .map((r) => r.category_id)
-    .filter((c): c is string => Boolean(c));
-  if (junctionCategoryIds.length > 0) return junctionCategoryIds;
+export async function getClientProductCategoryIds(db: SupabaseClient, supplierId: string): Promise<string[]> {
+  return withPgFallback(
+    async () => {
+      const { data: junction, error: junctionErr } = await db
+        .from("analytics_supplier_products")
+        .select("product_id")
+        .eq("supplier_id", supplierId);
+      if (junctionErr) throw junctionErr;
+      const productIds = (junction ?? []).map((r) => r.product_id);
+      let junctionCategoryIds: string[] = [];
+      if (productIds.length > 0) {
+        const { data: prods, error: prodErr } = await db
+          .from("analytics_products")
+          .select("category_id")
+          .in("id", productIds);
+        if (prodErr) throw prodErr;
+        junctionCategoryIds = Array.from(
+          new Set((prods ?? []).map((p) => p.category_id).filter(Boolean)),
+        );
+      }
+      if (junctionCategoryIds.length > 0) return junctionCategoryIds;
 
-  const salesRows = await queryMany<{ category_id: string | null }>(
-    `SELECT DISTINCT category_id FROM analytics_fact_sales
-     WHERE supplier_id = $1 AND category_id IS NOT NULL`,
-    [supplierId],
+      const { data: sales, error: salesErr } = await db
+        .from("analytics_fact_sales")
+        .select("category_id")
+        .eq("supplier_id", supplierId)
+        .not("category_id", "is", null);
+      if (salesErr) throw salesErr;
+      return Array.from(new Set((sales ?? []).map((r) => r.category_id).filter(Boolean)));
+    },
+    async () => {
+      const junctionRows = await queryMany<{ category_id: string | null }>(
+        `SELECT DISTINCT p.category_id
+         FROM analytics_supplier_products sp
+         JOIN analytics_products p ON p.id = sp.product_id
+         WHERE sp.supplier_id = $1 AND p.category_id IS NOT NULL`,
+        [supplierId],
+      );
+      const junctionCategoryIds = junctionRows
+        .map((r) => r.category_id)
+        .filter((c): c is string => Boolean(c));
+      if (junctionCategoryIds.length > 0) return junctionCategoryIds;
+
+      const salesRows = await queryMany<{ category_id: string | null }>(
+        `SELECT DISTINCT category_id FROM analytics_fact_sales
+         WHERE supplier_id = $1 AND category_id IS NOT NULL`,
+        [supplierId],
+      );
+      return salesRows
+        .map((r) => r.category_id)
+        .filter((c): c is string => Boolean(c));
+    },
+    "getClientProductCategoryIds",
   );
-  return salesRows
-    .map((r) => r.category_id)
-    .filter((c): c is string => Boolean(c));
 }
 
 /* ── Report generation: fetchAllSales with pg fallback ──────── */
@@ -484,6 +517,38 @@ export async function fetchPricingByCategoryPg(categoryId: string, branchIds?: s
   }));
 }
 
+export async function fetchPricingByCategoryFallback(
+  db: SupabaseClient,
+  categoryId: string,
+  branchIds?: string[],
+): Promise<Record<string, unknown>[]> {
+  return withPgFallback(
+    async () => {
+      const { data: prods, error: prodErr } = await db
+        .from("analytics_products")
+        .select("id")
+        .eq("category_id", categoryId);
+      if (prodErr) throw prodErr;
+      const productIds = (prods ?? []).map((p) => p.id);
+      if (productIds.length === 0) return [];
+      let request = db
+        .from("analytics_fact_pricing")
+        .select(
+          "id, standard_cost, selling_price, effective_date, product:analytics_products(name, stock_code), branch:analytics_branches(name, code)",
+        )
+        .in("product_id", productIds)
+        .order("effective_date", { ascending: false })
+        .limit(100);
+      if (branchIds && branchIds.length > 0) request = request.in("branch_id", branchIds);
+      const { data, error } = await request;
+      if (error) throw error;
+      return (data ?? []) as Record<string, unknown>[];
+    },
+    () => fetchPricingByCategoryPg(categoryId, branchIds),
+    "fetchPricingByCategory",
+  );
+}
+
 /* ── Client dashboard color via pg ──────────────────────────── */
 
 export async function getClientColorPg(clientId: string): Promise<string | null> {
@@ -650,6 +715,40 @@ export async function fetchMaizzeSalesPg(
   }));
 }
 
+export async function fetchMaizzeSalesFallback(
+  db: SupabaseClient,
+  periodIds: string[],
+  categoryId: string,
+  branchIds?: string[],
+): Promise<Record<string, unknown>[]> {
+  return withPgFallback(
+    async () => {
+      const all: Record<string, unknown>[] = [];
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        let request = db
+          .from("analytics_fact_sales")
+          .select(
+            "id, quantity, total_amount, cost_amount, unit_price, product_id, branch_id, period_id, supplier_id, product:analytics_products(name, stock_code), period:analytics_periods(label, year, quarter, month), branch:analytics_branches(name, code)",
+          )
+          .in("period_id", periodIds)
+          .eq("category_id", categoryId);
+        if (branchIds && branchIds.length > 0) request = request.in("branch_id", branchIds);
+        const { data, error } = await request.range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        from += PAGE;
+        if (data.length < PAGE) break;
+      }
+      return all;
+    },
+    () => fetchMaizzeSalesPg(periodIds, categoryId, branchIds),
+    "fetchMaizzeSales",
+  );
+}
+
 /* ── Branches + Products lookups via pg ─────────────────────── */
 
 export async function getAllBranchesPg(branchIds?: string[]): Promise<{ id: string; name: string }[]> {
@@ -660,6 +759,43 @@ export async function getAllBranchesPg(branchIds?: string[]): Promise<{ id: stri
     );
   }
   return queryMany<{ id: string; name: string }>(`SELECT id, name FROM analytics_branches`);
+}
+
+export async function getAllBranchesFallback(db: SupabaseClient, branchIds?: string[]): Promise<{ id: string; name: string }[]> {
+  return withPgFallback(
+    async () => {
+      let request = db.from("analytics_branches").select("id, name");
+      if (branchIds && branchIds.length > 0) request = request.in("id", branchIds);
+      const { data, error } = await request;
+      if (error) throw error;
+      return data ?? [];
+    },
+    () => getAllBranchesPg(branchIds),
+    "getAllBranches",
+  );
+}
+
+export async function getPeriodsByIds(db: SupabaseClient, ids: string[]): Promise<{ id: string; label: string }[]> {
+  if (ids.length === 0) return [];
+  return withPgFallback(
+    async () => {
+      const { data, error } = await db
+        .from("analytics_periods")
+        .select("id, label")
+        .in("id", ids)
+        .order("year", { ascending: false })
+        .order("month", { ascending: false })
+        .order("quarter", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    async () =>
+      queryMany<{ id: string; label: string }>(
+        `SELECT id, label FROM analytics_periods WHERE id = ANY($1) ORDER BY year DESC, month DESC, quarter DESC`,
+        [ids],
+      ),
+    "getPeriodsByIds",
+  );
 }
 
 export async function getAllProductsPg(): Promise<{ id: string; name: string }[]> {

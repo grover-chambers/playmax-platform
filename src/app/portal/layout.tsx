@@ -90,14 +90,20 @@ export default function PortalLayout({
       <LiveRegion />
       <DashboardLayout
         navItems={portalNavItems}
-        topBar={<NotificationBell />}
+        topBar={
+          <div className="flex items-center gap-2">
+            <span className="pm-zone-chip pm-zone-chip-client">Client</span>
+            <NotificationBell />
+          </div>
+        }
         user={{
           initials,
           name: user?.user_metadata?.name || user?.email || "Client",
           role: getRoleLabel(role),
         }}
         onSignOut={handleSignOut}
-        logoSubtitle="Portal"
+        logoSubtitle="Client Portal"
+        accent="#B45309"
         userExtra={
           <Link
             href="/portal/settings"

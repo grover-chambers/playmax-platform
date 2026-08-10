@@ -150,7 +150,7 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    const { error: authErr } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -158,6 +158,16 @@ function LoginForm() {
     if (authErr) {
       setError(authErr.message);
       setLoading(false);
+      return;
+    }
+
+    // Login invariant: staff always land in /app/*, clients always in /portal.
+    // Even a staff user who submits the client form must not be sent to the
+    // client portal (the portal layout would bounce them, but the invariant
+    // forbids landing there at all).
+    const role = (authData.user?.app_metadata?.role as string) || "";
+    if (role && STAFF_REDIRECTS[role]) {
+      router.push(STAFF_REDIRECTS[role]);
       return;
     }
 

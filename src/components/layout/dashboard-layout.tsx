@@ -31,6 +31,9 @@ interface DashboardLayoutProps {
   onSignOut: () => void;
   logoSubtitle?: string;
   userExtra?: React.ReactNode;
+  /** Overrides the workspace accent (--ws-accent) so the client and staff
+   *  portals are visually distinct. */
+  accent?: string;
 }
 
 export default function DashboardLayout({
@@ -43,6 +46,7 @@ export default function DashboardLayout({
   onSignOut,
   logoSubtitle,
   userExtra,
+  accent,
 }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -166,6 +170,7 @@ export default function DashboardLayout({
   return (
     <div
       className={`platform-shell min-h-screen! ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
+      style={accent ? ({ "--ws-accent": accent } as React.CSSProperties) : undefined}
     >
       {/* Mobile menu trigger */}
       <button

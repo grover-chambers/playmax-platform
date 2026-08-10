@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { isAnalyticsSubscriptionAllowed } from "@/lib/portal";
 import { requirePortalClient, subscriptionRequiredResponse } from "@/lib/portal-guard";
 import {
@@ -10,8 +11,10 @@ import {
   getSuppliersByIds,
   getClientColorPg,
   withPgFallback,
-  getAllBranchesPg,
+  getAllBranchesFallback,
+  getPeriodsByIds,
   getClientProductCategoryIds,
+  getCategoriesByIds,
 } from "@/lib/db-fallback";
 
 export const dynamic = "force-dynamic";
@@ -202,6 +205,99 @@ function processSalesIntoVisualizations(
   return { categories, branches, allProducts, pricing, grandTotal };
 }
 
+/* ── Share-over-time trend + branch matrix builders ─────────── */
+
+interface SalesTrendPoint {
+  period_id: string;
+  label: string;
+  totalSales: number;
+  totalUnits: number;
+  clientSales: number;
+  clientShare: number;
+}
+
+interface BranchMatrixRow {
+  branch_id: string;
+  branch_name: string;
+  branch_code: string;
+  suppliers: {
+    name: string;
+    total_sales: number;
+    share: number;
+    is_client: boolean;
+  }[];
+}
+
+/**
+ * Build the share-over-time series from the (allowlist-scoped) sales rows.
+ * Each shared period becomes one point: total market revenue, the client's
+ * own revenue, and the client's share of that period. Uses the same
+ * linked-supplier matching as the competitor ranking so the trend cannot
+ * attribute another supplier's revenue to the client.
+ */
+function buildSalesTrend(
+  salesRows: RawSalesRow[],
+  linkedSupplierId: string | null,
+  nameToUuids: Map<string, Set<string>>,
+  clientCompany: string,
+): SalesTrendPoint[] {
+  const byPeriod = new Map<string, SalesTrendPoint>();
+  for (const row of salesRows) {
+    const pid = row.period_id || "unknown";
+    const label = row.period?.label || pid;
+    const point = byPeriod.get(pid) || { period_id: pid, label, totalSales: 0, totalUnits: 0, clientSales: 0, clientShare: 0 };
+    const amount = Number(row.total_amount) || 0;
+    point.totalSales += amount;
+    point.totalUnits += Number(row.quantity) || 0;
+    if (row.supplier_id) {
+      const isClient = linkedSupplierId
+        ? nameToUuids.get(row.supplier_id)?.has(linkedSupplierId)
+        : row.supplier_id.trim().toLowerCase() === clientCompany;
+      if (isClient) point.clientSales += amount;
+    }
+    byPeriod.set(pid, point);
+  }
+  return Array.from(byPeriod.values())
+    .map((p) => ({ ...p, clientShare: p.totalSales > 0 ? (p.clientSales / p.totalSales) * 100 : 0 }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+}
+
+/**
+ * Branch × supplier matrix within the client's scope: each branch lists its
+ * top suppliers (top 6 by revenue) with the supplier's share of that branch,
+ * flagging the client itself. Backs the branch-level competitor deep-dive.
+ */
+function buildBranchMatrix(
+  salesRows: RawSalesRow[],
+  linkedSupplierId: string | null,
+  nameToUuids: Map<string, Set<string>>,
+  clientCompany: string,
+): BranchMatrixRow[] {
+  const byBranch = new Map<string, { name: string; code: string; suppliers: Map<string, number> }>();
+  for (const row of salesRows) {
+    const bKey = row.branch_id || row.branch?.name || "unknown";
+    const entry = byBranch.get(bKey) || { name: row.branch?.name || bKey, code: row.branch?.code || "", suppliers: new Map() };
+    const sup = row.supplier_id || "Unknown";
+    entry.suppliers.set(sup, (entry.suppliers.get(sup) || 0) + (Number(row.total_amount) || 0));
+    byBranch.set(bKey, entry);
+  }
+  return Array.from(byBranch.entries()).map(([branch_id, entry]) => {
+    const branchTotal = Array.from(entry.suppliers.values()).reduce((s, v) => s + v, 0);
+    const suppliers = Array.from(entry.suppliers.entries())
+      .map(([name, total_sales]) => ({
+        name,
+        total_sales,
+        share: branchTotal > 0 ? (total_sales / branchTotal) * 100 : 0,
+        is_client: linkedSupplierId
+          ? nameToUuids.get(name)?.has(linkedSupplierId) === true
+          : name.trim().toLowerCase() === clientCompany,
+      }))
+      .sort((a, b) => b.total_sales - a.total_sales)
+      .slice(0, 6);
+    return { branch_id, branch_name: entry.name, branch_code: entry.code, suppliers };
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await getAuthenticatedClient();
@@ -261,25 +357,16 @@ export async function GET(request: NextRequest) {
     const allowedCategoryIds: string[] = [...new Set(filteredSharing.map((s) => s.category_id).filter((c): c is string => Boolean(c)))];
 
     // client-category scope
-    const clientCategoryIds = client.linked_supplier_id ? await getClientProductCategoryIds(client.linked_supplier_id) : [];
+    const clientCategoryIds = client.linked_supplier_id ? await getClientProductCategoryIds(getAdminClient(), client.linked_supplier_id) : [];
     const hasClientCategoryScope = clientCategoryIds.length > 0;
     const effectiveCategoryIds = hasClientCategoryScope
       ? (allowedCategoryIds.length === 0 ? clientCategoryIds : clientCategoryIds.filter((c) => allowedCategoryIds.includes(c)))
       : allowedCategoryIds;
 
     if (hasClientCategoryScope && effectiveCategoryIds.length === 0) {
-      let periods: { id: string; label: string }[] = [];
-      if (periodIds.length > 0) {
-        const { rows: periodRows } = await import("@/lib/db").then((m) =>
-          m.query<{ id: string; label: string }>(
-            `SELECT id, label FROM analytics_periods WHERE id = ANY($1) ORDER BY year DESC, month DESC, quarter DESC`,
-            [periodIds],
-          ),
-        );
-        periods = periodRows;
-      }
-      let allBranches: { id: string; name: string }[] = [];
-      allBranches = await getAllBranchesPg(allowedBranchIds.length > 0 ? allowedBranchIds : undefined);
+      const periods = await getPeriodsByIds(supabase, periodIds);
+      const allBranches = await getAllBranchesFallback(supabase, allowedBranchIds.length > 0 ? allowedBranchIds : undefined);
+      const clientCategories = await getCategoriesByIds(supabase, clientCategoryIds);
 
       return NextResponse.json({
         sharing: filteredSharing,
@@ -295,6 +382,15 @@ export async function GET(request: NextRequest) {
         periods,
         allBranches,
         allCategories: [],
+        clientCategories,
+        salesTrend: [],
+        branchMatrix: [],
+        scope: {
+          sharedCategoryIds: allowedCategoryIds,
+          clientCategoryIds,
+          hasClientCategoryScope,
+          mismatch: allowedCategoryIds.length > 0 && !allowedCategoryIds.some((c) => clientCategoryIds.includes(c)),
+        },
         summary: { totalSales: 0, totalUnits: 0, totalInventoryValue: 0, totalProducts: 0, prevTotalSales: 0, prevTotalUnits: 0 },
       });
     }
@@ -318,18 +414,9 @@ export async function GET(request: NextRequest) {
     // If sales query returned empty (not an error — just no matching data), return empty analytics
     if (!allSales || allSales.length === 0) {
       // Still try to return useful metadata (periods, branches, categories)
-      let periods: { id: string; label: string }[] = [];
-      if (periodIds.length > 0) {
-        const { rows: periodRows } = await import("@/lib/db").then((m) =>
-          m.query<{ id: string; label: string }>(
-            `SELECT id, label FROM analytics_periods WHERE id = ANY($1) ORDER BY year DESC, month DESC, quarter DESC`,
-            [periodIds],
-          ),
-        );
-        periods = periodRows;
-      }
-      let allBranches: { id: string; name: string }[] = [];
-      allBranches = await getAllBranchesPg(allowedBranchIds.length > 0 ? allowedBranchIds : undefined);
+      const periods = await getPeriodsByIds(supabase, periodIds);
+      const allBranches = await getAllBranchesFallback(supabase, allowedBranchIds.length > 0 ? allowedBranchIds : undefined);
+      const clientCategories = await getCategoriesByIds(supabase, clientCategoryIds);
 
       return NextResponse.json({
         sharing: filteredSharing,
@@ -345,6 +432,15 @@ export async function GET(request: NextRequest) {
         periods,
         allBranches,
         allCategories: [],
+        clientCategories,
+        salesTrend: [],
+        branchMatrix: [],
+        scope: {
+          sharedCategoryIds: allowedCategoryIds,
+          clientCategoryIds,
+          hasClientCategoryScope,
+          mismatch: false,
+        },
         summary: { totalSales: 0, totalUnits: 0, totalInventoryValue: 0, totalProducts: 0, prevTotalSales: 0, prevTotalUnits: 0 },
       });
     }
@@ -358,11 +454,30 @@ export async function GET(request: NextRequest) {
       // The comparison period must come from THIS client's sharing allowlist,
       // never the global latest period across all clients' data.
       const sharedPeriodIds = [...new Set(sharing.map((s) => s.period_id))];
-      const { rows: allPeriods } = await import("@/lib/db").then((m) =>
-        m.query<{ id: string }>(
-          `SELECT id FROM analytics_periods WHERE id = ANY($1) AND id != ALL($2) ORDER BY year DESC, month DESC, quarter DESC LIMIT 1`,
-          [sharedPeriodIds, periodIds],
-        ),
+      const allPeriods = await withPgFallback(
+        async () => {
+          const { data, error } = await supabase
+            .from("analytics_periods")
+            .select("id")
+            .in("id", sharedPeriodIds)
+            .not("id", "in", periodIds)
+            .order("year", { ascending: false })
+            .order("month", { ascending: false })
+            .order("quarter", { ascending: false })
+            .limit(1);
+          if (error) throw error;
+          return data ?? [];
+        },
+        async () => {
+          const result = await import("@/lib/db").then((m) =>
+            m.query<{ id: string }>(
+              `SELECT id FROM analytics_periods WHERE id = ANY($1) AND id != ALL($2) ORDER BY year DESC, month DESC, quarter DESC LIMIT 1`,
+              [sharedPeriodIds, periodIds],
+            ),
+          );
+          return result.rows;
+        },
+        "prevPeriodId",
       );
       if (allPeriods.length > 0) {
         const prevPeriodId = allPeriods[0].id;
@@ -486,24 +601,39 @@ export async function GET(request: NextRequest) {
     const allBranchIds = [...new Set((allSharing || []).map((s) => s.branch_id).filter(Boolean))] as string[];
 
     // Periods
-    let periods: { id: string; label: string }[] = [];
-    if (allPeriodIds.length > 0) {
-      const { rows: periodRows } = await import("@/lib/db").then((m) =>
-        m.query<{ id: string; label: string }>(
-          `SELECT id, label FROM analytics_periods WHERE id = ANY($1) ORDER BY year DESC, month DESC, quarter DESC`,
-          [allPeriodIds],
-        ),
-      );
-      periods = periodRows;
-    }
+    const periods = await getPeriodsByIds(supabase, allPeriodIds);
 
     // Branches (scoped to the client's sharing allowlist; NULL = all)
-    let allBranches: { id: string; name: string }[] = [];
-    allBranches = await getAllBranchesPg(allBranchIds.length > 0 ? allBranchIds : undefined);
+    const allBranches = await getAllBranchesFallback(supabase, allBranchIds.length > 0 ? allBranchIds : undefined);
 
-    // Categories
-    const uniqueCats = [...new Set(salesRows.map((r) => r.category?.name).filter(Boolean))];
-    const allCategories = uniqueCats.map((name, i) => ({ id: String(i), name: name! }));
+    // Categories — real category UUIDs derived from the client's scoped sales
+    // rows (not synthetic indexes, which made category filtering send bogus ids).
+    const catMap = new Map<string, string>();
+    for (const r of salesRows) {
+      if (r.category_id && r.category?.name) catMap.set(r.category_id, r.category.name);
+    }
+    const allCategories = Array.from(catMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    // Client-owned categories (resolved from linked_supplier_id → products).
+    const clientCategories = clientCategoryIds.length > 0 ? await getCategoriesByIds(supabase, clientCategoryIds) : [];
+
+    // Share-over-time + branch matrix from the scoped sales rows.
+    const salesTrend = buildSalesTrend(resolvedSalesRows, linkedSupplierId, nameToUuids, clientCompany);
+    const branchMatrix = buildBranchMatrix(resolvedSalesRows, linkedSupplierId, nameToUuids, clientCompany);
+
+    // Scope marker — lets the UI distinguish "shared but not your category"
+    // (allowlist has categories the client doesn't sell) from no data at all.
+    const scope = {
+      sharedCategoryIds: allowedCategoryIds,
+      clientCategoryIds,
+      hasClientCategoryScope,
+      mismatch:
+        allowedCategoryIds.length > 0 && clientCategoryIds.length > 0
+          ? allowedCategoryIds.some((c) => !clientCategoryIds.includes(c))
+          : false,
+    };
 
     return NextResponse.json({
       sharing: filteredSharing,
@@ -519,6 +649,10 @@ export async function GET(request: NextRequest) {
       periods,
       allBranches,
       allCategories,
+      clientCategories,
+      salesTrend,
+      branchMatrix,
+      scope,
       summary: {
         totalSales: grandTotal,
         totalUnits: Array.from(resolvedSupGrouped.values()).reduce((s, g) => s + g.units, 0),

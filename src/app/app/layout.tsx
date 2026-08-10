@@ -243,6 +243,16 @@ export default function PlatformLayout({
 
   const role = (user?.app_metadata?.role as UserRole) || null;
 
+  // Staff-side defense in depth: an explicit client must never render the
+  // staff shell (middleware already bounces clients, this covers client-side
+  // navigation / stale state). Role-less users are staff-intent per middleware
+  // policy and render here; data APIs fail closed until the role backfills.
+  useEffect(() => {
+    if (user && role === "client") {
+      router.replace("/portal");
+    }
+  }, [user, role, router]);
+
   const navSections: DashboardNavSection[] = allNavSections
     .map((section) => ({
       ...section,
@@ -282,7 +292,12 @@ export default function PlatformLayout({
       </a>
       <DashboardLayout
         navSections={navSections}
-        topBar={<NotificationBell />}
+        topBar={
+          <div className="flex items-center gap-2">
+            <span className="pm-zone-chip pm-zone-chip-staff">Staff</span>
+            <NotificationBell />
+          </div>
+        }
         user={{
           initials: getInitials(),
           name: displayName,
@@ -290,6 +305,7 @@ export default function PlatformLayout({
         }}
         loadingUser={loadingUser}
         onSignOut={handleSignOut}
+        logoSubtitle="Staff Portal"
       >
         {children}
       </DashboardLayout>

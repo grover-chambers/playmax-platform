@@ -24,12 +24,23 @@ export default function WorkspaceLayout({
           setAuthed(true);
           return;
         }
+        // Unauthenticated: off to /login (no loop — not signed in).
+        if (!data?.user) {
+          router.push("/login");
+          return;
+        }
+        // Explicit clients never render the staff workspace.
+        if (role === "client") {
+          router.push("/portal");
+          return;
+        }
+        // Role-less authenticated user: staff-intent (same policy as the
+        // middleware) — let them through; data APIs fail closed until the
+        // role is backfilled via the Admin API. Never bounce to /portal.
+        setAuthed(true);
       } catch {
-        // fallback below
+        router.push("/login");
       }
-      // Role-less or non-staff users: send to the client portal, never back to
-      // /login (an authenticated user hitting /login would loop).
-      router.push("/portal");
     };
     check();
   }, [router]);

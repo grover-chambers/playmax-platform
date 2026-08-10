@@ -84,6 +84,27 @@ interface SavedReport {
   updated_at: string;
 }
 
+interface SalesTrendPoint {
+  period_id: string;
+  label: string;
+  totalSales: number;
+  totalUnits: number;
+  clientSales: number;
+  clientShare: number;
+}
+
+interface BranchMatrixRow {
+  branch_id: string;
+  branch_name: string;
+  branch_code: string;
+  suppliers: {
+    name: string;
+    total_sales: number;
+    share: number;
+    is_client: boolean;
+  }[];
+}
+
 interface AnalyticsResponse {
   competitors: CompetitorRank[];
   categories: CategoryPerf[];
@@ -103,6 +124,15 @@ interface AnalyticsResponse {
   periods: { id: string; label: string }[];
   allBranches: { id: string; name: string }[];
   allCategories: { id: string; name: string }[];
+  clientCategories: { id: string; name: string }[];
+  salesTrend: SalesTrendPoint[];
+  branchMatrix: BranchMatrixRow[];
+  scope?: {
+    sharedCategoryIds: string[];
+    clientCategoryIds: string[];
+    hasClientCategoryScope: boolean;
+    mismatch: boolean;
+  };
   error?: string;
 }
 
@@ -196,6 +226,110 @@ function DonutChart({ segments, size = 140, strokeWidth = 16 }: {
         );
       })}
     </svg>
+  );
+}
+
+/* ── Share Over Time (inline SVG — no canvas/SSR issues) ─────── */
+
+function ShareTrendChart({ trend, color }: { trend: SalesTrendPoint[]; color: string }) {
+  const width = 600;
+  const height = 220;
+  const padL = 44;
+  const padR = 18;
+  const padT = 18;
+  const padB = 30;
+
+  const points = trend.map((p) => ({
+    label: String(p.label ?? ""),
+    share: Math.max(0, Math.min(100, Number(p.clientShare) || 0)),
+  }));
+
+  if (points.length === 0) {
+    return (
+      <div className="text-center py-10 text-[12px] text-gray-5" role="status">
+        Trend data not yet available
+      </div>
+    );
+  }
+
+  const innerW = width - padL - padR;
+  const innerH = height - padT - padB;
+  const n = points.length;
+  const step = n > 1 ? innerW / (n - 1) : 0;
+  const xAt = (i: number) => padL + (n > 1 ? i * step : innerW / 2);
+  const yAt = (share: number) => padT + (1 - share / 100) * innerH;
+
+  const linePath = points
+    .map((p, i) => `${i === 0 ? "M" : "L"}${xAt(i).toFixed(1)},${yAt(p.share).toFixed(1)}`)
+    .join(" ");
+  const areaPath =
+    n > 1
+      ? `${linePath} L${xAt(n - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`
+      : "";
+
+  const gridLines = [0, 25, 50, 75, 100];
+
+  return (
+    <div className="overflow-x-auto">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full"
+        role="img"
+        aria-label="Your share of category sales over time"
+        style={{ minWidth: 480 }}
+      >
+        {/* Y-axis gridlines */}
+        {gridLines.map((g) => (
+          <g key={g}>
+            <line
+              x1={padL}
+              x2={width - padR}
+              y1={yAt(g)}
+              y2={yAt(g)}
+              stroke="var(--ws-border,#e5e5e5)"
+              strokeWidth={1}
+              strokeDasharray="3 3"
+            />
+            <text
+              x={padL - 8}
+              y={yAt(g) + 3}
+              textAnchor="end"
+              fontSize={10}
+              fill="var(--ws-text-muted,#70716C)"
+              fontFamily="monospace"
+            >
+              {g}%
+            </text>
+          </g>
+        ))}
+
+        {/* Filled area + line */}
+        {areaPath && <path d={areaPath} fill={color} fillOpacity={0.15} />}
+        <path d={linePath} fill="none" stroke={color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+
+        {/* Data points (title acts as the tooltip) */}
+        {points.map((p, i) => (
+          <circle key={i} cx={xAt(i)} cy={yAt(p.share)} r={4} fill={color} stroke="#fff" strokeWidth={1.5}>
+            <title>{`${p.label}: ${p.share.toFixed(1)}%`}</title>
+          </circle>
+        ))}
+
+        {/* X-axis period labels (abbreviated to last 6 chars) */}
+        {points.map((p, i) => (
+          <text
+            key={`label-${i}`}
+            x={xAt(i)}
+            y={height - 8}
+            textAnchor="middle"
+            fontSize={10}
+            fill="var(--ws-text-muted,#70716C)"
+            fontFamily="monospace"
+          >
+            {p.label.slice(-6)}
+          </text>
+        ))}
+      </svg>
+    </div>
   );
 }
 
@@ -329,7 +463,7 @@ function ReportViewer({ report }: { report: SavedReport }) {
 /* ── Main Component ───────────────────────────────────────────── */
 
 export default function PortalAnalyticsPage() {
-  const [tab, setTab] = useState<"overview" | "maize" | "reports">("overview");
+  const [tab, setTab] = useState<string>("overview");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -337,6 +471,8 @@ export default function PortalAnalyticsPage() {
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [maizeData, setMaizeData] = useState<Record<string, unknown> | null>(null);
   const [maizeLoading, setMaizeLoading] = useState(true);
+  const [upgradeRequired, setUpgradeRequired] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [filterBranches, setFilterBranches] = useState<string[]>([]);
   const [filterCategories, setFilterCategories] = useState<string[]>([]);
@@ -355,11 +491,37 @@ export default function PortalAnalyticsPage() {
       if (filterBranches.length > 0) params.set("branch_ids", filterBranches.join(","));
       if (filterCategories.length > 0) params.set("category_ids", filterCategories.join(","));
       const qs = params.toString();
+
+      // Category endpoint params (it reads period_id + branch_ids only).
+      const catParams = new URLSearchParams();
+      if (filterPeriod !== "all") catParams.set("period_id", filterPeriod);
+      if (filterBranches.length > 0) catParams.set("branch_ids", filterBranches.join(","));
+      const catQs = catParams.toString();
+      // Overview/reports keep the legacy maizze snapshot; category tabs fetch their own id.
+      const categoryPath = tab === "overview" || tab === "reports" || tab === "maize" ? "maizze" : tab;
+
       const [analyticsRes, reportsRes, maizeRes] = await Promise.all([
         fetch(`/api/portal/analytics${qs ? `?${qs}` : ""}`),
         fetch("/api/portal/analytics/reports"),
-        fetch("/api/portal/analytics/category/maizze"),
+        fetch(`/api/portal/analytics/category/${categoryPath}${catQs ? `?${catQs}` : ""}`),
       ]);
+
+      // Paid tier gate: 402 means the analytics payload is locked, not an error.
+      if (analyticsRes.status === 402) {
+        const reportsData = await reportsRes.json();
+        startTransition(() => {
+          setReports(reportsData.reports || []);
+          setUpgradeRequired(true);
+          setData(null);
+          setMaizeData(null);
+          setError(null);
+          setLoading(false);
+          setMaizeLoading(false);
+        });
+        setLastRefresh(new Date());
+        return;
+      }
+
       const analyticsData = await analyticsRes.json();
       const reportsData = await reportsRes.json();
       const maize = await maizeRes.json();
@@ -368,6 +530,7 @@ export default function PortalAnalyticsPage() {
         if (analyticsData.error) {
           setError(analyticsData.error);
         } else {
+          setUpgradeRequired(false);
           setData(analyticsData);
           if (analyticsData.periods) setPeriods(analyticsData.periods);
           if (analyticsData.allBranches) setAllBranches(analyticsData.allBranches);
@@ -405,6 +568,115 @@ export default function PortalAnalyticsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh]);
 
+  // Refetch the active category whenever a category tab is selected so the
+  // category view always reflects the current tab (filter changes are already
+  // re-applied by fetchData via the shared filter state).
+  useEffect(() => {
+    if (tab === "overview" || tab === "reports") return;
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- show spinner immediately on tab switch
+    setMaizeLoading(true);
+    const params = new URLSearchParams();
+    if (filterPeriod !== "all") params.set("period_id", filterPeriod);
+    if (filterBranches.length > 0) params.set("branch_ids", filterBranches.join(","));
+    const qs = params.toString();
+    const path = tab === "maize" ? "maizze" : tab;
+    fetch(`/api/portal/analytics/category/${path}${qs ? `?${qs}` : ""}`)
+      .then((res) => {
+        if (res.status === 402) {
+          startTransition(() => {
+            setUpgradeRequired(true);
+            setMaizeLoading(false);
+          });
+          return null;
+        }
+        return res.json();
+      })
+      .then((json) => {
+        if (cancelled || !json) return;
+        startTransition(() => {
+          if (json.category) setMaizeData(json);
+          setMaizeLoading(false);
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        startTransition(() => setMaizeLoading(false));
+      });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  const activeReport = selectedReport ? reports.find((r) => r.id === selectedReport) : null;
+
+  const reportsContent = (
+    <>
+      {reports.length === 0 ? (
+        <div className="pm-dash-card p-8 text-center">
+          <FileText size={40} className="mx-auto mb-4 text-gray-5 opacity-30" />
+          <div className="font-display text-[14px] font-semibold mb-2">No Reports Published</div>
+          <div className="text-[12px] text-gray-4 max-w-md mx-auto">
+            Your account manager will publish analytics reports here once they are ready for your review.
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Report selector */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+            {reports.map((report) => (
+              <button
+                key={report.id}
+                onClick={() => setSelectedReport(selectedReport === report.id ? null : report.id)}
+                className={`pm-dash-card p-4 text-left transition-all cursor-pointer ${
+                  selectedReport === report.id
+                    ? "border-teal ring-1 ring-teal/30"
+                    : "hover:border-[var(--ws-border,#e5e5e5)]"
+                }`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <FileText size={16} className="text-teal shrink-0" />
+                  <Eye size={12} className="text-gray-5" />
+                </div>
+                <div className="font-display text-[13px] font-semibold mb-1">{report.name}</div>
+                <div className="text-[11px] text-gray-5 capitalize">
+                  {report.report_type.replace(/_/g, " ")}
+                </div>
+                <div className="text-[10px] text-gray-5 mt-2">
+                  Updated {new Date(report.updated_at).toLocaleDateString()}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Selected report detail */}
+          {activeReport && <ReportViewer report={activeReport} />}
+        </>
+      )}
+    </>
+  );
+
+  const handleUpgrade = async () => {
+    const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO;
+    if (!priceId) {
+      window.location.href = "/portal/settings";
+      return;
+    }
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId }),
+      });
+      const json = await res.json();
+      if (json.url) window.location.href = json.url;
+    } catch {
+      window.location.href = "/portal/settings";
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
   /* ── Loading / Error states ───────────────────────────────── */
   if (loading) {
     return (
@@ -424,6 +696,75 @@ export default function PortalAnalyticsPage() {
           <CardSkeleton height={180} />
           <CardSkeleton height={180} />
         </div>
+      </div>
+    );
+  }
+
+  /* ── Free-tier upgrade panel (analytics gated, reports still work) ── */
+  if (upgradeRequired) {
+    return (
+      <div className="page-content">
+        <PageHeader title="Analytics" subtitle="Market intelligence and performance insights" />
+
+        {/* ── Tab bar (only overview/reports are known without analytics) ── */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setTab("overview")}
+            className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+              tab === "overview"
+                ? "bg-teal text-white"
+                : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
+            }`}
+          >
+            <BarChart3 size={13} className="inline mr-1.5" />
+            Live Analytics
+          </button>
+          <button
+            onClick={() => setTab("reports")}
+            className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+              tab === "reports"
+                ? "bg-teal text-white"
+                : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
+            }`}
+          >
+            <FileText size={13} className="inline mr-1.5" />
+            Reports
+            {reports.length > 0 && (
+              <span className="ml-1.5 bg-white/10 text-[10px] px-1.5 py-0.5 rounded-full">{reports.length}</span>
+            )}
+          </button>
+        </div>
+
+        {tab === "reports" ? (
+          reportsContent
+        ) : (
+          <div className="pm-dash-card p-8">
+            <div className="max-w-lg mx-auto text-center">
+              <div
+                className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                style={{ background: "var(--ws-bg,#f5f5f2)", border: "1px solid var(--ws-border,#e5e5e5)" }}
+              >
+                <Trophy size={22} className="text-yellow" />
+              </div>
+              <div className="font-display text-[20px] font-bold mb-2">Unlock Market Intelligence</div>
+              <div className="text-[13px] text-gray-4 leading-relaxed mb-6">
+                Upgrade to PRO to get live market analytics for your categories — share, rank, pricing, and trends
+                across branches.
+              </div>
+              <button
+                onClick={handleUpgrade}
+                disabled={upgrading}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-teal text-white text-[13px] font-medium transition-colors cursor-pointer hover:opacity-90 disabled:opacity-60"
+              >
+                {upgrading && <Loader2 size={13} className="animate-spin" />}
+                Upgrade now
+              </button>
+              <div className="text-[11px] text-gray-5 mt-4">
+                Your projects, documents, and reports remain accessible on the free tier.
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -454,10 +795,23 @@ export default function PortalAnalyticsPage() {
       <div className="page-content">
         <PageHeader title="Analytics" subtitle="Market intelligence and performance insights" />
         
-        <div className="pm-dash-alert pm-dash-alert-b mb-6">
-          <BarChart3 size={14} />
-          <span>Analytics data will appear here once your account manager uploads supplier performance data and approves it for your view.</span>
-        </div>
+        {data?.scope?.mismatch ? (
+          <div className="pm-dash-alert pm-dash-alert-b mb-6">
+            <BarChart3 size={14} />
+            <span>Some shared categories are not part of your product mix</span>
+          </div>
+        ) : (
+          <div className="pm-dash-alert pm-dash-alert-b mb-6">
+            <BarChart3 size={14} />
+            <span>Analytics data will appear here once your account manager uploads supplier performance data and approves it for your view.</span>
+          </div>
+        )}
+        {data?.scope?.mismatch && (
+          <div className="mb-6 text-[12px] text-gray-4">
+            The categories shared with your account don&apos;t match the categories your supplier sells. Ask your
+            account manager to align what&apos;s shared with your product mix, then check back here.
+          </div>
+        )}
 
         {/* ── Placeholder KPI row ────────────────────────── */}
         <div className="pm-dash-krow pm-dash-krow-4 mb-6">
@@ -643,7 +997,45 @@ export default function PortalAnalyticsPage() {
     : competitors;
   const maxLeaderboardSales = Math.max(...leaderboardCompetitors.map((c) => c.total_sales), 1);
 
-  const activeReport = selectedReport ? reports.find((r) => r.id === selectedReport) : null;
+  // Category-view display name (generalized for any category tab). Prefer the
+  // fetched category payload, then the tab's client category name, then the
+  // legacy maize fallback.
+  const categoryViewName =
+    maizeData && typeof maizeData.category === "string"
+      ? maizeData.category
+      : data.clientCategories.find((c) => c.id === tab)?.name ||
+        (tab === "maize" ? "Maize Flour" : "Category");
+  const categoryClientComp = (maizeData?.competitors as Array<Record<string, unknown>> | undefined)?.find((c) => c.is_client);
+  const categoryClientShortName =
+    categoryClientComp && String(categoryClientComp.supplier || "").trim()
+      ? String(categoryClientComp.supplier).trim().split(" ")[0]
+      : "Your";
+
+  // Branch × supplier share matrix: union of supplier names across branches,
+  // ordered by peak share (max 6 columns). The client's supplier column is
+  // always kept visible and highlighted.
+  const matrixRows = data.branchMatrix || [];
+  const matrixSuppliers = (() => {
+    const byName = new Map<string, { name: string; maxShare: number; isClient: boolean }>();
+    matrixRows.forEach((row) =>
+      row.suppliers.forEach((sup) => {
+        const share = Number(sup.share) || 0;
+        const existing = byName.get(sup.name);
+        if (!existing || share > existing.maxShare) {
+          byName.set(sup.name, { name: sup.name, maxShare: share, isClient: Boolean(sup.is_client) });
+        }
+      }),
+    );
+    const sorted = Array.from(byName.values())
+      .sort((a, b) => b.maxShare - a.maxShare)
+      .slice(0, 6);
+    const clientCol = Array.from(byName.values()).find((s) => s.isClient);
+    if (clientCol && !sorted.some((s) => s.name === clientCol.name)) {
+      if (sorted.length < 6) sorted.push(clientCol);
+      else sorted[sorted.length - 1] = clientCol;
+    }
+    return sorted;
+  })();
 
   const catShare = (cat: CategoryPerf) => (s.totalSales > 0 ? (cat.total_sales / s.totalSales) * 100 : 0);
   const catRank = (cat: CategoryPerf) => categories.findIndex((c) => c.category === cat.category) + 1;
@@ -685,19 +1077,34 @@ export default function PortalAnalyticsPage() {
             <span className="ml-1.5 bg-white/10 text-[10px] px-1.5 py-0.5 rounded-full">{reports.length}</span>
           )}
         </button>
-        {data && data.categories.some((c) => c.category.toLowerCase().includes("maize")) && (
-        <button
-          onClick={() => setTab("maize")}
-          className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
-            tab === "maize"
-              ? "bg-teal text-white"
-              : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
-          }`}
-        >
-          <Wheat size={13} className="inline mr-1.5" />
-          Maize Flour
-          </button>
-        )}
+        {data && data.clientCategories.length > 0
+          ? data.clientCategories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setTab(cat.id)}
+                className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+                  tab === cat.id
+                    ? "bg-teal text-white"
+                    : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
+                }`}
+              >
+                <Wheat size={13} className="inline mr-1.5" />
+                {cat.name}
+              </button>
+            ))
+          : data && data.categories.some((c) => c.category.toLowerCase().includes("maize")) && (
+              <button
+                onClick={() => setTab("maize")}
+                className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+                  tab === "maize"
+                    ? "bg-teal text-white"
+                    : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
+                }`}
+              >
+                <Wheat size={13} className="inline mr-1.5" />
+                Maize Flour
+              </button>
+            )}
       </div>
 
       {/* ═══ LIVE ANALYTICS TAB ═══════════════════════════════ */}
@@ -1075,6 +1482,73 @@ export default function PortalAnalyticsPage() {
           </div>
           </ErrorBoundary>
 
+          {/* ── Branch × Supplier Share Matrix ───────────── */}
+          <ErrorBoundary fallbackTitle="Branch share matrix unavailable">
+          <div className="pm-dash-card p-5 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin size={14} className="text-teal" />
+              <span className="font-display text-[13px] font-semibold">Branch Share Matrix</span>
+            </div>
+
+            {matrixRows.length === 0 || matrixSuppliers.length === 0 ? (
+              <div className="text-center py-8 text-[12px] text-gray-5" role="status">
+                Branch share data not yet available
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="border-b border-[var(--ws-border,#e5e5e5)]">
+                      <th className="font-mono text-[9px] text-gray-5 uppercase tracking-widest text-left px-2 py-2">
+                        Branch
+                      </th>
+                      {matrixSuppliers.map((s) => (
+                        <th
+                          key={s.name}
+                          className="font-mono text-[9px] uppercase tracking-widest text-right px-2 py-2 whitespace-nowrap"
+                          style={s.isClient ? { color: clientColor } : { color: "var(--ws-text-muted,#70716C)" }}
+                        >
+                          {s.name}
+                          {s.isClient && (
+                            <span className="ml-1 text-[9px] font-medium">(you)</span>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matrixRows.map((row) => (
+                      <tr
+                        key={row.branch_id || row.branch_name}
+                        className="border-b border-[var(--ws-border,#e5e5e5)] last:border-0"
+                      >
+                        <td className="px-2 py-2 text-gray-4 whitespace-nowrap">{row.branch_name}</td>
+                        {matrixSuppliers.map((s) => {
+                          const sup = row.suppliers.find((x) => x.name === s.name);
+                          const share = sup ? Number(sup.share) || 0 : 0;
+                          return (
+                            <td
+                              key={s.name}
+                              className="px-2 py-2 font-mono text-right whitespace-nowrap"
+                              style={
+                                s.isClient
+                                  ? { background: `${clientColor}14`, color: clientColor }
+                                  : { color: "var(--ws-text-muted,#70716C)" }
+                              }
+                            >
+                              {share.toFixed(1)}%
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          </ErrorBoundary>
+
           {/* ── Top / Bottom Products ───────────────────── */}
           <ErrorBoundary fallbackTitle="Product data unavailable">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -1141,6 +1615,22 @@ export default function PortalAnalyticsPage() {
           </div>
           </ErrorBoundary>
 
+          {/* ── Your Share Over Time ────────────────────── */}
+          <ErrorBoundary fallbackTitle="Share trend data unavailable">
+          <div className="pm-dash-card p-5 mb-6">
+            <div className="mb-4">
+              <div className="flex items-center gap-2">
+                <BarChart3 size={14} className="text-teal" />
+                <span className="font-display text-[13px] font-semibold">Your Share Over Time</span>
+              </div>
+              <div className="text-[10px] text-gray-5 mt-1">
+                Percentage of category sales captured by your supplier
+              </div>
+            </div>
+            <ShareTrendChart trend={data.salesTrend || []} color={clientColor} />
+          </div>
+          </ErrorBoundary>
+
           {/* ── Category Performance Detail ─────────────── */}
           <ErrorBoundary fallbackTitle="Category data unavailable">
           <div className="pm-dash-card p-5 mb-6">
@@ -1198,8 +1688,8 @@ export default function PortalAnalyticsPage() {
         </>
       )}
 
-      {/* ═══ MAIZE FLOUR TAB ═══════════════════════════════════ */}
-      {tab === "maize" && (
+      {/* ═══ CATEGORY TAB (any client category) ═══════════════ */}
+      {tab !== "overview" && tab !== "reports" && (
         <>
           {maizeLoading ? (
             <div className="flex items-center justify-center py-20">
@@ -1213,7 +1703,7 @@ export default function PortalAnalyticsPage() {
                   <div className="pm-dash-kn yel">
                     KES {(Number((maizeData.summary as Record<string, unknown>).totalSales) / 1000000).toFixed(1)}M
                   </div>
-                  <div className="pm-dash-kl">Maize Revenue</div>
+                  <div className="pm-dash-kl">{categoryViewName} Revenue</div>
                   <div className="pm-dash-ksub">total market</div>
                 </div>
                 <div className="pm-dash-kcard grn">
@@ -1222,8 +1712,8 @@ export default function PortalAnalyticsPage() {
                       ? `${Number((maizeData.competitors as Array<Record<string, unknown>>).find((c) => c.is_client)?.share).toFixed(1)}%`
                       : "—"}
                   </div>
-                  <div className="pm-dash-kl">NICE Market Share</div>
-                  <div className="pm-dash-ksub">in Maize Flour</div>
+                  <div className="pm-dash-kl">{categoryClientShortName} Market Share</div>
+                  <div className="pm-dash-ksub">in {categoryViewName}</div>
                 </div>
                 <div className="pm-dash-kcard blu">
                   <div className="pm-dash-kn blu">{String((maizeData.summary as Record<string, unknown>).totalProducts)}</div>
@@ -1241,7 +1731,7 @@ export default function PortalAnalyticsPage() {
               <div className="pm-dash-card p-5 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Trophy size={14} className="text-yellow" />
-                  <span className="font-display text-[13px] font-semibold">Maize Supplier Leaderboard</span>
+                  <span className="font-display text-[13px] font-semibold">{categoryViewName} Supplier Leaderboard</span>
                 </div>
                 <div className="space-y-2.5">
                   {(maizeData.competitors as Array<Record<string, unknown>>).map((comp) => {
@@ -1272,12 +1762,12 @@ export default function PortalAnalyticsPage() {
                 </div>
               </div>
 
-              {/* Branch performance within Maize */}
+              {/* Branch performance within the category */}
               {(maizeData.branches as Array<Record<string, unknown>>)?.length > 0 && (
                 <div className="pm-dash-card p-5 mb-6">
                   <div className="flex items-center gap-2 mb-4">
                     <MapPin size={14} className="text-teal" />
-                    <span className="font-display text-[13px] font-semibold">Maize Branch Performance</span>
+                    <span className="font-display text-[13px] font-semibold">{categoryViewName} Branch Performance</span>
                   </div>
                   <div className="space-y-2">
                     {(maizeData.branches as Array<Record<string, unknown>>).slice(0, 8).map((b, i) => {
@@ -1306,7 +1796,7 @@ export default function PortalAnalyticsPage() {
                 <div className="pm-dash-card p-5 mb-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Award size={14} className="text-emerald-400" />
-                    <span className="font-display text-[13px] font-semibold">Top Maize Products</span>
+                    <span className="font-display text-[13px] font-semibold">Top {categoryViewName} Products</span>
                   </div>
                   <div className="space-y-2">
                     {(maizeData.products as Array<Record<string, unknown>>).slice(0, 8).map((p, i) => (
@@ -1332,7 +1822,7 @@ export default function PortalAnalyticsPage() {
                 <div className="pm-dash-card p-5 mb-6">
                   <div className="flex items-center gap-2 mb-4">
                     <DollarSign size={14} className="text-yellow" />
-                    <span className="font-display text-[13px] font-semibold">Maize Pricing Analysis</span>
+                    <span className="font-display text-[13px] font-semibold">{categoryViewName} Pricing Analysis</span>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-[11px]">
@@ -1385,8 +1875,8 @@ export default function PortalAnalyticsPage() {
           ) : (
             <div className="pm-dash-card p-8 text-center">
               <ShoppingBag size={40} className="mx-auto mb-4 text-gray-5 opacity-30" />
-              <div className="font-display text-[14px] font-semibold mb-2">Maize Data Not Available</div>
-              <div className="text-[12px] text-gray-4">No maize category data has been shared yet. Contact your account manager to set up Maize Flour category analytics.</div>
+              <div className="font-display text-[14px] font-semibold mb-2">{categoryViewName} Data Not Available</div>
+              <div className="text-[12px] text-gray-4">No {categoryViewName} category data has been shared yet. Contact your account manager to set up {categoryViewName} category analytics.</div>
             </div>
           )}
         </>

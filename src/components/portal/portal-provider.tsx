@@ -13,6 +13,9 @@ interface PortalClient {
   status: string;
   created_at: string;
   notification_prefs?: Record<string, boolean>;
+  linked_supplier_id?: string | null;
+  subscription_tier?: string | null;
+  portal_role?: string;
 }
 
 interface PortalContextValue {

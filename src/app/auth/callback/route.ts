@@ -15,31 +15,35 @@ export async function GET(request: Request) {
         data: { user },
       } = await supabase.auth.getUser();
 
-      // Backfill the default `client` role for users who never got one in
-      // app_metadata (OAuth sign-ups, invites that wrote user_metadata, and
-      // pre-migration users). This runs BEFORE any redirect so middleware can
-      // never bounce these users in a login loop. Idempotent: only fires when
-      // the role is missing, and merges existing app_metadata.
-      const role = user?.app_metadata?.role as string | undefined;
+      // Backfill a missing role in app_metadata BEFORE any redirect so
+      // middleware can never bounce these users in a login loop. Resolves
+      // known accounts (by email) to their true role — e.g. a role-less
+      // demo.cmsadmin backfills to cms_admin, NOT client — and defaults
+      // unknown accounts to least-privilege client. Idempotent: only fires
+      // when the role is missing, and merges existing app_metadata.
+      let role = user?.app_metadata?.role as string | undefined;
       if (user && !role) {
-        await ensureDefaultRole(user);
+        role = await ensureDefaultRole(user);
       }
 
-      // Portal next paths are honored only for clients; staff are sent to their default
-      if (next?.startsWith("/portal") && role === "client") {
-        return NextResponse.redirect(`${origin}${next}`);
-      }
-      if (next?.startsWith("/portal") && role) {
+      // Portal next paths are honored only for clients; staff (and role-less
+      // staff-intent users) are sent to their staff default.
+      if (next?.startsWith("/portal")) {
+        if (role === "client") {
+          return NextResponse.redirect(`${origin}${next}`);
+        }
         return NextResponse.redirect(`${origin}/app/pipeline`);
       }
       if (next === "/login") {
         return NextResponse.redirect(`${origin}${next}`);
       }
 
-      // Otherwise, check user role to pick the right default. A user without a
-      // role (just backfilled, or service-role key unavailable) lands on the
-      // client portal — never a staff area.
-      if (role === "client" || !role) {
+      // Otherwise, use the (possibly backfilled) role to pick the right
+      // default: clients land in the portal, staff land in the staff app.
+      if (!role) {
+        return NextResponse.redirect(`${origin}/portal`);
+      }
+      if (role === "client") {
         return NextResponse.redirect(`${origin}/portal`);
       }
       return NextResponse.redirect(`${origin}${next || "/app/pipeline"}`);

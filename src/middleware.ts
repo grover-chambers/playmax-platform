@@ -44,20 +44,18 @@ export async function middleware(request: NextRequest) {
 
   const role = user.app_metadata?.role as UserRole | undefined;
 
-  // A missing role must NEVER bounce an authenticated user back to /login.
-  // The auth callback backfills `client` via the Admin API (service-role key);
-  // between sign-in and that backfill, treat the user as a client.
-  // The /app staff area is still protected: a role-less user goes to /portal,
-  // never /login — so there is no redirect chain that loops.
+  // ── Role-less policy (SECURITY) ──────────────────────────────────────
+  // A missing app_metadata.role (pre-backfill session, invite that wrote
+  // user_metadata, pre-migration account) must NEVER be guessed as "client".
+  // That silent default bounced role-less staff (demo.cmsadmin etc.) into the
+  // client portal. Instead: honor the zone the user is trying to enter.
+  //   - /app → staff-intent: ALLOW through. No redirect to /portal (the bug)
+  //     and no redirect to /login (would loop — the user is authenticated).
+  //   - /portal → client-intent: ALLOW through; the portal layout renders it
+  //     and the portal APIs reject role-less callers, so no data is exposed.
+  // The auth callback / demo-login backfill the real role via the Admin API;
+  // the app layout + API guards fail closed until then.
   if (!role) {
-    if (pathname.startsWith("/app")) {
-      console.warn(`[middleware] No role for user ${user.id} on staff path ${pathname} — redirecting to portal`);
-      const url = request.nextUrl.clone();
-      url.pathname = "/portal";
-      return NextResponse.redirect(url);
-    }
-    // /portal (and anything else) is safe for a role-less authenticated user:
-    // the portal layout and user-context default to "client".
     return supabaseResponse;
   }
 

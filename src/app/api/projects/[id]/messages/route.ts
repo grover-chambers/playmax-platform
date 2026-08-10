@@ -6,7 +6,7 @@ import type { UserRole } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-async function checkAccess(supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>, currentUser: { id: string; role: string }, projectId: string) {
+async function checkAccess(supabase: Awaited<ReturnType<typeof getAuthenticatedClient>>, currentUser: { id: string; role: string | null }, projectId: string) {
   if (isAdmin(currentUser.role as UserRole)) return true;
   const client = await getPortalClient(supabase, currentUser.id);
   if (!client) return false;

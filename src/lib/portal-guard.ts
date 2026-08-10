@@ -19,10 +19,13 @@ export type PortalGuardResult =
  * Hard client-portal guard:
  * - currentUser missing        -> 401 { error: "Unauthorized" }
  * - role is a staff role       -> 403 { error: "Staff accounts cannot access the client portal", code: "PORTAL_STAFF_FORBIDDEN" }
+ * - role is missing (null)     -> 403 { error: "No role assigned", code: "PORTAL_ROLE_REQUIRED" }
  * - no linked client record    -> 404 { error: "No client account linked" }
- * - otherwise                  -> { client, role } (client / undefined-role users pass,
- *                                   role-less users are treated as clients, matching the
- *                                   auth backfill default)
+ * - otherwise                  -> { client, role }
+ *
+ * Role-less callers are REJECTED, never treated as clients: the "missing role
+ * means client" default was a misclassification vector for staff accounts and
+ * is eliminated. Only an explicit `client` role may read portal data.
  *
  * Usage:
  *   const portal = await requirePortalClient(supabase, currentUser);
@@ -43,6 +46,18 @@ export async function requirePortalClient(
         {
           error: "Staff accounts cannot access the client portal",
           code: "PORTAL_STAFF_FORBIDDEN",
+        },
+        { status: 403 },
+      ),
+    };
+  }
+
+  if (!currentUser.role) {
+    return {
+      response: NextResponse.json(
+        {
+          error: "No role assigned — portal access requires the client role",
+          code: "PORTAL_ROLE_REQUIRED",
         },
         { status: 403 },
       ),

@@ -214,6 +214,10 @@ export default function PortalOverviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [maizeAnalytics, setMaizeAnalytics] = useState<Record<string, unknown> | null>(null);
   const [maizeLoading, setMaizeLoading] = useState(true);
+  const [analyticsSummary, setAnalyticsSummary] = useState<Record<string, unknown> | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsUpgrade, setAnalyticsUpgrade] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -244,6 +248,38 @@ export default function PortalOverviewPage() {
           setMaizeLoading(false);
         });
       });
+  }, []);
+
+  // Category-first market analytics summary. Kept separate from the overview /
+  // activity fetches so a 402 on the paid analytics gate never blocks the rest
+  // of the dashboard from rendering.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/portal/analytics")
+      .then((r) => {
+        if (r.status === 402) {
+          if (!cancelled) {
+            startTransition(() => {
+              setAnalyticsUpgrade(true);
+              setAnalyticsLoading(false);
+            });
+          }
+          return null;
+        }
+        return r.json();
+      })
+      .then((data) => {
+        if (!cancelled && data) {
+          startTransition(() => {
+            setAnalyticsSummary(data);
+            setAnalyticsLoading(false);
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) startTransition(() => setAnalyticsLoading(false));
+      });
+    return () => { cancelled = true; };
   }, []);
 
   if (loading) {
@@ -283,6 +319,50 @@ export default function PortalOverviewPage() {
     rank: Number(c.rank),
     products_count: Number(c.products_count),
   }));
+
+  /* ── Category-first analytics summary (typed locals) ─────── */
+  const analyticsClientCategories = (analyticsSummary?.clientCategories || []) as Array<Record<string, unknown>>;
+  const analyticsSummaryData = (analyticsSummary?.summary || {}) as Record<string, unknown>;
+  const analyticsSalesTrend = (analyticsSummary?.salesTrend || []) as Array<Record<string, unknown>>;
+  const analyticsCompetitors = (analyticsSummary?.competitors || []) as Array<Record<string, unknown>>;
+  const analyticsDashboardColor = String(analyticsSummary?.dashboardColor || "#0F6E56");
+  const analyticsAllBranches = (analyticsSummary?.allBranches || []) as Array<Record<string, unknown>>;
+
+  const analyticsClientComp = analyticsCompetitors.find((c) => Boolean(c.is_client));
+  const lastTrendPoint = analyticsSalesTrend.length > 0 ? analyticsSalesTrend[analyticsSalesTrend.length - 1] : null;
+  const analyticsShare = lastTrendPoint && lastTrendPoint.clientShare !== undefined
+    ? Number(lastTrendPoint.clientShare)
+    : analyticsClientComp
+      ? Number(analyticsClientComp.share)
+      : null;
+  const analyticsRank = analyticsClientComp ? Number(analyticsClientComp.rank) : null;
+  const analyticsMarketRevenue = Number(analyticsSummaryData.totalSales || 0);
+  const analyticsBranchCount = analyticsAllBranches.length;
+  const shareLabel = analyticsShare !== null ? `${analyticsShare.toFixed(1)}%` : "—";
+  const rankLabel = analyticsRank !== null ? String(analyticsRank) : "—";
+  const isProTier = client?.subscription_tier === "pro" || client?.subscription_tier === "enterprise";
+
+  const handleStripeUpgrade = async () => {
+    const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO;
+    if (!priceId) {
+      window.location.href = "/portal/settings";
+      return;
+    }
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId }),
+      });
+      const json = await res.json();
+      if (json.url) window.location.href = json.url;
+    } catch {
+      window.location.href = "/portal/settings";
+    } finally {
+      setUpgrading(false);
+    }
+  };
 
   return (
     <div className="page-content portal-page">
@@ -333,6 +413,94 @@ export default function PortalOverviewPage() {
         </div>
       )}
 
+      {/* ── Market Intelligence hero (category-first) ── */}
+      {analyticsLoading ? (
+        <div className="pm-dash-card p-6 mb-6">
+          <div className="flex items-center gap-2 text-[12px] text-gray-4">
+            <Loader2 className="w-4 h-4 animate-spin text-teal" />
+            Loading market intelligence…
+          </div>
+        </div>
+      ) : analyticsUpgrade ? (
+        <div className="pm-dash-card p-6 mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp size={14} className="text-yellow" />
+            <span className="font-display text-[14px] font-semibold">Unlock Market Intelligence</span>
+          </div>
+          <p className="text-[12px] text-gray-4 mb-4">
+            Upgrade your plan to see your market share, category performance, and competitor insights across branches.
+          </p>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={handleStripeUpgrade}
+              disabled={upgrading}
+              className="pm-dash-qa-btn"
+            >
+              {upgrading ? "Opening checkout…" : "Upgrade now"}
+            </button>
+            <Link href="/portal/settings" className="text-[12px] text-teal hover:underline">
+              View plans in settings →
+            </Link>
+          </div>
+        </div>
+      ) : analyticsClientCategories.length > 0 ? (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp size={14} className="text-yellow" />
+            <span className="font-display text-[14px] font-semibold">Your Market at a Glance</span>
+            {isProTier && (
+              <span className="pm-dash-bdg pm-dash-bdg-g text-[9px]">PRO</span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {analyticsClientCategories.map((cat) => {
+              const catId = String(cat.id || "");
+              const catName = String(cat.name || "Category");
+              return (
+                <Link
+                  key={catId || catName}
+                  href="/portal/analytics"
+                  className="pm-dash-kcard block"
+                  style={{ borderTop: `3px solid ${analyticsDashboardColor}` }}
+                  aria-label={`${catName} market intelligence deep dive`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="pm-dash-kl mb-1 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: analyticsDashboardColor }} />
+                        {catName}
+                      </div>
+                      <div className="pm-dash-kn">{shareLabel}</div>
+                      <div className="pm-dash-ksub">Your share of category sales</div>
+                    </div>
+                    <span
+                      className="text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-1 rounded-full shrink-0"
+                      style={{ background: `${analyticsDashboardColor}22` }}
+                    >
+                      Rank #{rankLabel}
+                    </span>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-[var(--ws-border,#e5e5e5)] grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-[9px] uppercase tracking-wider font-mono text-gray-5">Market Revenue</div>
+                      <div className="text-[14px] font-display font-bold mt-0.5">{formatCurrency(analyticsMarketRevenue)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] uppercase tracking-wider font-mono text-gray-5">Branches</div>
+                      <div className="text-[14px] font-display font-bold mt-0.5">{analyticsBranchCount}</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center gap-1 text-[12px] font-semibold text-teal">
+                    View deep-dive <ArrowRight size={12} />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
       {/* ── Activity Feed ─────────────────────────── */}
       <div className="pm-dash-card mb-6">
         <div className="pm-dash-card-h">
@@ -366,8 +534,8 @@ export default function PortalOverviewPage() {
         </div>
       </div>
 
-      {/* ── Maize Analytics at a Glance ───────────────── */}
-      {!maizeLoading && maizeAnalytics && (
+      {/* ── Maize Analytics at a Glance (fallback) ────── */}
+      {!maizeLoading && !analyticsLoading && !analyticsUpgrade && maizeAnalytics && analyticsClientCategories.length === 0 && (
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp size={14} className="text-yellow" />
