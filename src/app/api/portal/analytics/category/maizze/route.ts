@@ -1,43 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
-import { isAnalyticsSubscriptionAllowed } from "@/lib/portal";
-import { requirePortalClient, subscriptionRequiredResponse } from "@/lib/portal-guard";
-import {
-  getCategoriesByNamePg,
-  withPgFallback,
-} from "@/lib/db-fallback";
-import { categoryAnalyticsHandler } from "../handler";
+import { withPgFallback, getCategoriesByNamePg } from "@/lib/db-fallback";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Legacy alias for /api/portal/analytics/category/[id] that resolves the
- * maize/maizze category by name (case-insensitive) and delegates to the same
- * shared, security-scoped handler as the dynamic route. Keeps the old
- * hardcoded client URL working until the frontend moves to dynamic category
- * tabs keyed by real category UUIDs.
+ * Legacy alias for /api/portal/analytics/category/[id]. Resolves the
+ * maize/maizze category by name and issues a 307 redirect so old hardcoded
+ * client URLs keep working while everything serves from the dynamic route.
+ * The target route performs the full portal + subscription + scope checks.
  */
 export async function GET(request: NextRequest) {
   try {
     const supabase = await getAuthenticatedClient();
-    const currentUser = await getCurrentUser(supabase);
+    await getCurrentUser(supabase);
 
-    const portal = await requirePortalClient(supabase, currentUser);
-    if (portal.response) return portal.response;
-    const client = portal.client;
-
-    // Paid market-analytics gate: free tier cannot read market analytics.
-    if (!isAnalyticsSubscriptionAllowed(client.subscription_tier)) {
-      return subscriptionRequiredResponse();
-    }
-
-    const { searchParams } = new URL(request.url);
-    const filterPeriodId = searchParams.get("period_id");
-    const filterBranchIds = searchParams.get("branch_ids")?.split(",").filter(Boolean) || [];
-
-    // Find the Maize category (with pg fallback)
-    let catId: string | null = null;
-    let catName = "Maize Flour";
     const cats = await withPgFallback(
       async () => {
         const { data } = await supabase
@@ -51,29 +28,26 @@ export async function GET(request: NextRequest) {
       "getCategoriesByName",
     );
 
-    if (cats && cats.length > 0) {
-      const sorted = cats.sort((a: { name: string }, b: { name: string }) => {
-        const aScore = a.name.toLowerCase().includes("flour") ? 2 : a.name.toLowerCase().includes("maize") ? 1 : 0;
-        const bScore = b.name.toLowerCase().includes("flour") ? 2 : b.name.toLowerCase().includes("maize") ? 1 : 0;
-        return bScore - aScore;
-      });
-      catId = sorted[0].id;
-      catName = sorted[0].name;
-    }
-
-    if (!catId) {
+    if (!cats || cats.length === 0) {
       return NextResponse.json({ category: null, summary: "Maize/maizze category not found in analytics_categories" });
     }
 
-    return categoryAnalyticsHandler(
-      supabase,
-      client,
-      catId,
-      catName,
-      filterPeriodId,
-      filterBranchIds,
-    );
+    const sorted = cats.sort((a: { name: string }, b: { name: string }) => {
+      const score = (n: string) => (n.toLowerCase().includes("flour") ? 2 : n.toLowerCase().includes("maize") ? 1 : 0);
+      return score(b.name) - score(a.name);
+    });
+    const catId = sorted[0].id;
+
+    const { searchParams } = new URL(request.url);
+    const target = `/api/portal/analytics/category/${catId}`;
+    const periodId = searchParams.get("period_id");
+    const branchIds = searchParams.get("branch_ids");
+    const qs: string[] = [];
+    if (periodId) qs.push(`period_id=${encodeURIComponent(periodId)}`);
+    if (branchIds) qs.push(`branch_ids=${encodeURIComponent(branchIds)}`);
+
+    return NextResponse.redirect(new URL(qs.length > 0 ? `${target}?${qs.join("&")}` : target, request.url), 307);
   } catch {
-    return NextResponse.json({ error: "Failed to fetch Maize analytics" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to resolve maize analytics" }, { status: 500 });
   }
 }

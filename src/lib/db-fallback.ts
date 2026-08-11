@@ -232,9 +232,56 @@ export async function getClientProductCategoryIds(db: SupabaseClient, supplierId
   );
 }
 
-/* ── Report generation: fetchAllSales with pg fallback ──────── */
+export async function getClientProfileCategoryIds(db: SupabaseClient, clientId: string): Promise<string[]> {
+  return withPgFallback(
+    async () => {
+      const ids: string[] = [];
+      const { data: client, error: clientErr } = await db
+        .from("clients")
+        .select("category_id")
+        .eq("id", clientId)
+        .maybeSingle();
+      if (clientErr) throw clientErr;
+      if (client?.category_id) ids.push(client.category_id);
 
-interface SalesRow {
+      const { data: rows, error: rowsErr } = await db
+        .from("client_categories")
+        .select("category_id")
+        .eq("client_id", clientId);
+      if (rowsErr) throw rowsErr;
+      for (const r of rows ?? []) ids.push(r.category_id);
+
+      return [...new Set(ids.filter(Boolean))];
+    },
+    async () => {
+      const primary = await queryOne<{ category_id: string | null }>(
+        `SELECT category_id FROM clients WHERE id = $1`,
+        [clientId],
+      );
+      const rows = await queryMany<{ category_id: string }>(
+        `SELECT category_id FROM client_categories WHERE client_id = $1`,
+        [clientId],
+      );
+      const ids = rows.map((r) => r.category_id);
+      if (primary?.category_id) ids.push(primary.category_id);
+      return [...new Set(ids.filter(Boolean))];
+    },
+    "getClientProfileCategoryIds",
+  );
+}
+
+/**
+ * Effective category scope for a client: the explicit profile assignment
+ * (clients.category_id + client_categories) wins; when none exists, fall back
+ * to the supplier product mix so legacy clients keep working.
+ */
+export async function getClientScopeCategoryIds(db: SupabaseClient, clientId: string, supplierId: string | null): Promise<string[]> {
+  const profileIds = await getClientProfileCategoryIds(db, clientId);
+  if (profileIds.length > 0) return profileIds;
+  return supplierId ? getClientProductCategoryIds(db, supplierId) : [];
+}
+
+/* ── Report generation: fetchAllSales with pg fallback ──────── */interface SalesRow {
   id: string;
   quantity: number;
   total_amount: number;
@@ -680,7 +727,7 @@ export async function getCategoriesByNamePg(pattern: string): Promise<{ id: stri
 
 /* ── Maizze fact_sales with joins via pg ────────────────────── */
 
-export async function fetchMaizzeSalesPg(
+export async function fetchCategorySalesPg(
   periodIds: string[],
   categoryId: string,
   branchIds?: string[],
@@ -715,7 +762,7 @@ export async function fetchMaizzeSalesPg(
   }));
 }
 
-export async function fetchMaizzeSalesFallback(
+export async function fetchCategorySalesFallback(
   db: SupabaseClient,
   periodIds: string[],
   categoryId: string,
@@ -744,8 +791,8 @@ export async function fetchMaizzeSalesFallback(
       }
       return all;
     },
-    () => fetchMaizzeSalesPg(periodIds, categoryId, branchIds),
-    "fetchMaizzeSales",
+    () => fetchCategorySalesPg(periodIds, categoryId, branchIds),
+    "fetchCategorySales",
   );
 }
 

@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { filename, file_type, period_id, branch_id, category_id, sub_category_id } = body;
+    const { filename, file_type, period_id, branch_id, branch_name, category_id, sub_category_id } = body;
 
     if (!filename || !file_type) {
       return NextResponse.json(
@@ -84,13 +84,47 @@ export async function POST(request: Request) {
       );
     }
 
+    // Server-side branch resolution: prefer an explicit branch_id; otherwise
+    // resolve (or auto-create) a branch from the store name so new stores —
+    // e.g. in a brand-new category — never need a hardcoded map.
+    let resolvedBranchId: string | null = branch_id || null;
+    if (!resolvedBranchId && branch_name && String(branch_name).trim()) {
+      const storeName = String(branch_name).trim();
+      const { data: found, error: findErr } = await supabase
+        .from("analytics_branches")
+        .select("id")
+        .or(`name.ilike.%${storeName}%,code.ilike.%${storeName}%,city.ilike.%${storeName}%`)
+        .limit(1)
+        .maybeSingle();
+      if (findErr) throw findErr;
+      if (found) {
+        resolvedBranchId = found.id;
+      } else {
+        const baseCode = storeName.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 20) || "NEW_STORE";
+        let code = baseCode;
+        const { data: dup } = await supabase
+          .from("analytics_branches")
+          .select("code")
+          .eq("code", code)
+          .maybeSingle();
+        if (dup) code = `${baseCode}_${Date.now().toString().slice(-4)}`;
+        const { data: created, error: createErr } = await supabase
+          .from("analytics_branches")
+          .insert({ name: storeName, code, active: true })
+          .select("id")
+          .single();
+        if (createErr) throw createErr;
+        resolvedBranchId = created.id;
+      }
+    }
+
     const { data, error } = await supabase
       .from("analytics_staging_uploads")
       .insert({
         filename,
         file_type,
         period_id: period_id || null,
-        branch_id: branch_id || null,
+        branch_id: resolvedBranchId,
         category_id: category_id || null,
         sub_category_id: sub_category_id || null,
         status: "uploaded",

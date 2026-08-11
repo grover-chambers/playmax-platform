@@ -445,6 +445,7 @@ export interface Database {
           status: string | null;
           assigned_to: string | null;
           linked_supplier_id: string | null;
+          category_id: string | null;
           notification_prefs: Json | null;
           dashboard_color: string | null;
           metadata: Json | null;
@@ -463,6 +464,7 @@ export interface Database {
           status?: string | null;
           assigned_to?: string | null;
           linked_supplier_id?: string | null;
+          category_id?: string | null;
           notification_prefs?: Json | null;
           dashboard_color?: string | null;
           metadata?: Json | null;
@@ -481,11 +483,38 @@ export interface Database {
           status?: string | null;
           assigned_to?: string | null;
           linked_supplier_id?: string | null;
+          category_id?: string | null;
           notification_prefs?: Json | null;
           dashboard_color?: string | null;
           metadata?: Json | null;
           created_at?: string | null;
           updated_at?: string | null;
+        };
+      };
+      client_categories: {
+        Row: {
+          id: string;
+          client_id: string;
+          category_id: string;
+          is_primary: boolean;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          client_id: string;
+          category_id: string;
+          is_primary?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          client_id?: string;
+          category_id?: string;
+          is_primary?: boolean;
+          created_by?: string | null;
+          created_at?: string;
         };
       };
       documents: {

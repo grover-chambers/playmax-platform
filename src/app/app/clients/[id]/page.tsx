@@ -37,11 +37,17 @@ interface DbClient {
   assigned_to: string | null;
   status: string | null;
   linked_supplier_id: string | null;
+  category_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 interface SupplierOption {
+  id: string;
+  name: string;
+}
+
+interface CategoryOption {
   id: string;
   name: string;
 }
@@ -169,6 +175,10 @@ export default function ClientDetailPage() {
   const [activityPage, setActivityPage] = useState(1);
 
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [syncingScope, setSyncingScope] = useState(false);
+  const [scopeResult, setScopeResult] = useState<{ periods: number; categories: string[] } | null>(null);
   const [linkingSupplier, setLinkingSupplier] = useState(false);
 
   /* ── Derived activity from conversations + invoices + projects ──── */
@@ -271,6 +281,16 @@ export default function ClientDetailPage() {
       })
       .catch(() => {});
 
+    // Always fetch analytics categories for the category selector
+    fetch("/api/analytics/dimensions", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && Array.isArray(d.categories)) {
+          setCategories(d.categories as CategoryOption[]);
+        }
+      })
+      .catch(() => {});
+
     if (activeTab === "overview" || activeTab === "projects") {
       supabase
         .from("projects")
@@ -324,6 +344,48 @@ export default function ClientDetailPage() {
       // silent
     } finally {
       setLinkingSupplier(false);
+    }
+  };
+
+  /* ── Analytics category + scope handlers ──── */
+  const handleCategoryChange = async (categoryId: string) => {
+    if (!id) return;
+    setSavingCategory(true);
+    try {
+      const res = await fetch(`/api/clients/${id}/category`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category_id: categoryId || null }),
+      });
+      if (res.ok) {
+        setClient((prev) => prev ? { ...prev, category_id: categoryId || null } : prev);
+        setScopeResult(null);
+      }
+    } catch {
+      // silent
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  const handleSyncScope = async () => {
+    if (!id) return;
+    setSyncingScope(true);
+    setScopeResult(null);
+    try {
+      const res = await fetch(`/api/clients/${id}/sharing`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setScopeResult({ periods: data.periods ?? 0, categories: data.categories ?? [] });
+      }
+    } catch {
+      // silent
+    } finally {
+      setSyncingScope(false);
     }
   };
 
@@ -685,6 +747,62 @@ export default function ClientDetailPage() {
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Category & Data Access */}
+                <div className="pm-dash-card">
+                  <div className="pm-dash-card-h">
+                    <span className="pm-dash-card-t text-[16px]">Category & Data Access</span>
+                  </div>
+                  <div className="pm-dash-card-b space-y-3">
+                    <div>
+                      <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-1">
+                        Analytics category
+                      </div>
+                      <select
+                        value={c.category_id || ""}
+                        onChange={(e) => handleCategoryChange(e.target.value)}
+                        disabled={savingCategory}
+                        className="ws-select w-full"
+                      >
+                        <option value="">No category assigned</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-gray-5 mt-1">
+                        Scopes the client portal to one FMCG category.
+                      </p>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-1">
+                        Data access (auto-scope)
+                      </div>
+                      {scopeResult ? (
+                        <p className="text-[11px] text-green">
+                          {scopeResult.categories.length} category
+                          {scopeResult.categories.length === 1 ? "" : "ies"} x{" "}
+                          {scopeResult.periods} periods x all branches granted.
+                        </p>
+                      ) : c.category_id ? (
+                        <p className="text-[11px] text-gray-4">
+                          Sharing rows kept in sync with the assigned category.
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-gray-5">
+                          Assign a category to grant portal access.
+                        </p>
+                      )}
+                      <button
+                        onClick={handleSyncScope}
+                        disabled={syncingScope}
+                        className="inline-flex items-center gap-1.5 mt-1.5 text-[11px] text-[var(--ws-accent)] hover:underline disabled:opacity-50"
+                      >
+                        {syncingScope && <Loader2 size={11} className="animate-spin" />}
+                        {syncingScope ? "Syncing…" : "Sync data access"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

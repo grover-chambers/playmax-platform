@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   getSharingRecords,
-  fetchMaizzeSalesFallback,
+  fetchCategorySalesFallback,
   getSuppliersByIds,
   fetchPricingByCategoryFallback,
   getClientProductCategoryIds,
+  getClientProfileCategoryIds,
   getAllBranchesFallback,
   getPeriodsByIds,
 } from "@/lib/db-fallback";
@@ -85,8 +86,24 @@ export async function categoryAnalyticsHandler(
     return NextResponse.json({ category: null, summary: "This category is not shared with your account" });
   }
 
-  // 2. Client-category scope: must be a category the client sells.
-  const clientCategoryIds = client.linked_supplier_id ? await getClientProductCategoryIds(getAdminClient(), client.linked_supplier_id) : [];
+  // 2. Client-category scope: the category must be part of the client's
+  // profile (clients.category_id / client_categories). When a profile exists
+  // it wins over the supplier product mix so a freshly onboarded client with
+  // no linked products can already access their assigned category.
+  const profileCategoryIds = await getClientProfileCategoryIds(getAdminClient(), client.id);
+  if (profileCategoryIds.length > 0 && !profileCategoryIds.includes(categoryId)) {
+    return NextResponse.json({
+      category: null,
+      summary: "This category is not assigned to your account",
+      scope: { requestedCategoryId: categoryId, profileCategoryIds },
+    });
+  }
+
+  // Supplier product mix is a consistency check, not the gate: it is ignored
+  // when the profile already grants the category.
+  const clientCategoryIds = client.linked_supplier_id && profileCategoryIds.length === 0
+    ? await getClientProductCategoryIds(getAdminClient(), client.linked_supplier_id)
+    : [];
   if (clientCategoryIds.length > 0 && !clientCategoryIds.includes(categoryId)) {
     return NextResponse.json({
       category: null,
@@ -108,7 +125,7 @@ export async function categoryAnalyticsHandler(
     ? (allowedBranchIds.length === 0 ? filterBranchIds : filterBranchIds.filter((b) => allowedBranchIds.includes(b)))
     : allowedBranchIds;
 
-  const salesRows = await fetchMaizzeSalesFallback(supabase, periodIds, categoryId, branchIds.length > 0 ? branchIds : undefined);
+  const salesRows = await fetchCategorySalesFallback(supabase, periodIds, categoryId, branchIds.length > 0 ? branchIds : undefined);
 
   const supplierIds = [...new Set(salesRows.map((r) => (r as Record<string, unknown>).supplier_id).filter(Boolean))] as string[];
   let supplierNameMap = new Map<string, string>();

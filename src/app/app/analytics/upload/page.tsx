@@ -67,21 +67,10 @@ interface Period {
   month: number;
 }
 
-// Store name → branch code lookup (client-side)
-const STORE_NAME_TO_BRANCH: Record<string, string> = {
-  "NAIVASHA": "NVS",
-  "NAKURU": "NKR",
-  "NAROK": "NRK",
-  "THIKA STORE(NAMPAK)": "NPM",
-  "THIKA STORE(Nampak)": "NPM",
-  "NYAHURURU": "NYH",
-  "MERU": "MER",
-  "MAUA": "MUA",
-  "KARATINA": "KRT",
-  "THIKA CBD": "HQ",
-  "HQ": "HQ",
-  "ENGINEER": "ENG",
-};
+// Branch resolution happens server-side at upload time (exact match, then
+// substring, then auto-create for new stores) so new categories/stores never
+// need a client-side hardcoded store → branch map.
+
 const formatOptions: { value: UploadFormat; label: string; desc: string; periodRequired: boolean }[] = [
   {
     value: "per_store_sales",
@@ -632,7 +621,6 @@ export default function AnalyticsUploadPage() {
     period: string;
     store: string;
     category: string;
-    branchCode: string;
   } | null>(null);
 
   // Column mapping
@@ -984,23 +972,18 @@ export default function AnalyticsUploadPage() {
 
       setDetectedMeta(metadata);
 
-      // For per-store sales, also extract structured metadata with branch code lookup
+      // For per-store sales, also extract structured metadata (branch is
+      // resolved server-side at upload time).
       if (format === "per_store_sales") {
         try {
           const rawArrays = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
           const metaPeriod = String(rawArrays[1]?.[1] ?? "").trim();
           const metaStore = String(rawArrays[2]?.[1] ?? "").trim();
           const metaCategory = String(rawArrays[3]?.[1] ?? "").trim();
-          const cleanStore = metaStore.toUpperCase().replace(/\s+/g, " ");
-          const branchCode =
-            STORE_NAME_TO_BRANCH[cleanStore] ||
-            STORE_NAME_TO_BRANCH[metaStore.toUpperCase().trim()] ||
-            "";
           setStoreMetadata({
             period: metaPeriod,
             store: metaStore,
             category: metaCategory,
-            branchCode,
           });
         } catch {
           // Fallback: generic metadata already set via parseSheetWithMetadata
@@ -1054,6 +1037,7 @@ export default function AnalyticsUploadPage() {
           file_type: format,
           period_id: effectivePeriodId,
           branch_id: selectedBranchId || null,
+          branch_name: detectedMeta?.store || storeMetadata?.store || null,
           category_id: selectedCategoryId || null,
           sub_category_id: selectedSubCategoryId || null,
           grand_total: grandTotalRef.current,
@@ -1884,11 +1868,6 @@ Analytics Settings, then retry.
                   <span className="text-[var(--ws-text)] font-medium">{storeMetadata.period}</span>
                   <span className="text-gray-5">Store:</span>
                   <span className="text-[var(--ws-text)] font-medium">{storeMetadata.store}</span>
-                  {storeMetadata.branchCode && (
-                    <span className="px-2 py-0.5 rounded bg-green/10 text-green border border-green/30 text-[9px] font-mono">
-                      → {storeMetadata.branchCode}
-                    </span>
-                  )}
                   <span className="text-gray-5">Category:</span>
                   <span className="text-[var(--ws-text)] font-medium">{storeMetadata.category}</span>
                 </div>

@@ -34,15 +34,17 @@ export async function onboardClient({ email, name, company }: OnboardClientParam
 
   const { data: existing } = await adminClient.auth.admin.listUsers();
   const alreadyExists = existing?.users.find((u) => u.email === email);
+  let userId: string | undefined;
 
   if (alreadyExists) {
+    userId = alreadyExists.id;
     await adminClient.auth.admin.updateUserById(alreadyExists.id, {
       password: tempPassword,
       app_metadata: { role: "client" },
       user_metadata: { name, company },
     });
   } else {
-    const { error } = await adminClient.auth.admin.createUser({
+    const { data: created, error } = await adminClient.auth.admin.createUser({
       email,
       password: tempPassword,
       email_confirm: true,
@@ -50,6 +52,7 @@ export async function onboardClient({ email, name, company }: OnboardClientParam
       user_metadata: { name, company },
     });
     if (error) throw new Error(error.message);
+    userId = created?.user?.id;
   }
 
   const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/login`;
@@ -65,5 +68,5 @@ export async function onboardClient({ email, name, company }: OnboardClientParam
     }),
   });
 
-  return { success: true, tempPassword };
+  return { success: true, tempPassword, userId };
 }

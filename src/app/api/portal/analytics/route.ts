@@ -13,7 +13,7 @@ import {
   withPgFallback,
   getAllBranchesFallback,
   getPeriodsByIds,
-  getClientProductCategoryIds,
+  getClientScopeCategoryIds,
   getCategoriesByIds,
 } from "@/lib/db-fallback";
 
@@ -356,8 +356,8 @@ export async function GET(request: NextRequest) {
     const allowedBranchIds: string[] = [...new Set(filteredSharing.map((s) => s.branch_id).filter((b): b is string => Boolean(b)))];
     const allowedCategoryIds: string[] = [...new Set(filteredSharing.map((s) => s.category_id).filter((c): c is string => Boolean(c)))];
 
-    // client-category scope
-    const clientCategoryIds = client.linked_supplier_id ? await getClientProductCategoryIds(getAdminClient(), client.linked_supplier_id) : [];
+    // client-category scope: profile assignment wins, product mix as fallback
+    const clientCategoryIds = await getClientScopeCategoryIds(getAdminClient(), client.id, client.linked_supplier_id);
     const hasClientCategoryScope = clientCategoryIds.length > 0;
     const effectiveCategoryIds = hasClientCategoryScope
       ? (allowedCategoryIds.length === 0 ? clientCategoryIds : clientCategoryIds.filter((c) => allowedCategoryIds.includes(c)))

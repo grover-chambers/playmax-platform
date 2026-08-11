@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 
@@ -6,6 +7,40 @@ export const dynamic = "force-dynamic";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+const CHAIN_WIDE_BRANCH_CODE = "__CHAIN__";
+
+async function ensureChainWideBranch(supabase: SupabaseClient): Promise<string> {
+  const { data: existing } = await supabase
+    .from("analytics_branches")
+    .select("id")
+    .eq("code", CHAIN_WIDE_BRANCH_CODE)
+    .maybeSingle();
+  if (existing) return existing.id;
+  const { data: created, error } = await supabase
+    .from("analytics_branches")
+    .insert({ name: "Chain-Wide (All Stores)", code: CHAIN_WIDE_BRANCH_CODE, active: true })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return created.id;
+}
+
+async function resolveSupplierByName(supabase: SupabaseClient, name: string, code?: string | null): Promise<string | null> {
+  const { data: existing } = await supabase
+    .from("analytics_suppliers")
+    .select("id")
+    .ilike("name", name.trim())
+    .maybeSingle();
+  if (existing) return existing.id;
+  const { data: created, error } = await supabase
+    .from("analytics_suppliers")
+    .insert({ name: name.trim(), code: code || null })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return created?.id ?? null;
 }
 
 export async function POST(_request: Request, context: RouteContext) {
@@ -114,7 +149,16 @@ export async function POST(_request: Request, context: RouteContext) {
 
     // For per_store_sales and chain_wide_sales → insert into analytics_fact_sales
     if (upload.file_type === "per_store_sales" || upload.file_type === "chain_wide_sales") {
-      const branchId = upload.branch_id;
+      // Chain-wide/aggregate uploads that carry no store resolve to the
+      // designated __CHAIN__ branch instead of an all-zeros id (FK-safe).
+      let branchId = upload.branch_id;
+      if (!branchId) {
+        try {
+          branchId = await ensureChainWideBranch(supabase);
+        } catch {
+          errors.push("Could not resolve chain-wide branch");
+        }
+      }
 
       for (const row of rows) {
         try {
@@ -175,14 +219,29 @@ export async function POST(_request: Request, context: RouteContext) {
             }
           }
 
+          // Resolve supplier attribution so competitor share is correct:
+          // prefer an explicit supplier on the row, then the product's default.
+          let salesSupplierId: string | null = null;
+          if (row.supplier_name) {
+            salesSupplierId = await resolveSupplierByName(supabase, String(row.supplier_name), row.supplier_code || null);
+          } else {
+            const { data: prodDef } = await supabase
+              .from("analytics_products")
+              .select("default_supplier_id")
+              .eq("id", productId)
+              .maybeSingle();
+            salesSupplierId = prodDef?.default_supplier_id ?? null;
+          }
+
           // Check for existing sales row (no UNIQUE constraint reliance)
-          const branchVal = branchId || "00000000-0000-0000-0000-000000000000";
+          const branchVal = branchId;
           const salesFields = {
             period_id: upload.period_id,
             branch_id: branchVal,
             category_id: salesCategoryId,
             sub_category_id: salesSubCategoryId,
             product_id: productId,
+            supplier_id: salesSupplierId,
             quantity: row.quantity ?? 0,
             weight_tonnes: row.weight_tonnes ?? 0,
             unit_price: row.unit_price ?? null,

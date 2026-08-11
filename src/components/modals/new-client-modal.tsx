@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Modal from "@/components/ui/modal";
 import Button from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -50,11 +50,25 @@ export default function NewClientModal({
     accountOwner: "",
     billingAddress: "",
     convertedFromLead: convertedLead ? "Yes (auto-filled)" : "",
+    category: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/analytics/dimensions", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.categories) {
+          setCategories(data.categories as { id: string; name: string }[]);
+        }
+      })
+      .catch(() => {});
+  }, [open]);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -96,6 +110,7 @@ export default function NewClientModal({
           phone: form.phone,
           email: form.email,
           assigned_to: form.accountOwner,
+          category_ids: form.category ? [form.category] : [],
         }),
       });
 
@@ -128,6 +143,7 @@ export default function NewClientModal({
       accountOwner: "",
       billingAddress: "",
       convertedFromLead: "",
+      category: "",
     });
     setErrors({});
     setSubmitError("");
@@ -202,6 +218,29 @@ export default function NewClientModal({
                 {errors.industryOther}
               </p>
             )}
+          </div>
+
+          {/* Analytics category */}
+          <div>
+            <label className="form-label">
+              Analytics category <span className="text-gray-4">(optional)</span>
+            </label>
+            <select
+              className="form-select"
+              value={form.category}
+              onChange={(e) => handleChange("category", e.target.value)}
+              disabled={submitting}
+            >
+              <option value="">No category yet — assign later</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-gray-4 text-[10px] mt-1">
+              Scopes the client portal to one FMCG category (e.g. MILK AND DAIRY).
+            </p>
           </div>
 
           {/* Contact name + phone */}

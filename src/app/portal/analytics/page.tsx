@@ -14,7 +14,6 @@ import {
   FileText,
   Eye,
   ShoppingBag,
-  Wheat,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import { AnalyticsChart } from "@/components/charts/analytics-chart";
@@ -497,13 +496,23 @@ export default function PortalAnalyticsPage() {
       if (filterPeriod !== "all") catParams.set("period_id", filterPeriod);
       if (filterBranches.length > 0) catParams.set("branch_ids", filterBranches.join(","));
       const catQs = catParams.toString();
-      // Overview/reports keep the legacy maizze snapshot; category tabs fetch their own id.
-      const categoryPath = tab === "overview" || tab === "reports" || tab === "maize" ? "maizze" : tab;
+      // Overview/reports use the client's primary assigned category snapshot;
+      // category tabs use their own id. Legacy fallback resolves "maizze".
+      const primaryCategoryId = data?.clientCategories?.[0]?.id ?? null;
+      const hasLegacyMaize = (data?.categories as Array<{ category: string }> | undefined)?.some(
+        (c) => String(c.category).toLowerCase().includes("maize"),
+      ) ?? false;
+      const categoryPath =
+        tab === "overview" || tab === "reports"
+          ? (primaryCategoryId ?? (hasLegacyMaize ? "maizze" : null))
+          : tab;
 
       const [analyticsRes, reportsRes, maizeRes] = await Promise.all([
         fetch(`/api/portal/analytics${qs ? `?${qs}` : ""}`),
         fetch("/api/portal/analytics/reports"),
-        fetch(`/api/portal/analytics/category/${categoryPath}${catQs ? `?${catQs}` : ""}`),
+        categoryPath
+          ? fetch(`/api/portal/analytics/category/${categoryPath}${catQs ? `?${catQs}` : ""}`)
+          : Promise.resolve({ status: 200, json: async () => ({ category: null }) } as Response),
       ]);
 
       // Paid tier gate: 402 means the analytics payload is locked, not an error.
@@ -997,9 +1006,7 @@ export default function PortalAnalyticsPage() {
     : competitors;
   const maxLeaderboardSales = Math.max(...leaderboardCompetitors.map((c) => c.total_sales), 1);
 
-  // Category-view display name (generalized for any category tab). Prefer the
-  // fetched category payload, then the tab's client category name, then the
-  // legacy maize fallback.
+  // Category-view display name (generalized for any category tab).
   const categoryViewName =
     maizeData && typeof maizeData.category === "string"
       ? maizeData.category
@@ -1088,7 +1095,7 @@ export default function PortalAnalyticsPage() {
                     : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
                 }`}
               >
-                <Wheat size={13} className="inline mr-1.5" />
+                <ShoppingBag size={13} className="inline mr-1.5" />
                 {cat.name}
               </button>
             ))
@@ -1101,7 +1108,7 @@ export default function PortalAnalyticsPage() {
                     : "bg-[var(--ws-surface,#fff)] border border-[var(--ws-border,#e5e5e5)] hover:text-[var(--ws-text,#1A1C23)]"
                 }`}
               >
-                <Wheat size={13} className="inline mr-1.5" />
+                <ShoppingBag size={13} className="inline mr-1.5" />
                 Maize Flour
               </button>
             )}
@@ -1231,7 +1238,7 @@ export default function PortalAnalyticsPage() {
             </div>
               <div className="pm-dash-kcard grn">
               <div className="pm-dash-kn grn">{clientComp ? fmtPct(displayShare) : "—"}</div>
-              <div className="pm-dash-kl">Maize Flour Share</div>
+              <div className="pm-dash-kl">{categoryViewName} Share</div>
               <div className="pm-dash-ksub flex items-center gap-2">
                 {clientComp ? `Rank #${displayRank} of ${displayTotal}` : "Not ranked"}
                 {clientComp && displayRank === 1 && <TrendArrow value={0} label="leader" />}
@@ -1268,13 +1275,13 @@ export default function PortalAnalyticsPage() {
                       {fmtPct(displayShare)} market share
                     </div>
                     <div className="text-[12px] mt-1" style={{ color: "var(--ws-text-muted,#70716C)" }}>
-                      Ranked #{displayRank} of {displayTotal} maize suppliers · {fmt(displayRevenue)} revenue · {fmtNum(displayUnits)} units
+                      Ranked #{displayRank} of {displayTotal} {String(categoryViewName).toLowerCase()} suppliers · {fmt(displayRevenue)} revenue · {fmtNum(displayUnits)} units
                     </div>
                   </div>
                 </div>
                 <div className="hidden md:flex flex-col items-end gap-1">
                   <div className="text-[10px] uppercase tracking-widest font-mono" style={{ color: "var(--ws-text-muted,#70716C)" }}>Category</div>
-                  <div className="text-[14px] font-display font-semibold" style={{ color: "var(--ws-text,#1A1C23)" }}>Maize Flour</div>
+                  <div className="text-[14px] font-display font-semibold" style={{ color: "var(--ws-text,#1A1C23)" }}>{categoryViewName}</div>
                   <div className="text-[10px] font-mono" style={{ color: "var(--ws-text-muted,#70716C)" }}>Jan — Jul 2026</div>
                 </div>
               </div>
@@ -1289,7 +1296,7 @@ export default function PortalAnalyticsPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Trophy size={14} className="text-yellow" />
-                  <span className="font-display text-[13px] font-semibold">Maize Flour Leaderboard</span>
+                  <span className="font-display text-[13px] font-semibold">{categoryViewName} Leaderboard</span>
                 </div>
                 {clientComp && (
                   <span
