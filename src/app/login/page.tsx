@@ -497,64 +497,6 @@ function LoginForm() {
                 </button>
               </form>
 
-              <div className="mt-5 pt-4 border-t border-[#1A1A1A]">
-                <p className="text-[9px] font-mono text-gray-5 tracking-widest uppercase text-center mb-3">
-                  Demo accounts
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {[
-                    { role: "super_admin", label: "Super Admin" },
-                    { role: "crm_admin", label: "CRM Admin" },
-                    { role: "crm_staff", label: "CRM Staff" },
-                    { role: "cms_admin", label: "CMS Admin" },
-                    { role: "finance", label: "Finance" },
-                  ].map((d) => (
-                    <button
-                      key={d.role}
-                      type="button"
-                      disabled={loading}
-                      onClick={async () => {
-                        setLoading(true);
-                        setError("");
-                        try {
-                          const res = await fetch("/api/auth/demo-login", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ role: d.role }),
-                          });
-                          const data = await res.json();
-                          if (data.session) {
-                            const { createClient } =
-                              await import("@/lib/supabase/browser");
-                            const supabase = createClient();
-                            await supabase.auth.setSession({
-                              access_token: data.session.access_token,
-                              refresh_token: data.session.refresh_token,
-                            });
-                            // Role was already set server-side in app_metadata
-                            // by the demo-login API — never update it client-side.
-                            window.location.href = data.redirect;
-                          } else if (data.requiresConfirmation) {
-                            setError(
-                              "Account created! Check your email to confirm, then sign in.",
-                            );
-                            setLoading(false);
-                          } else {
-                            setError(data.error || "Login failed");
-                            setLoading(false);
-                          }
-                        } catch {
-                          setError("Connection error");
-                          setLoading(false);
-                        }
-                      }}
-                      className="text-[10px] font-mono font-medium px-3 py-1.5 rounded-full border border-[#2A2A2A] bg-transparent text-gray-5 hover:text-yellow hover:border-yellow/40 transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
 
 

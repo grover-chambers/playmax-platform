@@ -1311,7 +1311,7 @@ export default function PortalAnalyticsPage() {
               <div className="space-y-2.5">
                 {leaderboardCompetitors.slice(0, 8).map((comp) => {
                   const color = competitorColor(comp.rank, comp.is_client, clientColor);
-                  const displayName = competitorLabel(comp.manufacturer, comp.is_client, comp.rank);
+                  const displayName = competitorLabel(comp.manufacturer, comp.is_client);
                   return (
                     <div key={comp.manufacturer} className="flex items-center gap-3">
                       <span className="text-[10px] font-mono text-gray-5 w-4 text-right shrink-0">
@@ -1749,7 +1749,7 @@ export default function PortalAnalyticsPage() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className={`text-[12px] font-medium ${isClient ? "text-yellow" : "text-gray-3"}`}>
-                            {competitorLabel(String(comp.supplier), isClient, Number(comp.rank))}
+                            {competitorLabel(String(comp.supplier), isClient)}
                             {isClient && <span className="ml-1.5 text-[9px] text-yellow">(you)</span>}
                           </span>
                           <span className="text-[11px] text-gray-4">

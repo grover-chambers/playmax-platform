@@ -593,7 +593,7 @@ export default function PortalOverviewPage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-0.5">
                         <span className={`text-[11px] ${comp.is_client ? "text-yellow font-semibold" : "text-gray-4"}`}>
-                          {competitorLabel(comp.supplier, comp.is_client, comp.rank)}
+                          {competitorLabel(comp.supplier, comp.is_client)}
                           {comp.is_client ? <span className="ml-1 text-[9px] text-yellow">(you)</span> : ""}
                         </span>
                         <span className="text-[10px] text-gray-5">
