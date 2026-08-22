@@ -1,6 +1,6 @@
 // Auto-generated from live Supabase schema — DO NOT EDIT BY HAND
 // Generated: 2026-07-22
-// Source: visycgzuszhgvtmqfnbx.supabase.co
+// Source: Supabase project (see NEXT_PUBLIC_SUPABASE_URL)
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 

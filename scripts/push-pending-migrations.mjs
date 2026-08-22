@@ -16,7 +16,7 @@
  *     node scripts/push-pending-migrations.mjs [--apply] [--verbose]
  *
  * Token: https://supabase.com/dashboard/account/tokens
- * Project ref defaults to visycgzuszhgvtmqfnbx (from run_migrations.py).
+ * Project ref comes from SUPABASE_PROJECT_REF env var.
  */
 
 import { readFileSync, readdirSync } from "node:fs";
@@ -27,7 +27,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const MIGRATIONS_DIR = join(ROOT, "supabase", "migrations");
 
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || "visycgzuszhgvtmqfnbx";
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || "";
 const APPLY = process.argv.includes("--apply");
 const VERBOSE = process.argv.includes("--verbose");
 

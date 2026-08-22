@@ -58,7 +58,7 @@ async function main() {
 
     // Output the SQL for all pending migrations
     console.log("\n=== MIGRATION SQL (apply via Supabase Dashboard SQL Editor) ===\n");
-    console.log("Open: https://supabase.com/dashboard/project/visycgzuszhgvtmqfnbx/sql/new\n");
+    console.log("Open: https://supabase.com/dashboard/project/$SUPABASE_PROJECT_REF/sql/new\n");
 
     for (const f of files.filter(f => parseInt(f) >= 17)) {
       const sql = readFileSync(join(migrationsDir, f), "utf-8");

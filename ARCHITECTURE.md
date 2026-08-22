@@ -820,7 +820,7 @@ client      → rows where visible_to_client = true
 
 | Detail | Value |
 |--------|-------|
-| URL | `https://visycgzuszhgvtmqfnbx.supabase.co` |
+| URL | Supabase project URL (set via `NEXT_PUBLIC_SUPABASE_URL`, see `.env.example`) |
 | SDK | `@supabase/supabase-js` + `@supabase/ssr` |
 | Auth | JWT cookies, service role for admin operations |
 | Clients | 7 client variants (api, server, browser, middleware, legacy, utils, admin) |
@@ -852,12 +852,12 @@ client      → rows where visible_to_client = true
 
 ```env
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL        = https://visycgzuszhgvtmqfnbx.supabase.co
+NEXT_PUBLIC_SUPABASE_URL        = supabase_project_url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = anon_key
 SUPABASE_SERVICE_ROLE_KEY       = service_role_key   (gitignored)
 
 # Resend
-RESEND_API_KEY                  = re_9jctTuKd_...    (gitignored)
+RESEND_API_KEY                  = resend_api_key    (gitignored)
 RESEND_DOMAIN                   = (optional, for custom domain)
 
 # Cloudinary
