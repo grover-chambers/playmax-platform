@@ -11,6 +11,7 @@ import {
   Calendar,
   BarChart3,
   BookOpen,
+  Map,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { getRoleLabel } from "@/lib/roles";
@@ -28,6 +29,7 @@ const portalNavItems: DashboardNavItem[] = [
   { icon: CreditCard, label: "Invoices", href: "/portal/invoices" },
   { icon: Calendar, label: "Bookings", href: "/portal/bookings" },
   { icon: BarChart3, label: "Analytics", href: "/portal/analytics" },
+  { icon: Map, label: "Route Mapping", href: "/portal/route-mapping" },
   { icon: BookOpen, label: "Content", href: "/portal/content" },
 ];
 
