@@ -46,5 +46,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Unit tests
+        run: npm test
+
+      - name: Schema drift (parse-only)
+        run: node scripts/check-schema-drift.mjs --parse-only
+
       - name: Build
         run: npm run build

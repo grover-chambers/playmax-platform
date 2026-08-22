@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryOne, withTransaction } from "@/lib/db";
 import { moduleEventSchema } from "@/lib/validation";
 import { withLogging } from "@/lib/request-log";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,14 @@ async function getIngestHandler(request: Request) {
   if (!secret || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Rate limit per bearer identity (all callers share one secret, so this
+  // primarily bounds runaway integrations and brute-force pressure).
+  const limit = await rateLimit("modules-ingest", request, {
+    windowSec: 60,
+    maxRequests: 60,
+  });
+  if (!limit.allowed) return rateLimitResponse(limit.retryAfterSec);
 
   let body: unknown;
   try {
