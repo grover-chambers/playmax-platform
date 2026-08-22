@@ -13,7 +13,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/auth/") ||
     pathname === "/" ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/") ||
     pathname.startsWith("/services") ||
     pathname.startsWith("/inventory") ||
     pathname.startsWith("/contact") ||
@@ -23,50 +22,92 @@ export async function middleware(request: NextRequest) {
 
   if (isPublic) return NextResponse.next();
 
-  // ── Protected routes only from here ────────────────
-  const isProtected =
-    pathname.startsWith("/app") || pathname.startsWith("/portal");
+  // ── API routes: fail-closed gate ────────────────────────
+  if (pathname.startsWith("/api/")) {
+    // CORS preflight never carries cookies — let it through.
+    if (request.method === "OPTIONS") return NextResponse.next();
 
-  if (!isProtected) return NextResponse.next();
+    // Explicit allowlist for routes that are either intentionally public or
+    // authenticate via a non-cookie scheme. Every entry enforces its own
+    // authorization inside the route handler (bearer token, webhook
+    // signature, rate limiting). Default posture: everything else 401s here.
+    const apiPath = pathname.slice(5); // strip "/api/" -> e.g. "auth/demo-login"
+    const SELF_GUARDED_OR_PUBLIC: ReadonlyArray<{
+      path: string;
+      methods?: string[];
+    }> = [
+      { path: "auth/demo-login", methods: ["POST"] },
+      { path: "stripe/webhook", methods: ["POST"] },
+      { path: "supabase/webhook", methods: ["POST"] },
+      { path: "worker/health" }, // bearer token OR staff session, enforced in-route
+      { path: "modules/nampark/ingest", methods: ["POST"] }, // bearer token, enforced in-route
+      { path: "leads", methods: ["POST"] }, // public lead form, rate-limited in-route
+    ];
 
-  const { supabase, response: supabaseResponse } = createClient(request);
+    const allowedWithoutSession = SELF_GUARDED_OR_PUBLIC.some((route) => {
+      const pathOk =
+        apiPath === route.path || apiPath.startsWith(`${route.path}/`);
+      const methodOk = !route.methods || route.methods.includes(request.method);
+      return pathOk && methodOk;
+    });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    if (allowedWithoutSession) {
+      const { response: supabaseResponse } = createClient(request);
+      return supabaseResponse;
+    }
 
-  if (!user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
+    // Everything else on /api/* requires a valid session
+    const { supabase, response: supabaseResponse } = createClient(request);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  const role = user.app_metadata?.role as UserRole | undefined;
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
 
-  // ── Role-less policy (SECURITY) ──────────────────────────────────────
-  // A missing app_metadata.role (pre-backfill session, invite that wrote
-  // user_metadata, pre-migration account) must NEVER be guessed as "client".
-  // That silent default bounced role-less staff (demo.cmsadmin etc.) into the
-  // client portal. Instead: honor the zone the user is trying to enter.
-  //   - /app → staff-intent: ALLOW through. No redirect to /portal (the bug)
-  //     and no redirect to /login (would loop — the user is authenticated).
-  //   - /portal → client-intent: ALLOW through; the portal layout renders it
-  //     and the portal APIs reject role-less callers, so no data is exposed.
-  // The auth callback / demo-login backfill the real role via the Admin API;
-  // the app layout + API guards fail closed until then.
-  if (!role) {
+    // Route handlers perform their own role checks (getCurrentUser + isStaff);
+    // the middleware only guarantees a session exists and refreshes cookies.
     return supabaseResponse;
   }
 
-  if (!canAccess(role, pathname)) {
-    console.warn(`[middleware] Access denied: role=${role}, path=${pathname}`);
-    const url = request.nextUrl.clone();
-    url.pathname = getDefaultRedirect(role);
-    return NextResponse.redirect(url);
+  // ── Protected routes (/app, /portal) ────────────────
+  if (pathname.startsWith("/app") || pathname.startsWith("/portal")) {
+    const { supabase, response: supabaseResponse } = createClient(request);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+
+    const role = user.app_metadata?.role as UserRole | undefined;
+
+    // Role-less policy (SECURITY): missing role must NOT be guessed as "client"
+    if (!role) {
+      return supabaseResponse;
+    }
+
+    if (!canAccess(role, pathname)) {
+      console.warn(`[middleware] Access denied: role=${role}, path=${pathname}`);
+      const url = request.nextUrl.clone();
+      url.pathname = getDefaultRedirect(role);
+      return NextResponse.redirect(url);
+    }
+
+    return supabaseResponse;
   }
 
-  return supabaseResponse;
+  // ── Unknown routes — default deny ───────────────────
+  return NextResponse.next();
 }
 
 export const config = {
