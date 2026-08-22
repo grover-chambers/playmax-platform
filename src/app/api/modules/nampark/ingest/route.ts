@@ -1,25 +1,23 @@
 import { NextResponse } from "next/server";
 import { queryOne, withTransaction } from "@/lib/db";
-import { namparkIngestSchema } from "@/lib/validation";
+import { moduleEventSchema } from "@/lib/validation";
 import { withLogging } from "@/lib/request-log";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Module ingestion endpoint (server-to-server).
+ * Module integration endpoint (server-to-server).
  *
- * Consumed by NAMPARK RMS to push summary metrics for the Route Mapping
- * module into PlayMax reporting (reports + report_metrics).
+ * Consumed by NAMPARK RMS to push route-mapping metric snapshot events into
+ * PlayMax reporting (module_events ledger -> reports/report_metrics).
  *
- * SECURITY:
+ * Contract (architecture review §9/§11): event-oriented, idempotent.
+ *  - Caller generates event_id (UUID). Replays are detected via the unique
+ *    module_events.event_id ledger row and acknowledged without re-writing.
  *  - Authenticated via shared secret: Authorization: Bearer $MODULE_INGEST_SECRET
- *    (NOT a Supabase session; allowlisted in middleware, self-guarded here).
  *  - Fails closed if MODULE_INGEST_SECRET is unset.
  *  - Fails closed unless the client has an ACTIVE route_mapping row in
  *    client_modules.
- *
- * Idempotency: one rolling report per client (type 'module_sync'). Each push
- * replaces that report's metrics inside a single transaction.
  */
 async function getIngestHandler(request: Request) {
   const secret = process.env.MODULE_INGEST_SECRET;
@@ -36,7 +34,7 @@ async function getIngestHandler(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const parsed = namparkIngestSchema.safeParse(body);
+  const parsed = moduleEventSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid payload", issues: parsed.error.flatten() },
@@ -44,14 +42,22 @@ async function getIngestHandler(request: Request) {
     );
   }
 
-  const { client_id, period_label, metrics } = parsed.data;
+  const event = parsed.data;
+
+  const occurredAt = new Date(event.occurred_at);
+  if (Number.isNaN(occurredAt.getTime())) {
+    return NextResponse.json(
+      { error: "occurred_at must be a valid ISO 8601 timestamp" },
+      { status: 400 },
+    );
+  }
 
   // Fail closed: module must be activated for this client
   const activation = await queryOne<{ id: string }>(
     `SELECT id FROM public.client_modules
      WHERE client_id = $1 AND module_type = 'route_mapping' AND status = 'active'
      LIMIT 1`,
-    [client_id],
+    [event.client_id],
   );
 
   if (!activation) {
@@ -61,31 +67,55 @@ async function getIngestHandler(request: Request) {
     );
   }
 
-  const title = period_label
-    ? `NAMPARK Route Mapping — ${period_label}`
+  const title = event.period_label
+    ? `NAMPARK Route Mapping — ${event.period_label}`
     : "NAMPARK Route Mapping Summary";
 
   const result = await withTransaction(async (client) => {
-    // One rolling report per client per module sync
+    // ── Idempotency gate: claim the event exactly once ──
+    const claimed = await client.query<{ id: string }>(
+      `INSERT INTO public.module_events
+        (event_id, source, module_type, client_id, tenant_external_id,
+         event_type, occurred_at, payload)
+       VALUES ($1, $2, 'route_mapping', $3, $4, $5, $6, $7)
+       ON CONFLICT (event_id) DO NOTHING
+       RETURNING id`,
+      [
+        event.event_id,
+        event.source,
+        event.client_id,
+        event.tenant_id ?? null,
+        event.event_type,
+        occurredAt.toISOString(),
+        body ?? {},
+      ],
+    );
+
+    if (claimed.rows.length === 0) {
+      return { duplicate: true as const, reportId: null };
+    }
+
+    // ── One rolling report per client per module sync ──
     let reportId: string | null = null;
     const existing = await client.query<{ id: string }>(
       `SELECT id FROM public.reports
        WHERE client_id = $1 AND type = 'module_sync' AND title = $2
        ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
-      [client_id, title],
+      [event.client_id, title],
     );
 
     if (existing.rows.length > 0) {
       reportId = existing.rows[0].id;
-      await client.query(`UPDATE public.reports SET updated_at = now() WHERE id = $1`, [
-        reportId,
-      ]);
+      await client.query(
+        `UPDATE public.reports SET updated_at = now() WHERE id = $1`,
+        [reportId],
+      );
     } else {
       const inserted = await client.query<{ id: string }>(
         `INSERT INTO public.reports (client_id, title, type, visible_to_client)
          VALUES ($1, $2, 'module_sync', true)
          RETURNING id`,
-        [client_id, title],
+        [event.client_id, title],
       );
       reportId = inserted.rows[0].id;
     }
@@ -96,7 +126,7 @@ async function getIngestHandler(request: Request) {
     ]);
 
     const values: unknown[] = [];
-    const placeholders = metrics
+    const placeholders = event.metrics
       .map((m, i) => {
         const p = i * 7;
         values.push(
@@ -119,13 +149,23 @@ async function getIngestHandler(request: Request) {
       values,
     );
 
-    return { reportId };
+    return { duplicate: false as const, reportId };
   });
+
+  if (result.duplicate) {
+    return NextResponse.json({
+      ok: true,
+      duplicate: true,
+      event_id: event.event_id,
+    });
+  }
 
   return NextResponse.json({
     ok: true,
+    duplicate: false,
+    event_id: event.event_id,
     report_id: result.reportId,
-    metrics_written: metrics.length,
+    metrics_written: event.metrics.length,
   });
 }
 

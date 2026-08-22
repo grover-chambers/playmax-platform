@@ -55,8 +55,18 @@ export const ingestMetricSchema = z.object({
 });
 
 // Payload pushed by NAMPARK RMS -> POST /api/modules/nampark/ingest
-export const namparkIngestSchema = z.object({
+// Event-oriented contract (architecture review §9): every push is a metric
+// snapshot event with a caller-generated event_id used for deduplication.
+export const moduleEventSchema = z.object({
+  event_id: z.string().uuid("event_id must be a UUID"),
+  source: z.string().min(1).max(40).optional().default("nampark"),
+  tenant_id: z.string().uuid("tenant_id must be a UUID").optional(),
   client_id: z.string().uuid("Valid client_id UUID required"),
+  event_type: z.string().min(1).max(60).optional().default("route_metrics"),
+  occurred_at: z
+    .string()
+    .min(10, "occurred_at must be an ISO 8601 timestamp")
+    .max(40),
   period_label: z.string().max(60).optional(),
   metrics: z.array(ingestMetricSchema).min(1).max(50),
 });
@@ -65,5 +75,5 @@ export type LeadInput = z.infer<typeof leadSchema>;
 export type BookingInput = z.infer<typeof bookingSchema>;
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type EmailSendInput = z.infer<typeof emailSendSchema>;
-export type NamparkIngestInput = z.infer<typeof namparkIngestSchema>;
+export type ModuleEventInput = z.infer<typeof moduleEventSchema>;
 export type IngestMetric = z.infer<typeof ingestMetricSchema>;
