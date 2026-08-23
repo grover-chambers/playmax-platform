@@ -77,3 +77,15 @@ export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type EmailSendInput = z.infer<typeof emailSendSchema>;
 export type ModuleEventInput = z.infer<typeof moduleEventSchema>;
 export type IngestMetric = z.infer<typeof ingestMetricSchema>;
+
+// Rep provisioning request -> POST /api/admin/field-team (forwarded to the
+// NAMPARK RMS admin API). Passwords are never accepted from clients — the
+// server generates one and returns it in the response.
+export const fieldTeamActionSchema = z.object({
+  action: z.enum(["create", "deactivate"]),
+  email: z.string().email("Valid rep email required"),
+  name: z.string().min(1).max(120).optional(),
+  phone: z.string().min(1).max(40).optional(),
+});
+
+export type FieldTeamActionInput = z.infer<typeof fieldTeamActionSchema>;

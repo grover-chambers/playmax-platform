@@ -181,6 +181,12 @@ const allNavSections: NavSection[] = [
         roles: ["super_admin"],
       },
       {
+        icon: Users,
+        label: "Field Team",
+        href: "/app/admin/field-team",
+        roles: ["super_admin"],
+      },
+      {
         icon: Settings,
         label: "Settings",
         href: "/app/settings",

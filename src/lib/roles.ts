@@ -34,6 +34,7 @@ const routePermissions: Record<string, AccessLevel> = {
   "/app/admin/automation": ["super_admin"],
   "/app/admin/whatsapp": ["super_admin"],
   "/app/admin/audit": ["super_admin"],
+  "/app/admin/field-team": ["super_admin"],
 };
 
 /** Get the base path for permission checking */
