@@ -56,3 +56,4 @@ apply_035_data.js
 run_migrations.py
 pending_migrations_*.sql
 verify-build.js
+supabase/.temp/
