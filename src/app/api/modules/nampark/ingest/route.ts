@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash, timingSafeEqual } from "crypto";
 import { queryOne, withTransaction } from "@/lib/db";
 import { moduleEventSchema } from "@/lib/validation";
 import { withLogging } from "@/lib/request-log";
@@ -24,7 +25,17 @@ async function getIngestHandler(request: Request) {
   const secret = process.env.MODULE_INGEST_SECRET;
   const authHeader = request.headers.get("authorization") ?? "";
 
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  // Timing-safe compare: never leak the secret through response latency.
+  const expected = Buffer.from(
+    createHash("sha256").update(`Bearer ${secret ?? ""}`).digest("hex"),
+  );
+  const provided = Buffer.from(
+    createHash("sha256").update(authHeader).digest("hex"),
+  );
+  const authOk =
+    !!secret && authHeader.startsWith("Bearer ") && timingSafeEqual(expected, provided);
+
+  if (!authOk) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
