@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.client_modules (
   client_id uuid NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
   module_type text NOT NULL CHECK (module_type IN ('route_mapping')),
   status text NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','disabled')),
+  route_group text CHECK (route_group IN ('RG-A', 'RG-B', 'RG-C', 'RG-D', 'RG-E', 'RG-F', 'RG-G')),
   activated_at timestamptz DEFAULT now(),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),

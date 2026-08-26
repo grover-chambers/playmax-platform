@@ -107,7 +107,10 @@ async function getIngestHandler(request: Request) {
         event.tenant_id ?? null,
         event.event_type,
         occurredAt.toISOString(),
-        body ?? {},
+        {
+          ...(body ?? {}),
+          route_group: event.route_group,
+        },
       ],
     );
 

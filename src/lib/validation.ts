@@ -54,14 +54,14 @@ export const ingestMetricSchema = z.object({
   sort_order: z.number().int().min(0).max(999).optional().default(0),
 });
 
-// Payload pushed by NAMPARK RMS -> POST /api/modules/nampark/ingest
-// Event-oriented contract (architecture review §9): every push is a metric
-// snapshot event with a caller-generated event_id used for deduplication.
+// Route group codes from NAMPARK master data
+const routeGroupOptions = ['RG-A', 'RG-B', 'RG-C', 'RG-D', 'RG-E', 'RG-F', 'RG-G'] as const;
+
 export const moduleEventSchema = z.object({
   event_id: z.string().uuid("event_id must be a UUID"),
   source: z.string().min(1).max(40).optional().default("nampark"),
   tenant_id: z.string().uuid("tenant_id must be a UUID").optional(),
-  client_id: z.string().uuid("Valid client_id UUID required"),
+  client_id: z.string.uuid("Valid client_id UUID required"),
   event_type: z.string().min(1).max(60).optional().default("route_metrics"),
   occurred_at: z
     .string()
@@ -69,6 +69,10 @@ export const moduleEventSchema = z.object({
     .max(40),
   period_label: z.string().max(60).optional(),
   metrics: z.array(ingestMetricSchema).min(1).max(50),
+  route_group: z.string().optional()
+    .refine((val) => !val || routeGroupOptions.includes(val), {
+      message: "route_group must be one of: RG-A, RG-B, RG-C, RG-D, RG-E, RG-F, RG-G",
+    }),
 });
 
 export type LeadInput = z.infer<typeof leadSchema>;
