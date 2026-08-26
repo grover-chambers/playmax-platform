@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, startTransition } from "react";
+import Link from "next/link";
 import StatusBadge from "@/components/ui/status-badge";
 import PageHeader from "@/components/layout/page-header";
 import Pagination from "@/components/ui/pagination";
@@ -94,7 +95,11 @@ export default function PortalProjectsPage() {
             </thead>
             <tbody>
               {projects.map((p) => (
-                <tr key={p.id} className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors">
+                <tr
+                  key={p.id}
+                  onClick={() => window.location.href = `/portal/projects/${p.id}`}
+                  className="border-b border-[var(--ws-border)] hover:bg-[var(--ws-bg)] transition-colors cursor-pointer"
+                >
                   <td className="px-4 py-3.5 text-[13px] font-semibold text-[var(--ws-text)]">{p.name}</td>
                   <td className="px-4 py-3.5 text-[12px] text-gray-4">{p.type.replace(/_/g, " ")}</td>
                   <td className="px-4 py-3.5">

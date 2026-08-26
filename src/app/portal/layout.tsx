@@ -24,12 +24,12 @@ import LiveRegion from "@/components/portal/live-region";
 
 const portalNavItems: DashboardNavItem[] = [
   { icon: Home, label: "Overview", href: "/portal" },
+  { icon: BarChart3, label: "Data Analytics", href: "/portal/analytics" },
+  { icon: Map, label: "Route Mapping", href: "/portal/route-mapping" },
   { icon: FileText, label: "Deliverables", href: "/portal/deliverables", badge: "3" },
   { icon: MessageSquare, label: "Messages", href: "/portal/messages", badge: "2" },
   { icon: CreditCard, label: "Invoices", href: "/portal/invoices" },
   { icon: Calendar, label: "Bookings", href: "/portal/bookings" },
-  { icon: BarChart3, label: "Analytics", href: "/portal/analytics" },
-  { icon: Map, label: "Route Mapping", href: "/portal/route-mapping" },
   { icon: BookOpen, label: "Content", href: "/portal/content" },
 ];
 
@@ -104,8 +104,8 @@ export default function PortalLayout({
           role: getRoleLabel(role),
         }}
         onSignOut={handleSignOut}
-        logoSubtitle="Client Portal"
-        accent="#B45309"
+        logoSubtitle="KHEL Portal"
+        accent="#047857"
         userExtra={
           <Link
             href="/portal/settings"

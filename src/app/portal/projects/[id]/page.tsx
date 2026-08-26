@@ -15,6 +15,7 @@ import {
   ThumbsDown,
   Download,
   Eye,
+  Map,
 } from "lucide-react";
 import Link from "next/link";
 import StatusBadge from "@/components/ui/status-badge";
@@ -22,6 +23,8 @@ import ProgressBar from "@/components/ui/progress-bar";
 import { AnalyticsChart } from "@/components/charts/analytics-chart";
 import type { ChartProps } from "@/components/charts/analytics-chart";
 import { transformChartData } from "@/lib/analytics-transform";
+import CensusDashboard from "@/components/khel/census-dashboard";
+import RouteMapDashboard from "@/components/khel/route-map-dashboard";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -75,7 +78,7 @@ interface ProjectMessage {
   created_at: string;
 }
 
-type Tab = "overview" | "analytics" | "milestones" | "deliverables" | "updates";
+type Tab = "overview" | "analytics" | "census" | "routes" | "milestones" | "deliverables" | "updates";
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
@@ -129,7 +132,8 @@ function milestoneStatusIcon(status: string) {
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: "overview", label: "Overview", icon: Eye },
-  { key: "analytics", label: "Analytics", icon: BarChart3 },
+  { key: "census", label: "Data Analytics", icon: BarChart3 },
+  { key: "routes", label: "Route Mapping", icon: Map },
   { key: "milestones", label: "Milestones", icon: CheckSquare },
   { key: "deliverables", label: "Deliverables", icon: FileText },
   { key: "updates", label: "Updates", icon: MessageSquare },
@@ -653,6 +657,8 @@ export default function PortalProjectDetailPage({
   const tabCounts: Record<Tab, number> = {
     overview: 0,
     analytics: reports.length,
+    census: 0,
+    routes: 0,
     milestones: milestones.length,
     deliverables: deliverables.length,
     updates: messages.length,
@@ -721,6 +727,8 @@ export default function PortalProjectDetailPage({
       {/* Tab Content */}
       {tab === "overview" && <OverviewTab project={project} />}
       {tab === "analytics" && <AnalyticsTab reports={reports} />}
+      {tab === "census" && <CensusDashboard projectId={id} />}
+      {tab === "routes" && <RouteMapDashboard projectId={id} />}
       {tab === "milestones" && <MilestonesTab milestones={milestones} />}
       {tab === "deliverables" && (
         <DeliverablesTab deliverables={deliverables} onRefresh={fetchAll} />
