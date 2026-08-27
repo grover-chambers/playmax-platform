@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, startTransition } from "react";
-import Link from "next/link";
 import StatusBadge from "@/components/ui/status-badge";
 import PageHeader from "@/components/layout/page-header";
 import Pagination from "@/components/ui/pagination";

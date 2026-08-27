@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, use, startTransition } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Loader2,
-  MapPin,
   Store,
   ClipboardCheck,
   TrendingUp,
@@ -37,28 +36,29 @@ interface CensusData {
 const GROUPS = ["All", "A", "B", "C", "D", "E", "F", "G"];
 
 export default function CensusDashboard({ projectId }: { projectId: string }) {
+  void projectId; // used for future scoping
   const [data, setData] = useState<CensusData | null>(null);
   const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState<string>("All");
 
-  const fetchData = async (g: string) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (g !== "All") params.set("group", g);
-      const res = await fetch(`/api/portal/khel/census?${params}`);
-      const json = await res.json();
-      startTransition(() => {
-        setData(json);
-        setLoading(false);
-      });
-    } catch {
-      startTransition(() => setLoading(false));
-    }
-  };
-
   useEffect(() => {
-    fetchData(group);
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (group !== "All") params.set("group", group);
+        const res = await fetch(`/api/portal/khel/census?${params}`);
+        const json = await res.json();
+        if (!cancelled) setData(json);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
   }, [group]);
 
   if (loading && !data) {

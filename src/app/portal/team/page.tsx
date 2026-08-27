@@ -15,11 +15,6 @@ interface TeamMember {
   last_sign_in_at: string | null;
 }
 
-interface TeamResponse {
-  data: TeamMember[];
-  capacity: { limit: number; used: number };
-}
-
 export default function PortalTeamPage() {
   const { client, loading: clientLoading } = usePortalClient();
 

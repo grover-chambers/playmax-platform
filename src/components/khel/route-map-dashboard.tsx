@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, use, startTransition, useRef, useEffect as useEff } from "react";
-import { Loader2, MapPin, Route, Filter, ChevronDown, ChevronUp, X } from "lucide-react";
-import "leaflet/dist/leaflet.css";
+import React, { useState, useEffect } from "react";
+import { Loader2, Route, Filter, ChevronDown, ChevronUp, X } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const LeafletMapInner = dynamic(() => import("./leaflet-map-inner"), { ssr: false });
 
 interface RouteItem {
   id: string;
@@ -43,114 +45,33 @@ interface RoutesData {
 }
 
 const GROUPS = ["All", "A", "B", "C", "D", "E", "F", "G"];
-const GROUP_COLORS: Record<string, string> = {
-  A: "#047857",
-  B: "#0369a1",
-  C: "#7c3aed",
-  D: "#c2410c",
-  E: "#be185d",
-  F: "#15803d",
-  G: "#a16207",
-};
-
-function LeafletMap({
-  pins,
-  selectedGroup,
-  onSelectPin,
-}: {
-  pins: OutletPin[];
-  selectedGroup: string;
-  onSelectPin: (pin: OutletPin) => void;
-}) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapInstanceRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const markersRef = useRef<any[]>([]);
-
-  useEff(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
-    const L = require("leaflet");
-    const map = L.map(mapRef.current, { zoomControl: false }).setView([-1.29, 36.82], 6);
-    L.control.zoom({ position: "bottomright" }).addTo(map);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap",
-      maxZoom: 18,
-    }).addTo(map);
-    mapInstanceRef.current = map;
-  }, []);
-
-  useEff(() => {
-    const L = require("leaflet");
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    // Clear old markers
-    markersRef.current.forEach((m: any) => m.remove());
-    markersRef.current = [];
-
-    if (pins.length === 0) return;
-
-    const bounds: any[] = [];
-
-    pins.forEach((pin) => {
-      const color = GROUP_COLORS[selectedGroup] || "#047857";
-      const icon = L.divIcon({
-        className: "",
-        html: `<div style="width:12px;height:12px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,
-        iconSize: [12, 12],
-        iconAnchor: [6, 6],
-      });
-
-      const marker = L.marker([pin.lat, pin.lng], { icon })
-        .addTo(map)
-        .bindPopup(
-          `<div style="font-family:system-ui;min-width:160px;">
-            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">${pin.name}</div>
-            <div style="font-size:11px;color:#666;">${pin.channel || "N/A"} &middot; ${pin.type || "N/A"}</div>
-            <div style="font-size:11px;color:#666;margin-top:2px;">${pin.ward || ""}, ${pin.county || ""}</div>
-            <div style="font-size:10px;color:#999;margin-top:4px;">Size: ${pin.size || "N/A"}</div>
-          </div>`,
-        )
-        .on("click", () => onSelectPin(pin));
-
-      markersRef.current.push(marker);
-      bounds.push([pin.lat, pin.lng]);
-    });
-
-    if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-    }
-  }, [pins, selectedGroup, onSelectPin]);
-
-  return <div ref={mapRef} className="w-full h-full rounded-lg" style={{ minHeight: 500 }} />;
-}
 
 export default function RouteMapDashboard({ projectId }: { projectId: string }) {
+  void projectId; // used for future scoping
   const [data, setData] = useState<RoutesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState<string>("All");
   const [selectedPin, setSelectedPin] = useState<OutletPin | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
-  const fetchData = async (g: string) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (g !== "All") params.set("group", g);
-      const res = await fetch(`/api/portal/khel/routes?${params}`);
-      const json = await res.json();
-      startTransition(() => {
-        setData(json);
-        setLoading(false);
-      });
-    } catch {
-      startTransition(() => setLoading(false));
-    }
-  };
-
   useEffect(() => {
-    fetchData(group);
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (group !== "All") params.set("group", group);
+        const res = await fetch(`/api/portal/khel/routes?${params}`);
+        const json = await res.json();
+        if (!cancelled) setData(json);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
   }, [group]);
 
   if (loading && !data) {
@@ -169,7 +90,6 @@ export default function RouteMapDashboard({ projectId }: { projectId: string }) 
     );
   }
 
-  const displayPins = group === "All" ? data.outletPins : data.outletPins;
   const displayRoutes = group === "All" ? data.routes : data.routes.filter((r) => r.group_name === group);
   const groupedRoutes: Record<string, RouteItem[]> = {};
   for (const r of displayRoutes) {
@@ -207,7 +127,11 @@ export default function RouteMapDashboard({ projectId }: { projectId: string }) 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map */}
         <div className="lg:col-span-2 pm-dash-card p-3 overflow-hidden">
-          <LeafletMap pins={displayPins} selectedGroup={group} onSelectPin={setSelectedPin} />
+          <LeafletMapInner
+            pins={data.outletPins}
+            selectedGroup={group}
+            onSelectPin={setSelectedPin}
+          />
         </div>
 
         {/* Route list sidebar */}
@@ -301,3 +225,13 @@ export default function RouteMapDashboard({ projectId }: { projectId: string }) 
     </div>
   );
 }
+
+const GROUP_COLORS: Record<string, string> = {
+  A: "#047857",
+  B: "#0369a1",
+  C: "#7c3aed",
+  D: "#c2410c",
+  E: "#be185d",
+  F: "#15803d",
+  G: "#a16207",
+};

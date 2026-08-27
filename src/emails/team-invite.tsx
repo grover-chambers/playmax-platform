@@ -41,12 +41,12 @@ export function TeamInviteEmail({
       </p>
 
       <p style={{ fontSize: "15px", lineHeight: "1.6", color: "#4B5563", margin: "0 0 16px" }}>
-        You've been added to the <strong>{clientName}</strong> team on the Market Link client
+        You&apos;ve been added to the <strong>{clientName}</strong> team on the Market Link client
         portal.
       </p>
 
       <p style={{ fontSize: "15px", lineHeight: "1.6", color: "#4B5563", margin: "0 0 16px" }}>
-        Use the temporary password below to sign in. You'll be asked to set your own password on
+        Use the temporary password below to sign in. You&apos;ll be asked to set your own password on
         first login.
       </p>
 
