@@ -382,11 +382,11 @@ export default function PortalOverviewPage() {
 
       {/* ── KPI row ─────────────────────────────────── */}
       <div className="pm-dash-krow pm-dash-krow-4">
-        <div className="pm-dash-kcard">
+        <Link href="/portal/projects" className="pm-dash-kcard hover:border-teal transition-colors cursor-pointer">
           <div className="pm-dash-kn">{kpis?.activeProjects ?? 0}</div>
           <div className="pm-dash-kl">Active Projects</div>
-          <div className="pm-dash-ksub">{kpis?.totalProjects ?? 0} total</div>
-        </div>
+          <div className="pm-dash-ksub">{kpis?.totalProjects ?? 0} total · View all →</div>
+        </Link>
         <div className="pm-dash-kcard grn">
           <div className="pm-dash-kn grn">{kpis?.pendingDeliverables ?? 0}</div>
           <div className="pm-dash-kl">Deliverables</div>
@@ -624,7 +624,11 @@ export default function PortalOverviewPage() {
         <div className="md:col-span-2 space-y-6">
           {/* ── Recent projects ────────────────── */}
           {recentProjects.length > 0 && recentProjects.map((project) => (
-            <div key={project.id} className="pm-dash-proj-card">
+            <Link
+              key={project.id}
+              href={`/portal/projects/${project.id}`}
+              className="pm-dash-proj-card block hover:border-teal transition-colors cursor-pointer"
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <div className="pm-dash-proj-name">{project.name}</div>
@@ -648,7 +652,10 @@ export default function PortalOverviewPage() {
                   <span>{project.progress}%</span>
                 </div>
               </div>
-            </div>
+              <div className="mt-3 flex items-center gap-1 text-[12px] font-semibold text-teal">
+                Open project <ArrowRight size={12} />
+              </div>
+            </Link>
           ))}
 
           {recentProjects.length === 0 && (
