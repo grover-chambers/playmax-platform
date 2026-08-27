@@ -104,8 +104,8 @@ export default function PortalLayout({
           role: getRoleLabel(role),
         }}
         onSignOut={handleSignOut}
-        logoSubtitle="KHEL Portal"
-        accent="#047857"
+        logoSubtitle="Client Portal"
+        accent="#B45309"
         userExtra={
           <Link
             href="/portal/settings"

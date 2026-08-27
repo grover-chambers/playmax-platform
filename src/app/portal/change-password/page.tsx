@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Lock, Check, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import PasswordInput from "@/components/ui/password-input";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -87,8 +88,7 @@ export default function ChangePasswordPage() {
               <label className="block text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-1.5">
                 New password
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -101,8 +101,7 @@ export default function ChangePasswordPage() {
               <label className="block text-[10px] text-gray-5 uppercase font-mono tracking-wider mb-1.5">
                 Confirm password
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required

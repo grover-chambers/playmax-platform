@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import PasswordInput from "@/components/ui/password-input";
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
@@ -135,9 +136,8 @@ export default function UpdatePasswordPage() {
               <label className="form-label" htmlFor="password">
                 New Password
               </label>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
                 className="form-input"
                 placeholder="Enter new password"
                 value={password}
@@ -151,9 +151,8 @@ export default function UpdatePasswordPage() {
               <label className="form-label" htmlFor="confirm-password">
                 Confirm Password
               </label>
-              <input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 className="form-input"
                 placeholder="Confirm new password"
                 value={confirmPassword}

@@ -15,6 +15,7 @@ export interface PortalClient {
   linked_supplier_id: string | null;
   subscription_tier: string | null;
   portal_role?: string;
+  user_id?: string;
 }
 
 /**
@@ -27,7 +28,7 @@ export async function getPortalClient(
   supabase: SupabaseClient,
   userId: string
 ): Promise<PortalClient | null> {
-  const CLIENT_COLS = "id, name, email, company, industry, phone, status, created_at, notification_prefs, linked_supplier_id, subscription_tier";
+  const CLIENT_COLS = "id, name, email, company, industry, phone, status, created_at, notification_prefs, linked_supplier_id, subscription_tier, user_id";
 
   // Try junction table first
   const junction = await withPgFallback(
@@ -59,7 +60,7 @@ export async function getPortalClient(
         if (error) throw error;
         return data;
       },
-      () => queryOne<{ id: string; name: string; email: string | null; company: string | null; industry: string | null; phone: string | null; status: string; created_at: string; notification_prefs: unknown; linked_supplier_id: string | null; subscription_tier: string | null }>(
+      () => queryOne<{ id: string; name: string; email: string | null; company: string | null; industry: string | null; phone: string | null; status: string; created_at: string; notification_prefs: unknown; linked_supplier_id: string | null; subscription_tier: string | null; user_id: string | null }>(
         `SELECT ${CLIENT_COLS} FROM clients WHERE id = $1 LIMIT 1`,
         [junction.client_id],
       ),
@@ -81,10 +82,10 @@ export async function getPortalClient(
       if (error) throw error;
       return data;
     },
-    () => queryOne<{ id: string; name: string; email: string | null; company: string | null; industry: string | null; phone: string | null; status: string; created_at: string; notification_prefs: unknown; linked_supplier_id: string | null; subscription_tier: string | null }>(
-      `SELECT ${CLIENT_COLS} FROM clients WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1`,
-      [userId],
-    ),
+    () => queryOne<{ id: string; name: string; email: string | null; company: string | null; industry: string | null; phone: string | null; status: string; created_at: string; notification_prefs: unknown; linked_supplier_id: string | null; subscription_tier: string | null; user_id: string | null }>(
+        `SELECT ${CLIENT_COLS} FROM clients WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1`,
+        [userId],
+      ),
     "getPortalClient-legacy",
   );
 

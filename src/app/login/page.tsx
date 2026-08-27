@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/browser";
+import PasswordInput from "@/components/ui/password-input";
 
 export default function LoginPage() {
   return (
@@ -382,9 +383,8 @@ function LoginForm() {
                       autoFocus
                     />
                   </div>
-                  <div>
-                    <input
-                      type="password"
+                   <div>
+                    <PasswordInput
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -470,8 +470,7 @@ function LoginForm() {
                   />
                 </div>
                 <div>
-                  <input
-                    type="password"
+                  <PasswordInput
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

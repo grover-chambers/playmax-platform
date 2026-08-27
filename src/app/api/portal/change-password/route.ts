@@ -33,9 +33,11 @@ export async function POST(request: NextRequest) {
     // app_metadata is service-role only — never client-writable.
     try {
       const admin = getAdminClient();
+      // Fetch full user to get existing app_metadata (ApiUser doesn't have it)
+      const { data: fullUser } = await admin.auth.admin.getUserById(currentUser.id);
       await admin.auth.admin.updateUserById(currentUser.id, {
         app_metadata: {
-          ...(currentUser.app_metadata ?? {}),
+          ...(fullUser?.user?.app_metadata ?? {}),
           must_change_password: false,
         },
       });
