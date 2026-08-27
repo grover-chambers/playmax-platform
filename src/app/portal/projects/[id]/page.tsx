@@ -16,6 +16,8 @@ import {
   Download,
   Eye,
   Map,
+  ExternalLink,
+  BarChart,
 } from "lucide-react";
 import Link from "next/link";
 import StatusBadge from "@/components/ui/status-badge";
@@ -141,7 +143,7 @@ const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
 
 /* ── Overview Tab ─────────────────────────────────────────────── */
 
-function OverviewTab({ project }: { project: ProjectDetail }) {
+function OverviewTab({ project, onTabChange }: { project: ProjectDetail; onTabChange: (tab: Tab) => void }) {
   const timelineDays =
     project.start_date && project.end_date
       ? Math.ceil(
@@ -150,8 +152,56 @@ function OverviewTab({ project }: { project: ProjectDetail }) {
         )
       : null;
 
+  const isDataAnalytics = project.type === "data_analytics";
+  const isRouteMapping = project.type === "market_research" && project.name.toLowerCase().includes("route");
+
   return (
     <div className="space-y-6">
+      {/* Action Buttons */}
+      {(isDataAnalytics || isRouteMapping) && (
+        <div className="flex gap-3 flex-wrap">
+          {isDataAnalytics && (
+            <>
+              <button
+                onClick={() => onTabChange("census")}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#047857] text-white text-[12px] font-semibold hover:bg-[#047857]/90 transition-colors cursor-pointer"
+              >
+                <BarChart size={14} />
+                Open Data Analytics Dashboard
+              </button>
+              <a
+                href="https://zsprlozgdxzxeevvetmg.supabase.co"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)] text-[12px] font-medium text-gray-4 hover:text-[var(--ws-text)] transition-colors"
+              >
+                <ExternalLink size={13} />
+                Open Field App (Nice_OS)
+              </a>
+            </>
+          )}
+          {isRouteMapping && (
+            <>
+              <button
+                onClick={() => onTabChange("routes")}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#047857] text-white text-[12px] font-semibold hover:bg-[#047857]/90 transition-colors cursor-pointer"
+              >
+                <Map size={14} />
+                Open Route Mapping Dashboard
+              </button>
+              <a
+                href="https://nampark-rms.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)] text-[12px] font-medium text-gray-4 hover:text-[var(--ws-text)] transition-colors"
+              >
+                <ExternalLink size={13} />
+                Open Nampark RMS
+              </a>
+            </>
+          )}
+        </div>
+      )}
       {/* KPI Row */}
       <div className="pm-dash-krow pm-dash-krow-3">
         <div className="pm-dash-kcard">
@@ -725,7 +775,7 @@ export default function PortalProjectDetailPage({
       </div>
 
       {/* Tab Content */}
-      {tab === "overview" && <OverviewTab project={project} />}
+      {tab === "overview" && <OverviewTab project={project} onTabChange={setTab} />}
       {tab === "analytics" && <AnalyticsTab reports={reports} />}
       {tab === "census" && <CensusDashboard projectId={id} />}
       {tab === "routes" && <RouteMapDashboard projectId={id} />}
