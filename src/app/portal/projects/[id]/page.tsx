@@ -170,7 +170,7 @@ function OverviewTab({ project, onTabChange }: { project: ProjectDetail; onTabCh
                 Open Data Analytics Dashboard
               </button>
               <a
-                href="https://zsprlozgdxzxeevvetmg.supabase.co"
+                href="https://nice-os.vercel.app/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)] text-[12px] font-medium text-gray-4 hover:text-[var(--ws-text)] transition-colors"
@@ -190,7 +190,7 @@ function OverviewTab({ project, onTabChange }: { project: ProjectDetail; onTabCh
                 Open Route Mapping Dashboard
               </button>
               <a
-                href="https://nampark-rms.vercel.app"
+                href="https://nampark-rms-3cbt.vercel.app/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)] text-[12px] font-medium text-gray-4 hover:text-[var(--ws-text)] transition-colors"
