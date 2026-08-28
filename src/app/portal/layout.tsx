@@ -12,6 +12,7 @@ import {
   BarChart3,
   BookOpen,
   Map,
+  Layers,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { getRoleLabel } from "@/lib/roles";
@@ -25,6 +26,7 @@ import LiveRegion from "@/components/portal/live-region";
 const portalNavItems: DashboardNavItem[] = [
   { icon: Home, label: "Overview", href: "/portal" },
   { icon: BarChart3, label: "Data Analytics", href: "/portal/analytics" },
+  { icon: Layers, label: "Kanini Intelligence", href: "/portal/kanini" },
   { icon: Map, label: "Route Mapping", href: "/portal/route-mapping" },
   { icon: FileText, label: "Deliverables", href: "/portal/deliverables", badge: "3" },
   { icon: MessageSquare, label: "Messages", href: "/portal/messages", badge: "2" },
