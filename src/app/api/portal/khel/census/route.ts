@@ -8,7 +8,7 @@ export async function GET(req: Request) {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
 
-    const db = createCensusClient();
+    const db = await createCensusClient();
 
     // ── Outlets ────────────────────────────────────────────────
     const { data: outlets } = await db
@@ -30,37 +30,39 @@ export async function GET(req: Request) {
     // ── Daily submissions ──────────────────────────────────────
     const { data: submissions } = await db
       .from("daily_submissions")
-      .select("id,rep_id,outlet_id,created_at")
-      .is("deleted_at", null);
+      .select("id,enumerator_id,submission_date,outlet_count,visit_count,status,created_at");
 
     // ── Reps (for name resolution) ─────────────────────────────
     const { data: reps } = await db
       .from("reps")
-      .select("id,full_name,phone,group_name");
+      .select("id,name,phone,email,zone");
 
-    // ── Group filter: find reps in group, then filter outlets/visits ──
-    let filteredOutletIds: Set<string> | null = null;
+    // ── Group filter: route groups map to reps via routes_master ──
     let filteredRepIds: Set<string> | null = null;
 
     if (group) {
-      const groupReps = (reps || []).filter((r) => r.group_name === group);
-      filteredRepIds = new Set(groupReps.map((r) => r.id));
-      // Outlets created by group reps
-      filteredOutletIds = new Set(
-        (outlets || [])
-          .filter((o) => filteredRepIds!.has(o.created_by))
-          .map((o) => o.id),
+      const { data: groupRoutes } = await db
+        .from("routes_master")
+        .select("rep_email")
+        .eq("group_name", group)
+        .eq("active", true);
+
+      const emails = new Set(
+        (groupRoutes || []).map((r) => r.rep_email).filter(Boolean) as string[],
+      );
+      filteredRepIds = new Set(
+        (reps || []).filter((r) => emails.has(r.email)).map((r) => r.id),
       );
     }
 
-    const fOutlets = filteredOutletIds
-      ? (outlets || []).filter((o) => filteredOutletIds!.has(o.id))
+    const fOutlets = filteredRepIds
+      ? (outlets || []).filter((o) => filteredRepIds!.has(o.created_by))
       : outlets || [];
     const fVisits = filteredRepIds
       ? (visits || []).filter((v) => filteredRepIds!.has(v.rep_id))
       : visits || [];
     const fSubs = filteredRepIds
-      ? (submissions || []).filter((s) => filteredRepIds!.has(s.rep_id))
+      ? (submissions || []).filter((s) => filteredRepIds!.has(s.enumerator_id))
       : submissions || [];
 
     // ── Aggregate ──────────────────────────────────────────────
@@ -110,6 +112,23 @@ export async function GET(req: Request) {
         size: o.size_tier,
       }));
 
+    // Reps per route group (A-G), counted by distinct rep emails in routes_master
+    const { data: routesAll } = await db
+      .from("routes_master")
+      .select("group_name,rep_email")
+      .eq("active", true);
+
+    const perGroup: Record<string, Set<string>> = {};
+    for (const r of routesAll || []) {
+      if (!r.rep_email) continue;
+      perGroup[r.group_name] = perGroup[r.group_name] || new Set();
+      perGroup[r.group_name].add(r.rep_email);
+    }
+
+    const repsByGroup = Object.entries(perGroup)
+      .map(([groupName, emails]) => ({ group: groupName, count: emails.size }))
+      .sort((x, y) => x.group.localeCompare(y.group));
+
     return NextResponse.json({
       outlets: {
         total: fOutlets.length,
@@ -134,14 +153,7 @@ export async function GET(req: Request) {
       },
       reps: {
         total: (reps || []).length,
-        byGroup: Object.entries(
-          (reps || []).reduce((acc: Record<string, number>, r) => {
-            acc[r.group_name || "Unassigned"] = (acc[r.group_name || "Unassigned"] || 0) + 1;
-            return acc;
-          }, {}),
-        )
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([group, count]) => ({ group, count })),
+        byGroup: repsByGroup,
       },
     });
   } catch (err) {
