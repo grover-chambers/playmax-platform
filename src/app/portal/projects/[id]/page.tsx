@@ -176,7 +176,7 @@ function OverviewTab({ project, onTabChange }: { project: ProjectDetail; onTabCh
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)] text-[12px] font-medium text-gray-4 hover:text-[var(--ws-text)] transition-colors"
               >
                 <ExternalLink size={13} />
-                Open Field App (Nice_OS)
+                Open Field App (Kanini Field)
               </a>
             </>
           )}

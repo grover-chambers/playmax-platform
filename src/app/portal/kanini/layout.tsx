@@ -7,7 +7,7 @@ import { LayoutDashboard, Truck, Route, Package, PiggyBank, Layers } from "lucid
 const tabs = [
   { href: "/portal/kanini", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/portal/kanini/fleet", label: "Fleet & Assets", icon: Truck },
-  { href: "/portal/kanini/routes", label: "Route Intelligence", icon: Route },
+  { href: "/portal/kanini/routes", label: "Mapping & Routing", icon: Route },
   { href: "/portal/kanini/deliveries", label: "Delivery Execution", icon: Package },
   { href: "/portal/kanini/profitability", label: "Profitability", icon: PiggyBank },
 ];
@@ -23,7 +23,7 @@ export default function KaniniLayout({ children }: { children: React.ReactNode }
           </div>
           <div>
             <div className="text-[13px] font-bold text-slate-800 flex items-center gap-1.5">Kanini Field Intelligence <span className="text-[10px] font-mono bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-200">POWER BI</span></div>
-            <div className="text-[11px] text-slate-500">Nice_OS field execution × NAMPARK profitability — drill from overview to route</div>
+            <div className="text-[11px] text-slate-500">Kanini Field execution × NAMPARK profitability — mapping &amp; truck routes</div>
           </div>
         </div>
         <div className="flex items-center gap-2 text-[11px]">

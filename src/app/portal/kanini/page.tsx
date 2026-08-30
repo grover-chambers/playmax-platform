@@ -223,7 +223,7 @@ export default function KaniniFieldIntelligencePage() {
     });
   }, [census]);
 
-  // ── charts: Nice_OS field framework ───────────────────────
+  // ── charts: Kanini Field framework ───────────────────────
   const channelChart: ChartProps | null = census ? {
     type: "doughnut",
     labels: Object.keys(census.outlets.byChannel),
@@ -263,7 +263,7 @@ export default function KaniniFieldIntelligencePage() {
             Kanini Field Intelligence
           </h1>
           <p className="text-[12px] text-gray-5 mt-1 max-w-3xl">
-            <span className="font-semibold text-gray-4">Nice_OS framework</span> for field execution (outlets, visits, GPS, census) ×{" "}
+            <span className="font-semibold text-gray-4">Kanini Field framework</span> for field execution (outlets, visits, GPS, census) ×{" "}
             <span className="font-semibold text-gray-4">NAMPARK RMS layout</span> for post-routing profitability — unified, Power BI-like, alongside FMCG analytics. In-depth work links to external platforms for now.
           </p>
         </div>
@@ -272,7 +272,7 @@ export default function KaniniFieldIntelligencePage() {
             <BarChart3 size={13} /> FMCG Analytics
           </Link>
           <a href="https://nice-os.vercel.app/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-[var(--ws-border)] text-[11px] font-medium text-gray-4 hover:text-[var(--ws-text)]">
-            <ExternalLink size={13} /> Nice_OS Field App
+            <ExternalLink size={13} /> Kanini Field App
           </a>
           <a href="https://nampark-rms-3cbt.vercel.app/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#047857] text-white text-[11px] font-semibold hover:bg-[#047857]/90">
             <ExternalLink size={13} /> Nampark RMS
@@ -306,13 +306,13 @@ export default function KaniniFieldIntelligencePage() {
             {weekOffset!==0 && <button onClick={()=>setWeekOffset(0)} className="ml-1 text-[10px] px-2 py-1 rounded bg-[var(--ws-bg)] border">Today</button>}
           </div>
         </div>
-        <div className="mt-2 text-[10px] text-gray-5 font-mono">Nice_OS: field execution framework · NAMPARK: route economics & profitability — filters drive both. All in Kanini portal. External platforms for deep drill.</div>
+        <div className="mt-2 text-[10px] text-gray-5 font-mono">Kanini Field: field execution framework · NAMPARK: route economics & profitability — filters drive both. All in Kanini portal. External platforms for deep drill.</div>
       </div>
 
       {/* ── KPI Strip — Power BI cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <div className="pm-dash-kcard">
-          <div className="flex items-center gap-2 mb-1"><Store size={14} className="text-teal"/><span className="pm-dash-kl">Outlets (Nice_OS)</span></div>
+          <div className="flex items-center gap-2 mb-1"><Store size={14} className="text-teal"/><span className="pm-dash-kl">Outlets (Kanini Field)</span></div>
           <div className="pm-dash-kn">{census?.outlets.total.toLocaleString() ?? "—"}</div>
           <div className="pm-dash-ksub">{routes?.totalOutlets?.toLocaleString() ?? 0} pins · {Object.keys(census?.outlets.byChannel ?? {}).length} channels</div>
         </div>
@@ -343,14 +343,14 @@ export default function KaniniFieldIntelligencePage() {
         </div>
       </div>
 
-      {/* ── Nice_OS Framework: Field Execution ── */}
+      {/* ── Kanini Field Framework: Field Execution ── */}
       <div className="pm-dash-card p-5">
         <div className="flex items-center gap-2 mb-1">
           <Layers size={16} className="text-[#047857]" />
-          <h2 className="font-display text-[13px] font-semibold">Field Execution Framework — Nice_OS</h2>
+          <h2 className="font-display text-[13px] font-semibold">Field Execution Framework — Kanini Field</h2>
           <span className="ml-auto text-[10px] font-mono bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">Outlets · Visits · GPS · Census</span>
         </div>
-        <p className="text-[11px] text-gray-5 mb-4">How field work lands: outlet distribution, visit flow and territory coverage. Source: <span className="font-mono text-[10px] bg-[var(--ws-bg)] border px-1 py-0.5 rounded">outlets/visits/daily_submissions</span> — mirrors Nice_OS <span className="italic">Census Tracker + DashboardView</span> cards, map and ward logic.</p>
+        <p className="text-[11px] text-gray-5 mb-4">How field work lands: outlet distribution, visit flow and territory coverage. Source: <span className="font-mono text-[10px] bg-[var(--ws-bg)] border px-1 py-0.5 rounded">outlets/visits/daily_submissions</span> — mirrors Kanini Field <span className="italic">Census Tracker + DashboardView</span> cards, map and ward logic.</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
@@ -377,7 +377,7 @@ export default function KaniniFieldIntelligencePage() {
           </div>
         </div>
 
-        {/* Territory Map — Nice_OS TerritoryMap pattern */}
+        {/* Territory Map — Kanini Field TerritoryMap pattern */}
         <div className="mt-6">
           <div className="font-display text-[12px] font-semibold mb-3 flex items-center gap-1.5"><MapPin size={12}/> Territory Coverage — GPS pins by ward</div>
           <div className="rounded-xl border border-[var(--ws-border)] overflow-hidden bg-white" style={{ height: 380 }}>
@@ -404,7 +404,7 @@ export default function KaniniFieldIntelligencePage() {
           </div>
           <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-gray-5">
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#047857]"/> Census outlet</span>
-            <span className="ml-auto">Powered by <span className="font-mono">assets/geo/territory_wards.json</span> ward logic — as in Nice_OS <span className="italic">TerritoryMap</span>.</span>
+            <span className="ml-auto">Powered by <span className="font-mono">assets/geo/territory_wards.json</span> ward logic — as in Kanini Field <span className="italic">TerritoryMap</span>.</span>
           </div>
         </div>
       </div>
@@ -559,12 +559,12 @@ export default function KaniniFieldIntelligencePage() {
       {/* ── External deep links footer ── */}
       <div className="pm-dash-card p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="text-[11px] text-gray-5">
-          <span className="font-semibold text-gray-4">In-depth work:</span> field ops, outlet edits, alert triage → Nice_OS · route planning, profitability, driver/delivery → NAMPARK RMS
+          <span className="font-semibold text-gray-4">In-depth work:</span> field ops, outlet edits, alert triage → Kanini Field · route planning, profitability, driver/delivery → NAMPARK RMS
         </div>
         <div className="flex gap-2">
-          <a href="https://nice-os.vercel.app/census" target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium text-teal hover:underline flex items-center gap-1">Nice_OS Census <ExternalLink size={11}/></a>
+          <a href="https://nice-os.vercel.app/census" target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium text-teal hover:underline flex items-center gap-1">Kanini Field Census <ExternalLink size={11}/></a>
           <span className="text-gray-5">·</span>
-          <a href="https://nice-os.vercel.app/dashboard" target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium text-teal hover:underline flex items-center gap-1">Nice_OS Dashboard <ExternalLink size={11}/></a>
+          <a href="https://nice-os.vercel.app/dashboard" target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium text-teal hover:underline flex items-center gap-1">Kanini Field Dashboard <ExternalLink size={11}/></a>
           <span className="text-gray-5">·</span>
           <a href="https://nampark-rms-3cbt.vercel.app/performance" target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium text-teal hover:underline flex items-center gap-1">Nampark Performance <ExternalLink size={11}/></a>
         </div>
