@@ -35,6 +35,9 @@ const routePermissions: Record<string, AccessLevel> = {
   "/app/admin/whatsapp": ["super_admin"],
   "/app/admin/audit": ["super_admin"],
   "/app/admin/field-team": ["super_admin"],
+
+  // Field Ops — Kanini Field (superadmin tabbed dashboard, MarketLink branded)
+  "/app/kanini-field": ["super_admin", "crm_admin", "crm_staff"],
 };
 
 /** Get the base path for permission checking */

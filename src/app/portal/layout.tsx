@@ -58,13 +58,17 @@ export default function PortalLayout({
     init();
   }, []);
 
-  const role: UserRole =
-    (user?.app_metadata?.role as UserRole) || "client";
+  const role: UserRole | null =
+    (user?.app_metadata?.role as UserRole) || null;
 
   // Redirect staff users to admin dashboard — portal is client-only
+  // Fail-closed: missing role is NOT treated as client (prevents staff masquerade)
   useEffect(() => {
     if (user && role !== "client") {
       router.replace("/app");
+    }
+    if (user && !role) {
+      router.replace("/login");
     }
   }, [user, role, router]);
 
