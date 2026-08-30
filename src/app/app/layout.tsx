@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Upload,
   Database,
+  Layers,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { getRoleLabel } from "@/lib/roles";
@@ -150,6 +151,17 @@ const allNavSections: NavSection[] = [
         label: "Dimensions",
         href: "/app/analytics/dimensions",
         roles: ["super_admin", "crm_admin"],
+      },
+    ],
+  },
+  {
+    label: "Field Ops",
+    items: [
+      {
+        icon: Layers,
+        label: "Kanini Field",
+        href: "/app/kanini-field",
+        roles: ["super_admin", "crm_admin", "crm_staff"],
       },
     ],
   },
