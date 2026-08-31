@@ -15,6 +15,7 @@ interface CensusData {
 
 export default function KaniniFieldOverviewPage() {
   const [census, setCensus] = useState<CensusData | null>(null);
+  const [monitor, setMonitor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -22,11 +23,14 @@ export default function KaniniFieldOverviewPage() {
     let cancel = false;
     (async () => {
       try {
-        const res = await fetch("/api/portal/khel/census");
-        const j = await res.json();
+        const [c, m] = await Promise.all([
+          fetch("/api/portal/khel/census").then((r) => r.json()),
+          fetch("/api/app/kanini-field/monitoring").then((r) => r.json()).catch(() => null),
+        ]);
         if (!cancel) {
-          if (j.error) setSyncError(j.error);
-          else setCensus(j);
+          if (c.error) setSyncError(c.error);
+          else setCensus(c);
+          if (m && !m.error) setMonitor(m);
         }
       } catch (e) {
         if (!cancel) setSyncError(e instanceof Error ? e.message : "Failed to load field data");
@@ -181,6 +185,68 @@ export default function KaniniFieldOverviewPage() {
             <ChevronRight size={18} className="text-slate-400" />
           </Link>
         </div>
+      </div>
+
+      {/* ── Live rep monitoring — per rep: shift, location, today stats ── */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5">
+        <div className="flex items-center justify-between">
+          <div className="text-[12px] font-bold tracking-wider uppercase text-slate-500">Rep monitoring · live</div>
+          <div className="text-[11px] font-mono text-slate-500">
+            {monitor ? `${monitor.onShift} on shift · ${monitor.offShift} off · ${monitor.total} active reps` : "—"}
+          </div>
+        </div>
+        {!monitor ? (
+          <div className="mt-3 text-[11px] text-slate-400">Loading rep status…</div>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="text-[10px] tracking-widest uppercase text-slate-400 border-b">
+                  <th className="text-left py-2">Rep</th>
+                  <th className="text-left">Shift</th>
+                  <th className="text-left">Where</th>
+                  <th className="text-center">Today</th>
+                  <th className="text-right">Last seen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(monitor.reps || []).map((r: any) => (
+                  <tr key={r.id} className="border-b border-slate-100">
+                    <td className="py-2">
+                      <div className="font-semibold text-slate-800 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full" style={{ background: r.color || "#0f766e" }} />
+                        {r.name}
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-mono">{r.email}</div>
+                    </td>
+                    <td>
+                      <span className={`text-[10px] font-mono px-2 py-1 rounded-full border ${r.onShift ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200"}`}>
+                        {r.onShift ? "ON SHIFT" : "OFF"}
+                      </span>
+                      <div className="text-[11px] text-slate-400 mt-1">{r.zone} · {r.status}</div>
+                    </td>
+                    <td>
+                      {r.lastGps?.lat ? (
+                        <a href={`https://www.google.com/maps?q=${r.lastGps.lat},${r.lastGps.lng}`} target="_blank" rel="noreferrer" className="text-teal-600 hover:underline font-mono text-[11px]">
+                          {r.lastGps.lat.toFixed(4)}, {r.lastGps.lng.toFixed(4)}
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                      <div className="text-[11px] text-slate-500">{r.lastOutcome || "—"}</div>
+                    </td>
+                    <td className="text-center">
+                      <span className="font-bold text-slate-800">{r.todayVisits}</span>
+                      <span className="text-slate-500"> visits</span>
+                      <div className="text-[11px] text-slate-500">{r.todayOrders} orders · {r.totalVisits} total</div>
+                    </td>
+                    <td className="text-right font-mono text-[11px] text-slate-500">{r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString() : r.lastVisitAt ? new Date(r.lastVisitAt).toLocaleString() : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* ── Wiring note ── */}
