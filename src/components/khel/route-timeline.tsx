@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useRef, useEffect } from "react";
 
 type Rep = { id: string; name: string; color?: string | null };

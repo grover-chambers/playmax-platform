@@ -45,8 +45,6 @@ export default function KaniniMapTabPage() {
   });
   const reps = (monitor?.reps || []).map((r: any) => ({ id: r.id, name: r.name, color: r.color, zone: r.zone }));
   const visits = (monitor?.visits || []) as any[];
-  // Zone allocation by group → rep (A: Peter, B: Evans, C: Nicole, D: Willys, E: Nelius, F/G: split) — Kiambu first
-  const groupRep: Record<string, string> = { A: "Peter Owuor", B: "Evans Mutune", C: "Nicole Githui", D: "Willys Munyanga", E: "Nelius", F: "Peter Owuor", G: "Evans Mutune" };
 
   return (
     <div className="page-content space-y-5">

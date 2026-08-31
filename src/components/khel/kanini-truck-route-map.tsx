@@ -82,10 +82,10 @@ export default function KaniniTruckRouteMap({
       .then((geojson) => {
         if (!mapInstanceRef.current) return;
         // Only Kiambu wards (zone === Kiambu) — reps all work Kiambu/Thika cluster
-        const kiambu = { ...geojson, features: (geojson.features as any[]).filter((f: any) => (f.properties?.zone || "").toLowerCase() === "kiambu" || (f.properties?.county || "").toLowerCase() === "kiambu") };
+        const kiambu = { ...geojson, features: (geojson.features as Array<Record<string, unknown>>).filter((f) => ((f.properties as Record<string, string>)?.zone || "").toLowerCase() === "kiambu" || ((f.properties as Record<string, string>)?.county || "").toLowerCase() === "kiambu") };
         const activeColor = GROUP_COLORS[selectedGroup] || "#0f766e";
         const layer = L.geoJSON(kiambu.features.length ? kiambu : geojson, {
-          style: (feature: any) => {
+          style: () => {
             const isActiveGroup = selectedGroup !== "All";
             return {
               color: isActiveGroup ? activeColor : "#0f766e",
@@ -95,8 +95,8 @@ export default function KaniniTruckRouteMap({
               fillOpacity: isActiveGroup ? 0.18 : 0.08,
             };
           },
-          onEachFeature: (feature, lyr) => {
-            const p = feature.properties as { ward?: string; constituency?: string; zone?: string };
+          onEachFeature: (_feature, lyr) => {
+            const p = (_feature.properties as { ward?: string; constituency?: string; zone?: string });
             const label = `${p?.ward ?? "?"} · ${p?.constituency ?? ""} · ${p?.zone ?? "Kiambu"}`;
             (lyr as L.Path).bindTooltip(label, { sticky: true, opacity: 0.9 });
             // Highlight rep zone: if ward matches selectedGroup's rep allocation, extra fill
