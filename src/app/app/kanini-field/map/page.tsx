@@ -8,7 +8,7 @@ import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import RouteTimeline from "@/components/khel/route-timeline";
 
-const KaniniTruckRouteMap = dynamic(() => import("@/components/khel/kanini-truck-route-map"), { ssr: false });
+const KiambuMap = dynamic(() => import("@/components/khel/kiambu-map"), { ssr: false });
 
 export default function KaniniMapTabPage() {
   const [data, setData] = useState<any>(null);
@@ -62,7 +62,7 @@ export default function KaniniMapTabPage() {
         <div className="pm-dash-card-h"><span className="pm-dash-card-t">Map — Kiambu · Outlets + Wards + Truck Routes</span><span className="text-[11px] font-mono text-gray-5">15 Kiambu wards · {pins.length} pins {group !== "All" && `· Group ${group} highlight`}</span></div>
         <div className="pm-dash-card-b p-0">
           <div className="rounded-lg border border-[var(--ws-border)] overflow-hidden bg-white m-3" style={{ height: 520 }}>
-            <KaniniTruckRouteMap pins={pins} truckRoutes={truckRoutes} selectedRouteId={null} selectedGroup={group} showWards={showWards} onSelectPin={() => {}} />
+            <KiambuMap pins={pins} truckRoutes={truckRoutes} selectedGroup={group} showWards={showWards} onSelectPin={() => {}} />
           </div>
         </div>
       </div>
