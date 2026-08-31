@@ -43,12 +43,14 @@ export default function KaniniMapTabPage() {
     const pts: [number, number][] = [[depotLat, depotLng], ...slice];
     return { id: r.id, name: r.route_name, group: r.group_name, vehicle: r.vehicle_type || "Van", points: pts, color: "#047857" };
   });
-  const reps = (monitor?.reps || []).map((r: any) => ({ id: r.id, name: r.name, color: r.color }));
+  const reps = (monitor?.reps || []).map((r: any) => ({ id: r.id, name: r.name, color: r.color, zone: r.zone }));
   const visits = (monitor?.visits || []) as any[];
+  // Zone allocation by group → rep (A: Peter, B: Evans, C: Nicole, D: Willys, E: Nelius, F/G: split) — Kiambu first
+  const groupRep: Record<string, string> = { A: "Peter Owuor", B: "Evans Mutune", C: "Nicole Githui", D: "Willys Munyanga", E: "Nelius", F: "Peter Owuor", G: "Evans Mutune" };
 
   return (
     <div className="page-content space-y-5">
-      <PageHeader title="Territory map" subtitle="Wards + GPS pins + truck routes — synced with route timeline" actions={
+      <PageHeader title="Territory map — Kiambu" subtitle="Kiambu county first — Thika cluster trained view, zones allocated by route group (A-G) per rep" actions={
         <>
           <div className="hidden sm:flex items-center gap-1.5">
             {["All", "A", "B", "C", "D", "E", "F", "G"].map((g) => (
@@ -59,7 +61,7 @@ export default function KaniniMapTabPage() {
         </>
       } />
       <div className="pm-dash-card">
-        <div className="pm-dash-card-h"><span className="pm-dash-card-t">Map — Outlets + Wards + Truck Routes</span><span className="text-[11px] font-mono text-gray-5">93 wards · {pins.length} pins</span></div>
+        <div className="pm-dash-card-h"><span className="pm-dash-card-t">Map — Kiambu · Outlets + Wards + Truck Routes</span><span className="text-[11px] font-mono text-gray-5">15 Kiambu wards · {pins.length} pins {group !== "All" && `· Group ${group} highlight`}</span></div>
         <div className="pm-dash-card-b p-0">
           <div className="rounded-lg border border-[var(--ws-border)] overflow-hidden bg-white m-3" style={{ height: 520 }}>
             <KaniniTruckRouteMap pins={pins} truckRoutes={truckRoutes} selectedRouteId={null} selectedGroup={group} showWards={showWards} onSelectPin={() => {}} />

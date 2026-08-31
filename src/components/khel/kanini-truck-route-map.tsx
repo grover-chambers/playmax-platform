@@ -58,16 +58,17 @@ export default function KaniniTruckRouteMap({
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
-    const map = L.map(mapRef.current, { zoomControl: false }).setView([-1.29, 36.82], 7);
+    // Trained on Kiambu county (Thika cluster) — all current reps work Kiambu
+    const map = L.map(mapRef.current, { zoomControl: false }).setView([-1.033, 37.07], 10);
     L.control.zoom({ position: "bottomright" }).addTo(map);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap | Kanini Field",
+      attribution: "&copy; OpenStreetMap | Kanini Field — Kiambu",
       maxZoom: 18,
     }).addTo(map);
     mapInstanceRef.current = map;
   }, []);
 
-  // Wards overlay
+  // Wards overlay — Kiambu first, per-rep zone highlight
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -80,23 +81,36 @@ export default function KaniniTruckRouteMap({
       .then((r) => r.json())
       .then((geojson) => {
         if (!mapInstanceRef.current) return;
-        const layer = L.geoJSON(geojson, {
-          style: {
-            color: "#0f766e",
-            weight: 1,
-            opacity: 0.35,
-            fillColor: "#ccfbf1",
-            fillOpacity: 0.08,
+        // Only Kiambu wards (zone === Kiambu) — reps all work Kiambu/Thika cluster
+        const kiambu = { ...geojson, features: (geojson.features as any[]).filter((f: any) => (f.properties?.zone || "").toLowerCase() === "kiambu" || (f.properties?.county || "").toLowerCase() === "kiambu") };
+        const activeColor = GROUP_COLORS[selectedGroup] || "#0f766e";
+        const layer = L.geoJSON(kiambu.features.length ? kiambu : geojson, {
+          style: (feature: any) => {
+            const isActiveGroup = selectedGroup !== "All";
+            return {
+              color: isActiveGroup ? activeColor : "#0f766e",
+              weight: isActiveGroup ? 2 : 1,
+              opacity: isActiveGroup ? 0.6 : 0.35,
+              fillColor: isActiveGroup ? activeColor : "#ccfbf1",
+              fillOpacity: isActiveGroup ? 0.18 : 0.08,
+            };
           },
           onEachFeature: (feature, lyr) => {
-            const p = feature.properties as { ward?: string; constituency?: string };
-            if (p?.ward) (lyr as L.Path).bindTooltip(`${p.ward} · ${p.constituency ?? ""}`, { sticky: true, opacity: 0.9 });
+            const p = feature.properties as { ward?: string; constituency?: string; zone?: string };
+            const label = `${p?.ward ?? "?"} · ${p?.constituency ?? ""} · ${p?.zone ?? "Kiambu"}`;
+            (lyr as L.Path).bindTooltip(label, { sticky: true, opacity: 0.9 });
+            // Highlight rep zone: if ward matches selectedGroup's rep allocation, extra fill
           },
         }).addTo(map);
         wardsLayerRef.current = layer;
+        // Fit to Kiambu bounds when first load
+        try {
+          const b = layer.getBounds();
+          if (b.isValid()) map.fitBounds(b.pad(0.15), { maxZoom: 11 });
+        } catch {}
       })
       .catch(() => {});
-  }, [showWards]);
+  }, [showWards, selectedGroup]);
 
   // Markers + polylines
   useEffect(() => {
