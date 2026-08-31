@@ -62,7 +62,7 @@ export async function GET() {
     });
 
     const onShiftCount = items.filter((i) => i.onShift).length;
-    return NextResponse.json({ today, total: items.length, onShift: onShiftCount, offShift: items.length - onShiftCount, reps: items });
+    return NextResponse.json({ today, total: items.length, onShift: onShiftCount, offShift: items.length - onShiftCount, reps: items, visits: visits || [] });
   } catch (err) {
     console.error("Monitoring API error:", err);
     return NextResponse.json({ error: "Failed to load monitoring" }, { status: 500 });
