@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 interface OutletPin {
   id: string;
@@ -61,11 +62,13 @@ export default function KaniniTruckRouteMap({
     // Trained on Kiambu county (Thika cluster) — all current reps work Kiambu
     const map = L.map(mapRef.current, { zoomControl: false }).setView([-1.033, 37.07], 10);
     L.control.zoom({ position: "bottomright" }).addTo(map);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap | Kanini Field — Kiambu",
+    // CARTO light — cleaner than OSM for ward overlays, no token, fast
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap & CARTO | Kanini Field — Kiambu",
       maxZoom: 18,
     }).addTo(map);
     mapInstanceRef.current = map;
+    setTimeout(() => map.invalidateSize(), 100);
   }, []);
 
   // Wards overlay — Kiambu first, per-rep zone highlight
@@ -182,8 +185,11 @@ export default function KaniniTruckRouteMap({
 
     if (bounds.length > 0) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+    } else {
+      map.setView([-1.033, 37.07], 10);
     }
+    setTimeout(() => map.invalidateSize(), 50);
   }, [pins, truckRoutes, selectedRouteId, selectedGroup, showWards, onSelectPin]);
 
-  return <div ref={mapRef} className="w-full h-full rounded-lg" style={{ minHeight: 520 }} />;
+  return <div ref={mapRef} className="w-full h-full rounded-lg" style={{ minHeight: 520, background: "#f8fafc" }} />;
 }
