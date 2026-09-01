@@ -9,7 +9,7 @@ import type { ApiUser } from "./supabase/api";
  * This is API-layer defense in depth; the routing layer separately makes
  * /portal unreachable for staff.
  */
-const STAFF_ROLES = ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance"] as const;
+const STAFF_ROLES = ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance", "data_handler"] as const;
 
 export type PortalGuardResult =
   | { client: PortalClient; role: string | undefined; response?: undefined }

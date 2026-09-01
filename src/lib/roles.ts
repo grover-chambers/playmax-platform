@@ -21,10 +21,10 @@ const routePermissions: Record<string, AccessLevel> = {
   "/app/bookings": ["super_admin", "crm_admin", "finance"],
   "/app/research": ["super_admin", "crm_admin"],
   "/app/invoices": ["super_admin", "finance"],
-  "/app/analytics": ["super_admin", "crm_admin", "finance"],
-  "/app/analytics/upload": ["super_admin", "crm_admin", "finance"],
-  "/app/analytics/reports": ["super_admin", "crm_admin", "finance"],
-  "/app/analytics/dimensions": ["super_admin", "crm_admin", "finance"],
+  "/app/analytics": ["super_admin", "crm_admin", "finance", "data_handler"],
+  "/app/analytics/upload": ["super_admin", "crm_admin", "finance", "data_handler"],
+  "/app/analytics/reports": ["super_admin", "crm_admin", "finance", "data_handler"],
+  "/app/analytics/dimensions": ["super_admin", "crm_admin", "finance", "data_handler"],
   // Super admin pages
   "/app/settings": ["super_admin"],
   "/app/reports": ["super_admin", "crm_admin", "crm_staff"],
@@ -96,6 +96,7 @@ export function canAccess(
 export function getDefaultRedirect(role: UserRole | undefined | null): string {
   if (!role) return "/login";
   if (role === "client") return "/portal";
+  if (role === "data_handler") return "/app/analytics";
   return "/app/pipeline";
 }
 
@@ -110,6 +111,7 @@ export function getRoleLabel(role: string | undefined | null): string {
     crm_admin: "CRM Admin",
     crm_staff: "CRM Staff",
     finance: "Finance",
+    data_handler: "Data Handler",
     client: "Client",
   };
   return labels[role] || role;

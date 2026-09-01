@@ -46,6 +46,7 @@ export type UserRole =
   | "crm_admin" // CRM modules + staff pipeline assignment
   | "crm_staff" // Limited CRM (assigned tasks/projects)
   | "finance" // Invoices, billing
+  | "data_handler" // Scoped analytics engine — upload + reports + dimensions only (Ian Gichuki Khel)
   | "client"; // Portal only
 
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -54,6 +55,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   crm_admin: "CRM Admin",
   crm_staff: "CRM Staff",
   finance: "Finance",
+  data_handler: "Data Handler",
   client: "Client",
 };
 
@@ -65,6 +67,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
     "Oversee CRM — pipeline, clients, projects, and assign staff to pipeline stages",
   crm_staff: "View assigned tasks, projects, and conversations",
   finance: "Billing, invoices, and payment management",
+  data_handler: "Analytics engine — upload sorted Khel sheets, validate, and publish reports (Ian Gichuki scoped)",
   client: "Client portal access only",
 };
 

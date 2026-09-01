@@ -49,7 +49,7 @@ export async function getCurrentUser(supabase: Awaited<ReturnType<typeof getAuth
 }
 
 const ADMIN_ROLES = ["super_admin", "crm_admin", "cms_admin"];
-const STAFF_ROLES = [...ADMIN_ROLES, "crm_staff", "finance"];
+const STAFF_ROLES = [...ADMIN_ROLES, "crm_staff", "finance", "data_handler"];
 
 export function isAdmin(role: UserRole | null | undefined): boolean {
   return !!role && ADMIN_ROLES.includes(role);
