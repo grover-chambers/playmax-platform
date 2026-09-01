@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -51,12 +52,13 @@ export async function POST(_request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role)) {
+    const db = getAdminClient();
+    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Get upload details
-    const { data: upload, error: uploadError } = await supabase
+    const { data: upload, error: uploadError } = await db
       .from("analytics_staging_uploads")
       .select("*")
       .eq("id", id)
@@ -77,7 +79,7 @@ export async function POST(_request: Request, context: RouteContext) {
     }
 
     // Get staging rows — only import rows with a stock_code
-    const { data: allRows, error: rowsError } = await supabase
+    const { data: allRows, error: rowsError } = await db
       .from("analytics_staging_rows")
       .select("*")
       .eq("upload_id", id)
@@ -86,7 +88,7 @@ export async function POST(_request: Request, context: RouteContext) {
       .order("row_number");
 
     // Also get count of skipped rows for the summary
-    const { data: allStagingRows } = await supabase
+    const { data: allStagingRows } = await db
       .from("analytics_staging_rows")
       .select("row_number, stock_code")
       .eq("upload_id", id)
@@ -115,14 +117,14 @@ export async function POST(_request: Request, context: RouteContext) {
     if (upload.period_id) {
       const stockCodes = rows.map(function(r) { return r.stock_code; }).filter(Boolean);
       if (stockCodes.length > 0) {
-        const { data: existingProducts } = await supabase
+        const { data: existingProducts } = await db
           .from("analytics_products")
           .select("id, stock_code")
           .in("stock_code", stockCodes);
 
         if (existingProducts && existingProducts.length > 0) {
           const productIds = existingProducts.map(function(p) { return p.id; });
-          const { data: existingSales } = await supabase
+          const { data: existingSales } = await db
             .from("analytics_fact_sales")
             .select("product_id")
             .eq("period_id", upload.period_id)
@@ -154,7 +156,7 @@ export async function POST(_request: Request, context: RouteContext) {
       let branchId = upload.branch_id;
       if (!branchId) {
         try {
-          branchId = await ensureChainWideBranch(supabase);
+          branchId = await ensureChainWideBranch(db);
         } catch {
           errors.push("Could not resolve chain-wide branch");
         }
@@ -170,7 +172,7 @@ export async function POST(_request: Request, context: RouteContext) {
           // Find or create product
           let productId: string | null = null;
 
-          const { data: existing } = await supabase
+          const { data: existing } = await db
             .from("analytics_products")
             .select("id, category_id")
             .eq("stock_code", row.stock_code)
@@ -179,7 +181,7 @@ export async function POST(_request: Request, context: RouteContext) {
           if (existing) {
             productId = existing.id;
           } else if (row.product_name) {
-            const { data: newProduct } = await supabase
+            const { data: newProduct } = await db
               .from("analytics_products")
               .insert({
                 stock_code: row.stock_code,
@@ -208,7 +210,7 @@ export async function POST(_request: Request, context: RouteContext) {
           let salesCategoryId = upload.category_id;
           let salesSubCategoryId: string | null = null;
           if (!salesCategoryId && productId) {
-            const { data: prodInfo } = await supabase
+            const { data: prodInfo } = await db
               .from("analytics_products")
               .select("category_id, sub_category_id")
               .eq("id", productId)
@@ -223,9 +225,9 @@ export async function POST(_request: Request, context: RouteContext) {
           // prefer an explicit supplier on the row, then the product's default.
           let salesSupplierId: string | null = null;
           if (row.supplier_name) {
-            salesSupplierId = await resolveSupplierByName(supabase, String(row.supplier_name), row.supplier_code || null);
+            salesSupplierId = await resolveSupplierByName(db, String(row.supplier_name), row.supplier_code || null);
           } else {
-            const { data: prodDef } = await supabase
+            const { data: prodDef } = await db
               .from("analytics_products")
               .select("default_supplier_id")
               .eq("id", productId)
@@ -248,7 +250,7 @@ export async function POST(_request: Request, context: RouteContext) {
             total_amount: totalAmount,
             cost_amount: row.unit_cost ? row.quantity * row.unit_cost : 0,
           };
-          const { data: existingSale } = await supabase
+          const { data: existingSale } = await db
             .from("analytics_fact_sales")
             .select("id")
             .eq("period_id", upload.period_id)
@@ -256,7 +258,7 @@ export async function POST(_request: Request, context: RouteContext) {
             .eq("product_id", productId)
             .maybeSingle();
           if (existingSale) {
-            const { error: salesErr } = await supabase
+            const { error: salesErr } = await db
               .from("analytics_fact_sales")
               .update(salesFields)
               .eq("id", existingSale.id);
@@ -265,7 +267,7 @@ export async function POST(_request: Request, context: RouteContext) {
               continue;
             }
           } else {
-            const { error: salesErr } = await supabase
+            const { error: salesErr } = await db
               .from("analytics_fact_sales")
               .insert(salesFields);
             if (salesErr) {
@@ -288,7 +290,7 @@ export async function POST(_request: Request, context: RouteContext) {
                 selling_price: row.unit_price ?? null,
                 weight_tonnes: row.weight_tonnes ?? null,
               };
-              const { data: existingPricing } = await supabase
+              const { data: existingPricing } = await db
                 .from("analytics_fact_pricing")
                 .select("id")
                 .eq("period_id", upload.period_id)
@@ -296,7 +298,7 @@ export async function POST(_request: Request, context: RouteContext) {
                 .eq("branch_id", pricingBranchVal)
                 .maybeSingle();
               if (existingPricing) {
-                const { error: pricingErr } = await supabase
+                const { error: pricingErr } = await db
                   .from("analytics_fact_pricing")
                   .update(pricingFields)
                   .eq("id", existingPricing.id);
@@ -305,7 +307,7 @@ export async function POST(_request: Request, context: RouteContext) {
                   continue;
                 }
               } else {
-                const { error: pricingErr } = await supabase
+                const { error: pricingErr } = await db
                   .from("analytics_fact_pricing")
                   .insert(pricingFields);
                 if (pricingErr) {
@@ -329,7 +331,7 @@ export async function POST(_request: Request, context: RouteContext) {
           // Auto-create product if needed
           let productId: string | null = null;
           if (row.stock_code) {
-            const { data: existing } = await supabase
+            const { data: existing } = await db
               .from("analytics_products")
               .select("id")
               .eq("stock_code", row.stock_code)
@@ -337,7 +339,7 @@ export async function POST(_request: Request, context: RouteContext) {
             if (existing) {
               productId = existing.id;
             } else {
-              const { data: newProd } = await supabase
+              const { data: newProd } = await db
                 .from("analytics_products")
                 .insert({ stock_code: row.stock_code, name: row.product_name || row.stock_code })
                 .select("id")
@@ -350,7 +352,7 @@ export async function POST(_request: Request, context: RouteContext) {
           // Resolve category from product
           let invCategoryId: string | null = null;
           if (productId) {
-            const { data: prodCat } = await supabase
+            const { data: prodCat } = await db
               .from("analytics_products")
               .select("category_id, sub_category_id")
               .eq("id", productId)
@@ -371,7 +373,7 @@ export async function POST(_request: Request, context: RouteContext) {
             closing_stock: invQty,
             stock_value: invQty * unitCost,
           };
-          const { data: existingInv } = await supabase
+          const { data: existingInv } = await db
             .from("analytics_fact_inventory")
             .select("id")
             .eq("period_id", upload.period_id)
@@ -379,7 +381,7 @@ export async function POST(_request: Request, context: RouteContext) {
             .eq("branch_id", upload.branch_id)
             .maybeSingle();
           if (existingInv) {
-            const { error: invErr } = await supabase
+            const { error: invErr } = await db
               .from("analytics_fact_inventory")
               .update(invFields)
               .eq("id", existingInv.id);
@@ -388,7 +390,7 @@ export async function POST(_request: Request, context: RouteContext) {
               continue;
             }
           } else {
-            const { error: invErr } = await supabase
+            const { error: invErr } = await db
               .from("analytics_fact_inventory")
               .insert(invFields);
             if (invErr) {
@@ -413,7 +415,7 @@ export async function POST(_request: Request, context: RouteContext) {
           let categoryId: string | null = null;
           const categoryName = row.category_name || row.sub_category;
           if (categoryName) {
-            const { data: existingCat } = await supabase
+            const { data: existingCat } = await db
               .from("analytics_categories")
               .select("id")
               .ilike("name", categoryName.trim())
@@ -421,7 +423,7 @@ export async function POST(_request: Request, context: RouteContext) {
             if (existingCat) {
               categoryId = existingCat.id;
             } else {
-              const { data: newCat } = await supabase
+              const { data: newCat } = await db
                 .from("analytics_categories")
                 .insert({ name: categoryName.trim().toUpperCase() })
                 .select("id")
@@ -434,7 +436,7 @@ export async function POST(_request: Request, context: RouteContext) {
           let subCategoryId: string | null = null;
           const subCatName = row.sub_category_name || row.sub_category;
           if (subCatName && categoryId) {
-            const { data: existingSub } = await supabase
+            const { data: existingSub } = await db
               .from("analytics_subcategories")
               .select("id")
               .eq("category_id", categoryId)
@@ -443,7 +445,7 @@ export async function POST(_request: Request, context: RouteContext) {
             if (existingSub) {
               subCategoryId = existingSub.id;
             } else {
-              const { data: newSub } = await supabase
+              const { data: newSub } = await db
                 .from("analytics_subcategories")
                 .insert({ category_id: categoryId, name: subCatName.trim().toUpperCase() })
                 .select("id")
@@ -454,13 +456,13 @@ export async function POST(_request: Request, context: RouteContext) {
 
           // Upsert product
           // Check for existing product
-          const { data: existingProdCheck } = await supabase
+          const { data: existingProdCheck } = await db
             .from("analytics_products")
             .select("id")
             .eq("stock_code", row.stock_code)
             .maybeSingle();
           if (existingProdCheck) {
-            const { error: prodErr } = await supabase
+            const { error: prodErr } = await db
               .from("analytics_products")
               .update({
                 name: row.product_name || row.stock_code,
@@ -475,7 +477,7 @@ export async function POST(_request: Request, context: RouteContext) {
               continue;
             }
           } else {
-            const { error: prodErr } = await supabase
+            const { error: prodErr } = await db
               .from("analytics_products")
               .insert({
                 stock_code: row.stock_code,
@@ -505,7 +507,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
           // Auto-create supplier if doesn't exist
           let supplierId: string | null = null;
-          const { data: existingSup } = await supabase
+          const { data: existingSup } = await db
             .from("analytics_suppliers")
             .select("id")
             .ilike("name", row.supplier_name.trim())
@@ -513,7 +515,7 @@ export async function POST(_request: Request, context: RouteContext) {
           if (existingSup) {
             supplierId = existingSup.id;
           } else {
-            const { data: newSup } = await supabase
+            const { data: newSup } = await db
               .from("analytics_suppliers")
               .insert({
                 name: row.supplier_name.trim(),
@@ -527,7 +529,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
           // Find or create product
           let productId: string | null = null;
-          const { data: existingProd } = await supabase
+          const { data: existingProd } = await db
             .from("analytics_products")
             .select("id")
             .eq("stock_code", row.stock_code)
@@ -538,7 +540,7 @@ export async function POST(_request: Request, context: RouteContext) {
             // Auto-create category if provided
             let categoryId: string | null = null;
             if (row.category_name) {
-              const { data: cat } = await supabase
+              const { data: cat } = await db
                 .from("analytics_categories")
                 .select("id")
                 .ilike("name", row.category_name.trim())
@@ -546,7 +548,7 @@ export async function POST(_request: Request, context: RouteContext) {
               if (cat) {
                 categoryId = cat.id;
               } else {
-                const { data: newCat } = await supabase
+                const { data: newCat } = await db
                   .from("analytics_categories")
                   .insert({ name: row.category_name.trim().toUpperCase() })
                   .select("id")
@@ -554,7 +556,7 @@ export async function POST(_request: Request, context: RouteContext) {
                 categoryId = newCat?.id ?? null;
               }
             }
-            const { data: newProd } = await supabase
+            const { data: newProd } = await db
               .from("analytics_products")
               .insert({
                 stock_code: row.stock_code,
@@ -569,14 +571,14 @@ export async function POST(_request: Request, context: RouteContext) {
 
           // Create junction link
           // Check for existing supplier-product link
-          const { data: existingSupProd } = await supabase
+          const { data: existingSupProd } = await db
             .from("analytics_supplier_products")
             .select("id")
             .eq("supplier_id", supplierId)
             .eq("product_id", productId)
             .maybeSingle();
           if (existingSupProd) {
-            const { error: supProdErr } = await supabase
+            const { error: supProdErr } = await db
               .from("analytics_supplier_products")
               .update({ pack_size: row.pack_size || null })
               .eq("id", existingSupProd.id);
@@ -585,7 +587,7 @@ export async function POST(_request: Request, context: RouteContext) {
               continue;
             }
           } else {
-            const { error: supProdErr } = await supabase
+            const { error: supProdErr } = await db
               .from("analytics_supplier_products")
               .insert({
                 supplier_id: supplierId,
@@ -613,7 +615,7 @@ export async function POST(_request: Request, context: RouteContext) {
           // Resolve category
           let categoryId: string | null = null;
           if (row.category) {
-            const { data: existingCat } = await supabase
+            const { data: existingCat } = await db
               .from("analytics_categories")
               .select("id")
               .ilike("name", row.category.trim())
@@ -626,7 +628,7 @@ export async function POST(_request: Request, context: RouteContext) {
           // Resolve sub-category
           let subCategoryId: string | null = null;
           if (row.sub_category && categoryId) {
-            const { data: existingSub } = await supabase
+            const { data: existingSub } = await db
               .from("analytics_subcategories")
               .select("id")
               .eq("category_id", categoryId)
@@ -636,7 +638,7 @@ export async function POST(_request: Request, context: RouteContext) {
               subCategoryId = existingSub.id;
             } else {
               // Create new sub-category
-              const { data: newSub } = await supabase
+              const { data: newSub } = await db
                 .from("analytics_subcategories")
                 .insert({ category_id: categoryId, name: row.sub_category.trim().toUpperCase() })
                 .select("id")
@@ -646,7 +648,7 @@ export async function POST(_request: Request, context: RouteContext) {
           }
 
           // Upsert product
-          const { data: existingProdCheck } = await supabase
+          const { data: existingProdCheck } = await db
             .from("analytics_products")
             .select("id")
             .eq("stock_code", row.stock_code)
@@ -654,7 +656,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
           let productId: string | null = null;
           if (existingProdCheck) {
-            const { error: prodErr } = await supabase
+            const { error: prodErr } = await db
               .from("analytics_products")
               .update({
                 name: row.product_name,
@@ -669,7 +671,7 @@ export async function POST(_request: Request, context: RouteContext) {
             }
             productId = existingProdCheck.id;
           } else {
-            const { error: prodErr, data: newProd } = await supabase
+            const { error: prodErr, data: newProd } = await db
               .from("analytics_products")
               .insert({
                 stock_code: row.stock_code,
@@ -694,20 +696,20 @@ export async function POST(_request: Request, context: RouteContext) {
               .map((s) => s.trim())
               .filter(Boolean);
             for (const supName of supplierNames) {
-              const { data: existingSup } = await supabase
+              const { data: existingSup } = await db
                 .from("analytics_suppliers")
                 .select("id")
                 .ilike("name", supName)
                 .single();
               if (existingSup) {
-                const { data: existingLink } = await supabase
+                const { data: existingLink } = await db
                   .from("analytics_supplier_products")
                   .select("id")
                   .eq("supplier_id", existingSup.id)
                   .eq("product_id", productId)
                   .maybeSingle();
                 if (!existingLink) {
-                  await supabase
+                  await db
                     .from("analytics_supplier_products")
                     .insert({ supplier_id: existingSup.id, product_id: productId })
                     .select()
@@ -726,7 +728,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
     const status = errors.length === 0 ? "imported" : errors.length < rows.length ? "imported" : "failed";
 
-    await supabase
+    await db
       .from("analytics_staging_uploads")
       .update({
         status,

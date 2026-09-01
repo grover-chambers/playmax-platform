@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -16,12 +17,13 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const db = getAdminClient();
     // Staging uploads (incl. raw rows) are internal — staff only.
     if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data: upload, error: uploadError } = await supabase
+    const { data: upload, error: uploadError } = await db
       .from("analytics_staging_uploads")
       .select(
         "*, branch:analytics_branches!branch_id(name), period:analytics_periods!period_id(label)",
@@ -36,7 +38,7 @@ export async function GET(_request: Request, context: RouteContext) {
       );
     }
 
-    const { data: rows, error: rowsError } = await supabase
+    const { data: rows, error: rowsError } = await db
       .from("analytics_staging_rows")
       .select("*")
       .eq("upload_id", id)
@@ -78,7 +80,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role)) {
+    const db = getAdminClient();
+    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -100,7 +103,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("analytics_staging_uploads")
       .update(updates)
       .eq("id", id)
@@ -131,16 +134,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role)) {
+    const db = getAdminClient();
+    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await supabase
+    await db
       .from("analytics_staging_rows")
       .delete()
       .eq("upload_id", id);
 
-    const { error } = await supabase
+    const { error } = await db
       .from("analytics_staging_uploads")
       .delete()
       .eq("id", id);

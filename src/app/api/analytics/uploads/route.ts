@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +24,9 @@ export async function GET() {
     if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    const db = getAdminClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("analytics_staging_uploads")
       .select(
         "*, branch:analytics_branches!branch_id(name), period:analytics_periods!period_id(label)",
@@ -62,9 +64,12 @@ export async function POST(request: Request) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role)) {
+    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Data handler shares same DB via service role (bypasses is_admin-only RLS until 053 is pushed)
+    const db = getAdminClient();
 
     const body = await request.json();
     const { filename, file_type, period_id, branch_id, branch_name, category_id, sub_category_id } = body;
@@ -90,7 +95,7 @@ export async function POST(request: Request) {
     let resolvedBranchId: string | null = branch_id || null;
     if (!resolvedBranchId && branch_name && String(branch_name).trim()) {
       const storeName = String(branch_name).trim();
-      const { data: found, error: findErr } = await supabase
+      const { data: found, error: findErr } = await db
         .from("analytics_branches")
         .select("id")
         .or(`name.ilike.%${storeName}%,code.ilike.%${storeName}%,city.ilike.%${storeName}%`)
@@ -102,13 +107,13 @@ export async function POST(request: Request) {
       } else {
         const baseCode = storeName.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 20) || "NEW_STORE";
         let code = baseCode;
-        const { data: dup } = await supabase
+        const { data: dup } = await db
           .from("analytics_branches")
           .select("code")
           .eq("code", code)
           .maybeSingle();
         if (dup) code = `${baseCode}_${Date.now().toString().slice(-4)}`;
-        const { data: created, error: createErr } = await supabase
+        const { data: created, error: createErr } = await db
           .from("analytics_branches")
           .insert({ name: storeName, code, active: true })
           .select("id")
@@ -118,7 +123,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("analytics_staging_uploads")
       .insert({
         filename,
@@ -155,7 +160,7 @@ export async function POST(request: Request) {
         total_amount: grand_total.total ?? 0,
       };
       // Check for existing summary row (no UNIQUE constraint reliance)
-      const { data: existingSummary } = await supabase
+      const { data: existingSummary } = await db
         .from("analytics_fact_branch_summary")
         .select("id")
         .eq("branch_id", data.branch_id)
@@ -163,12 +168,12 @@ export async function POST(request: Request) {
         .eq("supplier_name", supplierName)
         .maybeSingle();
       if (existingSummary) {
-        await supabase
+        await db
           .from("analytics_fact_branch_summary")
           .update(summaryFields)
           .eq("id", existingSummary.id);
       } else {
-        await supabase
+        await db
           .from("analytics_fact_branch_summary")
           .insert(summaryFields);
       }

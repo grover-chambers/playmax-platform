@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +18,13 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const db = getAdminClient();
     // Staging rows contain raw internal data — staff only.
     if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("analytics_staging_rows")
       .select("*")
       .eq("upload_id", id)
@@ -52,7 +54,8 @@ export async function POST(request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role)) {
+    const db = getAdminClient();
+    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -93,7 +96,7 @@ export async function POST(request: Request, context: RouteContext) {
       }),
     );
 
-    const { data: insertedRows, error } = await supabase
+    const { data: insertedRows, error } = await db
           .from("analytics_staging_rows")
           .insert(rowsToInsert)
           .select();
@@ -106,7 +109,7 @@ export async function POST(request: Request, context: RouteContext) {
         }
 
         // Update upload total_rows count
-        await supabase
+        await db
           .from("analytics_staging_uploads")
           .update({
             total_rows: rows.length,

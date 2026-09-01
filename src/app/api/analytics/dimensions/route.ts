@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -11,33 +12,36 @@ export async function GET(request: Request) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role)) {
+    if (!isAdmin(currentUser.role) && currentUser.role !== "finance" && currentUser.role !== "data_handler") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Data handler shares the same analytics DB — use service role to bypass RLS that was is_admin-only before 053
+    const db = getAdminClient();
 
     const { searchParams } = new URL(request.url);
     const includeProducts = searchParams.get("include_products") === "true";
 
     const baseQueries = [
-      supabase
+      db
         .from("analytics_branches")
         .select("*")
         .eq("active", true)
         .order("code"),
-      supabase
+      db
         .from("analytics_categories")
         .select("*")
         .order("name"),
-      supabase
+      db
         .from("analytics_subcategories")
         .select("id, category_id, name")
         .order("name"),
-      supabase
+      db
         .from("analytics_suppliers")
         .select("*")
         .eq("active", true)
         .order("name"),
-      supabase
+      db
         .from("analytics_products")
         .select("id", { count: "exact", head: true }),
     ];
@@ -76,7 +80,7 @@ export async function GET(request: Request) {
     };
 
     if (includeProducts) {
-      const { data: products, error: prodErr } = await supabase
+      const { data: products, error: prodErr } = await db
         .from("analytics_products")
         .select("id, stock_code, name, category_id, default_supplier_id, sub_category, unit_of_measure, active, created_at")
         .order("name");
@@ -87,10 +91,10 @@ export async function GET(request: Request) {
 
         const [catRes, supRes] = await Promise.all([
           catIds.length > 0
-            ? supabase.from("analytics_categories").select("id, name").in("id", catIds)
+            ? db.from("analytics_categories").select("id, name").in("id", catIds)
             : Promise.resolve({ data: [] as { id: string; name: string }[], error: null }),
           supIds.length > 0
-            ? supabase.from("analytics_suppliers").select("id, name").in("id", supIds)
+            ? db.from("analytics_suppliers").select("id, name").in("id", supIds)
             : Promise.resolve({ data: [] as { id: string; name: string }[], error: null }),
         ]);
 

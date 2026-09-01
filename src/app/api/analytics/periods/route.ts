@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +12,13 @@ export async function GET() {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const db = getAdminClient();
     // Analytics periods are internal metadata — staff only.
     if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("analytics_periods")
       .select("id, label, start_date, end_date, year, quarter, month")
       .order("end_date", { ascending: false });
@@ -38,9 +40,10 @@ export async function POST(request: Request) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser || !isAdmin(currentUser.role)) {
+    if (!currentUser || (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const db = getAdminClient();
 
     const body = await request.json();
     const { label, start_date, end_date } = body;
@@ -52,7 +55,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("analytics_periods")
       .insert({ label, start_date, end_date })
       .select("id, label, start_date, end_date, year, quarter, month")
@@ -61,7 +64,7 @@ export async function POST(request: Request) {
     if (error) {
       if (error.code === "23505") {
         // Unique constraint — period with these dates already exists
-        const { data: existing } = await supabase
+        const { data: existing } = await db
           .from("analytics_periods")
           .select("id, label, start_date, end_date, year, quarter, month")
           .eq("start_date", start_date)
