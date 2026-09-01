@@ -35,12 +35,22 @@ export default function KaniniMapTabPage() {
   const pins = (data?.outletPins ?? []).slice(0, 500).map((p: any) => ({
     id: p.id, name: p.name, channel: p.channel ?? "", type: p.type ?? "", lat: Number(p.lat), lng: Number(p.lng), ward: p.ward ?? "", constituency: p.constituency ?? "", county: p.county ?? "", size: p.size ?? ""
   }));
+  // Kiambu-trained depots (match territory_wards subcounty offsets) + real pins if any
+  const KIAMBU_DEPOTS: Record<string, [number, number]> = {
+    A: [-1.03, 37.07], // Thika Town
+    B: [-1.10, 37.01], // Juja
+    C: [-1.17, 36.82], // Kiambu
+    D: [-0.98, 36.88], // Gatundu North
+    E: [-1.14, 36.64], // Limuru
+    F: [-1.08, 36.62], // Lari
+    G: [-1.25, 36.73], // Kabete
+  };
   const truckRoutes = (data?.routes ?? []).slice(0, 12).map((r: any, idx: number) => {
-    const gIdx = ["A", "B", "C", "D", "E", "F", "G"].indexOf(r.group_name);
-    const depotLat = -1.28 + (gIdx >= 0 ? (gIdx % 4) * 0.06 : idx * 0.02);
-    const depotLng = 36.78 + (gIdx >= 0 ? Math.floor(gIdx / 4) * 0.08 : idx * 0.015);
+    const depot = KIAMBU_DEPOTS[r.group_name] || ([-1.03, 37.07] as [number, number]);
+    // Use real pins if present, else synthesize 5 stops radiating around depot in Kiambu
     const slice = pins.slice(idx * 3, idx * 3 + 6).map((p: any) => [p.lat, p.lng] as [number, number]);
-    const pts: [number, number][] = [[depotLat, depotLng], ...slice];
+    const synthetic: [number, number][] = slice.length >= 2 ? slice : Array.from({ length: 5 }, (_, i) => [depot[0] + (Math.sin((idx * 5 + i) * 1.1) * 0.03), depot[1] + (Math.cos((idx * 5 + i) * 1.1) * 0.04)] as [number, number]);
+    const pts: [number, number][] = [depot, ...synthetic];
     return { id: r.id, name: r.route_name, group: r.group_name, vehicle: r.vehicle_type || "Van", points: pts, color: "#047857" };
   });
   const reps = (monitor?.reps || []).map((r: any) => ({ id: r.id, name: r.name, color: r.color, zone: r.zone }));
