@@ -51,7 +51,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role)) {
+    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
