@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -34,6 +36,48 @@ class SyncService {
     'daily_submissions',
     'back_checks',
   ];
+
+  /// Max serialized JSON size per `sync-push` invocation. Supabase Edge
+  /// Functions reject request bodies above ~6MB (hard platform cap); we target
+  /// a much smaller ceiling so a 95MB backlog is split into many safe calls
+  /// and each stays comfortably under the body limit and the CPU/time caps.
+  /// 1.5MB leaves ample headroom for JSON escaping, wrapper fields and the
+  /// edge gateway overhead.
+  static const int kMaxBatchBytes = 1536 * 1024; // 1.5 MB
+
+  /// Split [rows] into sub-lists whose serialized JSON size stays under
+  /// [kMaxBatchBytes]. Keeps every `sync-push` invocation within Supabase's
+  /// request-body limit regardless of how large the on-device backlog grows.
+  static List<List<Map<String, dynamic>>> chunkRows(
+      List<Map<String, dynamic>> rows) {
+    final chunks = <List<Map<String, dynamic>>>[];
+    var current = <Map<String, dynamic>>[];
+    var currentBytes = 0;
+    for (final row in rows) {
+      // Approximate serialized size (utf8 byte length of the JSON map, plus a
+      // small per-row separator allowance).
+      final rowBytes = _jsonWeight(row);
+      if (current.isNotEmpty && currentBytes + rowBytes > kMaxBatchBytes) {
+        chunks.add(current);
+        current = [];
+        currentBytes = 0;
+      }
+      current.add(row);
+      currentBytes += rowBytes;
+    }
+    if (current.isNotEmpty) chunks.add(current);
+    return chunks;
+  }
+
+  static int _jsonWeight(Map<String, dynamic> row) {
+    try {
+      // raw jsonEncode of the whole row is the most accurate, but doing it
+      // per row is wasteful; compute the row's own JSON weight instead.
+      return jsonEncode(row).length;
+    } catch (_) {
+      return 512; // fallback upper-ish bound if a row fails to encode
+    }
+  }
 
   /// Order [entities] by [pushOrder]; unknown entities come last in their
   /// given order.
@@ -130,14 +174,27 @@ class SyncService {
     final results = <String, dynamic>{};
     final failedEntities = <String>{};
     for (final entity in orderedEntities(byEntity.keys)) {
-      final res = await onPush(entity, byEntity[entity]!);
-      results[entity] = res;
-      // A server-side error (edge-function failure, rejected batch, auth
-      // problem) must NOT mark the entity's rows as synced: they stay in the
-      // queue so a retry can push them, and the caller surfaces the error.
-      if (res['error'] != null) {
-        failedEntities.add(entity);
+      final entityRows = byEntity[entity]!;
+      // Split into size-safe chunks so a large backlog never exceeds the
+      // Supabase Edge Function request-body limit (which currently fails the
+      // whole sync and leaves rows stranded on device).
+      final chunks = chunkRows(entityRows);
+      var allOk = true;
+      var appliedTotal = 0;
+      for (var i = 0; i < chunks.length; i++) {
+        final res = await onPush(entity, chunks[i]);
+        // A server-side error (edge-function failure, rejected batch, auth
+        // problem) must NOT mark the chunk's rows as synced: they stay in the
+        // queue so a retry can push them, and the caller surfaces the error.
+        if (res['error'] != null) {
+          failedEntities.add(entity);
+          allOk = false;
+          break; // stop this entity; remaining chunks retry next flush
+        }
+        final a = res['applied'];
+        appliedTotal += a is int ? a : 0;
       }
+      results[entity] = allOk ? {'applied': appliedTotal} : {'error': 'chunk_failed'};
     }
 
     for (final item in pending) {
