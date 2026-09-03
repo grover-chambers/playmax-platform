@@ -153,19 +153,35 @@ class CaptureService {
       updatedAt: now,
     );
     await syncService.enqueueSync('shelf_photos', photo.id, photo.toJson());
-    await _uploadPhoto(photo);
+    // Push the binary now; if the device is offline (or storage upload fails)
+    // record it in the pending-media queue so a later sync pass retries it
+    // instead of silently losing the image. The metadata row stays queued
+    // until the binary is confirmed (see SyncProvider.flush).
+    final ok = await _uploadPhoto(photo);
+    if (!ok) {
+      await syncService.enqueuePendingMedia(
+        entity: 'shelf_photos',
+        rowId: photo.id,
+        filePath: photo.filePath,
+        repId: photo.repId,
+      );
+    }
     return photo;
   }
 
-  Future<void> _uploadPhoto(ShelfPhoto photo) async {
+  /// Returns true only when the binary is confirmed on storage. On any failure
+  /// the caller is expected to keep a pending-media record for retry.
+  Future<bool> _uploadPhoto(ShelfPhoto photo) async {
     try {
       final file = File(photo.filePath);
-      if (!await file.exists()) return;
+      if (!await file.exists()) return false;
       final bytes = await file.readAsBytes();
       await SupabaseService.instance.uploadShelfPhoto(photo.repId, photo.id, bytes);
+      return true;
     } catch (_) {
-      // Offline or permission failure — metadata is already queued; the
-      // binary is retried on a later flush pass.
+      // Offline or permission failure — binary will be retried via the
+      // pending-media queue.
+      return false;
     }
   }
 

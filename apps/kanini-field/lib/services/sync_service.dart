@@ -94,17 +94,55 @@ class SyncService {
   }
 
   late Box<Map<String, dynamic>> _pendingSyncBox;
+  late Box<Map<String, dynamic>> _pendingMediaBox;
   bool _ready = false;
 
   Future<void> init() async {
     if (_ready) return;
     _pendingSyncBox = await Hive.openBox<Map<String, dynamic>>('pending_sync');
+    _pendingMediaBox = await Hive.openBox<Map<String, dynamic>>('pending_media');
     _ready = true;
   }
 
   bool get isReady => _ready;
 
   Box<Map<String, dynamic>> get pendingSyncBox => _pendingSyncBox;
+
+  /// Pending binary uploads (shelf photos). Photo metadata rows flow through
+  /// [pendingSyncBox] like any other entity, but the actual image bytes live
+  /// on the device and must be pushed separately (they are too large for the
+  /// JSON sync-push body). We track them here so a capture-time failure is
+  /// retried on a later flush pass instead of being silently lost.
+  Box<Map<String, dynamic>> get pendingMediaBox => _pendingMediaBox;
+
+  /// Queue a binary for upload. Keyed by `entity:rowId` (e.g. `shelf_photos:<id>`)
+  /// so re-capture updates rather than duplicates. [repId] is the owning rep so
+  /// the upload callback can place the object under the rep's storage prefix.
+  Future<void> enqueuePendingMedia({
+    required String entity,
+    required String rowId,
+    required String filePath,
+    String? repId,
+  }) async {
+    await _pendingMediaBox.put('$entity:$rowId', {
+      'id': '$entity:$rowId',
+      'entity': entity,
+      'row_id': rowId,
+      'file_path': filePath,
+      'rep_id': repId,
+    });
+  }
+
+  /// All binaries still awaiting upload.
+  List<Map<String, dynamic>> get pendingMedia =>
+      _pendingMediaBox.values.map((v) => Map<String, dynamic>.from(v)).toList();
+
+  int get pendingMediaCount => _pendingMediaBox.length;
+
+  /// Drop a binary from the pending set once confirmed uploaded (or abandoned).
+  Future<void> removePendingMedia(String entity, String rowId) async {
+    await _pendingMediaBox.delete('$entity:$rowId');
+  }
 
   /// Enqueue a row for [entity]. Last-write-wins on the local queue: an
   /// entry with the same `[entity]:[rowId]` key is replaced.
@@ -204,6 +242,27 @@ class SyncService {
     }
 
     return {'flushed': pending.length, 'applied': results};
+  }
+
+  /// Drain the pending-binary queue (shelf photos). Called after a metadata
+  /// flush so image bytes that failed at capture time get retried whenever the
+  /// device is online. Returns how many binaries were confirmed uploaded; a
+  /// failed upload is left in the queue for the next pass.
+  Future<int> flushPendingMedia({
+    required Future<bool> Function(Map<String, dynamic> record) onUpload,
+  }) async {
+    final online = await isOnline;
+    if (!online) return 0;
+    var uploaded = 0;
+    for (final item in pendingMedia) {
+      final ok = await onUpload(item);
+      if (ok) {
+        await _pendingMediaBox.delete(item['id'] as String);
+        uploaded++;
+      }
+      // else: keep it queued for a later retry.
+    }
+    return uploaded;
   }
 }
 

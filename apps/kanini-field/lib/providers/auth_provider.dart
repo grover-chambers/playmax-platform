@@ -18,18 +18,39 @@ class AppUser {
 }
 
 class AuthProvider extends ChangeNotifier {
+  /// Guards the one-per-launch `open` event so redundant onAuthStateChange
+  /// emissions don't spam the access log with duplicates of the same open.
+  bool _openLogged = false;
+
   AuthProvider() {
     try {
       final client = Supabase.instance.client;
       _user = _toAppUser(client.auth.currentUser);
+      // App (re)opened with an existing session -> record the "open" heartbeat
+      // so rollout telemetry ("user actually on this build") is live even on
+      // launches where the rep doesn't re-type credentials.
+      _logOpenIfUser(_user);
       client.auth.onAuthStateChange.listen((data) {
         _user = _toAppUser(data.session?.user);
         notifyListeners();
+        _logOpenIfUser(_user);
       });
     } catch (_) {
       // Supabase not initialized (e.g. widget tests, or a boot that slipped
       // past main's fail-closed gate). The provider stays UNAUTHENTICATED —
       // there is no demo fallback; the app remains locked behind login.
+    }
+  }
+
+  Future<void> _logOpenIfUser(AppUser? user) async {
+    if (user == null || _openLogged) return;
+    _openLogged = true;
+    try {
+      final deviceId = await FieldDeviceId.instance.get().catchError((_) => '');
+      await AccessLogService.instance
+          .logOpen(user.email ?? '', deviceId.isEmpty ? null : deviceId);
+    } catch (_) {
+      // Best-effort telemetry only — never block the app on this.
     }
   }
 

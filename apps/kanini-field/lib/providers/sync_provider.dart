@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -87,6 +88,40 @@ class SyncProvider extends ChangeNotifier {
         return res is Map ? Map<String, dynamic>.from(res) : {'applied': 0};
       });
       await syncService.purgeSynced();
+
+      // Retry any photo binaries that failed to upload at capture time (M3):
+      // the shelf_photos metadata row may already be queued/synced, but the
+      // actual image can be lost permanently if we never re-push the bytes.
+      // This drain runs on every flush until the picture is confirmed on
+      // storage, so offline captures eventually reach the bucket.
+      try {
+        final repId = _supabase.currentUser?.id;
+        await syncService.flushPendingMedia(onUpload: (rec) async {
+          final filePath = rec['file_path'] as String?;
+          final photoId = rec['row_id'] as String?;
+          final recRepId = (rec['rep_id'] as String?)?.isNotEmpty == true
+              ? rec['rep_id'] as String
+              : repId;
+          if (filePath == null || photoId == null || recRepId == null) {
+            return false;
+          }
+          final file = File(filePath);
+          if (!await file.exists()) {
+            // Original lost (e.g. cleared cache) — abandon the pending record
+            // rather than retry forever; the metadata row still syncs.
+            return true;
+          }
+          try {
+            final bytes = await file.readAsBytes();
+            await _supabase.uploadShelfPhoto(recRepId, photoId, bytes);
+            return true;
+          } catch (_) {
+            return false; // retry later
+          }
+        });
+      } catch (_) {
+        // Pending-media drain is best-effort; never fail the whole sync on it.
+      }
 
       final error = _firstFlushError(result);
       if (error != null) {
