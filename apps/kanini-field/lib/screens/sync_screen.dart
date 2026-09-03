@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/sync_provider.dart';
+import '../services/recovery_service.dart';
 import '../services/sync_service.dart';
 import '../theme/brand.dart';
 import '../ui_fx.dart';
@@ -14,6 +15,7 @@ class SyncScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final sync = context.watch<SyncProvider>();
     final pending = sync.pendingCount;
+    final pendingMedia = syncService.pendingMediaCount;
 
     return Scaffold(
       body: SafeArea(
@@ -120,6 +122,41 @@ class SyncScreen extends StatelessWidget {
                 ],
               ),
             ),
+            // Recovery — for stuck 93MB at Joska where normal chunked flush shows 0
+            if (pending > 30 || pendingMedia > 0)
+              Container(
+                margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8E1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFFB300), width: 1.2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: Color(0xFFE65100), size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Large backlog — tap Recover to force-send cached data',
+                            style: TextStyle(color: Color(0xFFE65100), fontWeight: FontWeight.w700, fontSize: 12.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$pending items + $pendingMedia photos. Recover brute-reads the Hive file and upserts direct to DB (bypasses edge limits) + backs raw file to diagnostics.',
+                      style: const TextStyle(color: Brand.inkSoft, fontSize: 11.5, height: 1.4),
+                    ),
+                    const SizedBox(height: 10),
+                    _RecoveryButton(pending: pending),
+                  ],
+                ),
+              ),
             const SectionTitle('Queued'),
             if (pending == 0)
               const Padding(
@@ -157,6 +194,63 @@ class SyncScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RecoveryButton extends StatefulWidget {
+  final int pending;
+  const _RecoveryButton({required this.pending});
+
+  @override
+  State<_RecoveryButton> createState() => _RecoveryButtonState();
+}
+
+class _RecoveryButtonState extends State<_RecoveryButton> {
+  bool _running = false;
+  String _log = '';
+
+  Future<void> _run() async {
+    setState(() {
+      _running = true;
+      _log = 'Starting recovery… keep on WiFi, don\'t close app';
+    });
+    try {
+      final res = await RecoveryService.instance.recover(onProgress: (m) {
+        if (mounted) setState(() => _log = m);
+      });
+      if (!mounted) return;
+      final n = res['recovered'] ?? 0;
+      final errs = (res['errors'] as List?)?.length ?? 0;
+      setState(() => _log = 'Done: $n rows recovered${errs > 0 ? ", $errs chunks had errors (see log)" : ""}. Raw file backed up to diagnostics.');
+      UiFx.confirm();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Recovered $n rows — check dashboard')));
+    } catch (e) {
+      if (mounted) setState(() => _log = 'Recovery failed: $e');
+      UiFx.reject();
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton.icon(
+          onPressed: _running ? null : _run,
+          icon: _running
+              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.cloud_upload, size: 18),
+          label: Text(_running ? 'Recovering…' : 'Recover now (${widget.pending} items)'),
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE65100), foregroundColor: Colors.white),
+        ),
+        if (_log.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(_log, style: const TextStyle(color: Brand.inkSoft, fontSize: 11, fontFamily: Brand.fontMono)),
+        ],
+      ],
     );
   }
 }
