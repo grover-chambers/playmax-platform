@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/access_log_service.dart';
+import '../services/device_id.dart';
+
 /// Lightweight view of the signed-in user (Supabase auth session only).
 class AppUser {
   final String id;
@@ -59,6 +62,10 @@ class AuthProvider extends ChangeNotifier {
       final data =
           await client.auth.signInWithPassword(email: email, password: password);
       _user = _toAppUser(data.user);
+      // Record this login + the exact app build/device for the activity log.
+      final deviceId = await FieldDeviceId.instance.get().catchError((_) => '');
+      await AccessLogService.instance
+          .logLogin(data.user?.email ?? email, deviceId.isEmpty ? null : deviceId);
     } catch (e) {
       _error = e.toString();
       rethrow;

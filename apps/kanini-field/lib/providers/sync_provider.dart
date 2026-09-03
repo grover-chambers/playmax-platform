@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 
+import '../services/access_log_service.dart';
+import '../services/device_id.dart';
 import '../services/supabase_service.dart';
 import '../services/sync_service.dart';
 
@@ -44,11 +44,9 @@ class SyncProvider extends ChangeNotifier {
   }
 
   final SupabaseService _supabase = SupabaseService.instance;
-  final _uuid = const Uuid();
 
   bool _online = true;
   bool _syncing = false;
-  String _deviceId = '';
   String? _lastSyncError;
 
   bool get isOnline => _online;
@@ -67,17 +65,7 @@ class SyncProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String> _getDeviceId() async {
-    if (_deviceId.isNotEmpty) return _deviceId;
-    final prefs = await SharedPreferences.getInstance();
-    var id = prefs.getString('device_id');
-    if (id == null) {
-      id = _uuid.v4();
-      await prefs.setString('device_id', id);
-    }
-    _deviceId = id;
-    return id;
-  }
+  Future<String> _getDeviceId() async => FieldDeviceId.instance.get();
 
   /// Flush the local queue to the server. Failures are NEVER silent: the
   /// error is kept in [lastSyncError] (visible in the UI) and the failed
@@ -105,6 +93,14 @@ class SyncProvider extends ChangeNotifier {
         _lastSyncError = error;
       } else {
         _lastSyncError = null;
+        // Record a sync heartbeat (best-effort) with the current app build.
+        final flushed = result['flushed'];
+        if (flushed is int && flushed > 0) {
+          final email = _supabase.currentUser?.email;
+          if (email != null) {
+            await AccessLogService.instance.logSync(email, deviceId);
+          }
+        }
       }
     } catch (e) {
       // Network, auth or edge-function failure — entries stay queued and the

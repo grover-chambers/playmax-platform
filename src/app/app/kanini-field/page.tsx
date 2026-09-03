@@ -152,6 +152,64 @@ export default function KaniniFieldOverviewPage() {
         </div>
       </div>
 
+      {/* App version & login activity — pm-dash-card */}
+      <div className="pm-dash-card">
+        <div className="pm-dash-card-h">
+          <span className="pm-dash-card-t">App &amp; login activity</span>
+          <span className="text-[11px] text-gray-5">Last login · app version · device</span>
+        </div>
+        <div className="pm-dash-card-b">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+              <thead><tr className="text-gray-5 font-mono"><th className="text-left pb-2 font-normal">Rep</th><th className="text-left pb-2 font-normal">App version</th><th className="text-left pb-2 font-normal">Last login</th><th className="text-left pb-2 font-normal">Last open</th><th className="text-left pb-2 font-normal">Device</th></tr></thead>
+              <tbody>
+                {(monitor?.reps || []).map((r: any) => (
+                  <tr key={r.id} className="border-t border-[var(--ws-border)]">
+                    <td className="py-2.5 font-medium text-[var(--ws-text)]">{r.name}</td>
+                    <td className="py-2.5">
+                      {r.appVersion ? <span className="inline-flex text-[10px] font-mono px-2 py-0.5 rounded-full border bg-[var(--ws-surface)] border-[var(--ws-border)] text-gray-4">v{r.appVersion}{r.appVersionCode ? ` (${r.appVersionCode})` : ""}</span> : <span className="text-gray-5">—</span>}
+                    </td>
+                    <td className="py-2.5 font-mono text-[11px] text-gray-5">{r.lastLoginAt ? new Date(r.lastLoginAt).toLocaleString() : "—"}</td>
+                    <td className="py-2.5 font-mono text-[11px] text-gray-5">{r.lastOpenAt ? new Date(r.lastOpenAt).toLocaleString() : "—"}</td>
+                    <td className="py-2.5 font-mono text-[10px] text-gray-5">{r.accessDevice ? String(r.accessDevice).slice(0, 8) : (r.device ? String(r.device).slice(0, 8) : "—")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Access event history — pm-dash-card */}
+      <div className="pm-dash-card">
+        <div className="pm-dash-card-h">
+          <span className="pm-dash-card-t">Recent activity</span>
+          <span className="text-[11px] font-mono text-gray-5">{monitor?.accessLog?.length ?? 0} events</span>
+        </div>
+        <div className="pm-dash-card-b">
+          {(monitor?.accessLog?.length ?? 0) === 0 ? (
+            <div className="text-[11px] text-gray-5 py-2">No access events yet — events appear after reps sign in / sync with v1.3.0+.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px]">
+                <thead><tr className="text-gray-5 font-mono"><th className="text-left pb-2 font-normal">When</th><th className="text-left pb-2 font-normal">Rep</th><th className="text-left pb-2 font-normal">Event</th><th className="text-left pb-2 font-normal">Version</th><th className="text-left pb-2 font-normal">Device</th></tr></thead>
+                <tbody>
+                  {(monitor.accessLog || []).slice(0, 40).map((e: any, i: number) => (
+                    <tr key={e.id || i} className="border-t border-[var(--ws-border)]">
+                      <td className="py-2 font-mono text-[11px] text-gray-5">{new Date(e.created_at).toLocaleString()}</td>
+                      <td className="py-2 text-[var(--ws-text)]">{e.rep_email}</td>
+                      <td className="py-2"><span className={`inline-flex text-[10px] font-mono px-2 py-0.5 rounded-full border ${e.event_type === "login" ? "bg-teal/10 text-teal border-teal/20" : e.event_type === "sync" ? "bg-blue/10 text-blue border-blue/20" : "bg-[var(--ws-surface)] text-gray-5 border-[var(--ws-border)]"}`}>{e.event_type}</span></td>
+                      <td className="py-2 font-mono text-[11px] text-gray-5">{e.app_version ? `v${e.app_version}${e.version_code ? ` (${e.version_code})` : ""}` : "—"}</td>
+                      <td className="py-2 font-mono text-[10px] text-gray-5">{e.device_id ? String(e.device_id).slice(0, 8) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="flex items-center gap-2 text-[11px] text-gray-5">
         <span>Wired:</span><span className="font-mono bg-[var(--ws-surface)] px-1.5 py-0.5 rounded border border-[var(--ws-border)]">/api/portal/khel/census</span><span className="font-mono bg-[var(--ws-surface)] px-1.5 py-0.5 rounded border border-[var(--ws-border)]">/api/portal/khel/monitoring</span>
       </div>
