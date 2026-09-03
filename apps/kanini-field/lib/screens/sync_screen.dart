@@ -122,9 +122,9 @@ class SyncScreen extends StatelessWidget {
                 ],
               ),
             ),
-            // Recovery — for stuck 93MB at Joska where normal chunked flush shows 0
-            if (pending > 30 || pendingMedia > 0)
-              Container(
+            // Recovery — always visible on 1.3.1+7 so Joska can force even when Hive reads 0
+            // (raw .hive file may still hold 93MB). Brute-read handles both cases.
+            Container(
                 margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
