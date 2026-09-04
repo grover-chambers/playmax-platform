@@ -24,7 +24,7 @@ export async function GET() {
     if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const db = getAdminClient();
+    const db = supabase;
 
     const { data, error } = await db
       .from("analytics_staging_uploads")

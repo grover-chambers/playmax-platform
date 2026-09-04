@@ -18,11 +18,11 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const db = getAdminClient();
     // Staging rows contain raw internal data — staff only.
     if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    const db = supabase;
 
     const { data, error } = await db
       .from("analytics_staging_rows")

@@ -12,11 +12,11 @@ export async function GET() {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const db = getAdminClient();
     // Analytics periods are internal metadata — staff only.
     if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    const db = supabase;
 
     const { data, error } = await db
       .from("analytics_periods")

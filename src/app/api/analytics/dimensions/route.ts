@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
-import { getAdminClient } from "@/lib/supabase/admin";
+import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -12,14 +11,15 @@ export async function GET(request: Request) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    // EMERGENCY: allow any authenticated user to see dimensions (boss unblock)
-    // TODO: re-tighten to STAFF_ROLES after verifying data_handler/super_admin JWTs refresh
+    // Use the user's OWN authenticated client. RLS (migrations 071/072) now
+    // grants super_admin + data_handler read access to all analytics tables,
+    // so this works regardless of whether SUPABASE_SERVICE_ROLE_KEY is set on
+    // the deployed (Vercel) environment. Role-less → fail closed.
     if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden — no role" }, { status: 403 });
     }
 
-    // Data handler shares the same analytics DB — use service role to bypass RLS that was is_admin-only before 053
-    const db = getAdminClient();
+    const db = supabase;
 
     const { searchParams } = new URL(request.url);
     const includeProducts = searchParams.get("include_products") === "true";
