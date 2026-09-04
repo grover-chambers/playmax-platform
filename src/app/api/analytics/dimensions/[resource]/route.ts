@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
-import { getAdminClient } from "@/lib/supabase/admin";
+
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const db = getAdminClient();
+    const db = supabase;
 
     let insert: Record<string, unknown>;
     if (resource === "categories") {
@@ -100,7 +100,7 @@ export async function PATCH(
     const id = body.id as string;
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-    const db = getAdminClient();
+    const db = supabase;
     const allowed: Record<string, Record<string, unknown>> = {
       categories: { name: body.name, description: body.description },
       subcategories: { name: body.name, category_id: body.category_id },
@@ -152,7 +152,7 @@ export async function DELETE(
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id query param is required" }, { status: 400 });
 
-    const db = getAdminClient();
+    const db = supabase;
     const { error } = await db.from(table).delete().eq("id", id);
     if (error) return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
     return NextResponse.json({ ok: true });
