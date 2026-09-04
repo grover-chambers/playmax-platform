@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Supabase Edge Functions (Deno, not Next.js)
+    "supabase/**",
     // Utility scripts (not part of the app)
     "scripts/**",
     "*.cjs",
