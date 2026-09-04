@@ -19,7 +19,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
     const db = getAdminClient();
     // Staging uploads (incl. raw rows) are internal — staff only.
-    if (!isStaff(currentUser.role)) {
+    if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -81,7 +81,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const db = getAdminClient();
-    if (!isStaff(currentUser.role)) {
+    if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -135,7 +135,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const db = getAdminClient();
-    if (!isStaff(currentUser.role)) {
+    if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

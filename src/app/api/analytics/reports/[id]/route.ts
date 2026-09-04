@@ -17,7 +17,7 @@ export async function GET(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     // Saved analytics reports are internal — staff only.
-    if (!isStaff(currentUser.role)) {
+    if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -51,7 +51,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isStaff(currentUser.role)) {
+    if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

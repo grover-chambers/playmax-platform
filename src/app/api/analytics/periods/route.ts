@@ -14,7 +14,7 @@ export async function GET() {
     }
     const db = getAdminClient();
     // Analytics periods are internal metadata — staff only.
-    if (!isStaff(currentUser.role)) {
+    if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

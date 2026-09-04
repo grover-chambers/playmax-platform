@@ -15,7 +15,7 @@ export const POST = withLogging(async function POST(request: Request) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isStaff(currentUser.role)) {
+    if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

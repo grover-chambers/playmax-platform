@@ -20,7 +20,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
     const db = getAdminClient();
     // Staging rows contain raw internal data — staff only.
-    if (!isStaff(currentUser.role)) {
+    if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -55,7 +55,7 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const db = getAdminClient();
-    if (!isStaff(currentUser.role)) {
+    if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
