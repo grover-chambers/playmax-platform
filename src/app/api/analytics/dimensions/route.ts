@@ -12,8 +12,9 @@ export async function GET(request: Request) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role) && currentUser.role !== "finance" && currentUser.role !== "data_handler") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const STAFF_ROLES = ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance", "data_handler"] as const;
+    if (!(STAFF_ROLES as readonly string[]).includes(currentUser.role as string)) {
+      return NextResponse.json({ error: "Forbidden — staff only" }, { status: 403 });
     }
 
     // Data handler shares the same analytics DB — use service role to bypass RLS that was is_admin-only before 053

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
 import { REPORT_CATEGORIES } from "@/lib/report-types";
 import type { ChartType } from "@/lib/report-types";
 import { withLogging } from "@/lib/request-log";
@@ -15,7 +15,7 @@ export const POST = withLogging(async function POST(request: Request) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

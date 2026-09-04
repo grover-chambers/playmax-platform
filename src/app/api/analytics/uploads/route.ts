@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

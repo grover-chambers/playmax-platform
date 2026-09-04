@@ -162,13 +162,14 @@ function LoginForm() {
       return;
     }
 
-    // Login invariant: staff always land in /app/*, clients always in /portal.
-    // Even a staff user who submits the client form must not be sent to the
-    // client portal (the portal layout would bounce them, but the invariant
-    // forbids landing there at all).
+    // Isolation: staff must NOT use client portal. Show error and redirect to staff login.
     const role = (authData.user?.app_metadata?.role as string) || "";
-    if (role && STAFF_REDIRECTS[role]) {
-      router.push(STAFF_REDIRECTS[role]);
+    const STAFF_ROLES = ["super_admin","cms_admin","crm_admin","crm_staff","finance","data_handler"];
+    if (role && STAFF_ROLES.includes(role)) {
+      await supabase.auth.signOut();
+      setError("Staff accounts must use the Staff Portal. Redirecting to Staff Login...");
+      setLoading(false);
+      setTimeout(() => router.push("/login?mode=staff"), 1800);
       return;
     }
 

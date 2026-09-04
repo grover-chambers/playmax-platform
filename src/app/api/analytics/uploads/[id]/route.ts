@@ -81,7 +81,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const db = getAdminClient();
-    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -135,7 +135,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const db = getAdminClient();
-    if (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance") {
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

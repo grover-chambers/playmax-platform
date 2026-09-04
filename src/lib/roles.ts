@@ -9,7 +9,7 @@ type AccessLevel = "all" | UserRole[];
 
 const routePermissions: Record<string, AccessLevel> = {
   // Staff app — only staff roles
-  "/app": ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance"],
+  "/app": ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance", "data_handler"],
   "/app/my-day": ["crm_staff"],
   "/app/content": ["cms_admin"],
   "/app/pipeline": ["super_admin", "crm_admin", "crm_staff"],
@@ -21,10 +21,10 @@ const routePermissions: Record<string, AccessLevel> = {
   "/app/bookings": ["super_admin", "crm_admin", "finance"],
   "/app/research": ["super_admin", "crm_admin"],
   "/app/invoices": ["super_admin", "finance"],
-  "/app/analytics": ["super_admin", "crm_admin", "finance", "data_handler"],
-  "/app/analytics/upload": ["super_admin", "crm_admin", "finance", "data_handler"],
-  "/app/analytics/reports": ["super_admin", "crm_admin", "finance", "data_handler"],
-  "/app/analytics/dimensions": ["super_admin", "crm_admin", "finance", "data_handler"],
+  "/app/analytics": ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance", "data_handler"],
+  "/app/analytics/upload": ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance", "data_handler"],
+  "/app/analytics/reports": ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance", "data_handler"],
+  "/app/analytics/dimensions": ["super_admin", "cms_admin", "crm_admin", "crm_staff", "finance", "data_handler"],
   // Super admin pages
   "/app/settings": ["super_admin"],
   "/app/reports": ["super_admin", "crm_admin", "crm_staff"],

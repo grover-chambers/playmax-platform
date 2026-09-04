@@ -256,7 +256,7 @@ export default function PlatformLayout({
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/login");
+    router.push("/login?mode=staff");
   };
 
   const role = (user?.app_metadata?.role as UserRole) || null;
