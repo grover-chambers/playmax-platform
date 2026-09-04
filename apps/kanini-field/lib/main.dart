@@ -124,12 +124,13 @@ class KaniniFieldApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shiftProvider = ShiftProvider();
+    final syncProvider = SyncProvider();
+    final shiftProvider = ShiftProvider()..sync = syncProvider;
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => RetailerProvider()),
-        ChangeNotifierProvider(create: (_) => SyncProvider()),
+        ChangeNotifierProvider(create: (_) => syncProvider),
         ChangeNotifierProvider(create: (_) => CensusProvider(shift: shiftProvider)),
         ChangeNotifierProvider(create: (_) => InterceptProvider(shift: shiftProvider)),
         ChangeNotifierProvider(create: (_) => SubmissionProvider(shift: shiftProvider)),

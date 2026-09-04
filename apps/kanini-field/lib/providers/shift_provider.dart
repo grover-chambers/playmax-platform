@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'sync_provider.dart';
+
 /// Day-gated shift clocking with automatic timeouts.
 ///
 /// Reps can stay logged in across days, so the app forces a shift check-in at
@@ -31,6 +33,11 @@ class ShiftProvider extends ChangeNotifier {
   DateTime? _lastActivityAt;
   String? _timeoutReason;
   Timer? _timer;
+
+  /// Injected by the app root so clock-out can trigger a best-effort drain of
+  /// the offline queue before the rep finishes the shift. Null when the sync
+  /// provider is not wired (e.g. unit tests).
+  SyncProvider? sync;
 
   DateTime? get inAt => _inAt;
   DateTime? get outAt => _outAt;
@@ -113,6 +120,17 @@ class ShiftProvider extends ChangeNotifier {
     _timeoutReason = reason;
     await prefs.setInt(_outAtKey, now.millisecondsSinceEpoch);
     notifyListeners();
+    // Best-effort end-of-shift drain: push whatever is still queued before the
+    // rep finishes. Fire-and-forget so clock-out is never blocked by a slow or
+    // unavailable network — the 45s auto-flush and reconnect drain pick up the
+    // rest later if it can't complete now.
+    try {
+      await sync?.flushBeforeShiftEnd(
+        onProgress: (_) { /* progress is surfaced by the sync screen */ },
+      );
+    } catch (_) {
+      // never let a sync failure prevent shift end
+    }
   }
 
   @override

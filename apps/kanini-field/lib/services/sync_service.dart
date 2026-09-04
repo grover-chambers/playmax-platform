@@ -192,6 +192,13 @@ class SyncService {
   /// `sync-push` edge function by the caller).
   ///
   /// Returns a map of `entity -> server response` plus a `flushed` count.
+  ///
+  /// Progress is PERSISTED INCREMENTALLY: each chunk that the server accepts
+  /// has its rows marked `synced` and purged from the Hive box immediately.
+  /// If the app is killed / crashes / runs out of memory mid-backlog, only the
+  /// rows already accepted are dropped from the queue; the rest survive and
+  /// resume on the next flush. Re-sending an accepted-but-not-yet-purged chunk
+  /// is safe because the `sync-push` edge function upserts onConflict=id.
   Future<Map<String, dynamic>> flush({
     required Future<Map<String, dynamic>> Function(String entity, List<dynamic> rows) onPush,
   }) async {
@@ -202,46 +209,158 @@ class SyncService {
     if (pending.isEmpty) return {'flushed': 0, 'applied': {}};
 
     final Map<String, List<Map<String, dynamic>>> byEntity = {};
+    final Map<String, List<String>> idsByEntity = {};
     for (final item in pending) {
       final entity = item['entity'] as String?;
       final payload = item['payload'];
+      final id = item['id'] as String?;
       if (entity == null || payload is! Map<String, dynamic>) continue;
       byEntity.putIfAbsent(entity, () => []).add(payload);
+      if (id != null) idsByEntity.putIfAbsent(entity, () => []).add(id);
     }
 
     final results = <String, dynamic>{};
-    final failedEntities = <String>{};
+    var flushed = 0;
     for (final entity in orderedEntities(byEntity.keys)) {
       final entityRows = byEntity[entity]!;
+      final ids = idsByEntity[entity] ?? [];
       // Split into size-safe chunks so a large backlog never exceeds the
-      // Supabase Edge Function request-body limit (which currently fails the
-      // whole sync and leaves rows stranded on device).
+      // Supabase Edge Function request-body limit (which previously failed the
+      // whole sync and left rows stranded on device).
       final chunks = chunkRows(entityRows);
-      var allOk = true;
       var appliedTotal = 0;
+      var idCursor = 0;
       for (var i = 0; i < chunks.length; i++) {
         final res = await onPush(entity, chunks[i]);
         // A server-side error (edge-function failure, rejected batch, auth
-        // problem) must NOT mark the chunk's rows as synced: they stay in the
+        // problem) must NOT mark this chunk's rows as synced: they stay in the
         // queue so a retry can push them, and the caller surfaces the error.
         if (res['error'] != null) {
-          failedEntities.add(entity);
-          allOk = false;
-          break; // stop this entity; remaining chunks retry next flush
+          results[entity] = {'applied': appliedTotal, 'error': 'chunk_failed'};
+          break;
         }
+        // Only the rows in THIS chunk are confirmed — pick the next slice of
+        // ids for this entity and purge exactly them. Everything else stays
+        // queued so a crash mid-backlog resumes cleanly.
+        final chunkIds = ids.sublist(
+          idCursor,
+          (idCursor + chunks[i].length).clamp(0, ids.length),
+        );
+        for (final id in chunkIds) {
+          await markSynced(id);
+        }
+        await purgeSynced();
+        idCursor += chunks[i].length;
         final a = res['applied'];
         appliedTotal += a is int ? a : 0;
+        flushed += chunks[i].length;
+        results[entity] = {'applied': appliedTotal};
       }
-      results[entity] = allOk ? {'applied': appliedTotal} : {'error': 'chunk_failed'};
     }
 
-    for (final item in pending) {
+    return {'flushed': flushed, 'applied': results};
+  }
+
+  /// How many pending metadata rows to drain per [flushBatch] call. Kept small
+  /// so a huge backlog (e.g. 93MB) never loads the whole Hive box into memory
+  /// in one pass, which could OOM a low-end device and silently abort sync.
+  static const int kBatchRows = 400;
+
+  /// Durable, bounded drain used by the reconnect/auto-flush path. Pulls up to
+  /// [kBatchRows] of the OLDEST pending rows and flushes them, immediately
+  /// purging each accepted chunk (see [flush]). Repeated calls therefore move
+  /// through a large backlog across many small, crash-safe passes instead of
+  /// one giant all-or-nothing attempt.
+  Future<Map<String, dynamic>> flushBatch({
+    required Future<Map<String, dynamic>> Function(String entity, List<dynamic> rows) onPush,
+  }) async {
+    final online = await isOnline;
+    if (!online) return {'error': 'no_connection', 'flushed': 0};
+
+    final pending = pendingItems;
+    if (pending.isEmpty) return {'flushed': 0, 'applied': {}};
+
+    // Oldest-first subset of the queue (Hive boxes preserve insertion order by
+    // key, which is uuid-ish; fall back to arrival via created_at when present).
+    final sorted = [...pending]..sort((a, b) {
+      final at = (a['created_at'] as String?) ?? '';
+      final bt = (b['created_at'] as String?) ?? '';
+      return at.compareTo(bt);
+    });
+    final subset = sorted.take(kBatchRows).toList();
+
+    final Map<String, List<Map<String, dynamic>>> byEntity = {};
+    final Map<String, List<String>> idsByEntity = {};
+    for (final item in subset) {
       final entity = item['entity'] as String?;
-      if (entity != null && failedEntities.contains(entity)) continue;
-      await markSynced(item['id'] as String);
+      final payload = item['payload'];
+      final id = item['id'] as String?;
+      if (entity == null || payload is! Map<String, dynamic>) continue;
+      byEntity.putIfAbsent(entity, () => []).add(payload);
+      if (id != null) idsByEntity.putIfAbsent(entity, () => []).add(id);
     }
 
-    return {'flushed': pending.length, 'applied': results};
+    final results = <String, dynamic>{};
+    var flushed = 0;
+    for (final entity in orderedEntities(byEntity.keys)) {
+      final entityRows = byEntity[entity]!;
+      final ids = idsByEntity[entity] ?? [];
+      final chunks = chunkRows(entityRows);
+      var appliedTotal = 0;
+      var idCursor = 0;
+      for (var i = 0; i < chunks.length; i++) {
+        final res = await onPush(entity, chunks[i]);
+        if (res['error'] != null) {
+          results[entity] = {'applied': appliedTotal, 'error': 'chunk_failed'};
+          break;
+        }
+        final chunkIds = ids.sublist(
+          idCursor,
+          (idCursor + chunks[i].length).clamp(0, ids.length),
+        );
+        for (final id in chunkIds) {
+          await markSynced(id);
+        }
+        await purgeSynced();
+        idCursor += chunks[i].length;
+        final a = res['applied'];
+        appliedTotal += a is int ? a : 0;
+        flushed += chunks[i].length;
+        results[entity] = {'applied': appliedTotal};
+      }
+    }
+
+    return {'flushed': flushed, 'applied': results, 'remaining': pendingCount};
+  }
+
+  /// Best-effort full drain used at end-of-shift (clock out / timeout). Loops
+  /// [flushBatch] passes until the queue is empty or connectivity drops, so even
+  /// a multi-GB backlog is cleared in many small, crash-safe chunks rather than
+  /// a single all-or-nothing pass. Stops on the first transport error so the
+  /// caller can surface "still some queued" instead of blocking forever.
+  Future<Map<String, dynamic>> flushBeforeShiftEnd({
+    required Future<Map<String, dynamic>> Function(String entity, List<dynamic> rows) onPush,
+    void Function(int remaining)? onProgress,
+  }) async {
+    var total = 0;
+    var passes = 0;
+    while (true) {
+      final remaining = pendingCount;
+      if (remaining == 0) break;
+      if (!await isOnline) break;
+      onProgress?.call(remaining);
+      final res = await flushBatch(onPush: onPush);
+      if (res['error'] != null) break;
+      final flushed = res['flushed'];
+      total += flushed is int ? flushed : 0;
+      passes++;
+      // Hard safety: never loop forever on a pathological queue.
+      if (passes > 2000) break;
+      if ((res['remaining'] ?? remaining) >= remaining && (flushed is int && flushed == 0)) {
+        break; // no forward progress — avoid an infinite loop
+      }
+    }
+    return {'flushed': total, 'remaining': pendingCount};
   }
 
   /// Drain the pending-binary queue (shelf photos). Called after a metadata
