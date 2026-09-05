@@ -224,6 +224,22 @@ class CensusService {
     // --- Queue (parents before children) ---------------------------------
     await syncService.enqueueSync('consent_records', consent.id, consent.toJson());
     await syncService.enqueueSync('outlets', outletId, outlet.toJson());
+    // The DB links every visit via visits.retailer_id → retailers(id). A
+    // census-discovered shop is a brand-new retailer, so enqueue a matching
+    // retailers row (same id) before the visit that references it.
+    await syncService.enqueueSync('retailers', outletId, {
+      'id': outletId,
+      'name': draft.businessName.trim(),
+      'ward': draft.ward,
+      'constituency': draft.constituency,
+      'lat': position.latitude,
+      'lng': position.longitude,
+      'rep_id': repId,
+      'created_by': repId,
+      'status': 'active',
+      'created_at': now.toIso8601String(),
+      'updated_at': now.toIso8601String(),
+    });
     await syncService.enqueueSync('outlet_contacts', contact.id, contact.toJson());
 
     for (final entry in draft.clientStatuses.entries) {

@@ -102,7 +102,8 @@ class SyncProvider extends ChangeNotifier {
   /// never fails the surrounding sync on a media upload problem.
   Future<void> _drainMedia() async {
     try {
-      final repId = _supabase.currentUser?.id;
+      final repId =
+          await SupabaseService.instance.resolveProfileId() ?? _supabase.currentUser?.id;
       await syncService.flushPendingMedia(onUpload: (rec) async {
         final filePath = rec['file_path'] as String?;
         final photoId = rec['row_id'] as String?;

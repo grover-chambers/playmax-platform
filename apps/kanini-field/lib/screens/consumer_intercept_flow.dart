@@ -138,7 +138,8 @@ class _ConsumerInterceptFlowState extends State<ConsumerInterceptFlow> {
     setState(() => _busy = true);
     // Fail closed: only reachable when authenticated — never fall back to a
     // fake rep id.
-    final repId = context.read<AuthProvider>().currentUser?.id;
+    final auth = context.read<AuthProvider>();
+    final repId = auth.currentUser != null ? await auth.profileId() : null;
     if (repId == null) {
       setState(() => _busy = false);
       throw StateError('Not authenticated — sign in before submitting an intercept.');

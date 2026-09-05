@@ -6,6 +6,7 @@ import '../domain/typology.dart';
 import '../models/daily_submission_model.dart';
 import '../services/quality_service.dart';
 import '../services/straightlining.dart';
+import '../services/sync_service.dart';
 import 'shift_provider.dart';
 
 /// Daily close (§5): groups the day's work into one [DailySubmissionModel] a
@@ -89,6 +90,7 @@ class SubmissionProvider extends ChangeNotifier {
 
     await _box.put(submission.id, submission.toJson());
     _submissions.insert(0, submission);
+    await syncService.enqueueSync('daily_submissions', submission.id, submission.toJson());
     _shift?.touch();
     notifyListeners();
     return submission;
@@ -123,6 +125,7 @@ class SubmissionProvider extends ChangeNotifier {
     );
     await _box.put(check.id, {...check.toJson(), 'type': 'back_check'});
     _backChecks.insert(0, check);
+    await syncService.enqueueSync('back_checks', check.id, check.toJson());
     notifyListeners();
   }
 }

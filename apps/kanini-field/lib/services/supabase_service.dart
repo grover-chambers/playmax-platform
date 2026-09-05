@@ -8,6 +8,31 @@ class SupabaseService {
   static final SupabaseService instance = SupabaseService._();
 
   late final SupabaseClient client;
+  String? _resolvedProfileId;
+
+  /// The calling user's profile id (`profiles.id`, which equals `reps.id`).
+  /// Resolved once via the `current_profile_id` RPC and cached for the session
+  /// so every synced row carries the id the DB foreign keys expect.
+  ///
+  /// Returns null when the lookup fails (offline, RLS) so callers can fall
+  /// back to the auth uid rather than caching a value that breaks FKs. The
+  /// `sync-push` edge function rewrites any auth-uid that slips through, so a
+  /// degraded fallback never strands the queue.
+  Future<String?> resolveProfileId() async {
+    if (_resolvedProfileId != null) return _resolvedProfileId;
+    try {
+      final data = await client
+          .rpc('current_profile_id')
+          .timeout(const Duration(seconds: 6));
+      if (data is String && data.isNotEmpty) {
+        _resolvedProfileId = data;
+        return data;
+      }
+    } catch (_) {
+      // Offline or RLS-denied — caller decides the fallback.
+    }
+    return null;
+  }
 
   Future<void> init() async {
     client = Supabase.instance.client;

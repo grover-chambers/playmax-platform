@@ -82,7 +82,8 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
     // Fail closed: this flow is only reachable when authenticated. A null
     // session here means the app state is broken — never fall back to a
     // fake rep id.
-    final repId = context.read<AuthProvider>().currentUser?.id;
+    final auth = context.read<AuthProvider>();
+    final repId = auth.currentUser != null ? await auth.profileId() : null;
     if (repId == null) {
       setState(() => _busy = false);
       throw StateError('Not authenticated — sign in before submitting a census.');

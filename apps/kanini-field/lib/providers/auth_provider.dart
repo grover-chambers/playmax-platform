@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/access_log_service.dart';
 import '../services/device_id.dart';
+import '../services/supabase_service.dart';
 
 /// Lightweight view of the signed-in user (Supabase auth session only).
 class AppUser {
@@ -70,6 +71,16 @@ class AuthProvider extends ChangeNotifier {
   bool get isOTPVerified => true;
 
   String get displayName => _user?.fullName ?? _user?.email ?? 'Field Rep';
+
+  /// The signed-in user's stable profile id (`profiles.id` == `reps.id`), which
+  /// is what the census DB foreign keys require on every synced row. Falls back
+  /// to the raw auth uid when offline — `sync-push` rewrites that server-side,
+  /// so the queue is never stranded. Null when not authenticated.
+  Future<String?> profileId() async {
+    final user = _user;
+    if (user == null) return null;
+    return await SupabaseService.instance.resolveProfileId() ?? user.id;
+  }
 
   /// Real credentials only. Any failure (wrong email/password, disabled
   /// account, network error) surfaces on the login form — nothing is accepted

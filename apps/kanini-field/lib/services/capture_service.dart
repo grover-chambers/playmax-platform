@@ -29,18 +29,21 @@ class CaptureService {
   String get userId => Supabase.instance.client.auth.currentUser?.id ?? '';
 
   /// The rep's profile id. `reps.id` == `profiles.id`, so this doubles as the
-  /// `rep_id` / `created_by` used by every synced row.
+  /// `rep_id` / `created_by` / `user_id` used by every synced row. Resolves
+  /// once via the `current_profile_id` RPC and caches only successful lookups.
+  /// Offline fallback is the raw auth uid (never cached) — `sync-push`
+  /// rewrites any auth uid that slips through, so the queue is never stranded.
   Future<String> profileId() async {
-    if (_profileId != null && _profileId!.isNotEmpty) return _profileId!;
+    final cached = _profileId;
+    if (cached != null && cached.isNotEmpty) return cached;
     final u = userId;
     if (u.isEmpty) return '';
-    final res = await Supabase.instance.client
-        .from('profiles')
-        .select('id')
-        .eq('auth_id', u)
-        .maybeSingle();
-    _profileId = res == null ? u : (res['id'] as String);
-    return _profileId!;
+    final resolved = await SupabaseService.instance.resolveProfileId();
+    if (resolved != null && resolved.isNotEmpty) {
+      _profileId = resolved;
+      return resolved;
+    }
+    return u;
   }
 
   Future<Visit> checkIn({
@@ -60,7 +63,7 @@ class CaptureService {
       outletName: retailer.name,
       retailerId: retailer.id,
       repId: repId,
-      userId: userId,
+      userId: repId,
       checkInAt: now,
       gpsLat: position.latitude,
       gpsLng: position.longitude,
