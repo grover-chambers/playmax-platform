@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Loader2, Route, Filter, ChevronDown, ChevronUp, X } from "lucide-react";
 import dynamic from "next/dynamic";
 
-const LeafletMapInner = dynamic(() => import("./leaflet-map-inner"), { ssr: false });
+const KiambuMap = dynamic(() => import("./kiambu-map"), { ssr: false });
 
 interface RouteItem {
   id: string;
@@ -21,6 +21,7 @@ interface RouteItem {
   contact_person: string;
   contact_phone: string;
   route_category: string;
+  points?: [number, number][];
 }
 
 interface OutletPin {
@@ -91,6 +92,16 @@ export default function RouteMapDashboard({ projectId }: { projectId: string }) 
   }
 
   const displayRoutes = group === "All" ? data.routes : data.routes.filter((r) => r.group_name === group);
+
+  const truckRoutes = displayRoutes.map((r) => ({
+    id: r.id,
+    name: r.route_name,
+    group: r.group_name,
+    vehicle: r.vehicle_type,
+    points: r.points || [],
+    color: GROUP_COLORS[r.group_name] || "#047857",
+  }));
+
   const groupedRoutes: Record<string, RouteItem[]> = {};
   for (const r of displayRoutes) {
     if (!groupedRoutes[r.group_name]) groupedRoutes[r.group_name] = [];
@@ -127,9 +138,11 @@ export default function RouteMapDashboard({ projectId }: { projectId: string }) 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map */}
         <div className="lg:col-span-2 pm-dash-card p-3 overflow-hidden">
-          <LeafletMapInner
+          <KiambuMap
             pins={data.outletPins}
+            truckRoutes={truckRoutes}
             selectedGroup={group}
+            showWards={false}
             onSelectPin={setSelectedPin}
           />
         </div>

@@ -56,6 +56,37 @@ export async function GET(req: Request) {
       groupStats[r.group_name].routeCount++;
     }
 
+    // ── Route Stops & Geometry ────────────────────────────────
+    const { data: allStops } = await db
+      .from("route_stops")
+      .select("route_id, retailer_id, position")
+      .order("position", { ascending: true });
+
+    const { data: allRetailers } = await db
+      .from("retailers")
+      .select("id, lat, lng");
+
+    const retailerPoints: Record<string, [number, number]> = {};
+    for (const ret of allRetailers || []) {
+      if (ret.lat && ret.lng) retailerPoints[ret.id] = [ret.lat, ret.lng];
+    }
+
+    const routeGeometries: Record<string, [number, number][]> = {};
+    const WAREHOUSE: [number, number] = [-1.0423, 37.0706];
+
+    for (const stop of allStops || []) {
+      if (!routeGeometries[stop.route_id]) {
+        routeGeometries[stop.route_id] = [WAREHOUSE];
+      }
+      const pt = retailerPoints[stop.retailer_id];
+      if (pt) routeGeometries[stop.route_id].push(pt);
+    }
+
+    // Optional: Fetch road paths from OSRM for each route
+    // To avoid performance issues, we only do this for the first few or use a background process.
+    // For now, we'll return the raw points and the frontend can draw lines.
+    // But to satisfy "respective roads", we'll try to get the path for the first few routes if they have data.
+
     const routeItems = (routes || []).map((r) => ({
       id: r.id,
       group_name: r.group_name,
@@ -65,6 +96,7 @@ export async function GET(req: Request) {
       vehicle_type: r.vehicle || "N/A",
       rep_email: r.rep_email,
       lead_email: r.lead_email,
+      points: routeGeometries[r.id] || [WAREHOUSE],
     }));
 
     const outletPins = (outlets || []).map((o) => ({

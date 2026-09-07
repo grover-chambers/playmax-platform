@@ -75,7 +75,7 @@ export default function KiambuMap({
       iconSize: [32, 32],
       iconAnchor: [16, 16],
     });
-    L.marker([-1.0396, 37.0700], { icon: warehouseIcon })
+    L.marker([-1.0423, 37.0706], { icon: warehouseIcon })
       .addTo(map)
       .bindTooltip("Thika Nampak Warehouse (DC)", { permanent: true, direction: "top", offset: [0, -10] });
 
