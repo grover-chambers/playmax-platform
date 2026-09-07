@@ -48,7 +48,9 @@ data/
 # junk dev scripts
 _*.js
 *.bat
+!gradlew.bat
 *.ps1
+!gradlew.ps1
 
 # scripts with hardcoded secrets (service role key)
 check_state.mjs

@@ -62,11 +62,24 @@ export default function KiambuMap({
     const map = L.map(mapRef.current, { zoomControl: false }).setView([-1.033, 37.07], 10);
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    // Use OpenStreetMap tiles
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap",
-      maxZoom: 18,
+    // Use CartoDB Light tiles
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 20,
     }).addTo(map);
+
+    // Add Nampak Warehouse (Distribution Center)
+    const warehouseIcon = L.divIcon({
+      className: "",
+      html: `<div style="width:32px;height:32px;background:#1e293b;border:3px solid #fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;color:white;">🏭</div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+    });
+    L.marker([-1.0396, 37.0700], { icon: warehouseIcon })
+      .addTo(map)
+      .bindTooltip("Thika Nampak Warehouse (DC)", { permanent: true, direction: "top", offset: [0, -10] });
 
     mapInstanceRef.current = map;
     // Invalidate size to ensure correct rendering
