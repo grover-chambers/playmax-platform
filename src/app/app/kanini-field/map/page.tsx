@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
-import RouteTimeline from "@/components/khel/route-timeline";
+import RouteTimeline, { Visit } from "@/components/khel/route-timeline";
 
 const KiambuMap = dynamic(() => import("@/components/khel/kiambu-map"), { ssr: false });
 
@@ -36,11 +36,6 @@ interface Rep {
   name: string;
   color?: string;
   zone: string;
-}
-
-interface Visit {
-  id: string;
-  [key: string]: unknown;
 }
 
 export default function KaniniMapTabPage() {
