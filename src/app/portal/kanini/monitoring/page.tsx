@@ -63,6 +63,7 @@ interface MapPinData {
   lat: number;
   lng: number;
   ward: string;
+  constituency: string;
   county: string;
   size: string;
 }
@@ -102,6 +103,7 @@ export default function KaniniMonitoringPage() {
         lat: r.lastGps!.lat,
         lng: r.lastGps!.lng,
         ward: r.zone,
+        constituency: "",
         county: "Kiambu",
         size: r.status
       })) as MapPinData[];
