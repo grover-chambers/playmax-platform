@@ -1,12 +1,12 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Button from "@/components/ui/button";
 import RouteTimeline from "@/components/khel/route-timeline";
+import type { Rep, Visit } from "@/components/khel/route-timeline";
 
 const KiambuMap = dynamic(() => import("@/components/khel/kiambu-map"), { ssr: false });
 
@@ -31,21 +31,14 @@ interface Route {
   vehicle_type?: string;
 }
 
-interface Rep {
-  id: string;
-  name: string;
-  color?: string;
-  zone: string;
-}
 
-interface Visit {
-  id: string;
-  [key: string]: unknown;
+interface ExtendedRep extends Rep {
+  zone: string;
 }
 
 export default function KaniniMapTabPage() {
   const [data, setData] = useState<{ outletPins: OutletPin[]; routes: Route[] } | null>(null);
-  const [monitor, setMonitor] = useState<{ reps: Rep[]; visits: Visit[] } | null>(null);
+  const [monitor, setMonitor] = useState<{ reps: ExtendedRep[]; visits: Visit[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState("All");
   const [showWards, setShowWards] = useState(true);
@@ -96,8 +89,8 @@ export default function KaniniMapTabPage() {
     const pts: [number, number][] = [depot, ...synthetic];
     return { id: r.id, name: r.route_name, group: r.group_name, vehicle: r.vehicle_type || "Van", points: pts, color: "#047857" };
   });
-  const reps = (monitor?.reps || []).map((r: Rep) => ({ id: r.id, name: r.name, color: r.color, zone: r.zone }));
-  const visits = (monitor?.visits || []) as Visit[];
+  const reps = (monitor?.reps || []).map((r: ExtendedRep) => ({ id: r.id, name: r.name, color: r.color, zone: r.zone }));
+  const visits = (monitor?.visits || []);
 
   return (
     <div className="page-content space-y-5">
@@ -127,7 +120,7 @@ export default function KaniniMapTabPage() {
           </div>
         </div>
       </div>
-      <RouteTimeline reps={reps} visits={visits} selectedId={selectedVisitId} onSelect={(v: any) => setSelectedVisitId(v.id)} />
+      <RouteTimeline reps={reps} visits={visits} selectedId={selectedVisitId} onSelect={(v: Visit) => setSelectedVisitId(v.id)} />
     </div>
   );
 }

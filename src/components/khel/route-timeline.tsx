@@ -1,8 +1,8 @@
 "use client";
 import React, { useMemo, useRef, useEffect } from "react";
 
-type Rep = { id: string; name: string; color?: string | null };
-type Visit = { id: string; rep_id: string; check_in_at?: string | null; created_at?: string | null; outcome?: string | null; status?: string | null; gps_lat?: number | null; gps_lng?: number | null; order_placed?: boolean };
+export type Rep = { id: string; name: string; color?: string | null };
+export type Visit = { id: string; rep_id: string; check_in_at?: string | null; created_at?: string | null; outcome?: string | null; status?: string | null; gps_lat?: number | null; gps_lng?: number | null; order_placed?: boolean };
 
 const START_MIN = 7 * 60; // 07:00
 const END_MIN = 18 * 60; // 18:00
