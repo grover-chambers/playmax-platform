@@ -170,7 +170,7 @@ export default function KaniniMonitoringPage() {
 
                 {isLagging && (
                   <div className="mt-2 flex items-center gap-1.5 text-[9px] text-amber-500 font-bold bg-amber-50 p-1.5 rounded border border-amber-100">
-                    <AlertCircle size={10}/> SYNC LAG: >1hr since last push
+                    <AlertCircle size={10}/> SYNC LAG: &gt;1hr since last push
                   </div>
                 )}
               </button>
