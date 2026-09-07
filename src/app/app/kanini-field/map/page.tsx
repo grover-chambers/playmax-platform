@@ -37,7 +37,12 @@ export default function KaniniMapTabPage() {
   if (loading) return <div className="page-content flex items-center justify-center py-16"><Loader2 className="w-4 h-4 text-gray-5 animate-spin" /><span className="ml-2 text-[11px] text-gray-5">Loading map…</span></div>;
 
   const rawPins = (data?.outletPins ?? []).slice(0, 500);
-  const batchIds = ["All", ...new Set(rawPins.map((p: any) => p.batchId).filter(Boolean))];
+  const batchIdSet = new Set<string>();
+  for (const p of rawPins as unknown as Array<{ batchId: unknown }>) {
+    const bid = p.batchId == null ? "" : String(p.batchId);
+    if (bid) batchIdSet.add(bid);
+  }
+  const batchIds: string[] = ["All", ...batchIdSet];
   const pins = rawPins
     .filter((p: any) => selectedBatch === "All" || p.batchId === selectedBatch)
     .map((p: any) => ({

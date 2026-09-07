@@ -1,135 +1,230 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import * as maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 interface OutletPin {
-  id: string; name: string; channel: string; type: string; lat: number; lng: number; ward: string; constituency: string; county: string; size: string;
+  id: string;
+  name: string;
+  channel: string;
+  type: string;
+  lat: number;
+  lng: number;
+  ward: string;
+  constituency: string;
+  county: string;
+  size: string;
 }
-interface TruckRoute { id: string; name: string; group: string; vehicle: string; points: [number, number][]; color: string; }
 
-const GROUP_COLORS: Record<string, string> = { A:"#047857", B:"#0369a1", C:"#7c3aed", D:"#c2410c", E:"#be185d", F:"#15803d", G:"#a16207" };
-
-function bearing(a:[number,number], b:[number,number]) {
-  const toRad=(d:number)=>d*Math.PI/180, toDeg=(r:number)=>r*180/Math.PI;
-  const dLng=toRad(b[1]-a[1]); const lat1=toRad(a[0]), lat2=toRad(b[0]);
-  const y=Math.sin(dLng)*Math.cos(lat2), x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
-  return (toDeg(Math.atan2(y,x))+360)%360;
+interface TruckRoute {
+  id: string;
+  name: string;
+  group: string;
+  vehicle: string;
+  points: [number, number][];
+  color: string;
 }
 
-export default function KiambuMap({ pins, truckRoutes, selectedGroup, showWards, onSelectPin }: {
-  pins: OutletPin[]; truckRoutes: TruckRoute[]; selectedGroup: string; showWards: boolean; onSelectPin: (p: OutletPin)=>void;
+const GROUP_COLORS: Record<string, string> = {
+  A: "#047857",
+  B: "#0369a1",
+  C: "#7c3aed",
+  D: "#c2410c",
+  E: "#be185d",
+  F: "#15803d",
+  G: "#a16207",
+};
+
+export default function KiambuMap({
+  pins,
+  truckRoutes,
+  selectedGroup,
+  showWards,
+  onSelectPin,
+}: {
+  pins: OutletPin[];
+  truckRoutes: TruckRoute[];
+  selectedGroup: string;
+  showWards: boolean;
+  onSelectPin: (pin: OutletPin) => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const popupRef = useRef<any>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const polylinesRef = useRef<L.Polyline[]>([]);
+  const wardsLayerRef = useRef<L.GeoJSON | null>(null);
 
   useEffect(() => {
-    if (!ref.current || mapRef.current) return;
-    const map = new maplibregl.Map({
-      container: ref.current,
-      style: "https://tiles.openfreemap.org/styles/positron",
-      center: [37.07, -1.033],
-      zoom: 10,
-      attributionControl: false,
-    });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
-    // Ensure size after card layout settles (Next.js + m-3)
-    map.once("load", () => setTimeout(() => map.resize(), 100));
-    map.on("error", (e) => console.error("[kiambu-map] map error", e));
-    mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    // Initialize map centered on Kiambu: [-1.033, 37.07]
+    const map = L.map(mapRef.current, { zoomControl: false }).setView([-1.033, 37.07], 10);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+
+    // Use CartoDB Light tiles
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap & CARTO | PlayMax Field — Kiambu",
+      maxZoom: 18,
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+    // Invalidate size to ensure correct rendering
+    setTimeout(() => map.invalidateSize(), 100);
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
   }, []);
 
-  // Wards + routes + pins
+  // Wards overlay
   useEffect(() => {
-    const map = mapRef.current;
+    const map = mapInstanceRef.current;
     if (!map) return;
-    const onLoad = async () => {
-      try {
-        // Clean
-        markersRef.current.forEach((m)=>m.remove()); markersRef.current=[];
-        if (popupRef.current) { popupRef.current.remove(); popupRef.current=null; }
-        // Remove old sources/layers
-        const toRemove = ["kiambu-wards-fill","kiambu-wards-line","truck-routes"];
-        toRemove.forEach((id)=>{ if(map.getLayer(id)) map.removeLayer(id); if(map.getSource(id)) map.removeSource(id); });
 
-      // Wards GeoJSON
-      if (showWards) {
-        try {
-          const geo = await fetch("/geo/territory_wards.json").then((r)=>r.json());
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const feats=(geo.features as any[]).filter((f)=> (f.properties?.zone||"").toLowerCase()==="kiambu" || (f.properties?.county||"").toLowerCase()==="kiambu");
-          const filtered = feats.length ? { type:"FeatureCollection" as const, features: feats } : geo;
-          const activeColor = GROUP_COLORS[selectedGroup] || "#0f766e";
-          const isFiltered = selectedGroup !== "All";
-          map.addSource("kiambu-wards-fill", { type:"geojson", data: filtered as unknown as GeoJSON.FeatureCollection });
-          map.addLayer({ id:"kiambu-wards-fill", type:"fill", source:"kiambu-wards-fill", paint:{ "fill-color": isFiltered ? activeColor : "#0f766e", "fill-opacity": isFiltered ? 0.18 : 0.06 }});
-          map.addLayer({ id:"kiambu-wards-line", type:"line", source:"kiambu-wards-fill", paint:{ "line-color": isFiltered ? activeColor : "#0f766e", "line-width": isFiltered ? 2 : 1, "line-opacity": isFiltered ? 0.8 : 0.35 }});
-          // Fit to Kiambu bounds
-          const bounds = new maplibregl.LngLatBounds();
-          feats.forEach((f: { geometry: { coordinates: number[][][] } })=> {
-            const coords = f.geometry?.coordinates?.[0] || [];
-            coords.forEach((c: number[])=> bounds.extend([c[0], c[1]]));
-          });
-          if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 40, maxZoom: 11, duration: 600 });
-        } catch {}
-      }
+    if (wardsLayerRef.current) {
+      wardsLayerRef.current.remove();
+      wardsLayerRef.current = null;
+    }
 
-      // Truck routes as GeoJSON LineString + truck head markers (Uber/Bolt style)
-      const visibleRoutes = truckRoutes.filter((r)=> r.points.length >=2 && (selectedGroup==="All" || r.group===selectedGroup));
-      const routeFeatures = visibleRoutes.map((r)=> ({
-        type:"Feature" as const, properties:{ id:r.id, name:r.name, group:r.group, color: GROUP_COLORS[r.group]||r.color }, geometry:{ type:"LineString" as const, coordinates: r.points.map(([lat,lng])=>[lng,lat]) }
-      }));
-      if (routeFeatures.length) {
-        map.addSource("truck-routes", { type:"geojson", data:{ type:"FeatureCollection", features: routeFeatures } as unknown as GeoJSON.FeatureCollection });
-        map.addLayer({ id:"truck-routes", type:"line", source:"truck-routes", paint:{ "line-color":["get","color"], "line-width":4, "line-opacity":0.85 }, layout:{ "line-join":"round", "line-cap":"round" }});
-        // Truck heads — Uber/Bolt style: white ring + color fill + heading triangle inside
-        routeFeatures.forEach((f)=>{
-          const coords = f.geometry.coordinates as [number,number][];
-          const start = coords[0]; const next = coords[1] || coords[0];
-          const headLatLng: [number,number]= [start[1], start[0]];
-          const nextLatLng: [number,number]= [next[1], next[0]];
-          const rot = bearing(headLatLng, nextLatLng);
-          const wrap=document.createElement("div");
-          wrap.style.width="34px"; wrap.style.height="34px"; wrap.style.display="grid"; wrap.style.placeItems="center";
-          const inner=document.createElement("div");
-          inner.style.width="34px"; inner.style.height="34px"; inner.style.borderRadius="999px"; inner.style.background=(f.properties as {color:string}).color; inner.style.border="3px solid white"; inner.style.boxShadow="0 3px 10px rgba(0,0,0,0.35)"; inner.style.display="grid"; inner.style.placeItems="center";
-          const tri=document.createElement("div");
-          tri.style.width="16px"; tri.style.height="16px"; tri.style.display="grid"; tri.style.placeItems="center"; tri.style.transform=`rotate(${rot}deg)`;
-          tri.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M7 18V6l10 6z"/></svg>`;
-          inner.appendChild(tri); wrap.appendChild(inner);
-          const m=new maplibregl.Marker({ element: wrap, anchor:"center" }).setLngLat(start).addTo(map);
-          (m.getElement() as HTMLElement).title=`${(f.properties as {name:string}).name} · ${(f.properties as {group:string}).group}`;
-          markersRef.current.push(m);
-        });
-      }
+    if (!showWards) return;
 
-      // Outlet pins — 10px dot colored by group
-      pins.forEach((p)=>{
-        const color = GROUP_COLORS[selectedGroup] || "#047857";
-        const el=document.createElement("div");
-        el.style.width="11px"; el.style.height="11px"; el.style.borderRadius="999px"; el.style.background=color; el.style.border="2px solid white"; el.style.boxShadow="0 1px 4px rgba(0,0,0,0.3)";
-        const m=new maplibregl.Marker({ element: el, anchor:"center" }).setLngLat([p.lng, p.lat]).addTo(map);
-        m.getElement().addEventListener("click", ()=> {
-          onSelectPin(p);
-          new maplibregl.Popup({ closeButton:false, offset:12 }).setLngLat([p.lng,p.lat])
-            .setHTML(`<div style="font:11px system-ui"><b>${p.name}</b><br/>${p.channel||"N/A"} · ${p.type||""}<br/>${p.ward}, ${p.county}</div>`)
-            .addTo(map);
-        });
-        markersRef.current.push(m);
+    fetch("/geo/territory_wards.json")
+      .then((r) => r.json())
+      .then((geojson) => {
+        if (!mapInstanceRef.current) return;
+
+        // Filter for Kiambu features
+        const kiambuFeatures = (geojson.features as Array<{ properties?: Record<string, string> }>).filter(
+          (f) =>
+            (f.properties?.zone || "").toLowerCase() === "kiambu" ||
+            (f.properties?.county || "").toLowerCase() === "kiambu"
+        );
+
+        const kiambuGeojson = {
+          ...geojson,
+          features: kiambuFeatures.length ? kiambuFeatures : geojson.features,
+        };
+
+        const activeColor = GROUP_COLORS[selectedGroup] || "#0f766e";
+        const isFiltered = selectedGroup !== "All";
+
+        const layer = L.geoJSON(kiambuGeojson, {
+          style: () => ({
+            color: isFiltered ? activeColor : "#0f766e",
+            weight: isFiltered ? 2 : 1,
+            opacity: isFiltered ? 0.6 : 0.35,
+            fillColor: isFiltered ? activeColor : "#ccfbf1",
+            fillOpacity: isFiltered ? 0.18 : 0.08,
+          }),
+          onEachFeature: (feature, lyr) => {
+            const p = feature.properties;
+            const label = `${p?.ward ?? "?"} · ${p?.constituency ?? ""} · ${p?.zone ?? "Kiambu"}`;
+            lyr.bindTooltip(label, { sticky: true, opacity: 0.9 });
+          },
+        }).addTo(map);
+
+        wardsLayerRef.current = layer;
+
+        // Fit to Kiambu bounds if features were found
+        if (kiambuFeatures.length > 0) {
+          const b = layer.getBounds();
+          if (b.isValid()) map.fitBounds(b.pad(0.1), { maxZoom: 11 });
+        }
+      })
+      .catch((err) => console.error("[KiambuMap] Failed to load wards", err));
+  }, [showWards, selectedGroup]);
+
+  // Markers, Routes, and Pins
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Clean old markers and polylines
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+    polylinesRef.current.forEach((l) => l.remove());
+    polylinesRef.current = [];
+
+    const bounds: L.LatLngExpression[] = [];
+
+    // Draw Truck Routes
+    const visibleRoutes = truckRoutes.filter(
+      (r) => r.points.length >= 2 && (selectedGroup === "All" || r.group === selectedGroup)
+    );
+
+    visibleRoutes.forEach((route) => {
+      const color = GROUP_COLORS[route.group] || route.color || "#047857";
+      const line = L.polyline(route.points, {
+        color,
+        weight: 3.5,
+        opacity: 0.8,
+        lineCap: "round",
+      }).addTo(map);
+
+      line.bindTooltip(
+        `<div style="font-family:system-ui;font-size:11px;">
+          <div style="font-weight:700">${route.name}</div>
+          <div style="color:#666">${route.group} · ${route.vehicle}</div>
+        </div>`,
+        { sticky: true }
+      );
+
+      // Add truck head marker at the start
+      const headIcon = L.divIcon({
+        className: "",
+        html: `<div style="width:24px;height:24px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;">🚚</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      });
+      const headMarker = L.marker(route.points[0], { icon: headIcon }).addTo(map);
+
+      markersRef.current.push(headMarker);
+      polylinesRef.current.push(line);
+      route.points.forEach((pt) => bounds.push(pt));
+    });
+
+    // Draw Outlet Pins
+    pins.forEach((pin) => {
+      const color = GROUP_COLORS[selectedGroup] || "#047857";
+      const icon = L.divIcon({
+        className: "",
+        html: `<div style="width:12px;height:12px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
       });
 
-      if (!showWards && pins.length===0 && routeFeatures.length===0) map.flyTo({ center:[37.07,-1.033], zoom:10 });
-        setTimeout(()=> map.resize(), 80);
-      } catch (e) { console.error("[kiambu-map] onLoad failed", e); }
-    };
-    if (map.loaded()) onLoad(); else map.once("load", onLoad);
+      const marker = L.marker([pin.lat, pin.lng], { icon })
+        .addTo(map)
+        .bindPopup(
+          `<div style="font-family:system-ui;min-width:160px;">
+            <div style="font-weight:700;font-size:13px;margin-bottom:2px;">${pin.name}</div>
+            <div style="font-size:11px;color:#666;">${pin.channel || "N/A"} · ${pin.type || "N/A"}</div>
+            <div style="font-size:11px;color:#666;">${pin.ward || ""}, ${pin.county || ""}</div>
+          </div>`
+        )
+        .on("click", () => onSelectPin(pin));
+
+      markersRef.current.push(marker);
+      bounds.push([pin.lat, pin.lng]);
+    });
+
+    // Adjust view to fit bounds
+    if (bounds.length > 0) {
+      map.fitBounds(L.latLngBounds(bounds), { padding: [50, 50], maxZoom: 14 });
+    } else if (!showWards) {
+      map.setView([-1.033, 37.07], 10);
+    }
+
+    setTimeout(() => map.invalidateSize(), 50);
   }, [pins, truckRoutes, selectedGroup, showWards, onSelectPin]);
 
-  return <div ref={ref} className="w-full h-full" style={{ minHeight:520, background:"#f8fafc" }} />;
+  return (
+    <div
+      ref={mapRef}
+      className="w-full h-full rounded-xl overflow-hidden border border-slate-200"
+      style={{ minHeight: 520, background: "#f8fafc" }}
+    />
+  );
 }

@@ -98,10 +98,11 @@ export async function GET() {
     const onShiftCount = items.filter((i) => i.onShift).length;
 
     // Batch metrics
-    const batchList = batches || [];
+    const batchList: Array<{ status: string | null }> = (batches ?? []) as Array<{ status: string | null }>;
     const batchByStatus: Record<string, number> = {};
     for (const b of batchList) {
-      batchByStatus[b.status || "draft"] = (batchByStatus[b.status || "draft"] || 0) + 1;
+      const key = b.status || "draft";
+      batchByStatus[key] = (batchByStatus[key] || 0) + 1;
     }
 
     return NextResponse.json({
@@ -115,8 +116,8 @@ export async function GET() {
       batches: {
         total: batchList.length,
         byStatus: batchByStatus,
-        pending: batchList.filter((b: any) => b.status === "submitted" || b.status === "syncing").length,
-        synced: batchList.filter((b: any) => b.status === "synced").length,
+        pending: batchList.filter((b) => b.status === "submitted" || b.status === "syncing").length,
+        synced: batchList.filter((b) => b.status === "synced").length,
       },
     });
   } catch (err) {
