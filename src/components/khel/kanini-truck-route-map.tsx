@@ -62,9 +62,9 @@ export default function KaniniTruckRouteMap({
     // Trained on Kiambu county (Thika cluster) — all current reps work Kiambu
     const map = L.map(mapRef.current, { zoomControl: false }).setView([-1.033, 37.07], 10);
     L.control.zoom({ position: "bottomright" }).addTo(map);
-    // CARTO light — cleaner than OSM for ward overlays, no token, fast
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution: "&copy; OpenStreetMap & CARTO | Kanini Field — Kiambu",
+    // OpenStreetMap tiles
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap",
       maxZoom: 18,
     }).addTo(map);
     mapInstanceRef.current = map;
