@@ -21,6 +21,7 @@ class CategoryObservationModel {
   final String? fastestMovingBrand;
   final String? whyFastestCode;
 
+  final String? batchId;
   final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -42,6 +43,7 @@ class CategoryObservationModel {
     this.stockoutLast7Days = false,
     this.fastestMovingBrand,
     this.whyFastestCode,
+    this.batchId,
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
@@ -67,6 +69,7 @@ class CategoryObservationModel {
       stockoutLast7Days: json['stockout_last_7_days'] as bool? ?? false,
       fastestMovingBrand: json['fastest_moving_brand'] as String?,
       whyFastestCode: json['why_fastest'] as String?,
+      batchId: json['batch_id'] as String?,
       createdBy: json['created_by'] as String? ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -97,6 +100,7 @@ class CategoryObservationModel {
       'stockout_last_7_days': stockoutLast7Days,
       'fastest_moving_brand': fastestMovingBrand,
       'why_fastest': whyFastestCode,
+      'batch_id': batchId,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),

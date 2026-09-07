@@ -16,6 +16,7 @@ class SyncService {
   /// values sorted by key, so the enqueue order is lost; [flush] re-orders by
   /// this list. Unknown entities sort last, preserving their arrival order.
   static const List<String> pushOrder = [
+    'census_batches',
     'consent_records',
     'outlets',
     'retailers',
@@ -220,18 +221,43 @@ class SyncService {
           results[entity] = {'applied': appliedTotal, 'error': 'chunk_failed'};
           break;
         }
-        // Only the rows in THIS chunk are confirmed — pick the next slice of
-        // ids for this entity and purge exactly them. Everything else stays
-        // queued so a crash mid-backlog resumes cleanly.
+        // Only the rows successfully applied by the server are purged. If the
+        // server reports specific failures (via failed_ids) or specific
+        // successes (via applied_ids), we filter exactly them. If it only
+        // gives a count, we only purge if the count matches the whole chunk.
         final chunkIds = ids.sublist(
           idCursor,
           (idCursor + chunks[i].length).clamp(0, ids.length),
         );
-        await _pendingSyncBox.deleteAll(chunkIds);
+
+        final appliedIds = (res['applied_ids'] as List?)?.whereType<String>().toSet();
+        final failedIds = (res['failed_ids'] as List?)?.whereType<String>().toSet();
+
+        List<String> toDelete;
+        if (appliedIds != null) {
+          toDelete = chunkIds.where((cid) {
+            final rowId = cid.split(':').last;
+            return appliedIds.contains(rowId);
+          }).toList();
+        } else if (failedIds != null) {
+          toDelete = chunkIds.where((cid) {
+            final rowId = cid.split(':').last;
+            return !failedIds.contains(rowId);
+          }).toList();
+        } else {
+          final a = res['applied'];
+          if (a is int && a == chunks[i].length) {
+            toDelete = chunkIds;
+          } else {
+            toDelete = [];
+          }
+        }
+
+        await _pendingSyncBox.deleteAll(toDelete);
         idCursor += chunks[i].length;
         final a = res['applied'];
         appliedTotal += a is int ? a : 0;
-        flushed += chunks[i].length;
+        flushed += toDelete.length;
         results[entity] = {'applied': appliedTotal};
       }
     }
@@ -296,11 +322,35 @@ class SyncService {
           idCursor,
           (idCursor + chunks[i].length).clamp(0, ids.length),
         );
-        await _pendingSyncBox.deleteAll(chunkIds);
+
+        final appliedIds = (res['applied_ids'] as List?)?.whereType<String>().toSet();
+        final failedIds = (res['failed_ids'] as List?)?.whereType<String>().toSet();
+
+        List<String> toDelete;
+        if (appliedIds != null) {
+          toDelete = chunkIds.where((cid) {
+            final rowId = cid.split(':').last;
+            return appliedIds.contains(rowId);
+          }).toList();
+        } else if (failedIds != null) {
+          toDelete = chunkIds.where((cid) {
+            final rowId = cid.split(':').last;
+            return !failedIds.contains(rowId);
+          }).toList();
+        } else {
+          final a = res['applied'];
+          if (a is int && a == chunks[i].length) {
+            toDelete = chunkIds;
+          } else {
+            toDelete = [];
+          }
+        }
+
+        await _pendingSyncBox.deleteAll(toDelete);
         idCursor += chunks[i].length;
         final a = res['applied'];
         appliedTotal += a is int ? a : 0;
-        flushed += chunks[i].length;
+        flushed += toDelete.length;
         results[entity] = {'applied': appliedTotal};
       }
     }

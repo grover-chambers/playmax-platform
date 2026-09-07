@@ -84,12 +84,13 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
     // fake rep id.
     final auth = context.read<AuthProvider>();
     final repId = auth.currentUser != null ? await auth.profileId() : null;
+    final repName = auth.displayName;
     if (repId == null) {
       setState(() => _busy = false);
       throw StateError('Not authenticated — sign in before submitting a census.');
     }
     try {
-      final outlet = await _census.submit(repId);
+      final outlet = await _census.submit(repId, repName);
       if (!mounted) return;
       UiFx.stamp();
       await stampIn(

@@ -157,7 +157,7 @@ void main() {
     test('accepts a complete census and queues parents before children',
         () async {
       final result =
-          await censusService.submitCensus(draft: _censusDraft(), repId: 'rep-1');
+          await censusService.submitCensus(draft: _censusDraft(), repId: 'rep-1', batchId: 'test-batch');
 
       expect(result.outlet.businessName, 'Nice Mart');
       expect(result.outlet.createdBy, 'rep-1');
@@ -194,7 +194,7 @@ void main() {
     test('rejects without consent and queues nothing', () async {
       final draft = _censusDraft()..consentAgreed = false;
       expect(
-        () => censusService.submitCensus(draft: draft, repId: 'rep-1'),
+        () => censusService.submitCensus(draft: draft, repId: 'rep-1', batchId: 'test-batch'),
         throwsA(isA<CensusRejectedException>()),
       );
       expect(syncService.pendingCount, 0);
@@ -203,7 +203,7 @@ void main() {
     test('rejects a missing storefront photo', () async {
       try {
         await censusService.submitCensus(
-            draft: _censusDraft(withPhoto: false), repId: 'rep-1');
+            draft: _censusDraft(withPhoto: false), repId: 'rep-1', batchId: 'test-batch');
         fail('expected CensusRejectedException');
       } on CensusRejectedException catch (e) {
         expect(e.flags, contains(QualityFlag.photoMandatory));
@@ -215,7 +215,7 @@ void main() {
       final draft = _censusDraft();
       draft.gpsFix = _fix(accuracy: 30);
       try {
-        await censusService.submitCensus(draft: draft, repId: 'rep-1');
+        await censusService.submitCensus(draft: draft, repId: 'rep-1', batchId: 'test-batch');
         fail('expected CensusRejectedException');
       } on CensusRejectedException catch (e) {
         expect(e.flags, contains(QualityFlag.gpsGate));
@@ -225,11 +225,11 @@ void main() {
 
     test('one-visit rule rejects a second census for the same outlet today',
         () async {
-      await censusService.submitCensus(draft: _censusDraft(), repId: 'rep-1');
+      await censusService.submitCensus(draft: _censusDraft(), repId: 'rep-1', batchId: 'test-batch');
       expect(syncService.pendingCount, 6);
 
       try {
-        await censusService.submitCensus(draft: _censusDraft(), repId: 'rep-1');
+        await censusService.submitCensus(draft: _censusDraft(), repId: 'rep-1', batchId: 'test-batch');
         fail('expected CensusRejectedException');
       } on CensusRejectedException catch (e) {
         expect(e.flags, contains(QualityFlag.oneVisitRule));

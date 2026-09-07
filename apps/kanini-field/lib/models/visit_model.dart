@@ -22,6 +22,7 @@ class Visit {
   final String? notes;
   final String verificationSource; // 'gps' | 'qr' | 'photo_front' | 'photo_shelf' | 'override'
   final String? overrideReason;
+  final String? batchId;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -50,6 +51,7 @@ class Visit {
     this.orderValue,
     this.notes,
     this.overrideReason,
+    this.batchId,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -88,6 +90,7 @@ class Visit {
           : null,
       notes: json['notes'] as String?,
       overrideReason: json['override_reason'] as String?,
+      batchId: json['batch_id'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       deletedAt: json['deleted_at'] != null
@@ -121,6 +124,7 @@ class Visit {
       'order_value': orderValue,
       'notes': notes,
       'override_reason': overrideReason,
+      'batch_id': batchId,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),

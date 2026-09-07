@@ -52,6 +52,7 @@ class OutletModel {
   // 4.7 HoReCa / Institutional extension (embedded)
   final InstitutionExtension? extension;
 
+  final String? batchId;
   final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -93,6 +94,7 @@ class OutletModel {
     this.distanceToSupplier,
     this.deliveryOrCollectCode,
     this.extension,
+    this.batchId,
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
@@ -145,6 +147,7 @@ class OutletModel {
       extension: json['extension'] != null
           ? InstitutionExtension.fromJson(Map<String, dynamic>.from(json['extension'] as Map))
           : null,
+      batchId: json['batch_id'] as String?,
       createdBy: json['created_by'] as String? ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -195,6 +198,7 @@ class OutletModel {
       'distance_to_supplier': distanceToSupplier,
       'delivery_or_collect': deliveryOrCollectCode,
       'extension': extension?.toJson(),
+      'batch_id': batchId,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -239,6 +243,7 @@ class OutletModel {
       distanceToSupplier: distanceToSupplier,
       deliveryOrCollectCode: deliveryOrCollectCode,
       extension: extension,
+      batchId: batchId,
       createdBy: createdBy,
       createdAt: createdAt,
       updatedAt: updatedAt,

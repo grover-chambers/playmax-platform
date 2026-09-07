@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/sync_provider.dart';
+import '../screens/sync_screen.dart';
 import '../ui_fx.dart';
 
 /// Live sync affordance for the shell app bar: a cloud that swells and pulses
@@ -57,7 +58,10 @@ class _SyncBadgeState extends State<SyncBadge> with SingleTickerProviderStateMix
           ),
           onPressed: () {
             UiFx.tap();
-            context.read<SyncProvider>().forceSync();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SyncScreen()),
+            );
           },
           tooltip: 'Sync now',
         ),

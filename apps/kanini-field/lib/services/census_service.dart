@@ -131,6 +131,7 @@ class CensusService {
   Future<CensusResult> submitCensus({
     required CensusDraft draft,
     required String repId,
+    required String batchId,
   }) async {
     final now = DateTime.now().toUtc();
     final position = draft.gpsFix;
@@ -202,6 +203,7 @@ class CensusService {
       distanceToSupplier: draft.distanceToSupplier,
       deliveryOrCollectCode: draft.deliveryOrCollect?.code,
       extension: draft.extension,
+      batchId: batchId,
       createdBy: repId,
       createdAt: now,
       updatedAt: now,
@@ -273,6 +275,7 @@ class CensusService {
       stockCaptured: draft.categoryDrafts.isNotEmpty,
       photoCount: draft.storefrontPhotoPath != null ? 1 : 0,
       notes: 'census',
+      batchId: batchId,
       createdAt: now,
       updatedAt: now,
     );
@@ -296,6 +299,7 @@ class CensusService {
         stockoutLast7Days: cd.stockoutLast7Days,
         fastestMovingBrand: cd.fastestMovingBrand,
         whyFastestCode: cd.whyFastest?.code,
+        batchId: batchId,
         createdBy: repId,
         createdAt: now,
         updatedAt: now,

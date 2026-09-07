@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../providers/batch_provider.dart';
 import '../providers/census_provider.dart';
 import '../providers/intercept_provider.dart';
 import '../providers/submission_provider.dart';
@@ -16,6 +17,7 @@ import 'profile_screen.dart';
 import 'safety_sheet.dart';
 import 'shift_screen.dart';
 import 'submissions_screen.dart';
+import 'sync_screen.dart';
 import 'team_management_screen.dart';
 import 'visits_screen.dart';
 
@@ -37,6 +39,7 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BatchProvider>().init();
       context.read<CensusProvider>().init();
       context.read<InterceptProvider>().init();
       context.read<SubmissionProvider>().init();
@@ -382,6 +385,9 @@ class _MenuDrawer extends StatelessWidget {
               child: Text('SHIFT', style: TextStyle(color: Brand.inkSoft, fontFamily: Brand.fontMono, fontSize: 11, letterSpacing: 0.14)),
             ),
             _DrawerTile(icon: Icons.access_time, label: 'Check-in / clock shift', onTap: onShift),
+            _DrawerTile(icon: Icons.sync, label: 'Sync status & recovery', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncScreen()));
+            }),
             _DrawerTile(icon: Icons.menu_book_outlined, label: 'Field guide', onTap: onFieldGuide),
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 20, 20, 6),

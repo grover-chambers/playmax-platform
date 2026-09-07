@@ -94,7 +94,11 @@ class _CensusScreenState extends State<CensusScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               children: [
-                for (final o in census.capturedOutlets.reversed) _OutletRow(outlet: o),
+                for (final o in census.capturedOutlets.reversed)
+                  _OutletRow(
+                    outlet: o,
+                    onDelete: () => census.deleteOutlet(o.id),
+                  ),
               ],
             ),
           ),
@@ -105,29 +109,60 @@ class _CensusScreenState extends State<CensusScreen> {
 
 class _OutletRow extends StatelessWidget {
   final OutletModel outlet;
-  const _OutletRow({required this.outlet});
+  final VoidCallback? onDelete;
+  const _OutletRow({required this.outlet, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     final d = DateFormat('dd MMM HH:mm');
-    return WarmCard(
-      child: Row(
-        children: [
-          const Icon(Icons.storefront, color: Brand.amberDeep),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(outlet.businessName,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, color: Brand.ink)),
-                Text('${outlet.ward} · ${d.format(outlet.createdAt.toLocal())}',
-                    style: const TextStyle(color: Brand.inkSoft, fontSize: 12)),
-              ],
-            ),
+    return Dismissible(
+      key: ValueKey(outlet.id),
+      direction: onDelete != null ? DismissDirection.endToStart : DismissDirection.none,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.red.shade400,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete outlet?'),
+            content: Text('Remove "${outlet.businessName}" from captured data?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
+            ],
           ),
-          const StampTag(StampStatus.visited, label: 'Saved'),
-        ],
+        );
+      },
+      onDismissed: (_) => onDelete?.call(),
+      child: WarmCard(
+        child: Row(
+          children: [
+            const Icon(Icons.storefront, color: Brand.amberDeep),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(outlet.businessName,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, color: Brand.ink)),
+                  Text('${outlet.ward} · ${d.format(outlet.createdAt.toLocal())}',
+                      style: const TextStyle(color: Brand.inkSoft, fontSize: 12)),
+                  if (outlet.batchId != null)
+                    Text('Batch: ${outlet.batchId!.substring(0, 8)}…',
+                        style: const TextStyle(color: Brand.inkSoft, fontSize: 10)),
+                ],
+              ),
+            ),
+            const StampTag(StampStatus.visited, label: 'Saved'),
+          ],
+        ),
       ),
     );
   }

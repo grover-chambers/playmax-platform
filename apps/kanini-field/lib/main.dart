@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'providers/auth_provider.dart';
+import 'providers/batch_provider.dart';
 import 'providers/census_provider.dart';
 import 'providers/intercept_provider.dart';
 import 'providers/retailer_provider.dart';
@@ -141,13 +142,15 @@ class KaniniFieldApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final syncProvider = SyncProvider();
+    final batchProvider = BatchProvider();
     final shiftProvider = ShiftProvider()..sync = syncProvider;
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => RetailerProvider()),
         ChangeNotifierProvider(create: (_) => syncProvider),
-        ChangeNotifierProvider(create: (_) => CensusProvider(shift: shiftProvider)),
+        ChangeNotifierProvider(create: (_) => batchProvider),
+        ChangeNotifierProvider(create: (_) => CensusProvider(shift: shiftProvider, batch: batchProvider)),
         ChangeNotifierProvider(create: (_) => InterceptProvider(shift: shiftProvider)),
         ChangeNotifierProvider(create: (_) => SubmissionProvider(shift: shiftProvider)),
         ChangeNotifierProvider(create: (_) => RouteMasterProvider()),
