@@ -35,9 +35,13 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'census_batches' AND policyname = 'census_batches_rep_select') THEN
     CREATE POLICY census_batches_rep_select ON census_batches
-      FOR SELECT USING (rep_id = (SELECT id FROM reps WHERE auth_id = auth.uid()));
+      FOR SELECT USING (is_admin() OR is_territory_manager() OR (is_sales_rep() AND (rep_id = current_profile_id())));
   END IF;
 END $$;
+
+-- Reps may read their own batches on-device; the portal/mapping engine uses the
+-- service role (which bypasses RLS). Explicit grants make RLS meaningful for anon.
+GRANT SELECT, INSERT, UPDATE, DELETE ON census_batches TO anon, authenticated;
 
 -- ── batch_id columns on census entities ──────────────────────────
 -- These link every census record back to its originating batch so the
