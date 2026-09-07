@@ -49,6 +49,18 @@ export default function LeafletMapInner({
       subdomains: "abcd",
       maxZoom: 20,
     }).addTo(map);
+
+    // Add Nampak Warehouse (Distribution Center)
+    const warehouseIcon = L.divIcon({
+      className: "",
+      html: `<div style="width:28px;height:28px;background:#1e293b;border:2px solid #fff;border-radius:6px;box-shadow:0 3px 10px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;color:white;">🏭</div>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+    L.marker([-1.0396, 37.0700], { icon: warehouseIcon })
+      .addTo(map)
+      .bindTooltip("Thika Nampak Warehouse (DC)", { permanent: false, direction: "top", offset: [0, -8] });
+
     mapInstanceRef.current = map;
   }, []);
 
