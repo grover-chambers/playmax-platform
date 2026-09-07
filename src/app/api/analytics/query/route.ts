@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { REPORT_CATEGORIES } from "@/lib/report-types";
 import type { ChartType } from "@/lib/report-types";
 import { withLogging } from "@/lib/request-log";

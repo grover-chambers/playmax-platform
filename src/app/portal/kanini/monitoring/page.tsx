@@ -73,6 +73,8 @@ export default function KaniniMonitoringPage() {
   const [loading, setLoading] = useState(true);
   const [selectedRep, setSelectedRep] = useState<RepStatus | null>(null);
 
+  const currentTime = useMemo(() => Date.now(), [data]);
+
   useEffect(() => {
     const fetchMonitoring = async () => {
       try {
@@ -132,7 +134,7 @@ export default function KaniniMonitoringPage() {
     <div className="page-content space-y-6">
       <PageHeader
         title="Live Field Monitoring"
-        subtitle="Real-time 'War Room' for rep tracking and sync health"
+        subtitle="Real-time &apos;War Room&apos; for rep tracking and sync health"
         actions={
           <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-lg border border-slate-200">
             <div className="flex items-center gap-2">
@@ -155,20 +157,18 @@ export default function KaniniMonitoringPage() {
             <Signal size={12}/> Sync Health Triage
           </div>
 
-          {(() => {
-            const currentTime = Date.now();
-            return data?.reps.map(rep => {
-              const isLagging = rep.onShift && (!rep.lastSyncAt || currentTime - new Date(rep.lastSyncAt).getTime() > 3600000);
-              return (
-                <button
-                  key={rep.id}
-                  onClick={() => setSelectedRep(rep)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${
-                    selectedRep?.id === rep.id
-                      ? "bg-slate-900 border-slate-900 text-white shadow-lg"
-                      : "bg-white border-slate-200 hover:border-teal-500"
-                  }`}
-                >
+          {data?.reps.map(rep => {
+            const isLagging = rep.onShift && (!rep.lastSyncAt || currentTime - new Date(rep.lastSyncAt).getTime() > 3600000);
+            return (
+              <button
+                key={rep.id}
+                onClick={() => setSelectedRep(rep)}
+                className={`w-full text-left p-4 rounded-xl border transition-all ${
+                  selectedRep?.id === rep.id
+                    ? "bg-slate-900 border-slate-900 text-white shadow-lg"
+                    : "bg-white border-slate-200 hover:border-teal-500"
+                }`}
+              >
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-[13px] font-bold">{rep.name}</div>
@@ -196,13 +196,12 @@ export default function KaniniMonitoringPage() {
 
                   {isLagging && (
                     <div className="mt-2 flex items-center gap-1.5 text-[9px] text-amber-500 font-bold bg-amber-50 p-1.5 rounded border border-amber-100">
-                      <AlertCircle size={10}/> SYNC LAG: &gt;1hr since last push
+                      <AlertCircle size={10}/> SYNC LAG: &gt; 1hr since last push
                     </div>
                   )}
                 </button>
               );
-            });
-          })()}
+            })}
         </div>
 
         {/* Center: Live Map */}

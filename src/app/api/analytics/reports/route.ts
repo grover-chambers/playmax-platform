@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";

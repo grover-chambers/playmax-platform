@@ -10,10 +10,42 @@ import RouteTimeline from "@/components/khel/route-timeline";
 
 const KiambuMap = dynamic(() => import("@/components/khel/kiambu-map"), { ssr: false });
 
+interface OutletPin {
+  id: string;
+  name: string;
+  channel?: string;
+  type?: string;
+  lat: string | number;
+  lng: string | number;
+  ward?: string;
+  constituency?: string;
+  county?: string;
+  size?: string;
+  batchId?: string;
+}
+
+interface Route {
+  id: string;
+  route_name: string;
+  group_name: string;
+  vehicle_type?: string;
+}
+
+interface Rep {
+  id: string;
+  name: string;
+  color?: string;
+  zone: string;
+}
+
+interface Visit {
+  id: string;
+  [key: string]: unknown;
+}
+
 export default function KaniniMapTabPage() {
-  const [data, setData] = useState<any>(null);
-  const [batchData, setBatchData] = useState<any>(null);
-  const [monitor, setMonitor] = useState<any>(null);
+  const [data, setData] = useState<{ outletPins: OutletPin[]; routes: Route[] } | null>(null);
+  const [monitor, setMonitor] = useState<{ reps: Rep[]; visits: Visit[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState("All");
   const [showWards, setShowWards] = useState(true);
@@ -23,12 +55,10 @@ export default function KaniniMapTabPage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/portal/khel/routes").then((r) => r.json()),
-      fetch("/api/portal/khel/batches").then((r) => r.json()).catch(() => null),
       fetch("/api/app/kanini-field/monitoring").then((r) => r.json()).catch(() => null),
     ])
-      .then(([r, b, m]) => {
+      .then(([r, m]) => {
         setData(r);
-        if (b && !b.error) setBatchData(b);
         if (m && !m.error) setMonitor(m);
       })
       .finally(() => setLoading(false));
@@ -38,14 +68,14 @@ export default function KaniniMapTabPage() {
 
   const rawPins = (data?.outletPins ?? []).slice(0, 500);
   const batchIdSet = new Set<string>();
-  for (const p of rawPins as unknown as Array<{ batchId: unknown }>) {
+  for (const p of rawPins) {
     const bid = p.batchId == null ? "" : String(p.batchId);
     if (bid) batchIdSet.add(bid);
   }
   const batchIds: string[] = ["All", ...batchIdSet];
   const pins = rawPins
-    .filter((p: any) => selectedBatch === "All" || p.batchId === selectedBatch)
-    .map((p: any) => ({
+    .filter((p: OutletPin) => selectedBatch === "All" || p.batchId === selectedBatch)
+    .map((p: OutletPin) => ({
       id: p.id, name: p.name, channel: p.channel ?? "", type: p.type ?? "", lat: Number(p.lat), lng: Number(p.lng), ward: p.ward ?? "", constituency: p.constituency ?? "", county: p.county ?? "", size: p.size ?? "", batchId: p.batchId ?? ""
     }));
   // Kiambu-trained depots (match territory_wards subcounty offsets) + real pins if any
@@ -58,16 +88,16 @@ export default function KaniniMapTabPage() {
     F: [-1.08, 36.62], // Lari
     G: [-1.25, 36.73], // Kabete
   };
-  const truckRoutes = (data?.routes ?? []).slice(0, 12).map((r: any, idx: number) => {
+  const truckRoutes = (data?.routes ?? []).slice(0, 12).map((r: Route, idx: number) => {
     const depot = KIAMBU_DEPOTS[r.group_name] || ([-1.03, 37.07] as [number, number]);
     // Use real pins if present, else synthesize 5 stops radiating around depot in Kiambu
-    const slice = pins.slice(idx * 3, idx * 3 + 6).map((p: any) => [p.lat, p.lng] as [number, number]);
+    const slice = pins.slice(idx * 3, idx * 3 + 6).map((p) => [p.lat, p.lng] as [number, number]);
     const synthetic: [number, number][] = slice.length >= 2 ? slice : Array.from({ length: 5 }, (_, i) => [depot[0] + (Math.sin((idx * 5 + i) * 1.1) * 0.03), depot[1] + (Math.cos((idx * 5 + i) * 1.1) * 0.04)] as [number, number]);
     const pts: [number, number][] = [depot, ...synthetic];
     return { id: r.id, name: r.route_name, group: r.group_name, vehicle: r.vehicle_type || "Van", points: pts, color: "#047857" };
   });
-  const reps = (monitor?.reps || []).map((r: any) => ({ id: r.id, name: r.name, color: r.color, zone: r.zone }));
-  const visits = (monitor?.visits || []) as any[];
+  const reps = (monitor?.reps || []).map((r: Rep) => ({ id: r.id, name: r.name, color: r.color, zone: r.zone }));
+  const visits = (monitor?.visits || []) as Visit[];
 
   return (
     <div className="page-content space-y-5">
