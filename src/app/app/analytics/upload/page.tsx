@@ -312,6 +312,56 @@ const FIELD_DEFINITIONS: Record<
     required: false,
     description: "Cash, M-Pesa, Card, etc.",
   },
+  address: {
+    label: "Address",
+    required: false,
+    description: "Street/physical address",
+  },
+  city: {
+    label: "City",
+    required: false,
+    description: "City or town",
+  },
+  country: {
+    label: "Country",
+    required: false,
+    description: "Country (defaults to Kenya)",
+  },
+  notes: {
+    label: "Notes",
+    required: false,
+    description: "Free-form notes",
+  },
+  pack_size: {
+    label: "Pack Size",
+    required: false,
+    description: "Pack/bag size (e.g. 25kg)",
+  },
+  warehouse: {
+    label: "Warehouse",
+    required: false,
+    description: "Warehouse/location for stock movement",
+  },
+  min_quantity: {
+    label: "Min Quantity",
+    required: false,
+    description: "Minimum quantity for this pricing tier",
+  },
+  max_quantity: {
+    label: "Max Quantity",
+    required: false,
+    description: "Maximum quantity for this pricing tier",
+  },
+  supplier_item_code: {
+    label: "Supplier Item Code",
+    required: false,
+    description: "Supplier's own code for the product",
+  },
+  suppliers: {
+    label: "Suppliers (comma-separated)",
+    required: false,
+    description: "One or more supplier names separated by commas",
+  },
 };
 
 const KNOWN_COLUMN_SIGNALS = [
@@ -1254,6 +1304,34 @@ export default function AnalyticsUploadPage() {
           )
         )
           autoMap[h] = "payment_method";
+        else if (
+          ["address", "street address", "physical address", "location"].includes(
+            lower,
+          )
+        )
+          autoMap[h] = "address";
+        else if (["city", "town"].includes(lower))
+          autoMap[h] = "city";
+        else if (
+          ["country", "nation", "region"].includes(lower)
+        )
+          autoMap[h] = "country";
+        else if (
+          ["notes", "remarks", "comment", "comments", "note"].includes(lower)
+        )
+          autoMap[h] = "notes";
+        else if (["pack size", "pack_size", "bag size", "package size"].includes(lower))
+          autoMap[h] = "pack_size";
+        else if (["warehouse", "store house", "godown"].includes(lower))
+          autoMap[h] = "warehouse";
+        else if (["min qty", "minimum quantity", "min_quantity", "min"].includes(lower))
+          autoMap[h] = "min_quantity";
+        else if (["max qty", "maximum quantity", "max_quantity", "max"].includes(lower))
+          autoMap[h] = "max_quantity";
+        else if (["supplier item code", "supplier_item_code", "item code (supplier)"].includes(lower))
+          autoMap[h] = "supplier_item_code";
+        else if (["suppliers", "supplier names", "all suppliers"].includes(lower))
+          autoMap[h] = "suppliers";
       });
 
       setColumnMap(autoMap);
@@ -1278,6 +1356,26 @@ export default function AnalyticsUploadPage() {
     const cleaned = v.replace(/[KES,kes\s]/g, "");
     const n = Number(cleaned);
     return Number.isFinite(n) ? n : null;
+  };
+
+  const MAPPED_FIELD_KEYS = [
+    "stock_code", "product_name", "sub_category", "category",
+    "quantity", "total", "unit_price", "unit_cost", "weight_tonnes",
+    "supplier_name", "supplier_code", "contact_person", "phone", "email",
+    "payment_terms", "lead_time_days", "address", "city", "country", "notes",
+    "movement_type", "movement_date", "reference_number", "batch_number",
+    "expiry_date", "tier", "effective_date", "discount_pct",
+    "sale_date", "customer", "tax", "payment_method", "min_quantity", "max_quantity",
+    "pack_size", "warehouse", "supplier_item_code", "suppliers",
+  ];
+
+  const buildMappedFields = (r: MappedRow): Record<string, string> => {
+    const out: Record<string, string> = {};
+    for (const key of MAPPED_FIELD_KEYS) {
+      const val = (r as unknown as Record<string, string>)[key];
+      if (val && String(val).trim() !== "") out[key] = String(val).trim();
+    }
+    return out;
   };
 
   // ── Apply mapping → staging rows ──────────────────────────────
@@ -1305,6 +1403,7 @@ export default function AnalyticsUploadPage() {
       weight_tonnes: parseNum(r.weight_tonnes),
       total_amount: parseNum(r.total),
       raw_data: r.raw,
+      mapped_fields: buildMappedFields(r),
     }));
 
     // Batch insert to avoid payload size limits (13k rows > 10MB)

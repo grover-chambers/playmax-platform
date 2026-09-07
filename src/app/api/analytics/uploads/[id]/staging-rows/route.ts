@@ -80,6 +80,7 @@ export async function POST(request: Request, context: RouteContext) {
         weight_tonnes?: number;
         total_amount?: number;
         raw_data?: Record<string, unknown>;
+        mapped_fields?: Record<string, unknown>;
       }) => ({
         upload_id: id,
         row_number: row.row_number,
@@ -92,6 +93,7 @@ export async function POST(request: Request, context: RouteContext) {
         weight_tonnes: row.weight_tonnes ?? null,
         total_amount: row.total_amount ?? null,
         raw_data: row.raw_data ?? null,
+        mapped_fields: row.mapped_fields ?? {},
       }),
     );
 
