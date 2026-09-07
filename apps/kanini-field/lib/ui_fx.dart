@@ -39,7 +39,10 @@ abstract final class UiFx {
 }
 
 /// The rotated stamp flourish — used alone (inline) or driven by
-/// [UiFx.stampIn] for the centre-screen slam.
+/// [stampIn] for the centre-screen slam.
+///
+/// Features a heavy border, mono-spaced text, and a slight rotation to
+/// simulate a physical rubber stamp applied to paper.
 class MotionStamp extends StatelessWidget {
   final String text;
   final Color color;
@@ -107,9 +110,14 @@ class MotionStamp extends StatelessWidget {
 }
 
 /// Slams a [MotionStamp] into the centre of the screen (heavy haptic on land),
-/// holds it for ~450ms, then dismisses. Awaits completion so callers can chain
-/// navigation right after the flourish. [detail] renders as a mono caption
-/// beneath the stamp (e.g. the outlet name on a census save).
+/// holds it for ~450ms, then dismisses.
+///
+/// Awaits completion so callers can chain navigation right after the flourish.
+/// [detail] renders as a mono caption beneath the stamp (e.g. the outlet name
+/// on a census save).
+///
+/// The animation uses an `easeOutBack` curve to create a "slam" effect where
+/// the stamp appears to hit the screen and bounce slightly.
 Future<void> stampIn(
   BuildContext context, {
   required String text,

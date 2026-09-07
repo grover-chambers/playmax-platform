@@ -161,7 +161,7 @@ class SyncProvider extends ChangeNotifier {
     try {
       final p = await _push();
       final result = await syncService.flushBatch(onPush: p.push);
-      await _drainMedia();
+      unawaited(_drainMedia());
       await _finalize(p.deviceId, result);
     } catch (e) {
       _lastSyncError = 'Sync failed: $e';
@@ -205,7 +205,7 @@ class SyncProvider extends ChangeNotifier {
         onPush: p.push,
         onProgress: onProgress,
       );
-      await _drainMedia();
+      unawaited(_drainMedia());
       await _finalize(p.deviceId, result);
     } catch (e) {
       _lastSyncError = 'Sync failed: $e';

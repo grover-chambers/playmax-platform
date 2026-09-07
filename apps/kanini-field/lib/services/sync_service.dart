@@ -157,31 +157,12 @@ class SyncService {
     });
   }
 
-  /// Mark the entry for [id] as synced. The entry is kept in the box so the
-  /// history is inspectable, but [pendingItems] excludes it.
-  Future<void> markSynced(String id) async {
-    final existing = _pendingSyncBox.get(id);
-    if (existing == null) return;
-    await _pendingSyncBox.put(id, {...existing, 'synced': true});
-  }
-
-  /// Remove all entries flagged as synced. Call after a successful flush.
-  Future<void> purgeSynced() async {
-    for (final k in _pendingSyncBox.keys.toList()) {
-      final v = _pendingSyncBox.get(k);
-      if (v != null && v['synced'] == true) {
-        await _pendingSyncBox.delete(k);
-      }
-    }
-  }
-
   /// All entries that have not yet been synced.
   List<Map<String, dynamic>> get pendingItems => _pendingSyncBox.values
-      .where((v) => v['synced'] != true)
       .map((v) => Map<String, dynamic>.from(v))
       .toList();
 
-  int get pendingCount => pendingItems.length;
+  int get pendingCount => _pendingSyncBox.length;
 
   Future<bool> get isOnline async {
     final results = await Connectivity().checkConnectivity();
@@ -246,10 +227,7 @@ class SyncService {
           idCursor,
           (idCursor + chunks[i].length).clamp(0, ids.length),
         );
-        for (final id in chunkIds) {
-          await markSynced(id);
-        }
-        await purgeSynced();
+        await _pendingSyncBox.deleteAll(chunkIds);
         idCursor += chunks[i].length;
         final a = res['applied'];
         appliedTotal += a is int ? a : 0;
@@ -318,10 +296,7 @@ class SyncService {
           idCursor,
           (idCursor + chunks[i].length).clamp(0, ids.length),
         );
-        for (final id in chunkIds) {
-          await markSynced(id);
-        }
-        await purgeSynced();
+        await _pendingSyncBox.deleteAll(chunkIds);
         idCursor += chunks[i].length;
         final a = res['applied'];
         appliedTotal += a is int ? a : 0;

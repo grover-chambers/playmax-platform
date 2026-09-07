@@ -23,6 +23,8 @@ import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
 import 'theme/brand.dart';
 
+/// Validates if a configuration string (like Supabase URL/Key) is a real value
+/// and not just a placeholder from the template.
 bool _isRealConfig(String v) {
   final s = v.trim();
   if (s.isEmpty) return false;
@@ -33,6 +35,8 @@ bool _isRealConfig(String v) {
   return true;
 }
 
+/// Renders a full-screen error message if the app fails to initialize
+/// or encounters a fatal configuration error.
 Widget _buildErrorScreen(Object error, StackTrace stack) {
   return MaterialApp(
     home: Scaffold(
@@ -71,6 +75,14 @@ Widget _buildErrorScreen(Object error, StackTrace stack) {
   );
 }
 
+/// Entry point for Kanini Field.
+///
+/// Orchestrates:
+/// 1. Widget binding initialization.
+/// 2. Zone-guarded execution for async error catching.
+/// 3. Environment variable loading (.env and --dart-define).
+/// 4. Local storage (Hive) and service initialization.
+/// 5. Supabase client setup with a 10s timeout.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -119,6 +131,10 @@ Future<void> main() async {
   });
 }
 
+/// The root widget of the application.
+///
+/// Sets up the [MultiProvider] tree, global [ThemeData], and top-level
+/// navigation routes.
 class KaniniFieldApp extends StatelessWidget {
   const KaniniFieldApp({super.key});
 
