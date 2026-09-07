@@ -62,12 +62,10 @@ export default function KiambuMap({
     const map = L.map(mapRef.current, { zoomControl: false }).setView([-1.033, 37.07], 10);
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    // Use CartoDB Light tiles
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: "abcd",
-      maxZoom: 20,
+    // Use OpenStreetMap tiles
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap",
+      maxZoom: 18,
     }).addTo(map);
 
     // Add Nampak Warehouse (Distribution Center)
