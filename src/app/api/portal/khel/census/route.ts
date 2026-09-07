@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     // ── Outlets ────────────────────────────────────────────────
     const { data: outlets } = await db
       .from("outlets")
-      .select("id,business_name,channel,outlet_type,gps_lat,gps_lng,county,constituency,ward,beat,size_tier,created_at,created_by")
+      .select("id,business_name,channel,outlet_type,gps_lat,gps_lng,county,constituency,ward,beat,size_tier,created_at,created_by,batch_id")
       .is("deleted_at", null);
 
     // ── Visits ─────────────────────────────────────────────────
@@ -110,6 +110,7 @@ export async function GET(req: Request) {
         ward: o.ward,
         county: o.county,
         size: o.size_tier,
+        batchId: o.batch_id || null,
       }));
 
     // Reps per route group (A-G), counted by distinct rep emails in routes_master

@@ -23,6 +23,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const ALLOWED_ENTITIES = new Set([
+  "census_batches",
   "consent_records",
   "outlets",
   "retailers",
@@ -159,10 +160,9 @@ Deno.serve(async (req) => {
   }
 
   let totalApplied = 0;
+  const allAppliedIds: string[] = [];
+  const allFailedIds: string[] = [];
   const conflicts: unknown[] = [];
-  const hardConflicts: Array<{ entity: string; conflicts: Array<{ reason?: string }> }> = [];
-  let rejected = false;
-  let rejectedEntity = "";
 
   for (const group of batch) {
     const entity = group?.entity;
@@ -260,32 +260,26 @@ Deno.serve(async (req) => {
     totalApplied += appliedHere;
     conflicts.push(...chunkConflicts);
 
-    // Hard row errors (FK / not-null / cast) mean those rows did NOT land.
-    // Return an error so the client keeps the chunk queued and retries. Soft
-    // conflicts (newer-server-row) are by design.
-    const hard = chunkConflicts.filter(
-      (c) => (c?.reason ?? "").startsWith("error:") || (c?.reason ?? "") === "insert-failed",
-    );
-    if (hard.length > 0) {
-      console.warn(`sync-push ${entity}: ${appliedHere} applied, ${hard.length} failed`, hard[0]);
-      rejected = true;
-      rejectedEntity = entity;
-      hardConflicts.push({ entity, conflicts: hard });
+    // Derive per-row IDs from the applied count: rows are processed in order,
+    // so the first `appliedHere` rows succeeded and the rest failed.
+    const appliedIds = rewritten.slice(0, appliedHere).map((r) => r["id"] as string).filter(Boolean);
+    const failedIds = rewritten.slice(appliedHere).map((r) => r["id"] as string).filter(Boolean);
+    allAppliedIds.push(...appliedIds);
+    allFailedIds.push(...failedIds);
+
+    if (failedIds.length > 0) {
+      console.warn(`sync-push ${entity}: ${appliedHere} applied, ${failedIds.length} failed`, chunkConflicts[0]);
     }
   }
 
-  if (rejected) {
-    return new Response(
-      JSON.stringify({
-        error: `row_rejected: ${rejectedEntity}`,
-        applied: totalApplied,
-        conflicts: hardConflicts,
-      }),
-      { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-
-  return new Response(JSON.stringify({ applied: totalApplied, conflicts }), {
+  // Always return 200 with per-row detail. The client uses applied_ids/failed_ids
+  // to mark only successful rows as synced — partial applies are normal, not errors.
+  return new Response(JSON.stringify({
+    applied: totalApplied,
+    applied_ids: allAppliedIds,
+    failed_ids: allFailedIds,
+    conflicts,
+  }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });

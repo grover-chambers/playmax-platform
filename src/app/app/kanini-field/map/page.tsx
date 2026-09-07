@@ -12,19 +12,23 @@ const KiambuMap = dynamic(() => import("@/components/khel/kiambu-map"), { ssr: f
 
 export default function KaniniMapTabPage() {
   const [data, setData] = useState<any>(null);
+  const [batchData, setBatchData] = useState<any>(null);
   const [monitor, setMonitor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState("All");
   const [showWards, setShowWards] = useState(true);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
+  const [selectedBatch, setSelectedBatch] = useState<string>("All");
 
   useEffect(() => {
     Promise.all([
       fetch("/api/portal/khel/routes").then((r) => r.json()),
+      fetch("/api/portal/khel/batches").then((r) => r.json()).catch(() => null),
       fetch("/api/app/kanini-field/monitoring").then((r) => r.json()).catch(() => null),
     ])
-      .then(([r, m]) => {
+      .then(([r, b, m]) => {
         setData(r);
+        if (b && !b.error) setBatchData(b);
         if (m && !m.error) setMonitor(m);
       })
       .finally(() => setLoading(false));
@@ -32,9 +36,13 @@ export default function KaniniMapTabPage() {
 
   if (loading) return <div className="page-content flex items-center justify-center py-16"><Loader2 className="w-4 h-4 text-gray-5 animate-spin" /><span className="ml-2 text-[11px] text-gray-5">Loading map…</span></div>;
 
-  const pins = (data?.outletPins ?? []).slice(0, 500).map((p: any) => ({
-    id: p.id, name: p.name, channel: p.channel ?? "", type: p.type ?? "", lat: Number(p.lat), lng: Number(p.lng), ward: p.ward ?? "", constituency: p.constituency ?? "", county: p.county ?? "", size: p.size ?? ""
-  }));
+  const rawPins = (data?.outletPins ?? []).slice(0, 500);
+  const batchIds = ["All", ...new Set(rawPins.map((p: any) => p.batchId).filter(Boolean))];
+  const pins = rawPins
+    .filter((p: any) => selectedBatch === "All" || p.batchId === selectedBatch)
+    .map((p: any) => ({
+      id: p.id, name: p.name, channel: p.channel ?? "", type: p.type ?? "", lat: Number(p.lat), lng: Number(p.lng), ward: p.ward ?? "", constituency: p.constituency ?? "", county: p.county ?? "", size: p.size ?? "", batchId: p.batchId ?? ""
+    }));
   // Kiambu-trained depots (match territory_wards subcounty offsets) + real pins if any
   const KIAMBU_DEPOTS: Record<string, [number, number]> = {
     A: [-1.03, 37.07], // Thika Town
@@ -65,11 +73,19 @@ export default function KaniniMapTabPage() {
               <Button key={g} variant={group === g ? "primary" : "secondary"} size="sm" onClick={() => setGroup(g)} className="px-2.5">{g}</Button>
             ))}
           </div>
+          {batchIds.length > 2 && (
+            <div className="hidden sm:flex items-center gap-1.5 ml-2">
+              <span className="text-[10px] text-gray-5">Batch:</span>
+              {batchIds.slice(0, 6).map((bid) => (
+                <Button key={bid} variant={selectedBatch === bid ? "primary" : "secondary"} size="sm" onClick={() => setSelectedBatch(bid)} className="px-2">{bid === "All" ? "All" : bid.substring(0, 8)}</Button>
+              ))}
+            </div>
+          )}
           <label className="flex items-center gap-1.5 text-[11px] text-gray-5 cursor-pointer"><input type="checkbox" checked={showWards} onChange={(e) => setShowWards(e.target.checked)} className="rounded border-[var(--ws-border)]" /> Wards</label>
         </>
       } />
       <div className="pm-dash-card">
-        <div className="pm-dash-card-h"><span className="pm-dash-card-t">Map — Kiambu · Outlets + Wards + Truck Routes</span><span className="text-[11px] font-mono text-gray-5">15 Kiambu wards · {pins.length} pins {group !== "All" && `· Group ${group} highlight`}</span></div>
+        <div className="pm-dash-card-h"><span className="pm-dash-card-t">Map — Kiambu · Outlets + Wards + Truck Routes</span><span className="text-[11px] font-mono text-gray-5">15 Kiambu wards · {pins.length} pins {selectedBatch !== "All" && `· Batch ${selectedBatch.substring(0, 8)}`} {group !== "All" && `· Group ${group} highlight`}</span></div>
         <div className="pm-dash-card-b p-0">
           <div className="rounded-lg border border-[var(--ws-border)] overflow-hidden bg-white m-3" style={{ height: 520 }}>
             <KiambuMap pins={pins} truckRoutes={truckRoutes} selectedGroup={group} showWards={showWards} onSelectPin={() => {}} />

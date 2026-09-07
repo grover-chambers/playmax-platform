@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     // ── Outlets with GPS (for map pins) ────────────────────────
     const { data: outlets } = await db
       .from("outlets")
-      .select("id,business_name,channel,outlet_type,gps_lat,gps_lng,ward,constituency,county,size_tier,created_by")
+      .select("id,business_name,channel,outlet_type,gps_lat,gps_lng,ward,constituency,county,size_tier,created_by,batch_id")
       .is("deleted_at", null)
       .not("gps_lat", "is", null);
 
@@ -78,6 +78,7 @@ export async function GET(req: Request) {
       constituency: o.constituency,
       county: o.county,
       size: o.size_tier,
+      batchId: o.batch_id || null,
     }));
 
     return NextResponse.json({

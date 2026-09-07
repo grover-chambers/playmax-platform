@@ -8,7 +8,7 @@ export async function GET() {
     const db = await createCensusClient();
     const today = new Date().toISOString().slice(0, 10);
 
-    const [{ data: reps }, { data: visits }, { data: accessLog }] = await Promise.all([
+    const [{ data: reps }, { data: visits }, { data: accessLog }, { data: batches }] = await Promise.all([
       db
         .from("reps")
         .select("id,name,email,zone,status,on_route,last_sync_at,device,target_visits_month,actual_visits_month,wards,color")
@@ -24,6 +24,11 @@ export async function GET() {
         .select("id,rep_email,device_id,event_type,app_version,version_code,created_at")
         .order("created_at", { ascending: false })
         .limit(500),
+      db
+        .from("census_batches")
+        .select("id,rep_id,batch_number,status,record_count,started_at,submitted_at,synced_at")
+        .order("started_at", { ascending: false })
+        .limit(100),
     ]);
 
     // group visits by rep
@@ -91,6 +96,14 @@ export async function GET() {
     });
 
     const onShiftCount = items.filter((i) => i.onShift).length;
+
+    // Batch metrics
+    const batchList = batches || [];
+    const batchByStatus: Record<string, number> = {};
+    for (const b of batchList) {
+      batchByStatus[b.status || "draft"] = (batchByStatus[b.status || "draft"] || 0) + 1;
+    }
+
     return NextResponse.json({
       today,
       total: items.length,
@@ -99,6 +112,12 @@ export async function GET() {
       reps: items,
       visits: visits || [],
       accessLog: accessLog || [],
+      batches: {
+        total: batchList.length,
+        byStatus: batchByStatus,
+        pending: batchList.filter((b: any) => b.status === "submitted" || b.status === "syncing").length,
+        synced: batchList.filter((b: any) => b.status === "synced").length,
+      },
     });
   } catch (err) {
     console.error("Monitoring API error:", err);

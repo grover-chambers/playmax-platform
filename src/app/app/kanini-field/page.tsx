@@ -14,8 +14,15 @@ interface CensusData {
   reps: { total: number; byGroup: { group: string; count: number }[] };
 }
 
+interface BatchData {
+  batches: any[];
+  total: number;
+  stats: { totalBatches: number; byStatus: Record<string, number>; totalOutlets: number; totalVisits: number };
+}
+
 export default function KaniniFieldOverviewPage() {
   const [census, setCensus] = useState<CensusData | null>(null);
+  const [batches, setBatches] = useState<BatchData | null>(null);
   const [monitor, setMonitor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -24,13 +31,15 @@ export default function KaniniFieldOverviewPage() {
     let cancel = false;
     (async () => {
       try {
-        const [c, m] = await Promise.all([
+        const [c, b, m] = await Promise.all([
           fetch("/api/portal/khel/census").then((r) => r.json()),
+          fetch("/api/portal/khel/batches").then((r) => r.json()).catch(() => null),
           fetch("/api/app/kanini-field/monitoring").then((r) => r.json()).catch(() => null),
         ]);
         if (!cancel) {
           if (c.error) setSyncError(c.error);
           else setCensus(c);
+          if (b && !b.error) setBatches(b);
           if (m && !m.error) setMonitor(m);
         }
       } catch (e) {
@@ -53,12 +62,12 @@ export default function KaniniFieldOverviewPage() {
 
   const todayOutlets = census?.outlets.total ?? 0;
   const todayVisits = census?.visits.total ?? 0;
-  const pendingSync = census?.submissions.total ?? 0;
+  const pendingSync = batches?.stats.totalBatches ?? census?.submissions.total ?? 0;
 
   const kpis = [
     { icon: Store, value: todayOutlets.toLocaleString(), label: "Outlets", sub: "Total census", color: "text-teal" },
     { icon: Users, value: todayVisits.toLocaleString(), label: "Visits", sub: `${census?.visits.totalOrders ?? 0} orders`, color: "text-blue" },
-    { icon: Flag, value: pendingSync.toLocaleString(), label: "To sync", sub: "Submissions", color: "text-amber-600" },
+    { icon: Flag, value: pendingSync.toLocaleString(), label: "Batches", sub: `${batches?.stats.totalOutlets ?? 0} outlets · ${batches?.stats.totalVisits ?? 0} visits`, color: "text-amber-600" },
   ];
 
   return (
@@ -100,6 +109,51 @@ export default function KaniniFieldOverviewPage() {
           );
         })}
       </div>
+
+      {/* Incoming Batches — pm-dash-card + table */}
+      {batches && batches.batches.length > 0 && (
+        <div className="pm-dash-card">
+          <div className="pm-dash-card-h">
+            <span className="pm-dash-card-t">Incoming batches</span>
+            <span className="text-[11px] font-mono text-gray-5">{batches.total} batches · {batches.stats.totalOutlets} outlets · {batches.stats.totalVisits} visits</span>
+          </div>
+          <div className="pm-dash-card-b">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px]">
+                <thead><tr className="text-gray-5 font-mono">
+                  <th className="text-left pb-2 font-normal">Batch</th>
+                  <th className="text-left pb-2 font-normal">Rep</th>
+                  <th className="text-center pb-2 font-normal">Outlets</th>
+                  <th className="text-center pb-2 font-normal">Visits</th>
+                  <th className="text-left pb-2 font-normal">Status</th>
+                  <th className="text-right pb-2 font-normal">Started</th>
+                </tr></thead>
+                <tbody>
+                  {batches.batches.slice(0, 20).map((b: any) => (
+                    <tr key={b.id} className="border-t border-[var(--ws-border)]">
+                      <td className="py-2.5 font-mono text-[11px] text-[var(--ws-text)]">{b.batch_number}</td>
+                      <td className="py-2.5 text-[var(--ws-text)]">{b.rep_name}</td>
+                      <td className="py-2.5 text-center font-semibold text-[var(--ws-text)]">{b.outlet_count}</td>
+                      <td className="py-2.5 text-center font-semibold text-[var(--ws-text)]">{b.visit_count}</td>
+                      <td className="py-2.5">
+                        <span className={`inline-flex text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                          b.status === "synced" ? "bg-green/10 text-green border-green/20" :
+                          b.status === "submitted" || b.status === "syncing" ? "bg-blue/10 text-blue border-blue/20" :
+                          b.status === "failed" || b.status === "partial" ? "bg-red/10 text-red border-red/20" :
+                          "bg-[var(--ws-surface)] text-gray-5 border-[var(--ws-border)]"
+                        }`}>{b.status}</span>
+                      </td>
+                      <td className="py-2.5 text-right font-mono text-[11px] text-gray-5">
+                        {b.started_at ? new Date(b.started_at).toLocaleString() : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tasks — pm-dash-card */}
       <div className="pm-dash-card">

@@ -170,6 +170,7 @@ void main() {
       expect(entities.toSet(), {
         'consent_records',
         'outlets',
+        'retailers',
         'outlet_contacts',
         'outlet_client_links',
         'visits',
@@ -183,6 +184,7 @@ void main() {
         [
           'consent_records',
           'outlets',
+          'retailers',
           'outlet_contacts',
           'outlet_client_links',
           'visits',
@@ -226,7 +228,7 @@ void main() {
     test('one-visit rule rejects a second census for the same outlet today',
         () async {
       await censusService.submitCensus(draft: _censusDraft(), repId: 'rep-1', batchId: 'test-batch');
-      expect(syncService.pendingCount, 6);
+      expect(syncService.pendingCount, 7);
 
       try {
         await censusService.submitCensus(draft: _censusDraft(), repId: 'rep-1', batchId: 'test-batch');
@@ -235,7 +237,7 @@ void main() {
         expect(e.flags, contains(QualityFlag.oneVisitRule));
       }
       // Nothing from the rejected attempt may enter the queue.
-      expect(syncService.pendingCount, 6);
+      expect(syncService.pendingCount, 7);
     });
   });
 }
