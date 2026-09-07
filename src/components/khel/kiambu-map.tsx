@@ -247,7 +247,7 @@ export default function KiambuMap({
     }
 
     setTimeout(() => map.invalidateSize(), 50);
-  }, [pins, truckRoutes, selectedGroup, showWards, onSelectPin]);
+  }, [pins, truckRoutes, selectedGroup, showWards, onSelectPin, onSelectRoute]);
 
   return (
     <div

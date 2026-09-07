@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Activity,
   Users,
-  Map as MapIcon,
   Bell,
   Signal,
   SignalLow,
@@ -36,13 +35,36 @@ interface RepStatus {
   lastOutcome: string | null;
 }
 
+interface Visit {
+  id: string;
+  rep_id: string;
+  check_in_at: string;
+  created_at: string;
+  status: string;
+  outcome: string;
+  order_placed: boolean;
+  order_value: number;
+}
+
 interface MonitoringData {
   today: string;
   total: number;
   onShift: number;
   offShift: number;
   reps: RepStatus[];
-  visits: any[];
+  visits: Visit[];
+}
+
+interface MapPinData {
+  id: string;
+  name: string;
+  channel: string;
+  type: string;
+  lat: number;
+  lng: number;
+  ward: string;
+  county: string;
+  size: string;
 }
 
 export default function KaniniMonitoringPage() {
@@ -82,7 +104,7 @@ export default function KaniniMonitoringPage() {
         ward: r.zone,
         county: "Kiambu",
         size: r.status
-      }));
+      })) as MapPinData[];
   }, [data]);
 
   const tickerEvents = useMemo(() => {
@@ -131,58 +153,61 @@ export default function KaniniMonitoringPage() {
             <Signal size={12}/> Sync Health Triage
           </div>
 
-          {data?.reps.map(rep => {
-            const isLagging = rep.onShift && (!rep.lastSyncAt || Date.now() - new Date(rep.lastSyncAt).getTime() > 3600000);
-            return (
-              <button
-                key={rep.id}
-                onClick={() => setSelectedRep(rep)}
-                className={`w-full text-left p-4 rounded-xl border transition-all ${
-                  selectedRep?.id === rep.id
-                    ? "bg-slate-900 border-slate-900 text-white shadow-lg"
-                    : "bg-white border-slate-200 hover:border-teal-500"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-[13px] font-bold">{rep.name}</div>
-                    <div className={`text-[10px] ${selectedRep?.id === rep.id ? "text-slate-400" : "text-slate-500"}`}>
-                      {rep.zone} · {rep.email.split('@')[0]}
+          {(() => {
+            const currentTime = Date.now();
+            return data?.reps.map(rep => {
+              const isLagging = rep.onShift && (!rep.lastSyncAt || currentTime - new Date(rep.lastSyncAt).getTime() > 3600000);
+              return (
+                <button
+                  key={rep.id}
+                  onClick={() => setSelectedRep(rep)}
+                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                    selectedRep?.id === rep.id
+                      ? "bg-slate-900 border-slate-900 text-white shadow-lg"
+                      : "bg-white border-slate-200 hover:border-teal-500"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-[13px] font-bold">{rep.name}</div>
+                      <div className={`text-[10px] ${selectedRep?.id === rep.id ? "text-slate-400" : "text-slate-500"}`}>
+                        {rep.zone} · {rep.email.split('@')[0]}
+                      </div>
+                    </div>
+                    {rep.onShift ? (
+                      isLagging ? <SignalLow size={14} className="text-amber-500"/> : <Signal size={14} className="text-green-500"/>
+                    ) : (
+                      <WifiOff size={14} className="text-slate-300"/>
+                    )}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className={`p-2 rounded-lg ${selectedRep?.id === rep.id ? "bg-slate-800" : "bg-slate-50"}`}>
+                      <div className="text-[9px] uppercase font-bold opacity-60">Visits</div>
+                      <div className="text-[14px] font-bold">{rep.todayVisits}</div>
+                    </div>
+                    <div className={`p-2 rounded-lg ${selectedRep?.id === rep.id ? "bg-slate-800" : "bg-slate-50"}`}>
+                      <div className="text-[9px] uppercase font-bold opacity-60">Orders</div>
+                      <div className="text-[14px] font-bold">{rep.todayOrders}</div>
                     </div>
                   </div>
-                  {rep.onShift ? (
-                    isLagging ? <SignalLow size={14} className="text-amber-500"/> : <Signal size={14} className="text-green-500"/>
-                  ) : (
-                    <WifiOff size={14} className="text-slate-300"/>
+
+                  {isLagging && (
+                    <div className="mt-2 flex items-center gap-1.5 text-[9px] text-amber-500 font-bold bg-amber-50 p-1.5 rounded border border-amber-100">
+                      <AlertCircle size={10}/> SYNC LAG: &gt;1hr since last push
+                    </div>
                   )}
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div className={`p-2 rounded-lg ${selectedRep?.id === rep.id ? "bg-slate-800" : "bg-slate-50"}`}>
-                    <div className="text-[9px] uppercase font-bold opacity-60">Visits</div>
-                    <div className="text-[14px] font-bold">{rep.todayVisits}</div>
-                  </div>
-                  <div className={`p-2 rounded-lg ${selectedRep?.id === rep.id ? "bg-slate-800" : "bg-slate-50"}`}>
-                    <div className="text-[9px] uppercase font-bold opacity-60">Orders</div>
-                    <div className="text-[14px] font-bold">{rep.todayOrders}</div>
-                  </div>
-                </div>
-
-                {isLagging && (
-                  <div className="mt-2 flex items-center gap-1.5 text-[9px] text-amber-500 font-bold bg-amber-50 p-1.5 rounded border border-amber-100">
-                    <AlertCircle size={10}/> SYNC LAG: &gt;1hr since last push
-                  </div>
-                )}
-              </button>
-            );
-          })}
+                </button>
+              );
+            });
+          })()}
         </div>
 
         {/* Center: Live Map */}
         <div className="xl:col-span-2 space-y-4">
           <div className="pm-dash-card p-3 relative" style={{ height: 600 }}>
             <KiambuMap
-              pins={pins as any}
+              pins={pins}
               truckRoutes={[]}
               selectedGroup="All"
               showWards={false}
@@ -214,7 +239,7 @@ export default function KaniniMonitoringPage() {
                   </div>
                   <div className="pt-2 border-t border-slate-100">
                     <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Last Action</div>
-                    <div className="text-[11px] text-slate-700 italic">"{selectedRep.lastOutcome || 'Idle'}"</div>
+                    <div className="text-[11px] text-slate-700 italic">&quot;{selectedRep.lastOutcome || 'Idle'}&quot;</div>
                   </div>
                   <button className="w-full mt-2 py-2 bg-teal-600 text-white text-[11px] font-bold rounded-lg hover:bg-teal-700 transition-colors">
                     View Daily Timeline
