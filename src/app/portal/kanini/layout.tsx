@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Truck, Route, Package, PiggyBank, Layers } from "lucide-react";
+import { LayoutDashboard, Truck, Route, Package, PiggyBank, Layers, Activity } from "lucide-react";
 
 const tabs = [
   { href: "/portal/kanini", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/portal/kanini/monitoring", label: "Live Monitoring", icon: Activity },
   { href: "/portal/kanini/fleet", label: "Fleet & Assets", icon: Truck },
   { href: "/portal/kanini/routes", label: "Mapping & Routing", icon: Route },
   { href: "/portal/kanini/deliveries", label: "Delivery Execution", icon: Package },

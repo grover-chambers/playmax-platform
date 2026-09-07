@@ -42,12 +42,14 @@ export default function KiambuMap({
   selectedGroup,
   showWards,
   onSelectPin,
+  onSelectRoute,
 }: {
   pins: OutletPin[];
   truckRoutes: TruckRoute[];
   selectedGroup: string;
   showWards: boolean;
   onSelectPin: (pin: OutletPin) => void;
+  onSelectRoute?: (route: TruckRoute) => void;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -71,13 +73,14 @@ export default function KiambuMap({
     // Add Nampak Warehouse (Distribution Center)
     const warehouseIcon = L.divIcon({
       className: "",
-      html: `<div style="width:32px;height:32px;background:#1e293b;border:3px solid #fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;color:white;">🏭</div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
+      html: `<div style="width:36px;height:36px;background:#1e293b;border:3px solid #fff;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:20px;color:white;">🏭</div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
     });
-    L.marker([-1.0423, 37.0706], { icon: warehouseIcon })
+    // Precise Nampak Thika Gate: -1.0423, 37.0684
+    L.marker([-1.0423, 37.0684], { icon: warehouseIcon })
       .addTo(map)
-      .bindTooltip("Thika Nampak Warehouse (DC)", { permanent: true, direction: "top", offset: [0, -10] });
+      .bindTooltip("Nampak Thika DC (Origin)", { permanent: true, direction: "bottom", offset: [0, 10] });
 
     mapInstanceRef.current = map;
     // Invalidate size to ensure correct rendering
@@ -169,9 +172,10 @@ export default function KiambuMap({
       const color = GROUP_COLORS[route.group] || route.color || "#047857";
       const line = L.polyline(route.points, {
         color,
-        weight: 3.5,
-        opacity: 0.8,
+        weight: 4.5,
+        opacity: 0.85,
         lineCap: "round",
+        interactive: true,
       }).addTo(map);
 
       line.bindTooltip(
@@ -182,14 +186,28 @@ export default function KiambuMap({
         { sticky: true }
       );
 
-      // Add truck head marker at the start
+      line.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        onSelectRoute?.(route);
+        // Visual feedback
+        line.setStyle({ weight: 7, opacity: 1 });
+        setTimeout(() => line.setStyle({ weight: 4.5, opacity: 0.85 }), 2000);
+      });
+
+      // Add truck head marker at the current/last point
+      const lastPoint = route.points[route.points.length - 1];
       const headIcon = L.divIcon({
         className: "",
-        html: `<div style="width:24px;height:24px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;">🚚</div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        html: `<div style="width:28px;height:28px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 3px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">🚚</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
       });
-      const headMarker = L.marker(route.points[0], { icon: headIcon }).addTo(map);
+      const headMarker = L.marker(lastPoint, { icon: headIcon })
+        .addTo(map)
+        .on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          onSelectRoute?.(route);
+        });
 
       markersRef.current.push(headMarker);
       polylinesRef.current.push(line);

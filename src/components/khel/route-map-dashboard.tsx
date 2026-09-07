@@ -144,6 +144,9 @@ export default function RouteMapDashboard({ projectId }: { projectId: string }) 
             selectedGroup={group}
             showWards={false}
             onSelectPin={setSelectedPin}
+            onSelectRoute={(r) => {
+              console.log("Selected Route:", r);
+            }}
           />
         </div>
 
