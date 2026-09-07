@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
-import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -52,7 +51,7 @@ export async function POST(_request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const db = getAdminClient();
+    const db = supabase;
     if (!currentUser.role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedClient, getCurrentUser, isAdmin, isStaff } from "@/lib/supabase/api";
-import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -68,8 +67,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Data handler shares same DB via service role (bypasses is_admin-only RLS until 053 is pushed)
-    const db = getAdminClient();
+    // Writes go through the user's own RLS client — migration 075 grants
+    // direct-JWT write policies to data_handler + staff (service-role key is
+    // unreliable in the deployed env, see cc35fe3/b7af5ea).
+    const db = supabase;
 
     const body = await request.json();
     const { filename, file_type, period_id, branch_id, branch_name, category_id, sub_category_id } = body;
