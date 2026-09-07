@@ -72,8 +72,7 @@ export default function KaniniMonitoringPage() {
   const [data, setData] = useState<MonitoringData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRep, setSelectedRep] = useState<RepStatus | null>(null);
-
-  const currentTime = useMemo(() => Date.now(), [data]);
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
 
   useEffect(() => {
     const fetchMonitoring = async () => {
@@ -81,6 +80,7 @@ export default function KaniniMonitoringPage() {
         const res = await fetch("/api/portal/khel/monitoring");
         const json = await res.json();
         setData(json);
+        setCurrentTime(Date.now());
       } catch (err) {
         console.error("Monitoring fetch error:", err);
       } finally {
