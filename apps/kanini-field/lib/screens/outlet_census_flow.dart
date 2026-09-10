@@ -7,6 +7,7 @@ import '../providers/census_provider.dart';
 import '../providers/retailer_provider.dart';
 import '../services/census_service.dart';
 import '../services/location_service.dart';
+import '../services/ward_service.dart';
 import '../services/photo_service.dart';
 import '../services/quality_service.dart';
 import '../theme/brand.dart';
@@ -31,33 +32,85 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
 
   final _categoryDrafts = <String, CategoryDraft>{};
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDraft());
+  }
+
+  Future<void> _checkDraft() async {
+    final census = context.read<CensusProvider>();
+    if (!await census.hasSavedDraft()) return;
+    final json = await census.loadDraftJson();
+    if (json == null || !mounted) return;
+    // Only prompt if draft has meaningful content
+    if ((json['businessName'] as String?)?.isEmpty ?? true) return;
+    final resume = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Resume draft?'),
+        content: Text('Found an unfinished census for "${json['businessName']}". Resume or start new?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Start new')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Resume')),
+        ],
+      ),
+    );
+    if (resume == true) {
+      await census.restoreDraftFromJson(json);
+      final d = census.draft;
+      setState(() {
+        _photoPath = d.storefrontPhotoPath;
+        _categoryDrafts.clear();
+        for (final cd in d.categoryDrafts) {
+          _categoryDrafts[cd.category.code] = cd;
+        }
+      });
+    } else if (resume == false) {
+      await census.clearSavedDraft();
+      census.resetDraft();
+    }
+  }
+
+  void _autosave() {
+    // Fire-and-forget, debounced via microtask
+    Future.microtask(() => context.read<CensusProvider>().saveDraft());
+  }
+
   CensusProvider get _census => context.read<CensusProvider>();
   CensusDraft get _draft => _census.draft;
 
+  String get _tier => _draft.accuracyTier;
   bool get _gpsOk {
     final p = _draft.gpsFix;
-    return p != null && qualityService.gateGps(p.accuracy) == null;
+    if (p==null) return false;
+    if (_draft.source=='census_manual_pin') return true;
+    return p.accuracy <= 8;
   }
+  Color _tierColor() => _tier=='high'? Colors.green : _tier=='medium'? Colors.orange : _tier=='manual'? const Color(0xFFCA8A04) : Colors.grey;
 
   Future<void> _acquireGps() async {
-    setState(() {
-      _busy = true;
-      _gpsStatus = 'Acquiring GPS…';
-    });
-    final fix = await _location.getCurrentPosition();
+    setState(() { _busy = true; _gpsStatus = 'Acquiring GPS (10s high → 10s medium)…'; });
+    await wardService.load();
+    final pos = await _location.getBestFix(target5m:5, fallback8m:8);
     if (!mounted) return;
     setState(() {
       _busy = false;
-      if (fix != null) {
-        _draft.gpsFix = fix;
-        _gpsStatus = 'Fix locked (${fix.accuracy.toStringAsFixed(1)} m accuracy)';
+      if (pos != null) {
+        _draft.gpsFix = pos; _draft.gpsRaw = pos; _draft.gpsFinalLat = pos.latitude; _draft.gpsFinalLng = pos.longitude;
+        if (pos.accuracy <=5) { _draft.accuracyTier='high'; _draft.source='census_gps'; }
+        else if (pos.accuracy <=8) { _draft.accuracyTier='medium'; _draft.source='census_gps'; }
+        else { _draft.accuracyTier='manual'; _draft.source='census_manual_pin'; }
+        _draft.wardAuto = wardService.wardFor(pos.latitude,pos.longitude);
+        _draft.wardFinal = _draft.wardAuto ?? _draft.ward;
+        if(_draft.wardAuto!=null && _draft.ward.isEmpty) _draft.ward=_draft.wardAuto!;
+        _gpsStatus = 'Fix \${pos.accuracy.toStringAsFixed(1)}m tier=\${_draft.accuracyTier}';
         UiFx.confirm();
-      } else {
-        _gpsStatus = 'Could not get a fix — enable location services and retry.';
-        UiFx.reject();
-      }
+      } else { _gpsStatus='No fix — use Drop pin'; UiFx.reject(); }
     });
   }
+  void _dropPin(double lat,double lng){ _draft.gpsFinalLat=lat; _draft.gpsFinalLng=lng; _draft.accuracyTier='manual'; _draft.source='census_manual_pin'; _draft.snapped=true; setState((){}); }
 
   Future<void> _capturePhoto() async {
     try {
@@ -136,7 +189,7 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
         return null;
       case 1:
         if (d.gpsFix == null) return 'Acquire a GPS fix first.';
-        if (!_gpsOk) return 'GPS accuracy must be ≤ 15 m. Move to open sky and retry.';
+        if (!_gpsOk) return 'GPS >8m — drop pin to continue.';
         if (d.storefrontPhotoPath == null) return 'Storefront photo is required (§4.1).';
         return null;
       case 2:
@@ -331,14 +384,16 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionCard(title: 'GPS fix (gate ≤ 15 m)', children: [
+        SectionCard(title: 'GPS fix (≤5m high · 5-8m medium · >8m pin)', children: [
+          if(_draft.gpsFix!=null) Chip(label: Text(_tier), backgroundColor: _tierColor().withOpacity(0.2)),
           Text(_gpsStatus ?? ''),
           const SizedBox(height: 8),
           FilledButton.icon(
             onPressed: _busy ? null : _acquireGps,
             icon: const Icon(Icons.gps_fixed),
-            label: const Text('Acquire GPS fix'),
+            label: const Text('Acquire GPS (5m→8m)'),
           ),
+          if(_draft.gpsFix!=null && _draft.gpsFix!.accuracy>8) OutlinedButton.icon(onPressed: ()=>_dropPin(-1.283,36.821), icon: const Icon(Icons.push_pin), label: const Text('Drop pin')),
         ]),
         SectionCard(title: 'Storefront photo (§4.1)', children: [
           Row(
