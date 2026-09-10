@@ -263,8 +263,9 @@ class KpiTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = WarmCard(
+    final tappable = WarmCard(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      onTap: UiFx.withTap(onTap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -282,21 +283,20 @@ class KpiTile extends StatelessWidget {
           const SizedBox(height: 5),
           Text(
             label.toUpperCase(),
-            style: const TextStyle(fontSize: 10.5, letterSpacing: 0.08, color: Brand.inkSoft),
+            style: const TextStyle(
+              fontFamily: Brand.fontMono,
+              fontSize: 10,
+              letterSpacing: 0.08,
+              color: Brand.inkSoft,
+            ),
           ),
         ],
       ),
     );
 
-    return Expanded(
-      child: onTap == null
-          ? card
-          : InkWell(
-              onTap: UiFx.withTap(onTap),
-              borderRadius: BorderRadius.circular(12),
-              child: card,
-            ),
-    );
+    // When tappable, WarmCard already provides InkWell; avoid double wrapper.
+    // Keep Expanded layout consistent.
+    return Expanded(child: tappable);
   }
 }
 

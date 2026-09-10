@@ -259,28 +259,25 @@ class _TaskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return WarmCard(
-      child: InkWell(
-        onTap: UiFx.withTap(onTap),
-        borderRadius: BorderRadius.circular(12),
-        child: Row(
-          children: [
-            Icon(icon, color: Brand.amberDeep, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: Brand.ink, fontSize: 14.5)),
-            ),
-            if (done)
-              const StampTag(StampStatus.visited, label: 'Done')
-            else if (active)
-              const StampTag(StampStatus.pending, label: 'Now')
-            else
-              const Eyebrow('Later'),
-            if (onTap != null) ...[
-              const SizedBox(width: 6),
-              const Icon(Icons.chevron_right, color: Brand.inkSoft, size: 20),
-            ],
+      onTap: UiFx.withTap(onTap),
+      child: Row(
+        children: [
+          Icon(icon, color: Brand.amberDeep, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: Brand.ink, fontSize: 14.5)),
+          ),
+          if (done)
+            const StampTag(StampStatus.visited, label: 'Done')
+          else if (active)
+            const StampTag(StampStatus.pending, label: 'Now')
+          else
+            const Eyebrow('Later'),
+          if (onTap != null) ...[
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right, color: Brand.inkSoft, size: 20),
           ],
-        ),
+        ],
       ),
     );
   }

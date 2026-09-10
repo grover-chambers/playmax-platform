@@ -34,28 +34,31 @@ android {
 
     buildTypes {
         release {
-            // Sign with a real upload keystore (release-keystore.jks referenced
-            // from android/key.properties, or overridden by KEYSTORE_* env vars
-            // in CI). Falls back to the debug key so a plain `flutter build apk
-            // --release` still works on machines without a keystore.
+            // Fail-closed: release must be signed with real keystore. Provide via
+            // KEYSTORE_PATH env / KEYSTORE_* env vars or gradle property KEYSTORE_STORE_FILE
+            // or android/key.properties. No silent debug fallback for release.
             val keyPropsFile = rootProject.file("key.properties")
             val keyProps = Properties().apply {
                 if (keyPropsFile.exists()) keyPropsFile.inputStream().use { load(it) }
             }
             val keystorePath = System.getenv("KEYSTORE_PATH")
+                ?: (project.findProperty("KEYSTORE_STORE_FILE") as String?)
                 ?: keyProps.getProperty("storeFile")?.let { rootProject.file(it).absolutePath }
-            val useReleaseSigning = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
+            val hasKeystore = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
 
-            if (useReleaseSigning) {
+            if (hasKeystore) {
                 signingConfig = signingConfigs.create("release").apply {
-                    storeFile = file(keystorePath)
-                    storePassword = System.getenv("KEYSTORE_PASSWORD") ?: keyProps.getProperty("storePassword")
-                    keyAlias = System.getenv("KEY_ALIAS") ?: keyProps.getProperty("keyAlias")
-                    keyPassword = System.getenv("KEY_PASSWORD") ?: keyProps.getProperty("keyPassword")
+                    storeFile = file(keystorePath!!)
+                    storePassword = System.getenv("KEYSTORE_PASSWORD") ?: keyProps.getProperty("storePassword") ?: (project.findProperty("KEYSTORE_STORE_PASSWORD") as String?)
+                    keyAlias = System.getenv("KEY_ALIAS") ?: keyProps.getProperty("keyAlias") ?: (project.findProperty("KEYSTORE_KEY_ALIAS") as String?)
+                    keyPassword = System.getenv("KEY_PASSWORD") ?: keyProps.getProperty("keyPassword") ?: (project.findProperty("KEYSTORE_KEY_PASSWORD") as String?)
                 }
             } else {
-                signingConfig = signingConfigs.getByName("debug")
+                throw GradleException("Release signing keystore not configured: set KEYSTORE_PATH env or KEYSTORE_STORE_FILE gradle property or android/key.properties")
             }
+        }
+        debug {
+            // Debug keeps default debug signing
         }
     }
 }

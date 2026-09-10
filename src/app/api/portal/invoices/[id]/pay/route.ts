@@ -61,6 +61,11 @@ export async function POST(
       return NextResponse.json({ error: sanitizeError(paymentError) }, { status: 500 });
     }
 
+    // TODO: Implement Daraja STK Push — requires DARAJA_CONSUMER_KEY, DARAJA_CONSUMER_SECRET, MPESA_SHORTCODE, MPESA_PASSKEY (see .env.example).
+    // This stub intentionally never returns success without callback; status remains "pending" until Safaricom callback confirms.
+    // Do NOT auto-mark as completed — that bypasses actual payment verification.
+    console.warn("[M-Pesa stub] STK push not yet implemented — invoice", invoice.id, "left pending; Daraja env required");
+
     // NOTE: M-Pesa STK Push integration not yet implemented.
     // Payment stays in "pending" status until Safaricom callback confirms.
     // Do NOT auto-mark as completed — that bypasses actual payment verification.

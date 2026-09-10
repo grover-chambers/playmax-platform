@@ -74,12 +74,25 @@ class _HomeShellState extends State<HomeShell> {
           ),
           Padding(
             padding: const EdgeInsets.only(right: 14),
-            child: GestureDetector(
-              onTap: UiFx.withTap(() => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  )),
-              child: _Avatar(name: auth.displayName),
+            child: Semantics(
+              button: true,
+              label: 'Profile',
+              child: Tooltip(
+                message: 'Profile',
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: UiFx.withTap(() => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                          )),
+                      child: _Avatar(name: auth.displayName),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -246,7 +259,7 @@ class _BottomNav extends StatelessWidget {
           // Submissions — left end (0)
           Expanded(child: _NavItem(icon: Icons.fact_check_outlined, label: 'Submit', selected: index == 0, onTap: () => onChanged(0))),
           // Census — flank (1)
-          Expanded(child: _NavItem(icon: Icons.store_mall_directory_outlined, label: 'Census', selected: index == 1, onTap: () => onChanged(1))),
+          Expanded(child: _NavItem(icon: Icons.storefront_outlined, label: 'Census', selected: index == 1, onTap: () => onChanged(1))),
           // Dashboard — center, enlarged (2)
           Expanded(
             child: GestureDetector(
@@ -283,7 +296,7 @@ class _BottomNav extends StatelessWidget {
             ),
           ),
           // Intercept — flank (3)
-          Expanded(child: _NavItem(icon: Icons.people_outline, label: 'Intercept', selected: index == 3, onTap: () => onChanged(3))),
+          Expanded(child: _NavItem(icon: Icons.people_alt_outlined, label: 'Intercept', selected: index == 3, onTap: () => onChanged(3))),
           // Visits — right end (4)
           Expanded(child: _NavItem(icon: Icons.store_mall_directory_outlined, label: 'Visits', selected: index == 4, onTap: () => onChanged(4))),
         ],

@@ -2,7 +2,16 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SERVICE_ROLE_KEY")!;
+const SERVICE_ROLE_KEY = (() => {
+  const primary = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (primary) return primary;
+  const fallback = Deno.env.get("SERVICE_ROLE_KEY");
+  if (fallback) {
+    console.warn("location-ping: using deprecated SERVICE_ROLE_KEY env; set SUPABASE_SERVICE_ROLE_KEY");
+    return fallback;
+  }
+  throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
+})();
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const corsHeaders = {
@@ -20,6 +29,22 @@ interface PingBody {
   batteryPct?: number;
   isCharging?: boolean;
   source?: string;
+}
+
+function validatePingBody(body: unknown): { ok: true; value: PingBody } | { ok: false; error: string } {
+  if (!body || typeof body !== "object") return { ok: false, error: "invalid body" };
+  const b = body as Record<string, unknown>;
+  if (typeof b.lat !== "number" || !Number.isFinite(b.lat)) return { ok: false, error: "lat must be a finite number" };
+  if (typeof b.lng !== "number" || !Number.isFinite(b.lng)) return { ok: false, error: "lng must be a finite number" };
+  for (const k of ["accuracy", "altitude", "speed", "heading", "batteryPct"] as const) {
+    const v = b[k];
+    if (v !== undefined && v !== null && (typeof v !== "number" || !Number.isFinite(v))) return { ok: false, error: `${k} must be a finite number if provided` };
+  }
+  if (b.isCharging !== undefined && b.isCharging !== null && typeof b.isCharging !== "boolean") return { ok: false, error: "isCharging must be boolean" };
+  if (b.source !== undefined && b.source !== null && typeof b.source !== "string") return { ok: false, error: "source must be string" };
+  if (b.lat < -5 || b.lat > 5 || b.lng < 33 || b.lng > 43) return { ok: false, error: "Coordinates outside Kenya bounds" };
+  if (b.accuracy !== undefined && b.accuracy !== null && (b.accuracy as number) < 0) return { ok: false, error: "accuracy must be >= 0" };
+  return { ok: true, value: b as unknown as PingBody };
 }
 
 serve(async (req) => {
@@ -57,14 +82,14 @@ serve(async (req) => {
     // sync-push does (current_profile_id RPC, then profiles by auth_id) and
     // insert that — otherwise EVERY ping fails the FK and the War Room sees no
     // live reps even though the app is pinging.
-    let repId = user.id;
+    let repId: string | null = null;
     try {
       const { data: pid, error: pidErr } = await authed.rpc("current_profile_id");
       if (!pidErr && typeof pid === "string" && pid) repId = pid;
     } catch (_) {
       // fall through to profiles lookup
     }
-    if (repId === user.id) {
+    if (repId === null) {
       try {
         const { data: prof, error: profErr } = await authed
           .from("profiles")
@@ -74,24 +99,22 @@ serve(async (req) => {
         if (!profErr && prof) repId = prof.id as string;
       } catch (_) {}
     }
-
-    const body = await req.json() as PingBody;
-    const { lat, lng, accuracy, altitude, speed, heading, batteryPct, isCharging, source } = body;
-
-    if (typeof lat !== "number" || typeof lng !== "number") {
-      return new Response(JSON.stringify({ error: "lat and lng required" }), {
-        status: 400,
+    if (repId === null) {
+      return new Response(JSON.stringify({ error: "profile_not_found" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Validate Kenya bounds
-    if (lat < -5 || lat > 5 || lng < 33 || lng > 43) {
-      return new Response(JSON.stringify({ error: "Coordinates outside Kenya bounds" }), {
+    const raw = await req.json();
+    const validated = validatePingBody(raw);
+    if (!validated.ok) {
+      return new Response(JSON.stringify({ error: validated.error }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const { lat, lng, accuracy, altitude, speed, heading, batteryPct, isCharging, source } = validated.value;
 
     // Insert location ping (rep_id = resolved profile id, not the auth uid).
     // Service-role client bypasses RLS, so the rep_locations write policies

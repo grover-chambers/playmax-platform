@@ -5,3 +5,9 @@
 --   create extension if not exists pg_cron;
 --   select cron.schedule('war-room-refresh-30s','* * * * *','refresh materialized view concurrently mv_war_room');
 -- For 30s granularity, schedule two jobs offset by 30s or use an external cron (Vercel cron /api/cron/war-room).
+
+-- TTL: rep_locations is high-write live tracking; retain 7 days then purge.
+-- Example cleanup (run via pg_cron or Vercel cron):
+--   DELETE FROM rep_locations WHERE captured_at < now() - interval '7 days';
+-- Optional BRIN index for time-range scans (efficient for append-only time series):
+--   CREATE INDEX IF NOT EXISTS rep_locations_captured_at_brin ON rep_locations USING brin (captured_at);

@@ -1,7 +1,24 @@
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const url = () => process.env.CENSUS_SUPABASE_URL!;
-const anonKey = () => process.env.CENSUS_SUPABASE_ANON_KEY!;
+/**
+ * Census Supabase client (isolated project zsprlozgdxzxeevvetmg).
+ *
+ * Auth: Resource Owner Password Grant via /auth/v1/token?grant_type=password
+ * using CENSUS_PORTAL_EMAIL/PASSWORD + CENSUS_SUPABASE_ANON_KEY. The returned
+ * access_token is cached in-memory for 50 minutes (TOKEN_TTL_MS) with
+ * single-flight deduplication (tokenPromise) to avoid thundering herd.
+ */
+const url = () => {
+  const u = process.env.CENSUS_SUPABASE_URL;
+  if (!u) throw new Error("Missing CENSUS_SUPABASE_URL — set it in env (census project zsprlozgdxzxeevvetmg)");
+  if (u === process.env.NEXT_PUBLIC_SUPABASE_URL) throw new Error("Census isolation violated: CENSUS_SUPABASE_URL must not equal NEXT_PUBLIC_SUPABASE_URL");
+  return u;
+};
+const anonKey = () => {
+  const k = process.env.CENSUS_SUPABASE_ANON_KEY;
+  if (!k) throw new Error("Missing CENSUS_SUPABASE_ANON_KEY — set it in env (census anon key for zsprlozgdxzxeevvetmg)");
+  return k;
+};
 
 let cachedToken: string | null = null;
 let cachedAt = 0;

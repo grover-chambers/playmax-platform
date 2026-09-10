@@ -78,7 +78,7 @@ export async function GET(req: Request) {
 
     const retailerPoints: Record<string, [number, number]> = {};
     for (const ret of allRetailers || []) {
-      if (ret.lat && ret.lng) retailerPoints[ret.id] = [ret.lat, ret.lng];
+      if (hasValidGps({ gps_lat: ret.lat, gps_lng: ret.lng })) retailerPoints[ret.id] = [ret.lat, ret.lng];
     }
 
     const routeGeometries: Record<string, [number, number][]> = {};

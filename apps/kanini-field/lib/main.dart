@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -88,14 +89,23 @@ Widget _buildErrorScreen(Object error, StackTrace stack) {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  bool _errorScreenShown = false;
+  void _showErrorOnce(Object error, StackTrace stack) {
+    if (_errorScreenShown) return;
+    _errorScreenShown = true;
+    debugPrint('[KaniniField] fatal: $error\n$stack');
+    runApp(_buildErrorScreen(error, stack));
+  }
+
   FlutterError.onError = (details) {
-    // Show error screen for Flutter framework errors
-    runApp(_buildErrorScreen(details.exception, details.stack ?? StackTrace.current));
+    FlutterError.presentError(details);
+    debugPrint('[KaniniField] FlutterError: ${details.exceptionAsString()}');
+    if (!kDebugMode) _showErrorOnce(details.exception, details.stack ?? StackTrace.current);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    // Show error screen for Dart platform errors
-    runApp(_buildErrorScreen(error, stack));
+    debugPrint('[KaniniField] PlatformError: $error');
+    _showErrorOnce(error, stack);
     return true;
   };
 

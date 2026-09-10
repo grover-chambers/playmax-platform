@@ -228,20 +228,22 @@ async function resolveCategoryFilters(
   let subCategoryId: string | null = null;
 
   if (category) {
+    const escapedCategory = category.replace(/%/g, '\\%').replace(/_/g, '\\_');
     const { data: catRows } = await supabase
       .from("analytics_categories")
       .select("id")
-      .ilike("name", `%${category}%`);
+      .ilike("name", `%${escapedCategory}%`);
     if (catRows && catRows.length > 0) {
       categoryId = catRows[0].id;
     }
   }
 
   if (sub_category) {
+    const escapedSub = sub_category.replace(/%/g, '\\%').replace(/_/g, '\\_');
     let subQuery = supabase
       .from("analytics_subcategories")
       .select("id, category_id")
-      .ilike("name", `%${sub_category}%`);
+      .ilike("name", `%${escapedSub}%`);
     if (categoryId) subQuery = subQuery.eq("category_id", categoryId);
     const { data: subRows } = await subQuery;
     if (subRows && subRows.length > 0) {

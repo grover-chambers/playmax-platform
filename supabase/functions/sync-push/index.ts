@@ -95,7 +95,13 @@ Deno.serve(async (req) => {
   }
 
   const supaUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const serviceKey = (() => {
+    const p = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (p) return p;
+    const fb = Deno.env.get("SERVICE_ROLE_KEY");
+    if (fb) { console.warn("sync-push: using deprecated SERVICE_ROLE_KEY; set SUPABASE_SERVICE_ROLE_KEY"); return fb; }
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
+  })();
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
   // Validate caller JWT (rep token) — service client does the writes
@@ -218,18 +224,23 @@ Deno.serve(async (req) => {
             .maybeSingle();
           if (existing) continue;
           const sample = rewritten.find((r) => r["retailer_id"] === rid) ?? {};
-          const rep = (sample["rep_id"] as string) ?? profileId ?? user.id;
-          const name = (sample["outlet_name"] as string) ?? "Census outlet";
-          await admin.from("retailers").upsert(
-            {
-              id: rid,
-              name,
-              rep_id: rep,
-              created_by: rep,
-              lat: sample["gps_lat"] as number | null ?? null,
-              lng: sample["gps_lng"] as number | null ?? null,
-              status: "active",
-            },
+           const rep = (sample["rep_id"] as string) ?? profileId ?? user.id;
+           const rawName = (sample["outlet_name"] as string)?.trim();
+           const name = rawName ? rawName : "Census outlet";
+           // Clamp Kenya lat range: skip invalid gps that would violate hasValidGps / GIS bounds
+           let lat = sample["gps_lat"] as number | null ?? null;
+           let lng = sample["gps_lng"] as number | null ?? null;
+           if (typeof lat === "number" && (lat < -5 || lat > 5)) { lat = null; lng = null; }
+           await admin.from("retailers").upsert(
+             {
+               id: rid,
+               name,
+               rep_id: rep,
+               created_by: rep,
+               lat,
+               lng,
+               status: "active",
+             },
             { onConflict: "id" },
           );
         } catch (e) {
