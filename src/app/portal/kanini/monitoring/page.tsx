@@ -13,11 +13,11 @@ import {
   AlertCircle,
   TrendingUp,
   MapPin,
-  ArrowRight
+  ArrowRight,
+  RefreshCw
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import PageHeader from "@/components/layout/page-header";
-import { createClient } from "@/lib/supabase/browser";
 
 const KiambuMap = dynamic(() => import("@/components/khel/kiambu-map"), { ssr: false });
 
@@ -76,12 +76,15 @@ interface MapPinData {
 export default function KaniniMonitoringPage() {
   const [data, setData] = useState<MonitoringData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedRep, setSelectedRep] = useState<RepStatus | null>(null);
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(0);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchMonitoring = useCallback(async () => {
+    setRefreshing(true);
     try {
       const res = await fetch("/api/portal/khel/monitoring");
       const json = await res.json();
@@ -91,6 +94,7 @@ export default function KaniniMonitoringPage() {
       console.error("Monitoring fetch error:", err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -100,31 +104,26 @@ export default function KaniniMonitoringPage() {
   }, [fetchMonitoring]);
 
   useEffect(() => {
-    fetchMonitoring();
+    void fetchMonitoring(); // eslint-disable-line react-hooks/set-state-in-effect -- initial load + poll is intentional; realtime is best-effort
     const interval = setInterval(fetchMonitoring, 30000);
 
-    // Realtime subscriptions (anon key must have SELECT on these tables; RLS may hide rows but channel still fires for permitted rows)
-    let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null = null;
+    // Live feed: server-proxied SSE from census project (avoids cross-project anon RLS).
+    // Falls back to 30s poll if SSE drops — never silent.
+    let es: EventSource | null = null;
     try {
-      const supabase = createClient();
-      channel = supabase
-        .channel("war-room-live")
-        .on("postgres_changes", { event: "*", schema: "public", table: "rep_locations" }, debouncedFetch)
-        .on("postgres_changes", { event: "*", schema: "public", table: "visits" }, debouncedFetch)
-        .on("postgres_changes", { event: "*", schema: "public", table: "consumer_intercepts" }, debouncedFetch)
-        .on("postgres_changes", { event: "*", schema: "public", table: "census_batches" }, debouncedFetch)
-        .subscribe();
+      es = new EventSource("/api/portal/khel/monitoring/stream");
+      es.addEventListener("change", debouncedFetch);
+      es.onerror = () => {
+        // EventSource auto-reconnects; keep polling as hard fallback
+      };
     } catch (e) {
-      console.warn("Realtime subscribe failed, falling back to polling:", e);
+      console.warn("SSE subscribe failed, falling back to polling:", e);
     }
 
     return () => {
       clearInterval(interval);
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (channel) {
-        try { channel.unsubscribe(); } catch {}
-        try { createClient().removeChannel(channel); } catch {}
-      }
+      if (es) { try { es.close(); } catch {} }
     };
   }, [fetchMonitoring, debouncedFetch]);
 
@@ -132,6 +131,7 @@ export default function KaniniMonitoringPage() {
     if (!data) return [];
     return data.reps
       .filter(r => r.lastGps)
+      .filter(r => !selectedZone || r.zone === selectedZone)
       .map(r => ({
         id: r.id,
         name: r.name,
@@ -144,7 +144,7 @@ export default function KaniniMonitoringPage() {
         county: "Kiambu",
         size: r.status
       })) as MapPinData[];
-  }, [data]);
+  }, [data, selectedZone]);
 
   const tickerEvents = useMemo(() => {
     if (!data) return [];
@@ -187,16 +187,25 @@ export default function KaniniMonitoringPage() {
         title="Live Field Monitoring"
         subtitle="Real-time &apos;War Room&apos; for rep tracking and sync health"
         actions={
-          <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border border-slate-200">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"/>
-              <span className="text-[11px] font-bold text-slate-700">{data?.onShift} ON SHIFT</span>
+              <span className="text-[11px] font-bold tracking-[0.16em] uppercase text-slate-700">{data?.onShift} ON SHIFT</span>
             </div>
             <div className="w-px h-4 bg-slate-200"/>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-slate-300"/>
-              <span className="text-[11px] font-bold text-slate-500">{data?.offShift} OFFLINE</span>
+              <span className="text-[11px] font-bold tracking-[0.16em] uppercase text-slate-500">{data?.offShift} OFFLINE</span>
             </div>
+            <div className="w-px h-4 bg-slate-200"/>
+            <button
+              onClick={() => fetchMonitoring()}
+              disabled={refreshing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white border border-slate-900 text-[11px] font-bold tracking-[0.08em] uppercase hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Refresh live data"
+            >
+              <RefreshCw size={12} className={refreshing ? "animate-spin" : ""}/> {refreshing ? "Syncing…" : "Refresh"}
+            </button>
           </div>
         }
       />
@@ -293,7 +302,7 @@ export default function KaniniMonitoringPage() {
                     <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Last Action</div>
                     <div className="text-[11px] text-slate-700 italic">&quot;{selectedRep.lastOutcome || 'Idle'}&quot;</div>
                   </div>
-                  <button className="w-full mt-2 py-2 bg-teal-600 text-white text-[11px] font-bold rounded-lg hover:bg-teal-700 transition-colors">
+                  <button onClick={() => { window.location.href = `/portal/kanini?rep=${selectedRep.id}`; }} className="w-full mt-2 py-2 bg-teal-600 text-white text-[11px] font-bold tracking-[0.08em] uppercase rounded-lg hover:bg-teal-700 border border-teal-600 transition-colors">
                     View Daily Timeline
                   </button>
                 </div>
@@ -371,7 +380,7 @@ export default function KaniniMonitoringPage() {
             if (zoneCounts.size===0) data?.reps.forEach(r=> zoneCounts.set(r.zone, (zoneCounts.get(r.zone)||0)+r.todayVisits));
             const max = Math.max(1, ...[...zoneCounts.values()]);
             const top = [...zoneCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,4);
-            const total = data?.visits.length || 1;
+            const _total = data?.visits.length || 1; void _total;
             return (
           <div className="pm-dash-card p-5">
             <h3 className="text-[13px] font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -391,13 +400,13 @@ export default function KaniniMonitoringPage() {
                 <div className="text-[10px] text-slate-400 uppercase font-bold mb-3">Top Zones (by visits)</div>
                 <div className="space-y-2">
                   {top.length ? top.map(([zone,cnt]) => (
-                    <div key={zone} className="space-y-1">
+                    <button key={zone} onClick={() => setSelectedZone(prev => prev === zone ? null : zone)} className={`w-full text-left space-y-1 p-1.5 -mx-1.5 rounded-lg border transition-colors ${selectedZone===zone ? "bg-slate-900 border-slate-900 text-white" : "border-transparent hover:bg-slate-50"}`}>
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-700">{zone}</span>
-                        <span className="text-slate-900 font-bold flex items-center gap-1"><TrendingUp size={10} className="text-green-600"/>{cnt}</span>
+                        <span className={selectedZone===zone ? "text-white font-bold" : "text-slate-700"}>{zone} {selectedZone===zone ? "✓" : ""}</span>
+                        <span className={`font-bold flex items-center gap-1 ${selectedZone===zone ? "text-white" : "text-slate-900"}`}><TrendingUp size={10} className={selectedZone===zone ? "text-white" : "text-green-600"}/>{cnt}</span>
                       </div>
                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-teal-500" style={{width:`${Math.round(cnt/max*100)}%`}}/></div>
-                    </div>
+                    </button>
                   )) : <div className="text-[11px] text-slate-400">No visits yet</div>}
                 </div>
               </div>
@@ -405,7 +414,7 @@ export default function KaniniMonitoringPage() {
           </div>
             );})()}
 
-          <button className="w-full p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between hover:bg-slate-50 transition-colors group">
+          <button onClick={() => window.location.href='/portal/kanini'} className="w-full p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between hover:bg-slate-50 transition-colors group">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
                 <Users className="text-teal-600" size={20}/>

@@ -29,8 +29,8 @@ export async function GET() {
         .from("v_rep_latest_location")
         .select("rep_id,lat,lng,accuracy_m,captured_at")
         .order("captured_at", { ascending: false }),
-      db.from("census_batches").select("id,rep_id,status,record_count,started_at,submitted_at").order("started_at", { ascending: false }).limit(200).then(r=>r, ()=>({data:[]} as never)),
-      db.from("consumer_intercepts").select("id,rep_id,ward,channel,captured_at,created_at").order("captured_at", { ascending: false }).limit(50).then(r=>r, ()=>({data:[]} as never)),
+      db.from("census_batches").select("id,rep_id,status,record_count,started_at,submitted_at").order("started_at", { ascending: false }).limit(200).then(r=>r, (e)=>{ console.warn("census_batches fetch failed:", (e as Error)?.message || e); return {data:[]} as never; }),
+      db.from("consumer_intercepts").select("id,rep_id,ward,channel,captured_at,created_at").order("captured_at", { ascending: false }).limit(50).then(r=>r, (e)=>{ console.warn("consumer_intercepts fetch failed:", (e as Error)?.message || e); return {data:[]} as never; }),
     ]);
     const batches = (batchesRes as {data:unknown[]})?.data as {id:string;rep_id:string;status:string;record_count:number;started_at:string;submitted_at:string|null}[] || [];
     const intercepts = (interceptsRes as {data:unknown[]})?.data as {id:string;rep_id:string;ward:string|null;channel:string|null;captured_at:string;created_at:string}[] || [];

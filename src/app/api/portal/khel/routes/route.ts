@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { createCensusClient } from "@/lib/supabase/census";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { getAuthenticatedClient, getCurrentUser, isStaff } from "@/lib/supabase/api";
 import { hasValidGps } from "@/lib/geo";
 
