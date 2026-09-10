@@ -19,6 +19,7 @@ import 'providers/sync_provider.dart';
 import 'screens/check_in_screen.dart';
 import 'screens/fatal_config_screen.dart';
 import 'screens/splash_screen.dart';
+import 'services/location_ping_service.dart';
 import 'services/quality_service.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
@@ -88,14 +89,17 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   FlutterError.onError = (details) {
-    FlutterError.presentError(details);
+    // Show error screen for Flutter framework errors
+    runApp(_buildErrorScreen(details.exception, details.stack ?? StackTrace.current));
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
+    // Show error screen for Dart platform errors
+    runApp(_buildErrorScreen(error, stack));
     return true;
   };
 
-  runZonedGuarded(() async {
+  try {
     var dotenvLoaded = false;
     try {
       await dotenv.load(fileName: '.env');
@@ -105,6 +109,14 @@ Future<void> main() async {
     await Hive.initFlutter();
     await syncService.init();
     await qualityService.init();
+
+    // Pre-init providers so landing dashboard has data immediately
+    final shiftProvider = ShiftProvider();
+    final batchProvider = BatchProvider();
+    final censusProvider = CensusProvider(shift: shiftProvider, batch: batchProvider);
+    final interceptProvider = InterceptProvider(shift: shiftProvider);
+    await censusProvider.init();
+    await interceptProvider.init();
 
     final url = (dotenvLoaded ? dotenv.env['SUPABASE_URL'] : null) ??
         const String.fromEnvironment('SUPABASE_URL');
@@ -121,15 +133,23 @@ Future<void> main() async {
       await Supabase.initialize(url: url, publishableKey: anonKey)
           .timeout(const Duration(seconds: 10));
       await SupabaseService.instance.init();
-    } catch (_) {
-      runApp(const FatalConfigScreen());
+      // Start live location pinging for War Room (silently no-ops if no session/perms)
+      unawaited(LocationPingService.instance.start());
+    } catch (e, st) {
+      runApp(_buildErrorScreen(e, st));
       return;
     }
 
-    runApp(const KaniniFieldApp());
-  }, (error, stack) {
-    // Unhandled async errors land here instead of killing the process.
-  });
+    runApp(KaniniFieldApp(
+      censusProvider: censusProvider,
+      interceptProvider: interceptProvider,
+      shiftProvider: shiftProvider,
+      batchProvider: batchProvider,
+    ));
+  } catch (e, st) {
+    // Catch any synchronous errors during startup
+    runApp(_buildErrorScreen(e, st));
+  }
 }
 
 /// The root widget of the application.
@@ -137,24 +157,34 @@ Future<void> main() async {
 /// Sets up the [MultiProvider] tree, global [ThemeData], and top-level
 /// navigation routes.
 class KaniniFieldApp extends StatelessWidget {
-  const KaniniFieldApp({super.key});
+  const KaniniFieldApp({
+    super.key,
+    required this.censusProvider,
+    required this.interceptProvider,
+    required this.shiftProvider,
+    required this.batchProvider,
+  });
+
+  final CensusProvider censusProvider;
+  final InterceptProvider interceptProvider;
+  final ShiftProvider shiftProvider;
+  final BatchProvider batchProvider;
 
   @override
   Widget build(BuildContext context) {
     final syncProvider = SyncProvider();
-    final batchProvider = BatchProvider();
-    final shiftProvider = ShiftProvider()..sync = syncProvider;
+    shiftProvider.sync = syncProvider;
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => RetailerProvider()),
         ChangeNotifierProvider(create: (_) => syncProvider),
-        ChangeNotifierProvider(create: (_) => batchProvider),
-        ChangeNotifierProvider(create: (_) => CensusProvider(shift: shiftProvider, batch: batchProvider)),
-        ChangeNotifierProvider(create: (_) => InterceptProvider(shift: shiftProvider)),
+        ChangeNotifierProvider.value(value: batchProvider),
+        ChangeNotifierProvider.value(value: censusProvider),
+        ChangeNotifierProvider.value(value: interceptProvider),
         ChangeNotifierProvider(create: (_) => SubmissionProvider(shift: shiftProvider)),
         ChangeNotifierProvider(create: (_) => RouteMasterProvider()),
-        ChangeNotifierProvider(create: (_) => shiftProvider),
+        ChangeNotifierProvider.value(value: shiftProvider),
         Provider<SupabaseService>(create: (_) => SupabaseService.instance),
       ],
       child: MaterialApp(

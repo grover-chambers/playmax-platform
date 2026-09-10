@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { createCensusClient } from "@/lib/supabase/census";
+import { getAuthenticatedClient, getCurrentUser, isStaff } from "@/lib/supabase/api";
+import { hasValidGps } from "@/lib/geo";
 
 export async function GET(req: Request) {
   try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+    if (!currentUser || !isStaff(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const { searchParams } = new URL(req.url);
     const group = searchParams.get("group"); // A-G filter
     const from = searchParams.get("from");
@@ -97,9 +104,9 @@ export async function GET(req: Request) {
       if (day) timeline[day] = (timeline[day] || 0) + 1;
     }
 
-    // Outlets with GPS (for map)
+    // Outlets with GPS (for map) — Kenya band only, never (0,0) or null
     const mapPins = fOutlets
-      .filter((o) => o.gps_lat && o.gps_lng)
+      .filter(hasValidGps)
       .map((o) => ({
         id: o.id,
         name: o.business_name,

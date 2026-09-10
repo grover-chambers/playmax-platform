@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isStaff } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     // Staging uploads are internal analytics data — staff only.
-    if (!currentUser.role) {
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const db = supabase;
@@ -63,14 +64,14 @@ export async function POST(request: Request) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!currentUser.role) {
+    // Staging uploads are internal analytics data; the service-role client
+    // bypasses RLS so this MUST be gated to staff, never just any role.
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Writes go through the user's own RLS client — migration 075 grants
-    // direct-JWT write policies to data_handler + staff (service-role key is
-    // unreliable in the deployed env, see cc35fe3/b7af5ea).
-    const db = supabase;
+    // Data handler shares same DB via service role (bypasses is_admin-only RLS until 053 is pushed)
+    const db = getAdminClient();
 
     const body = await request.json();
     const { filename, file_type, period_id, branch_id, branch_name, category_id, sub_category_id } = body;

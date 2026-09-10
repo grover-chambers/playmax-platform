@@ -2,6 +2,7 @@ export 'capture_service.dart';
 export 'census_service.dart';
 export 'intercept_service.dart';
 export 'location_service.dart';
+export 'location_ping_service.dart';
 export 'messaging.dart';
 export 'photo_service.dart';
 export 'quality_service.dart';

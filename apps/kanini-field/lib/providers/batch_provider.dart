@@ -8,7 +8,7 @@ import '../services/device_id.dart';
 
 class BatchProvider extends ChangeNotifier {
   static const _boxName = 'census_batches_local';
-  late Box<Map<String, dynamic>> _box;
+  late Box _box;
   final List<CensusBatchModel> _batches = [];
   CensusBatchModel? _activeBatch;
   bool _ready = false;
@@ -19,12 +19,25 @@ class BatchProvider extends ChangeNotifier {
 
   Future<void> init() async {
     if (_ready) return;
-    _box = await Hive.openBox<Map<String, dynamic>>(_boxName);
-    for (final v in _box.values) {
-      final batch = CensusBatchModel.fromJson(Map<String, dynamic>.from(v));
-      _batches.add(batch);
-      if (batch.status == BatchStatus.draft) {
-        _activeBatch = batch;
+    // UNTYPED box: Hive's `Box<Map<String, dynamic>>` generic is a runtime
+    // fiction (values come back as Map<dynamic,dynamic>) and the typed `.values`
+    // iterator downcasts inside moveNext, throwing outside any try/catch.
+    // Read per-key and normalize safely.
+    _box = await Hive.openBox(_boxName);
+    for (final key in _box.keys) {
+      final v = _box.get(key);
+      if (v == null) continue;
+      try {
+        final batch =
+            CensusBatchModel.fromJson(Map<String, dynamic>.from(v as Map));
+        _batches.add(batch);
+        if (batch.status == BatchStatus.draft) {
+          _activeBatch = batch;
+        }
+      } catch (e) {
+        // Quarantine only the invalid record — log, skip, never delete.
+        // ignore: avoid_print
+        print('BatchProvider: skipping corrupted record key=$key error=$e');
       }
     }
     // Sort batches by creation date, newest first

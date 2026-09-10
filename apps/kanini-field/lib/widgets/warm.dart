@@ -258,35 +258,44 @@ class KpiTile extends StatelessWidget {
   final String number;
   final String label;
   final Color? numberColor;
-  const KpiTile(this.number, this.label, {super.key, this.numberColor});
+  final VoidCallback? onTap;
+  const KpiTile(this.number, this.label, {super.key, this.numberColor, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: WarmCard(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              number,
-              style: TextStyle(
-                color: numberColor ?? Brand.ink,
-                fontFeatures: const [FontFeature.tabularFigures()],
-                fontFamily: Brand.fontMono,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                height: 1,
-              ),
+    final card = WarmCard(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            number,
+            style: TextStyle(
+              color: numberColor ?? Brand.ink,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              fontFamily: Brand.fontMono,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              height: 1,
             ),
-            const SizedBox(height: 5),
-            Text(
-              label.toUpperCase(),
-              style: const TextStyle(fontSize: 10.5, letterSpacing: 0.08, color: Brand.inkSoft),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(fontSize: 10.5, letterSpacing: 0.08, color: Brand.inkSoft),
+          ),
+        ],
       ),
+    );
+
+    return Expanded(
+      child: onTap == null
+          ? card
+          : InkWell(
+              onTap: UiFx.withTap(onTap),
+              borderRadius: BorderRadius.circular(12),
+              child: card,
+            ),
     );
   }
 }

@@ -19,7 +19,11 @@ class SubmissionProvider extends ChangeNotifier {
 
   static const _boxName = 'submissions_local';
 
-  late Box<Map<String, dynamic>> _box;
+  // UNTYPED box — Hive's `Box<Map<String, dynamic>>` generic isn't enforced at
+  // runtime (values read back as Map<dynamic,dynamic>); the typed `.values`
+  // iterator downcasts inside moveNext → throws outside any try/catch. Read
+  // per-key and normalize each record safely.
+  late Box _box;
   final List<DailySubmissionModel> _submissions = [];
   final List<BackCheckModel> _backChecks = [];
   bool _ready = false;
@@ -32,17 +36,48 @@ class SubmissionProvider extends ChangeNotifier {
 
   Future<void> init() async {
     if (_ready) return;
-    _box = await Hive.openBox<Map<String, dynamic>>(_boxName);
-    for (final v in _box.values) {
-      final json = Map<String, dynamic>.from(v);
-      if (json['type'] == 'back_check') {
-        _backChecks.add(BackCheckModel.fromJson(json));
-      } else {
-        _submissions.add(DailySubmissionModel.fromJson(json));
+    _box = await Hive.openBox(_boxName);
+    for (final key in _box.keys) {
+      final v = _box.get(key);
+      if (v == null) continue;
+      try {
+        final map = _normalizeMap(v);
+        if (map['type'] == 'back_check') {
+          _backChecks.add(BackCheckModel.fromJson(map));
+        } else {
+          _submissions.add(DailySubmissionModel.fromJson(map));
+        }
+      } catch (e) {
+        // Quarantine only the invalid record — log, skip, never delete.
+        // ignore: avoid_print
+        print('SubmissionProvider: skipping corrupted record key=$key error=$e');
       }
     }
     _ready = true;
     notifyListeners();
+  }
+
+  /// Recursively normalize a Hive `Map<dynamic, dynamic>` into
+  /// `Map<String, dynamic>` (keys converted to String; non-String keys dropped).
+  static Map<String, dynamic> _normalizeMap(dynamic value) {
+    if (value is! Map) return {};
+    final out = <String, dynamic>{};
+    for (final e in value.entries) {
+      if (e.key is String) out[e.key as String] = _normalizeValue(e.value);
+    }
+    return out;
+  }
+
+  static dynamic _normalizeValue(dynamic value) {
+    if (value is Map) {
+      final out = <String, dynamic>{};
+      for (final e in value.entries) {
+        if (e.key is String) out[e.key as String] = _normalizeValue(e.value);
+      }
+      return out;
+    }
+    if (value is List) return value.map(_normalizeValue).toList();
+    return value;
   }
 
   DailySubmissionModel? submissionFor(String date) {

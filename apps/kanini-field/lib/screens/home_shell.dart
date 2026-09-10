@@ -3,12 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/batch_provider.dart';
-import '../providers/census_provider.dart';
-import '../providers/intercept_provider.dart';
 import '../providers/submission_provider.dart';
 import '../theme/brand.dart';
 import '../ui_fx.dart';
 import '../widgets/sync_badge.dart';
+import 'cache_store_screen.dart';
 import 'census_screen.dart';
 import 'dashboard_screen.dart';
 import 'field_guide_screen.dart';
@@ -40,8 +39,7 @@ class _HomeShellState extends State<HomeShell> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BatchProvider>().init();
-      context.read<CensusProvider>().init();
-      context.read<InterceptProvider>().init();
+      // CensusProvider & InterceptProvider pre-initialized in main.dart
       context.read<SubmissionProvider>().init();
       // Update check now lives on the dashboard (landing tab) so the alert is
       // surfaced there — see DashboardScreen.
@@ -114,13 +112,24 @@ class _HomeShellState extends State<HomeShell> {
           context,
           MaterialPageRoute(builder: (_) => const ProfileScreen()),
         ),
+        onCacheStore: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CacheStoreScreen()),
+        ),
+        onSyncScreen: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SyncScreen()),
+        ),
       ),
       body: IndexedStack(
         index: _index,
         children: [
           _AnimatedTab(active: _index == 0, child: const SubmissionsScreen()),
           _AnimatedTab(active: _index == 1, child: const CensusScreen()),
-          _AnimatedTab(active: _index == 2, child: DashboardScreen(onNavigate: _goTo)),
+          _AnimatedTab(active: _index == 2, child: DashboardScreen(onNavigate: _goTo, onCacheStore: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CacheStoreScreen()),
+        ))),
           _AnimatedTab(active: _index == 3, child: const InterceptScreen()),
           _AnimatedTab(active: _index == 4, child: const VisitsScreen()),
         ],
@@ -324,6 +333,8 @@ class _MenuDrawer extends StatelessWidget {
   final VoidCallback onFieldGuide;
   final VoidCallback onTeamManagement;
   final VoidCallback onProfile;
+  final VoidCallback onCacheStore;
+  final VoidCallback onSyncScreen;
   const _MenuDrawer({
     required this.onQuickSubmission,
     required this.onQuickCensus,
@@ -333,6 +344,8 @@ class _MenuDrawer extends StatelessWidget {
     required this.onFieldGuide,
     required this.onTeamManagement,
     required this.onProfile,
+    required this.onCacheStore,
+    required this.onSyncScreen,
   });
 
   @override
@@ -385,9 +398,12 @@ class _MenuDrawer extends StatelessWidget {
               child: Text('SHIFT', style: TextStyle(color: Brand.inkSoft, fontFamily: Brand.fontMono, fontSize: 11, letterSpacing: 0.14)),
             ),
             _DrawerTile(icon: Icons.access_time, label: 'Check-in / clock shift', onTap: onShift),
-            _DrawerTile(icon: Icons.sync, label: 'Sync status & recovery', onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncScreen()));
-            }),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 6),
+              child: Text('SYNC & CACHE', style: TextStyle(color: Brand.inkSoft, fontFamily: Brand.fontMono, fontSize: 11, letterSpacing: 0.14)),
+            ),
+            _DrawerTile(icon: Icons.storage_outlined, label: 'Cache store & upload', onTap: onCacheStore),
+            _DrawerTile(icon: Icons.sync, label: 'Sync status & recovery', onTap: onSyncScreen),
             _DrawerTile(icon: Icons.menu_book_outlined, label: 'Field guide', onTap: onFieldGuide),
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 20, 20, 6),

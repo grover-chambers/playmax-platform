@@ -1,0 +1,7 @@
+-- War Room matview refresh (future)
+-- If a materialized view e.g. mv_war_room is added, schedule refresh every 30s.
+-- Requires pg_cron extension. Do NOT run if pg_cron unavailable — file is documentation only.
+-- Enable manually in Supabase SQL editor:
+--   create extension if not exists pg_cron;
+--   select cron.schedule('war-room-refresh-30s','* * * * *','refresh materialized view concurrently mv_war_room');
+-- For 30s granularity, schedule two jobs offset by 30s or use an external cron (Vercel cron /api/cron/war-room).

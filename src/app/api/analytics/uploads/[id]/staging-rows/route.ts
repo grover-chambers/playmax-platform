@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isStaff } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function GET(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     // Staging rows contain raw internal data — staff only.
-    if (!currentUser.role) {
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const db = supabase;
@@ -53,8 +54,9 @@ export async function POST(request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const db = supabase;
-    if (!currentUser.role) {
+    const db = getAdminClient();
+    // Service-role client bypasses RLS — MUST be gated to staff, not any role.
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -80,7 +82,6 @@ export async function POST(request: Request, context: RouteContext) {
         weight_tonnes?: number;
         total_amount?: number;
         raw_data?: Record<string, unknown>;
-        mapped_fields?: Record<string, unknown>;
       }) => ({
         upload_id: id,
         row_number: row.row_number,
@@ -93,7 +94,6 @@ export async function POST(request: Request, context: RouteContext) {
         weight_tonnes: row.weight_tonnes ?? null,
         total_amount: row.total_amount ?? null,
         raw_data: row.raw_data ?? null,
-        mapped_fields: row.mapped_fields ?? {},
       }),
     );
 

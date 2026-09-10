@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { createCensusClient } from "@/lib/supabase/census";
+import { getAuthenticatedClient, getCurrentUser, isStaff } from "@/lib/supabase/api";
+import { hasValidGps } from "@/lib/geo";
 
 export async function GET(req: Request) {
   try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+    if (!currentUser || !isStaff(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const { searchParams } = new URL(req.url);
     const group = searchParams.get("group"); // A-G filter
 
@@ -99,7 +106,9 @@ export async function GET(req: Request) {
       points: routeGeometries[r.id] || [WAREHOUSE],
     }));
 
-    const outletPins = (outlets || []).map((o) => ({
+    const outletPins = (outlets || [])
+      .filter(hasValidGps)
+      .map((o) => ({
       id: o.id,
       name: o.business_name,
       channel: o.channel,

@@ -111,4 +111,37 @@ class SupabaseService {
     }
     return const [];
   }
+
+  /// Ping live GPS location to the War Room endpoint.
+  /// Best-effort — never throws, fails silently.
+  Future<void> pingLocation({
+    required double lat,
+    required double lng,
+    double? accuracy,
+    double? altitude,
+    double? speed,
+    double? heading,
+    int? batteryPct,
+    bool? isCharging,
+    String source = 'app_background',
+  }) async {
+    try {
+      await client.functions.invoke(
+        'location-ping',
+        body: {
+          'lat': lat,
+          'lng': lng,
+          if (accuracy != null) 'accuracy': accuracy,
+          if (altitude != null) 'altitude': altitude,
+          if (speed != null) 'speed': speed,
+          if (heading != null) 'heading': heading,
+          if (batteryPct != null) 'batteryPct': batteryPct,
+          if (isCharging != null) 'isCharging': isCharging,
+          'source': source,
+        },
+      );
+    } catch (_) {
+      // Silently ignore — pinging is telemetry only
+    }
+  }
 }

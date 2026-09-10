@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Activity,
   Users,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import PageHeader from "@/components/layout/page-header";
+import { createClient } from "@/lib/supabase/browser";
 
 const KiambuMap = dynamic(() => import("@/components/khel/kiambu-map"), { ssr: false });
 
@@ -46,6 +47,8 @@ interface Visit {
   order_value: number;
 }
 
+interface Intercept { id:string; rep_id:string; ward:string|null; channel:string|null; captured_at:string; created_at:string; }
+interface Batch { id:string; rep_id:string; status:string; record_count:number; started_at:string; submitted_at:string|null; }
 interface MonitoringData {
   today: string;
   total: number;
@@ -53,6 +56,8 @@ interface MonitoringData {
   offShift: number;
   reps: RepStatus[];
   visits: Visit[];
+  batches?: Batch[];
+  intercepts?: Intercept[];
 }
 
 interface MapPinData {
@@ -72,26 +77,56 @@ export default function KaniniMonitoringPage() {
   const [data, setData] = useState<MonitoringData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRep, setSelectedRep] = useState<RepStatus | null>(null);
-  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+  const [currentTime, setCurrentTime] = useState<number>(0);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchMonitoring = useCallback(async () => {
+    try {
+      const res = await fetch("/api/portal/khel/monitoring");
+      const json = await res.json();
+      setData(json);
+      setCurrentTime(Date.now());
+    } catch (err) {
+      console.error("Monitoring fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const debouncedFetch = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchMonitoring(), 400);
+  }, [fetchMonitoring]);
 
   useEffect(() => {
-    const fetchMonitoring = async () => {
-      try {
-        const res = await fetch("/api/portal/khel/monitoring");
-        const json = await res.json();
-        setData(json);
-        setCurrentTime(Date.now());
-      } catch (err) {
-        console.error("Monitoring fetch error:", err);
-      } finally {
-        setLoading(false);
+    fetchMonitoring();
+    const interval = setInterval(fetchMonitoring, 30000);
+
+    // Realtime subscriptions (anon key must have SELECT on these tables; RLS may hide rows but channel still fires for permitted rows)
+    let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null = null;
+    try {
+      const supabase = createClient();
+      channel = supabase
+        .channel("war-room-live")
+        .on("postgres_changes", { event: "*", schema: "public", table: "rep_locations" }, debouncedFetch)
+        .on("postgres_changes", { event: "*", schema: "public", table: "visits" }, debouncedFetch)
+        .on("postgres_changes", { event: "*", schema: "public", table: "consumer_intercepts" }, debouncedFetch)
+        .on("postgres_changes", { event: "*", schema: "public", table: "census_batches" }, debouncedFetch)
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime subscribe failed, falling back to polling:", e);
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (channel) {
+        try { channel.unsubscribe(); } catch {}
+        try { createClient().removeChannel(channel); } catch {}
       }
     };
-
-    fetchMonitoring();
-    const interval = setInterval(fetchMonitoring, 30000); // Poll every 30s
-    return () => clearInterval(interval);
-  }, []);
+  }, [fetchMonitoring, debouncedFetch]);
 
   const pins = useMemo(() => {
     if (!data) return [];
@@ -113,7 +148,7 @@ export default function KaniniMonitoringPage() {
 
   const tickerEvents = useMemo(() => {
     if (!data) return [];
-    return data.visits.slice(0, 10).map(v => {
+    const visitEvents = data.visits.slice(0, 10).map(v => {
       const rep = data.reps.find(r => r.id === v.rep_id);
       return {
         id: v.id,
@@ -121,9 +156,25 @@ export default function KaniniMonitoringPage() {
         action: v.outcome === "order" ? "placed an order" : "completed a visit",
         time: new Date(v.check_in_at || v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         value: v.order_value,
-        status: v.status
+        status: v.status,
+        kind: "visit" as const,
+        ts: new Date(v.check_in_at || v.created_at).getTime(),
       };
     });
+    const interceptEvents = (data.intercepts || []).slice(0, 10).map(ci => {
+      const rep = data.reps.find(r => r.id === ci.rep_id);
+      return {
+        id: ci.id,
+        repName: rep?.name || "Unknown",
+        action: `intercept — ${ci.ward || "ward ?"} · ${ci.channel || "channel ?"}`,
+        time: new Date(ci.captured_at || ci.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        value: 0,
+        status: "intercept",
+        kind: "intercept" as const,
+        ts: new Date(ci.captured_at || ci.created_at).getTime(),
+      };
+    });
+    return [...visitEvents, ...interceptEvents].sort((a,b)=>b.ts-a.ts).slice(0,10);
   }, [data]);
 
   if (loading && !data) {
@@ -282,51 +333,77 @@ export default function KaniniMonitoringPage() {
 
         {/* Right Sidebar: Quick Actions & Alerts */}
         <div className="xl:col-span-1 space-y-6">
+          {(() => {
+            const lagging = data?.reps.filter(r => r.onShift && (!r.lastSyncAt || currentTime - new Date(r.lastSyncAt).getTime() > 3600000)) || [];
+            const pendingBatches = (data?.batches || []).filter(b=>b.status==='draft').length;
+            const totalToday = data?.reps.reduce((s,r)=>s+r.todayVisits,0) || 0;
+            return (
           <div className="pm-dash-card p-5 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
             <h3 className="text-[14px] font-bold mb-4 flex items-center gap-2">
-              <Bell size={16} className="text-amber-400"/> Critical Alerts
+              <Bell size={16} className="text-amber-400"/> Critical Alerts <span className="text-[9px] font-mono tracking-widest text-slate-400 ml-1">LIVE</span>
             </h3>
             <div className="space-y-3">
               <div className="p-3 bg-white/10 rounded-xl border border-white/10">
-                <div className="text-[11px] font-bold text-amber-400 mb-1">Route Deviation</div>
-                <div className="text-[10px] text-slate-300">Truck G-04 is currently 2km off-route in Gatundu North.</div>
+                <div className="text-[11px] font-bold text-amber-400 mb-1">Route Deviation — Live</div>
+                <div className="text-[10px] text-slate-300">No route geometry yet — tracking live GPS only. {lagging.length>0 ? `${lagging.length} rep(s) lagging >1hr` : 'All on-shift reps reporting.'}</div>
               </div>
               <div className="p-3 bg-white/10 rounded-xl border border-white/10">
-                <div className="text-[11px] font-bold text-teal-400 mb-1">Batch Quota Met</div>
-                <div className="text-[10px] text-slate-300">Group A has completed 95% of target outlets for this shift.</div>
+                <div className="text-[11px] font-bold text-teal-400 mb-1">Batch Quota — Live</div>
+                <div className="text-[10px] text-slate-300">{pendingBatches} draft batch(es), {totalToday} visits today. {pendingBatches>5 ? 'Backlog — nudge sync.' : 'Flow normal.'}</div>
               </div>
+              {lagging.length>0 && (
+                <div className="p-3 bg-white/10 rounded-xl border border-amber-400/30">
+                  <div className="text-[11px] font-bold text-amber-400 mb-1">Sync Lag — Live</div>
+                  <div className="text-[10px] text-slate-300">{lagging.map(r=>r.name).join(', ')} &gt;1hr since push.</div>
+                </div>
+              )}
             </div>
           </div>
+            );})()}
 
+          {(() => {
+            const zoneCounts = new Map<string, number>();
+            data?.visits.forEach(v=>{
+              const rep = data?.reps.find(r=>r.id===v.rep_id);
+              const z = rep?.zone || 'Unzoned';
+              zoneCounts.set(z, (zoneCounts.get(z)||0)+1);
+            });
+            if (zoneCounts.size===0) data?.reps.forEach(r=> zoneCounts.set(r.zone, (zoneCounts.get(r.zone)||0)+r.todayVisits));
+            const max = Math.max(1, ...[...zoneCounts.values()]);
+            const top = [...zoneCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,4);
+            const total = data?.visits.length || 1;
+            return (
           <div className="pm-dash-card p-5">
             <h3 className="text-[13px] font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <MapPin size={16} className="text-teal-600"/> Distribution Summary
+              <MapPin size={16} className="text-teal-600"/> Distribution Summary <span className="text-[9px] font-mono tracking-widest text-slate-400">LIVE</span>
             </h3>
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between text-[11px] mb-1.5">
-                  <span className="text-slate-500">Thika Nampak DC</span>
-                  <span className="text-green-600 font-bold">STABLE</span>
+                  <span className="text-slate-500">Today — {data?.visits.length||0} visits</span>
+                  <span className="text-green-600 font-bold">LIVE</span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="w-full h-full bg-green-500"/>
+                  <div className="h-full bg-green-500" style={{width: `${Math.min(100, Math.round((data?.visits.length||0)/5))}%`}}/>
                 </div>
               </div>
               <div className="pt-4 border-t border-slate-100">
-                <div className="text-[10px] text-slate-400 uppercase font-bold mb-3">Top Performing Zones</div>
+                <div className="text-[10px] text-slate-400 uppercase font-bold mb-3">Top Zones (by visits)</div>
                 <div className="space-y-2">
-                  {['Thika CBD', 'Ruiru', 'Juja'].map(zone => (
-                    <div key={zone} className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-700">{zone}</span>
-                      <div className="flex items-center gap-1 text-green-600 font-bold">
-                        <TrendingUp size={10}/> 12%
+                  {top.length ? top.map(([zone,cnt]) => (
+                    <div key={zone} className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-700">{zone}</span>
+                        <span className="text-slate-900 font-bold flex items-center gap-1"><TrendingUp size={10} className="text-green-600"/>{cnt}</span>
                       </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-teal-500" style={{width:`${Math.round(cnt/max*100)}%`}}/></div>
                     </div>
-                  ))}
+                  )) : <div className="text-[11px] text-slate-400">No visits yet</div>}
                 </div>
               </div>
             </div>
           </div>
+            );})()}
 
           <button className="w-full p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between hover:bg-slate-50 transition-colors group">
             <div className="flex items-center gap-3">

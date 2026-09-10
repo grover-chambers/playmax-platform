@@ -18,8 +18,10 @@ class DashboardScreen extends StatefulWidget {
   /// Index of the destination tab when a task row is tapped
   /// (0 = submissions, 1 = census, 3 = intercepts). Null in tests.
   final ValueChanged<int>? onNavigate;
+  /// Called when the "To sync" KPI tile is tapped — opens CacheStoreScreen.
+  final VoidCallback? onCacheStore;
 
-  const DashboardScreen({super.key, this.onNavigate});
+  const DashboardScreen({super.key, this.onNavigate, this.onCacheStore});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -133,7 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(width: 10),
               KpiTile('${intercepts.todayCount}', 'Intercepts'),
               const SizedBox(width: 10),
-              KpiTile('${sync.pendingCount}', 'To sync'),
+              KpiTile('${sync.pendingCount}', 'To sync', onTap: widget.onCacheStore),
             ],
           ),
         ),

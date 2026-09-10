@@ -61,7 +61,7 @@ void main() {
   });
 
   setUp(() async {
-    final box = await Hive.openBox<Map<String, dynamic>>('intercepts_local');
+    final box = await Hive.openBox('intercepts_local');
     await box.clear();
     intercepts = InterceptProvider();
     await intercepts.init();

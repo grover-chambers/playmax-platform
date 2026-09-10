@@ -254,16 +254,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    const result = applied as { applied?: number; conflicts?: Array<{ reason?: string }> } | null;
+    const result = applied as
+      | { applied?: number; conflicts?: Array<{ id?: unknown; reason?: string }> }
+      | null;
     const appliedHere = result?.applied ?? 0;
     const chunkConflicts = result?.conflicts ?? [];
     totalApplied += appliedHere;
     conflicts.push(...chunkConflicts);
 
-    // Derive per-row IDs from the applied count: rows are processed in order,
-    // so the first `appliedHere` rows succeeded and the rest failed.
-    const appliedIds = rewritten.slice(0, appliedHere).map((r) => r["id"] as string).filter(Boolean);
-    const failedIds = rewritten.slice(appliedHere).map((r) => r["id"] as string).filter(Boolean);
+    // Per-row outcome comes from sync_apply's conflict list, NOT positional
+    // slicing: `applied` is a count, not an index, and a failing row in the
+    // middle of a chunk must not make later rows look failed (nor a success
+    // at the front hide a bad row).
+    //   - `missing-id` / `empty-row` conflicts carry no usable id (or describe
+    //     rows that cannot be keyed) — skip them here; they cannot be mapped
+    //     to a client queue key.
+    //   - `newer-server-row` is BENIGN: the server already has a newer version
+    //     and LWW intentionally kept it. Treat it as effectively applied so the
+    //     client marks the row synced and stops retrying.
+    const failedSet = new Set<string>();
+    for (const c of chunkConflicts) {
+      if (!c || typeof c.id !== "string" || !c.id) continue;
+      if (c.reason === "newer-server-row") continue;
+      failedSet.add(c.id);
+    }
+    const failedIds = [...failedSet];
+    const appliedIds = rewritten
+      .map((r) => r["id"] as string)
+      .filter((id) => typeof id === "string" && !!id && !failedSet.has(id));
     allAppliedIds.push(...appliedIds);
     allFailedIds.push(...failedIds);
 

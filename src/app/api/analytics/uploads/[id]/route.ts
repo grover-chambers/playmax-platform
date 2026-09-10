@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isStaff } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export async function GET(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     // Staging uploads (incl. raw rows) are internal — staff only.
-    if (!currentUser.role) {
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const db = supabase;
@@ -79,8 +80,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const db = supabase;
-    if (!currentUser.role) {
+    const db = getAdminClient();
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -133,8 +134,8 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const db = supabase;
-    if (!currentUser.role) {
+    const db = getAdminClient();
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

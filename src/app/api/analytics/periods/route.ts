@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedClient, getCurrentUser, isAdmin } from "@/lib/supabase/api";
+import { getAuthenticatedClient, getCurrentUser, isStaff } from "@/lib/supabase/api";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sanitizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     // Analytics periods are internal metadata — staff only.
-    if (!currentUser.role) {
+    if (!isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const db = supabase;
@@ -39,10 +40,10 @@ export async function POST(request: Request) {
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);
-    if (!currentUser || (!isAdmin(currentUser.role) && currentUser.role !== "data_handler" && currentUser.role !== "finance")) {
+    if (!currentUser || !isStaff(currentUser.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const db = supabase;
+    const db = getAdminClient();
 
     const body = await request.json();
     const { label, start_date, end_date } = body;

@@ -149,7 +149,7 @@ class SyncScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '$pending items + $pendingMedia photos. Recover brute-reads the Hive file and upserts direct to DB (bypasses edge limits) + backs raw file to diagnostics.',
+                      '$pending items + $pendingMedia photos. Recover reads the Hive cache and sends it via the same healed sync pipeline (id-rewrite, outcome fix, retailer self-heal) + backs the raw file to diagnostics.',
                       style: const TextStyle(color: Brand.inkSoft, fontSize: 11.5, height: 1.4),
                     ),
                     const SizedBox(height: 10),

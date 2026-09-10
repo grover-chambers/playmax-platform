@@ -34,11 +34,13 @@ class PhotoService {
       throw Exception('Photo cancelled — grant camera permission in Settings if needed');
     }
 
-    // 3. Build geotag
+    // 3. Build geotag. When GPS fails we emit NULL coords (NOT 0.0) so the
+    //    row is clearly ungeotagged and can never render as a (0,0) pin.
+    final hasFix = position != null && (position.latitude != 0.0 || position.longitude != 0.0);
     final geotag = {
-      'latitude': position?.latitude ?? 0.0,
-      'longitude': position?.longitude ?? 0.0,
-      'accuracy': position?.accuracy ?? 0.0,
+      'latitude': hasFix ? position.latitude : null,
+      'longitude': hasFix ? position.longitude : null,
+      'accuracy': hasFix ? position.accuracy : null,
       'timestamp': DateTime.now().toIso8601String(),
     };
     return (file.path, geotag);
