@@ -5,6 +5,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 interface OutletPin {
+  accuracy_tier?: string | null; gps_final_lat?: number | null; gps_final_lng?: number | null;
   id: string;
   name: string;
   channel: string;
@@ -216,7 +217,7 @@ export default function KiambuMap({
 
     // Draw Outlet Pins
     pins.forEach((pin) => {
-      const color = GROUP_COLORS[selectedGroup] || "#047857";
+      const tier = (pin as any).accuracy_tier; const color = tier==='high'? '#16a34a' : tier==='medium'? '#f59e0b' : tier==='manual'? '#ca8a04' : (GROUP_COLORS[selectedGroup] || "#047857");
       const icon = L.divIcon({
         className: "",
         html: `<div style="width:12px;height:12px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,

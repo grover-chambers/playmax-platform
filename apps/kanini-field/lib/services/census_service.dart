@@ -41,6 +41,8 @@ class CategoryDraft {
 
 /// Mutable draft bundle built by the census flow UI and submitted atomically.
 class CensusDraft {
+  // GPS tier P1
+  Position? gpsRaw; String accuracyTier='high'; String source='census_gps'; String? wardAuto; String? wardFinal; bool snapped=false; double? distanceM; double? gpsFinalLat; double? gpsFinalLng;
   // 4.1 Identity & location
   String businessName = '';
   Channel? channel;
@@ -98,6 +100,99 @@ class CensusDraft {
   bool consentAgreed = false;
   bool consentReuseAgreed = false;
   String consentScriptVersion = 'v1.0';
+
+  Map<String, dynamic> toJson() => {
+        'businessName': businessName,
+        'channel': channel?.code,
+        'outletType': outletType?.code,
+        'county': county,
+        'constituency': constituency,
+        'ward': ward,
+        'beat': beat,
+        'street': street,
+        'landmark': landmark,
+        'buildingOrStallNo': buildingOrStallNo,
+        'operatingDays': operatingDays,
+        'openingHours': openingHours,
+        'storefrontPhotoPath': storefrontPhotoPath,
+        'gpsLat': gpsFix?.latitude,
+        'gpsLng': gpsFix?.longitude,
+        'gpsAccuracy': gpsFix?.accuracy,
+        'contactName': contactName,
+        'contactRole': contactRole?.code,
+        'contactPhone': contactPhone,
+        'preferredLanguage': preferredLanguage,
+        'isDecisionMaker': isDecisionMaker,
+        'clientStatuses': Map<String, String>.from(clientStatuses),
+        'categoryDrafts': categoryDrafts.map((c) => {
+              'category': c.category.code,
+              'stockedNow': c.stockedNow,
+              'brandsPresent': c.brandsPresent,
+              'otherBrands': c.otherBrands,
+              'packSizesPresent': c.packSizesPresent,
+              'shelfFacings': c.shelfFacings,
+              'priceObserved': c.priceObserved,
+              'stockUnitsOnHand': c.stockUnitsOnHand,
+              'stockoutLast7Days': c.stockoutLast7Days,
+              'fastestMovingBrand': c.fastestMovingBrand,
+              'whyFastest': c.whyFastest?.code,
+            }).toList(),
+        'consentAgreed': consentAgreed,
+        'consentReuseAgreed': consentReuseAgreed,
+        'consentScriptVersion': consentScriptVersion,
+      };
+
+  static CensusDraft fromJson(Map<String, dynamic> j) {
+    final d = CensusDraft()
+      ..businessName = (j['businessName'] as String?) ?? ''
+      ..county = (j['county'] as String?) ?? ''
+      ..constituency = (j['constituency'] as String?) ?? ''
+      ..ward = (j['ward'] as String?) ?? ''
+      ..beat = (j['beat'] as String?) ?? ''
+      ..street = j['street'] as String?
+      ..landmark = j['landmark'] as String?
+      ..buildingOrStallNo = j['buildingOrStallNo'] as String?
+      ..operatingDays = List<String>.from((j['operatingDays'] as List?) ?? [])
+      ..openingHours = j['openingHours'] as String?
+      ..storefrontPhotoPath = j['storefrontPhotoPath'] as String?
+      ..contactName = j['contactName'] as String?
+      ..contactPhone = j['contactPhone'] as String?
+      ..preferredLanguage = j['preferredLanguage'] as String?
+      ..isDecisionMaker = (j['isDecisionMaker'] as bool?) ?? false
+      ..consentAgreed = (j['consentAgreed'] as bool?) ?? false
+      ..consentReuseAgreed = (j['consentReuseAgreed'] as bool?) ?? false
+      ..consentScriptVersion = (j['consentScriptVersion'] as String?) ?? 'v1.0';
+    final ch = j['channel'] as String?;
+    if (ch != null) d.channel = Channel.values.where((c) => c.code == ch).firstOrNull;
+    final ot = j['outletType'] as String?;
+    if (ot != null) d.outletType = OutletType.values.where((c) => c.code == ot).firstOrNull;
+    final cr = j['contactRole'] as String?;
+    if (cr != null) d.contactRole = ContactRole.values.where((c) => c.code == cr).firstOrNull;
+    final cs = j['clientStatuses'] as Map?;
+    if (cs != null) cs.forEach((k, v) { if (k is String && v is String) d.clientStatuses[k] = v; });
+    final cds = j['categoryDrafts'] as List?;
+    if (cds != null) {
+      for (final e in cds) {
+        if (e is! Map) continue;
+        final cat = ProductCategory.fromCode(e['category'] as String? ?? '');
+        if (cat == null) continue;
+        final cd = CategoryDraft(cat)
+          ..stockedNow = (e['stockedNow'] as bool?) ?? true
+          ..brandsPresent = List<String>.from((e['brandsPresent'] as List?) ?? [])
+          ..otherBrands = e['otherBrands'] as String?
+          ..packSizesPresent = List<String>.from((e['packSizesPresent'] as List?) ?? [])
+          ..shelfFacings = (e['shelfFacings'] as int?) ?? 0
+          ..priceObserved = (e['priceObserved'] as num?)?.toDouble()
+          ..stockUnitsOnHand = e['stockUnitsOnHand'] as int?
+          ..stockoutLast7Days = (e['stockoutLast7Days'] as bool?) ?? false
+          ..fastestMovingBrand = e['fastestMovingBrand'] as String?;
+        final wf = e['whyFastest'] as String?;
+        if (wf != null) cd.whyFastest = FastestMovingReason.values.where((r) => r.code == wf).firstOrNull;
+        d.categoryDrafts.add(cd);
+      }
+    }
+    return d;
+  }
 }
 
 /// Result of an accepted census submission: the rows written plus any

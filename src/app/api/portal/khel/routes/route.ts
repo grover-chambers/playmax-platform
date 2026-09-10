@@ -15,6 +15,16 @@ export async function GET(req: Request) {
     }
     const { searchParams } = new URL(req.url);
     const group = searchParams.get("group"); // A-G filter
+    const aggregate = searchParams.get("aggregate");
+    if (aggregate === "cube") {
+      try {
+        const db2 = await createCensusClient();
+        const { data, error } = await db2.from("mv_census_cube").select("county,ward,channel,day,outlet_count").limit(5000);
+        if (!error && data) {
+          return NextResponse.json({ routes: [], groupStats: {}, outletPins: [], totalRoutes: 0, totalOutlets: (data as {outlet_count:number}[]).reduce((s,r)=>s+r.outlet_count,0), _cube: true, cubeRows: data });
+        }
+      } catch {}
+    }
 
     const db = await createCensusClient();
 

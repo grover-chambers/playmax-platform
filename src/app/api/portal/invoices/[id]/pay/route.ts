@@ -9,6 +9,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (process.env.NEXT_PUBLIC_ENABLE_MPESA !== "true") {
+    return NextResponse.json({ error: "M-Pesa payments disabled" }, { status: 501 });
+  }
   try {
     const supabase = await getAuthenticatedClient();
     const currentUser = await getCurrentUser(supabase);

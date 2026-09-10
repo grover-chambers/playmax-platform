@@ -17,6 +17,42 @@ export async function GET(req: Request) {
     const group = searchParams.get("group"); // A-G filter
     const from = searchParams.get("from");
     const to = searchParams.get("to");
+    const aggregate = searchParams.get("aggregate");
+
+    // ?aggregate=cube fast path: read MVs when present, fallback to live query
+    if (aggregate === "cube") {
+      try {
+        const db2 = await createCensusClient();
+        const mvCensus = await db2.from("mv_census_cube").select("*").limit(5000);
+        const mvVisit = await db2.from("mv_visit_cube").select("*").limit(5000);
+        if (!mvCensus.error && !mvVisit.error && mvCensus.data && mvVisit.data) {
+          // honour from/to on day
+          let cRows = mvCensus.data as { county: string; ward: string; channel: string; outlet_type: string; day: string; outlet_count: number }[];
+          let vRows = mvVisit.data as { rep_id: string; zone: string; outcome: string; status: string; day: string; visit_count: number; order_count: number; order_value_sum: number }[];
+          if (from) { cRows = cRows.filter((r) => r.day >= from.slice(0,10)); vRows = vRows.filter((r) => r.day >= from.slice(0,10)); }
+          if (to) { cRows = cRows.filter((r) => r.day <= to.slice(0,10)); vRows = vRows.filter((r) => r.day <= to.slice(0,10)); }
+          const byChannel: Record<string, number> = {};
+          const byType: Record<string, number> = {};
+          const byCounty: Record<string, number> = {};
+          const byWard: Record<string, number> = {};
+          let totalOutlets = 0;
+          for (const r of cRows) { byChannel[r.channel]=(byChannel[r.channel]||0)+r.outlet_count; byType[r.outlet_type]=(byType[r.outlet_type]||0)+r.outlet_count; byCounty[r.county]=(byCounty[r.county]||0)+r.outlet_count; byWard[r.ward]=(byWard[r.ward]||0)+r.outlet_count; totalOutlets+=r.outlet_count; }
+          const byVisitStatus: Record<string, number> = {};
+          const byOutcome: Record<string, number> = {};
+          let totalVisits=0, totalOrders=0, totalOrderValue=0;
+          const timeline: Record<string, number> = {};
+          for (const r of vRows) { byVisitStatus[r.status]=(byVisitStatus[r.status]||0)+r.visit_count; byOutcome[r.outcome]=(byOutcome[r.outcome]||0)+r.visit_count; totalVisits+=r.visit_count; totalOrders+=r.order_count; totalOrderValue+=Number(r.order_value_sum||0); timeline[r.day]=(timeline[r.day]||0)+r.visit_count; }
+          return NextResponse.json({
+            outlets: { total: totalOutlets, byChannel, byType, byCounty, byWard, mapPins: [] },
+            visits: { total: totalVisits, byStatus: byVisitStatus, byOutcome, totalOrders, totalOrderValue, timeline: Object.entries(timeline).sort(([a],[b])=>a.localeCompare(b)).map(([date,count])=>({date,count})) },
+            submissions: { total: 0 },
+            reps: { total: 0, byGroup: [] },
+            _cube: true,
+          });
+        }
+      } catch {}
+      // fall through to live query
+    }
 
     const db = await createCensusClient();
 

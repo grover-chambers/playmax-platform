@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import PageHeader from "@/components/layout/page-header";
+import { hasUsableGps, tierColor } from "@/lib/geo";
 
 const KiambuMap = dynamic(() => import("@/components/khel/kiambu-map"), { ssr: false });
 
@@ -49,6 +50,7 @@ interface Visit {
 
 interface Intercept { id:string; rep_id:string; ward:string|null; channel:string|null; captured_at:string; created_at:string; }
 interface Batch { id:string; rep_id:string; status:string; record_count:number; started_at:string; submitted_at:string|null; }
+interface Outlet { id: string; ward: string | null; ward_auto: string | null; ward_final: string | null; gps_lat: number | null; gps_lng: number | null; gps_final_lat: number | null; gps_final_lng: number | null; accuracy_tier: string | null; }
 interface MonitoringData {
   today: string;
   total: number;
@@ -58,6 +60,7 @@ interface MonitoringData {
   visits: Visit[];
   batches?: Batch[];
   intercepts?: Intercept[];
+  outlets?: Outlet[];
 }
 
 interface MapPinData {
@@ -127,9 +130,32 @@ export default function KaniniMonitoringPage() {
     };
   }, [fetchMonitoring, debouncedFetch]);
 
+  const outletPins = useMemo(() => {
+    if (!data?.outlets?.length) return [] as (MapPinData & { color: string })[];
+    return data.outlets
+      .filter(o => hasUsableGps(o as never))
+      .filter(o => !selectedZone || (o.ward_final || o.ward || "") === selectedZone)
+      .map(o => {
+        const lat = (o.gps_final_lat ?? o.gps_lat) as number;
+        const lng = (o.gps_final_lng ?? o.gps_lng) as number;
+        return {
+          id: `outlet-${o.id}`,
+          name: o.ward_final || o.ward || "Outlet",
+          channel: "Outlet",
+          type: o.accuracy_tier || "manual",
+          lat, lng,
+          ward: o.ward_final || o.ward || "",
+          constituency: "",
+          county: "Kiambu",
+          size: o.accuracy_tier || "",
+          color: tierColor(o.accuracy_tier),
+        } as MapPinData & { color: string };
+      });
+  }, [data, selectedZone]);
+
   const pins = useMemo(() => {
-    if (!data) return [];
-    return data.reps
+    if (!data) return [] as (MapPinData & { color?: string })[];
+    const repPins = data.reps
       .filter(r => r.lastGps)
       .filter(r => !selectedZone || r.zone === selectedZone)
       .map(r => ({
@@ -142,13 +168,23 @@ export default function KaniniMonitoringPage() {
         ward: r.zone,
         constituency: "",
         county: "Kiambu",
-        size: r.status
-      })) as MapPinData[];
-  }, [data, selectedZone]);
+        size: r.status,
+        color: r.onShift ? "#0f766e" : "#94a3b8",
+      })) as (MapPinData & { color: string })[];
+    return [...repPins, ...outletPins];
+  }, [data, selectedZone, outletPins]);
+
+  const zones = useMemo(() => {
+    const s = new Set<string>();
+    data?.reps.forEach(r => { if (r.zone) s.add(r.zone); });
+    data?.outlets?.forEach(o => { const w = o.ward_final || o.ward; if (w) s.add(w); });
+    return [...s].sort();
+  }, [data]);
 
   const tickerEvents = useMemo(() => {
     if (!data) return [];
-    const visitEvents = data.visits.slice(0, 10).map(v => {
+    const filteredVisits = selectedZone ? data.visits.filter(v => data.reps.find(r=>r.id===v.rep_id)?.zone===selectedZone) : data.visits;
+    const visitEvents = filteredVisits.slice(0, 10).map(v => {
       const rep = data.reps.find(r => r.id === v.rep_id);
       return {
         id: v.id,
@@ -264,8 +300,16 @@ export default function KaniniMonitoringPage() {
             })}
         </div>
 
-        {/* Center: Live Map */}
+          {/* Center: Live Map */}
         <div className="xl:col-span-2 space-y-4">
+          {zones.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setSelectedZone(null)} className={`px-3 py-1 rounded-full text-[11px] font-bold border ${!selectedZone ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-200"}`}>All zones</button>
+              {zones.map(z => (
+                <button key={z} onClick={() => setSelectedZone(prev => prev===z ? null : z)} className={`px-3 py-1 rounded-full text-[11px] font-bold border ${selectedZone===z ? "bg-teal-600 text-white border-teal-600" : "bg-white border-slate-200"}`}>{z}</button>
+              ))}
+            </div>
+          )}
           <div className="pm-dash-card p-3 relative" style={{ height: 600 }}>
             <KiambuMap
               pins={pins}
@@ -372,12 +416,22 @@ export default function KaniniMonitoringPage() {
 
           {(() => {
             const zoneCounts = new Map<string, number>();
-            data?.visits.forEach(v=>{
-              const rep = data?.reps.find(r=>r.id===v.rep_id);
-              const z = rep?.zone || 'Unzoned';
-              zoneCounts.set(z, (zoneCounts.get(z)||0)+1);
-            });
-            if (zoneCounts.size===0) data?.reps.forEach(r=> zoneCounts.set(r.zone, (zoneCounts.get(r.zone)||0)+r.todayVisits));
+            const hasOutlets = !!(data?.outlets && data.outlets.length>0);
+            if (hasOutlets) {
+              data!.outlets!.forEach(o=>{
+                if (!hasUsableGps(o as never)) return;
+                const w = o.ward_final || o.ward || 'Unzoned';
+                zoneCounts.set(w, (zoneCounts.get(w)||0)+1);
+              });
+            } else {
+              data?.visits.forEach(v=>{
+                const rep = data?.reps.find(r=>r.id===v.rep_id);
+                const z = rep?.zone || 'Unzoned';
+                zoneCounts.set(z, (zoneCounts.get(z)||0)+1);
+              });
+              if (zoneCounts.size===0) data?.reps.forEach(r=> zoneCounts.set(r.zone, (zoneCounts.get(r.zone)||0)+r.todayVisits));
+            }
+            const mismatchCount = (data?.outlets||[]).filter(o=>o.ward_auto && o.ward_final && o.ward_auto!==o.ward_final).length;
             const max = Math.max(1, ...[...zoneCounts.values()]);
             const top = [...zoneCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,4);
             const _total = data?.visits.length || 1; void _total;
@@ -385,6 +439,7 @@ export default function KaniniMonitoringPage() {
           <div className="pm-dash-card p-5">
             <h3 className="text-[13px] font-bold text-slate-800 mb-4 flex items-center gap-2">
               <MapPin size={16} className="text-teal-600"/> Distribution Summary <span className="text-[9px] font-mono tracking-widest text-slate-400">LIVE</span>
+              {mismatchCount>0 && <span className="ml-auto px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-[10px] font-bold text-amber-700">{mismatchCount} ward_auto vs ward_final mismatch</span>}
             </h3>
             <div className="space-y-4">
               <div>
@@ -407,7 +462,7 @@ export default function KaniniMonitoringPage() {
                       </div>
                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-teal-500" style={{width:`${Math.round(cnt/max*100)}%`}}/></div>
                     </button>
-                  )) : <div className="text-[11px] text-slate-400">No visits yet</div>}
+                  )) : <div className="pm-dash-card p-6 text-center text-[12px] text-slate-400">{(data?.outlets?.length===0 && (data?.visits.length||0)===0) ? "No outlets or visits yet — field data pending" : (data?.reps.filter(r=>!r.onShift).length===data?.reps.length ? "All reps offline — no visits today" : "No visits yet")}</div>}
                 </div>
               </div>
             </div>

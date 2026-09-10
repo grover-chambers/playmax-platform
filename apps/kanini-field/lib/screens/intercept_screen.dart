@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../models/consumer_intercept_model.dart';
 import '../providers/intercept_provider.dart';
+import '../providers/sync_provider.dart';
 import '../theme/brand.dart';
+import '../widgets/sync_badge.dart';
 import '../widgets/warm.dart';
 import 'consumer_intercept_flow.dart';
 
@@ -32,6 +34,17 @@ class _InterceptScreenState extends State<InterceptScreen> {
     return ListView(
       padding: const EdgeInsets.only(bottom: 40),
       children: [
+        Builder(builder: (ctx) {
+          final sync = ctx.watch<SyncProvider>();
+          return Column(children: [
+            if (!sync.isOnline) const OfflineBanner(),
+            if (sync.pendingCount > 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Align(alignment: Alignment.centerLeft, child: Text('${sync.pendingCount} queued for sync', style: const TextStyle(fontSize: 12, color: Brand.inkSoft))),
+              ),
+          ]);
+        }),
         const AppHeader(
           eyebrow: 'Anonymous shopper survey',
           title: 'Consumer intercepts',

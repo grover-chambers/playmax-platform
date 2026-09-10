@@ -86,9 +86,47 @@ class CensusProvider extends ChangeNotifier {
         .length;
   }
 
+  // --- Draft autosave (census_drafts box) ---
+  static const _draftBoxName = 'census_drafts';
+  static const _draftKey = 'current';
+  Box? _draftBox;
+
+  Future<void> _ensureDraftBox() async {
+    _draftBox ??= await Hive.openBox(_draftBoxName);
+  }
+
+  Future<void> saveDraft() async {
+    await _ensureDraftBox();
+    await _draftBox!.put(_draftKey, _draft.toJson());
+  }
+
+  Future<bool> hasSavedDraft() async {
+    await _ensureDraftBox();
+    return _draftBox!.containsKey(_draftKey);
+  }
+
+  Future<Map<String, dynamic>?> loadDraftJson() async {
+    await _ensureDraftBox();
+    final v = _draftBox!.get(_draftKey);
+    if (v == null) return null;
+    return _normalizeMap(v);
+  }
+
+  Future<void> restoreDraftFromJson(Map<String, dynamic> json) async {
+    _draft = CensusDraft.fromJson(json);
+    // Restore local photoPath/categoryDrafts held separately in flow via draft fields
+    notifyListeners();
+  }
+
+  Future<void> clearSavedDraft() async {
+    await _ensureDraftBox();
+    await _draftBox!.delete(_draftKey);
+  }
+
   /// Reset the draft for a fresh capture.
-  void resetDraft() {
+  Future<void> resetDraft() async {
     _draft = CensusDraft();
+    await clearSavedDraft();
     notifyListeners();
   }
 
@@ -127,6 +165,7 @@ class CensusProvider extends ChangeNotifier {
     await _box.put(result.outlet.id, result.outlet.toJson());
     await _batch?.incrementRecordCount();
     _draft = CensusDraft();
+    await clearSavedDraft();
     _shift?.touch();
     notifyListeners();
     return result.outlet;

@@ -5,6 +5,7 @@ import '../models/route_master.dart';
 import '../providers/route_master_provider.dart';
 import '../providers/sync_provider.dart';
 import '../theme/brand.dart';
+import '../widgets/sync_badge.dart';
 import '../widgets/warm.dart';
 
 /// Visits tab — shows the rep's assigned routes from the master data
@@ -40,6 +41,12 @@ class _VisitsScreenState extends State<VisitsScreen> {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 40),
         children: [
+          if (!sync.isOnline) const OfflineBanner(),
+          if (sync.pendingCount > 0)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: Text('${sync.pendingCount} queued for sync', style: const TextStyle(fontSize: 12, color: Brand.inkSoft)),
+            ),
           AppHeader(
             eyebrow: 'Assigned routes',
             title: 'My Routes',
