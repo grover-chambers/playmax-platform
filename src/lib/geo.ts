@@ -13,3 +13,16 @@ export function hasValidGps(o: {
   if (!isFinite(lat) || !isFinite(lng)) return false;
   return lat >= -5 && lat <= 5 && lng >= 33 && lng <= 43;
 }
+
+export type AccuracyTier = "high" | "medium" | "manual";
+export function hasUsableGps(o: { gps_final_lat?: number|null; gps_final_lng?: number|null; gps_lat?: number|null; gps_lng?: number|null }): boolean {
+  const lat = o.gps_final_lat ?? o.gps_lat;
+  const lng = o.gps_final_lng ?? o.gps_lng;
+  return hasValidGps({ gps_lat: lat as number, gps_lng: lng as number });
+}
+export function tierColor(t?: string|null): string {
+  if (t==="high") return "#16a34a";
+  if (t==="medium") return "#f59e0b";
+  if (t==="manual") return "#ca8a04";
+  return "#94a3b8";
+}
