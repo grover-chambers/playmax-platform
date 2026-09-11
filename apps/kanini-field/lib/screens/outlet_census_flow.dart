@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../domain/typology.dart';
@@ -110,7 +112,45 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
       } else { _gpsStatus='No fix — use Drop pin'; UiFx.reject(); }
     });
   }
-  void _dropPin(double lat,double lng){ _draft.gpsFinalLat=lat; _draft.gpsFinalLng=lng; _draft.accuracyTier='manual'; _draft.source='census_manual_pin'; _draft.snapped=true; setState((){}); }
+  Future<void> _dropPinSheet() async {
+    final loc = _location.lastFix;
+    final initLat = _draft.gpsFinalLat ?? loc?.latitude ?? _draft.gpsFix?.latitude ?? -1.283;
+    final initLng = _draft.gpsFinalLng ?? loc?.longitude ?? _draft.gpsFix?.longitude ?? 36.821;
+    LatLng center = LatLng(initLat, initLng);
+    final result = await showModalBottomSheet<LatLng>(
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (ctx){
+        LatLng pin = center;
+        return DraggableScrollableSheet(initialChildSize: 0.75, maxChildSize: 0.95, minChildSize: 0.5,
+          builder: (_, ctrl) => Container(decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+            child: StatefulBuilder(builder: (sCtx, setS){
+              return Column(children: [
+                const SizedBox(height: 8), Container(width:40,height:4,decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+                Padding(padding: const EdgeInsets.all(12), child: Row(children: [const Expanded(child: Text('Drag map to position pin', style: TextStyle(fontWeight: FontWeight.w600))), FilledButton(onPressed: ()=>Navigator.pop(ctx,pin), child: const Text('Confirm pin'))])),
+                Expanded(child: FlutterMap(
+                  options: MapOptions(initialCenter: center, initialZoom: 16, onPositionChanged: (p,_){ setS(()=>pin=p.center!); }),
+                  children: [
+                    TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'kanini_field'),
+                    MarkerLayer(markers: [Marker(point: pin, width:40,height:40, child: const Icon(Icons.location_on, size:40, color: Colors.red))]),
+                  ],
+                )),
+              ]);
+            }),
+          ),
+        );
+      },
+    );
+    if(result==null) return;
+    _draft.gpsFinalLat=result.latitude; _draft.gpsFinalLng=result.longitude;
+    _draft.accuracyTier='manual'; _draft.source='census_manual_pin'; _draft.snapped=true;
+    _draft.wardAuto=wardService.wardFor(result.latitude,result.longitude);
+    if(_draft.wardAuto!=null) _draft.wardFinal=_draft.wardAuto!;
+    if(!locationService.hasValidGps(result.latitude,result.longitude)){
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pin outside Kenya bounds'))); 
+      return;
+    }
+    setState((){ _gpsStatus='Manual pin ${result.latitude.toStringAsFixed(5)},${result.longitude.toStringAsFixed(5)}'; });
+  }
 
   Future<void> _capturePhoto() async {
     try {
@@ -188,8 +228,12 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
         if (d.ward.trim().isEmpty) return 'Ward is required.';
         return null;
       case 1:
-        if (d.gpsFix == null) return 'Acquire a GPS fix first.';
-        if (!_gpsOk) return 'GPS >8m — drop pin to continue.';
+        if (d.accuracyTier=='manual' && d.gpsFinalLat!=null && d.gpsFinalLng!=null) {
+          if(!locationService.hasValidGps(d.gpsFinalLat!, d.gpsFinalLng!)) return 'Pin outside Kenya bounds.';
+        } else {
+          if (d.gpsFix == null) return 'Acquire a GPS fix first.';
+          if (!_gpsOk) return 'GPS >8m — drop pin to continue.';
+        }
         if (d.storefrontPhotoPath == null) return 'Storefront photo is required (§4.1).';
         return null;
       case 2:
@@ -393,7 +437,9 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
             icon: const Icon(Icons.gps_fixed),
             label: const Text('Acquire GPS (5m→8m)'),
           ),
-          if(_draft.gpsFix!=null && _draft.gpsFix!.accuracy>8) OutlinedButton.icon(onPressed: ()=>_dropPin(-1.283,36.821), icon: const Icon(Icons.push_pin), label: const Text('Drop pin')),
+          if(_draft.accuracyTier=='manual' || (_draft.gpsFix!=null && _draft.gpsFix!.accuracy>8) || _draft.gpsFix==null)
+            FilledButton.icon(onPressed: _dropPinSheet, icon: const Icon(Icons.push_pin), label: const Text('Drop pin'), style: FilledButton.styleFrom(backgroundColor: Colors.red)),
+
         ]),
         SectionCard(title: 'Storefront photo (§4.1)', children: [
           Row(

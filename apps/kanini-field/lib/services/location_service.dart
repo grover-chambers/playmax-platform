@@ -5,7 +5,7 @@ import '../config/field_config.dart';
 
 class BestFix {
   final Position pos;
-  final String tier; // high/medium/manual
+  final String tier;
   final String source;
   BestFix(this.pos,this.tier,this.source);
 }
@@ -25,7 +25,7 @@ class LocationService {
     if (permission == LocationPermission.deniedForever) return null;
     if (permission != LocationPermission.whileInUse && permission != LocationPermission.always) return null;
     final cached = await Geolocator.getLastKnownPosition();
-    if (cached != null) { _lastKnown=cached; _lastFixAt=DateTime.now(); _refreshInBackground(); return cached; }
+    if (cached != null && !isExpired && cached.accuracy>0 && cached.accuracy<=FieldConfig.gpsAcceptM) { _lastKnown=cached; _lastFixAt=DateTime.now(); _refreshInBackground(); return cached; }
     try { final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high, timeLimit: const Duration(seconds:10)); _lastKnown=pos; _lastFixAt=DateTime.now(); return pos; } catch(_){ return _lastKnown; }
   }
   void _refreshInBackground() async {
@@ -37,47 +37,61 @@ class LocationService {
     try{ final pos=await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high,timeLimit: timeout); _lastKnown=pos; _lastFixAt=DateTime.now(); return pos; }catch(_){ return _lastKnown; }
   }
 
-  // --- new dual-GPS helpers ---
   Stream<Position> watchPositionStream({LocationAccuracy accuracy=LocationAccuracy.best}) {
     return Geolocator.getPositionStream(locationSettings: LocationSettings(accuracy: accuracy, distanceFilter: 0));
   }
 
   Future<Position?> getBestFix({double target5m=5, double fallback8m=8, Duration stage1=const Duration(seconds:10), Duration stage2=const Duration(seconds:10)}) async {
-    final completer=Completer<Position?>();
-    final List<Position> fixes=[];
-    late StreamSubscription sub;
-    Timer? t1,t2;
-    void check(){
-      // need 2 fixes <= target and <=5m apart
-      final good=fixes.where((p)=>p.accuracy<=target5m).toList();
-      if(good.length>=2){
-        final d=_haversineDistance(good[good.length-1].latitude, good[good.length-1].longitude, good[good.length-2].latitude, good[good.length-2].longitude);
-        if(d<=5){ if(!completer.isCompleted) completer.complete(good.last); sub.cancel(); t1?.cancel(); t2?.cancel(); }
-      }
+    if (!await Geolocator.isLocationServiceEnabled()) return null;
+    var perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
+    if (perm == LocationPermission.deniedForever || perm == LocationPermission.denied || perm == LocationPermission.unableToDetermine) return null;
+    final completer = Completer<Position?>();
+    final List<Position> fixes = [];
+    StreamSubscription<Position>? sub;
+    Timer? t1,t2,tGrace;
+    void complete(Position? p){
+      if(completer.isCompleted) return;
+      completer.complete(p);
+      sub?.cancel(); t1?.cancel(); t2?.cancel(); tGrace?.cancel();
     }
-    sub=watchPositionStream(accuracy: LocationAccuracy.best).listen((pos){
-      _lastKnown=pos; _lastFixAt=DateTime.now(); fixes.add(pos); check();
-      // stage2 fallback: any <=8m
-      if(!completer.isCompleted && DateTime.now().difference(fixes.first.timestamp).inSeconds>10){
-        final fallback=fixes.where((p)=>p.accuracy<=fallback8m);
-        if(fallback.isNotEmpty && DateTime.now().difference(fixes.first.timestamp).inSeconds>=20){
-          // will complete via timer
+    void checkEarly(){
+      if(fixes.length>=2){
+        final a=fixes[fixes.length-1], b=fixes[fixes.length-2];
+        if(a.accuracy>0 && b.accuracy>0 && a.accuracy<=target5m && b.accuracy<=target5m){
+          final d=_haversineDistance(a.latitude,a.longitude,b.latitude,b.longitude);
+          if(d<=5) complete(a);
         }
       }
-    });
-    t1=Timer(stage1, (){
-      // relax check already in stream; nothing
-    });
-    t2=Timer(stage1+stage2, (){
-      if(!completer.isCompleted){
-        final fallback=fixes.where((p)=>p.accuracy<=fallback8m);
-        if(fallback.isNotEmpty) completer.complete(fallback.last);
-        else if(fixes.isNotEmpty) completer.complete(fixes.reduce((a,b)=>a.accuracy<b.accuracy?a:b));
-        else completer.complete(null);
-        sub.cancel();
+    }
+    try{
+      sub = watchPositionStream(accuracy: LocationAccuracy.best).listen((pos){
+        if(pos.accuracy<=0) return;
+        _lastKnown=pos; _lastFixAt=DateTime.now(); fixes.add(pos); checkEarly();
+      }, onError: (_){ if(!completer.isCompleted) complete(fixes.isEmpty?null:fixes.reduce((a,b)=>a.accuracy<b.accuracy?a:b)); });
+    } catch(_){ return null; }
+
+    t1 = Timer(stage1, (){
+      if(completer.isCompleted) return;
+      final good=fixes.where((p)=>p.accuracy<=target5m).toList();
+      if(good.isNotEmpty){
+        good.sort((a,b)=>a.accuracy.compareTo(b.accuracy));
+        complete(good.first);
       }
     });
-    // also timeout if permission denied etc - add try
+    t2 = Timer(stage1+stage2, (){
+      if(completer.isCompleted) return;
+      final good=fixes.where((p)=>p.accuracy<=fallback8m).toList();
+      if(good.isNotEmpty){
+        good.sort((a,b)=>a.accuracy.compareTo(b.accuracy));
+        complete(good.first);
+      }
+    });
+    tGrace = Timer(stage1+stage2+const Duration(seconds:2), (){
+      if(completer.isCompleted) return;
+      if(fixes.isEmpty) complete(null);
+      else { fixes.sort((a,b)=>a.accuracy.compareTo(b.accuracy)); complete(fixes.first); }
+    });
     return completer.future;
   }
 

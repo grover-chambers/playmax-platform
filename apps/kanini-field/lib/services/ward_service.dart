@@ -1,6 +1,4 @@
-
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/services.dart';
 
 class WardService {
@@ -16,7 +14,6 @@ class WardService {
       try{
         final s2 = await rootBundle.loadString('assets/geo/territory_wards.json');
         final j2 = jsonDecode(s2);
-        // normalize if different shape
         if(j2 is Map && j2['features']!=null) _features = List<Map<String,dynamic>>.from(j2['features']);
       }catch(_){}
     }
@@ -26,10 +23,14 @@ class WardService {
     for(final f in _features){
       final geom=f['geometry']; if(geom==null) continue;
       if(geom['type']=='Polygon'){
-        final poly=(geom['coordinates'][0] as List).map((c)=> (c[1] as num).toDouble()).toList();
-        // use pointInPolygon helper below
         final coords=(geom['coordinates'][0] as List).map((c)=> [ (c[0] as num).toDouble(), (c[1] as num).toDouble()]).toList();
         if(_pointInPolygon(lng,lat,coords)) return f['properties']?['ward']?.toString() ?? f['properties']?['name']?.toString();
+      }
+      if(geom['type']=='MultiPolygon'){
+        for(final poly in geom['coordinates']){
+          final coords=(poly[0] as List).map((c)=> [ (c[0] as num).toDouble(), (c[1] as num).toDouble()]).toList();
+          if(_pointInPolygon(lng,lat,coords)) return f['properties']?['ward']?.toString() ?? f['properties']?['name']?.toString();
+        }
       }
     }
     return null;
