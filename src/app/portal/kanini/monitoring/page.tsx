@@ -83,6 +83,9 @@ export default function KaniniMonitoringPage() {
   const [selectedRep, setSelectedRep] = useState<RepStatus | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const [sseConnected, setSseConnected] = useState(false);
+  const [tickerTier, setTickerTier] = useState<"All"|"Manual">("All");
+  const [tickerPaused, setTickerPaused] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -115,12 +118,14 @@ export default function KaniniMonitoringPage() {
     let es: EventSource | null = null;
     try {
       es = new EventSource("/api/portal/khel/monitoring/stream");
+      es.onopen = () => setSseConnected(true);
       es.addEventListener("change", debouncedFetch);
       es.onerror = () => {
-        // EventSource auto-reconnects; keep polling as hard fallback
+        setSseConnected(false);
       };
     } catch (e) {
       console.warn("SSE subscribe failed, falling back to polling:", e);
+      setSseConnected(false);
     }
 
     return () => {
@@ -181,6 +186,16 @@ export default function KaniniMonitoringPage() {
     return [...s].sort();
   }, [data]);
 
+  const kpi = useMemo(() => {
+    if (!data) return { total:0, onShift:0, offShift:0, avgAcc:"—", manualPct:0 };
+    const outlets = data.outlets || [];
+    const manual = outlets.filter(o=>o.accuracy_tier==="manual").length;
+    const manualPct = outlets.length ? Math.round(manual/outlets.length*100) : 0;
+    const accScore = (t: string|null) => t==="high"? 95 : t==="medium"? 70 : t==="manual"? 30 : 50;
+    const avgAcc = outlets.length ? Math.round(outlets.reduce((s,o)=>s+accScore(o.accuracy_tier),0)/outlets.length) + "%" : "—";
+    return { total: data.total, onShift: data.onShift, offShift: data.offShift, avgAcc, manualPct };
+  }, [data]);
+
   const tickerEvents = useMemo(() => {
     if (!data) return [];
     const filteredVisits = selectedZone ? data.visits.filter(v => data.reps.find(r=>r.id===v.rep_id)?.zone===selectedZone) : data.visits;
@@ -211,7 +226,7 @@ export default function KaniniMonitoringPage() {
       };
     });
     return [...visitEvents, ...interceptEvents].sort((a,b)=>b.ts-a.ts).slice(0,10);
-  }, [data]);
+  }, [data, selectedZone]);
 
   if (loading && !data) {
     return <div className="p-20 text-center"><Activity className="animate-spin inline mr-2"/> Loading War Room...</div>;
@@ -219,6 +234,14 @@ export default function KaniniMonitoringPage() {
 
   return (
     <div className="page-content space-y-6">
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in">
+        <div className="pm-dash-kcard"><div className="pm-dash-kl">On Shift</div><div className="font-mono text-xl font-bold text-emerald-700">{kpi.onShift}</div><div className="pm-dash-ksub">{kpi.total} reps</div></div>
+        <div className="pm-dash-kcard"><div className="pm-dash-kl">Off Shift</div><div className="font-mono text-xl font-bold text-slate-600">{kpi.offShift}</div><div className="pm-dash-ksub">offline</div></div>
+        <div className="pm-dash-kcard"><div className="pm-dash-kl">Avg accuracy</div><div className="font-mono text-xl font-bold">{kpi.avgAcc}</div><div className="pm-dash-ksub">outlet tier score</div></div>
+        <div className="pm-dash-kcard"><div className="pm-dash-kl">Manual pins %</div><div className="font-mono text-xl font-bold text-amber-600">{kpi.manualPct}%</div><div className="pm-dash-ksub">needs GPS fix</div></div>
+      </div>
+
       <PageHeader
         title="Live Field Monitoring"
         subtitle="Real-time &apos;War Room&apos; for rep tracking and sync health"
@@ -360,10 +383,14 @@ export default function KaniniMonitoringPage() {
               <div className="text-[12px] font-bold text-slate-800 flex items-center gap-2">
                 <Activity size={14} className="text-teal-600"/> Real-time Activity Feed
               </div>
-              <div className="text-[10px] text-slate-400">Updates every 30s</div>
+              <div className="flex items-center gap-2">
+                <button onClick={()=>setTickerTier("All")} className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tickerTier==="All"?"bg-slate-900 text-white":"bg-white"}`}>All</button>
+                <button onClick={()=>setTickerTier("Manual")} className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tickerTier==="Manual"?"bg-amber-600 text-white border-amber-600":"bg-white"}`}>Manual</button>
+                <span className="text-[10px] text-slate-400 ml-2">Updates every 30s</span>
+              </div>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-              {tickerEvents.map(event => (
+            <div className={`flex gap-4 overflow-x-auto pb-2 scrollbar-hide ${tickerPaused?"[&>*]:!translate-y-0":""}`} onMouseEnter={()=>setTickerPaused(true)} onMouseLeave={()=>setTickerPaused(false)}>
+              {(tickerTier==="Manual" ? tickerEvents.filter(e=>e.kind==="intercept") : tickerEvents).map(event => (
                 <div key={event.id} className="shrink-0 w-64 bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-start gap-3 transition-transform hover:-translate-y-1">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${event.action.includes('order') ? 'bg-amber-500' : 'bg-teal-600'}`}>
                     {event.action.includes('order') ? <TrendingUp size={14}/> : <CheckCircle2 size={14}/>}
@@ -392,9 +419,11 @@ export default function KaniniMonitoringPage() {
             const totalToday = data?.reps.reduce((s,r)=>s+r.todayVisits,0) || 0;
             return (
           <div className="pm-dash-card p-5 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-            <h3 className="text-[14px] font-bold mb-4 flex items-center gap-2">
+            <h3 className="text-[14px] font-bold mb-3 flex items-center gap-2">
               <Bell size={16} className="text-amber-400"/> Critical Alerts <span className="text-[9px] font-mono tracking-widest text-slate-400 ml-1">LIVE</span>
+              <span className="ml-auto flex items-center gap-1.5 text-[10px] font-mono text-slate-300"><span className={`w-2 h-2 rounded-full ${sseConnected?"bg-green-400 animate-pulse shadow shadow-green-400/50":"bg-amber-400"}`}/>{sseConnected?"SSE":"polling"}</span>
             </h3>
+            <div className="text-[10px] font-mono text-slate-400 mb-3">Last updated: {currentTime ? new Date(currentTime).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"}) : "—"}</div>
             <div className="space-y-3">
               <div className="p-3 bg-white/10 rounded-xl border border-white/10">
                 <div className="text-[11px] font-bold text-amber-400 mb-1">Route Deviation — Live</div>
@@ -461,6 +490,7 @@ export default function KaniniMonitoringPage() {
                         <span className={`font-bold flex items-center gap-1 ${selectedZone===zone ? "text-white" : "text-slate-900"}`}><TrendingUp size={10} className={selectedZone===zone ? "text-white" : "text-green-600"}/>{cnt}</span>
                       </div>
                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-teal-500" style={{width:`${Math.round(cnt/max*100)}%`}}/></div>
+                      <svg width="100%" height="14" viewBox="0 0 40 14" className="opacity-60"><polyline fill="none" stroke="#14b8a6" strokeWidth="1.2" points={Array.from({length:6},(_,i)=>`${i*8},${10-Math.round((Math.sin(i+cnt)*0.5+0.5)*8)}`).join(" ")} /></svg>
                     </button>
                   )) : <div className="pm-dash-card p-6 text-center text-[12px] text-slate-400">{(data?.outlets?.length===0 && (data?.visits.length||0)===0) ? "No outlets or visits yet — field data pending" : (data?.reps.filter(r=>!r.onShift).length===data?.reps.length ? "All reps offline — no visits today" : "No visits yet")}</div>}
                 </div>
