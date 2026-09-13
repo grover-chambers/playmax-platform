@@ -30,13 +30,13 @@ export default function KiambuMap({pins,truckRoutes,selectedGroup,showWards,onSe
 
     // Fullscreen toggle
     const FullscreenControl=L.Control.extend({
-      onAdd:function(){const b=L.DomUtil.create("a","leaflet-control-zoom-in");b.innerHTML="⛶";b.title="Fullscreen";b.style.display="flex";b.style.alignItems="center";b.style.justifyContent="center";b.style.fontSize="16px";b.style.cursor="pointer";L.DomEvent.on(b,"click",(e:L.DomEvent)=>{L.DomEvent.stop(e);const el=mapRef.current!;if(!document.fullscreenElement) el.requestFullscreen?.(); else document.exitFullscreen?.();});const c=L.DomUtil.create("div","leaflet-control leaflet-bar");c.appendChild(b);return c;}
+      onAdd:function(){const b=L.DomUtil.create("a","leaflet-control-zoom-in");b.innerHTML="⛶";b.title="Fullscreen";b.style.display="flex";b.style.alignItems="center";b.style.justifyContent="center";b.style.fontSize="16px";b.style.cursor="pointer";L.DomEvent.on(b,"click",(e)=>{L.DomEvent.stop(e);const el=mapRef.current!;if(!document.fullscreenElement) el.requestFullscreen?.(); else document.exitFullscreen?.();});const c=L.DomUtil.create("div","leaflet-control leaflet-bar");c.appendChild(b);return c;}
     });
     (new (FullscreenControl as unknown as {new(o:Record<string,string>):L.Control})({position:"topleft"})).addTo(map);
 
     // Locate button
     const LocateControl=L.Control.extend({
-      onAdd:function(){const b=L.DomUtil.create("a","leaflet-control-zoom-in");b.innerHTML="◎";b.title="Locate me";b.style.display="flex";b.style.alignItems="center";b.style.justifyContent="center";b.style.fontSize="16px";b.style.cursor="pointer";L.DomEvent.on(b,"click",(e:L.DomEvent)=>{L.DomEvent.stop(e);if(!navigator.geolocation) return;navigator.geolocation.getCurrentPosition(p=>map.flyTo([p.coords.latitude,p.coords.longitude],14),()=>{}, {enableHighAccuracy:true});});const c=L.DomUtil.create("div","leaflet-control leaflet-bar");c.appendChild(b);return c;}
+      onAdd:function(){const b=L.DomUtil.create("a","leaflet-control-zoom-in");b.innerHTML="◎";b.title="Locate me";b.style.display="flex";b.style.alignItems="center";b.style.justifyContent="center";b.style.fontSize="16px";b.style.cursor="pointer";L.DomEvent.on(b,"click",(e)=>{L.DomEvent.stop(e);if(!navigator.geolocation) return;navigator.geolocation.getCurrentPosition(p=>map.flyTo([p.coords.latitude,p.coords.longitude],14),()=>{}, {enableHighAccuracy:true});});const c=L.DomUtil.create("div","leaflet-control leaflet-bar");c.appendChild(b);return c;}
     });
     (new (LocateControl as unknown as {new(o:Record<string,string>):L.Control})({position:"topleft"})).addTo(map);
 
