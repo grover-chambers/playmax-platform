@@ -25,7 +25,7 @@ class OutletCensusFlow extends StatefulWidget {
 }
 
 class _OutletCensusFlowState extends State<OutletCensusFlow> {
-  final _location = LocationService();
+  final LocationService _location = locationService;
   int _step = 0;
   bool _busy = false;
   String? _gpsStatus = 'No GPS fix yet';
@@ -98,6 +98,8 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
     if (!mounted) return;
     setState(() {
       _busy = false;
+      // Manual pin already placed during this acquire — don't clobber it.
+      if (_draft.source == 'census_manual_pin') { _gpsStatus='Manual pin already placed — GPS skipped.'; UiFx.confirm(); return; }
       if (pos != null) {
         _draft.gpsFix = pos; _draft.gpsRaw = pos;
         if (pos.accuracy <= 5) {
@@ -165,11 +167,12 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
       return;
     }
     _draft.gpsFix = _draft.gpsFix ?? _location.positionOf(result.latitude, result.longitude);
+    _draft.gpsRaw = _location.positionOf(result.latitude, result.longitude);
     _draft.gpsFinalLat=result.latitude; _draft.gpsFinalLng=result.longitude;
     _draft.accuracyTier='manual'; _draft.source='census_manual_pin'; _draft.snapped=true;
     _draft.wardAuto=wardService.wardFor(result.latitude,result.longitude);
     _draft.wardFinal=_draft.wardAuto ?? _draft.ward;
-    setState((){ _gpsStatus='Manual pin ${result.latitude.toStringAsFixed(5)},${result.longitude.toStringAsFixed(5)}'; });
+    setState((){ _busy=false; _gpsStatus='Manual pin ${result.latitude.toStringAsFixed(5)},${result.longitude.toStringAsFixed(5)}'; });
   }
 
   Future<void> _capturePhoto() async {
@@ -457,8 +460,32 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
             icon: const Icon(Icons.gps_fixed),
             label: const Text('Acquire GPS (5m→8m)'),
           ),
-          if(_draft.accuracyTier=='manual' || (_draft.gpsFix!=null && _draft.gpsFix!.accuracy>8) || _draft.gpsFix==null)
-            FilledButton.icon(onPressed: _dropPinSheet, icon: const Icon(Icons.push_pin), label: const Text('Drop pin'), style: FilledButton.styleFrom(backgroundColor: Colors.red)),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: FilledButton.icon(
+                  onPressed: _dropPinSheet,
+                  icon: const Icon(Icons.push_pin),
+                  label: const Text('Drop pin'),
+                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 4,
+                child: Text(
+                  _tier == 'manual'
+                      ? 'Pin placed — adjust by re-opening'
+                      : _busy
+                          ? 'Waiting for GPS — you can place a pin now instead'
+                          : 'No fix or slow? Place a manual pin',
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
 
         ]),
         SectionCard(title: 'Storefront photo (§4.1)', children: [
