@@ -113,6 +113,18 @@ class LocationService {
   Future<LocationPermission> checkPermission() async => await Geolocator.checkPermission();
   Future<double?> getLastAccuracy() async => (await Geolocator.getLastKnownPosition())?.accuracy;
   bool hasValidGps(double lat,double lng)=> lat>=-5 && lat<=5 && lng>=33 && lng<=43;
+  Position positionOf(double lat, double lng, {double accuracy = 0, DateTime? at}) => Position(
+        latitude: lat,
+        longitude: lng,
+        accuracy: accuracy,
+        altitude: 0,
+        altitudeAccuracy: 0,
+        heading: 0,
+        headingAccuracy: 0,
+        speed: 0,
+        speedAccuracy: 0,
+        timestamp: at ?? DateTime.now(),
+      );
   double _haversineDistance(double lat1,double lng1,double lat2,double lng2){
     const R=6371000; final dLat=(lat2-lat1)*3.14159/180; final dLng=(lng2-lng1)*3.14159/180;
     final a=math.sin(dLat/2)*math.sin(dLat/2)+math.cos(lat1*3.14159/180)*math.cos(lat2*3.14159/180)*math.sin(dLng/2)*math.sin(dLng/2);

@@ -18,6 +18,19 @@ class OutletModel {
   final double gpsLng;
   final double? gpsAccuracyM;
 
+  // GPS tier (082): gpsLat/gpsLng remain the FINAL location for back-compat.
+  final double? gpsRawLat;
+  final double? gpsRawLng;
+  final double? gpsFinalLat;
+  final double? gpsFinalLng;
+  final double? accuracyM;
+  final String? accuracyTier; // high | medium | manual
+  final String? source; // census_gps | census_manual_pin | app_background
+  final String? wardAuto;
+  final String? wardFinal;
+  final bool snapped;
+  final double? distanceM;
+
   final String county;
   final String constituency;
   final String ward;
@@ -66,6 +79,17 @@ class OutletModel {
     required this.gpsLat,
     required this.gpsLng,
     this.gpsAccuracyM,
+    this.gpsRawLat,
+    this.gpsRawLng,
+    this.gpsFinalLat,
+    this.gpsFinalLng,
+    this.accuracyM,
+    this.accuracyTier,
+    this.source,
+    this.wardAuto,
+    this.wardFinal,
+    this.snapped = false,
+    this.distanceM,
     this.county = '',
     this.constituency = '',
     this.ward = '',
@@ -116,6 +140,17 @@ class OutletModel {
       gpsLng: (json['gps_lng'] as num).toDouble(),
       gpsAccuracyM:
           json['gps_accuracy_m'] != null ? (json['gps_accuracy_m'] as num).toDouble() : null,
+      gpsRawLat: json['gps_raw_lat'] != null ? (json['gps_raw_lat'] as num).toDouble() : null,
+      gpsRawLng: json['gps_raw_lng'] != null ? (json['gps_raw_lng'] as num).toDouble() : null,
+      gpsFinalLat: json['gps_final_lat'] != null ? (json['gps_final_lat'] as num).toDouble() : null,
+      gpsFinalLng: json['gps_final_lng'] != null ? (json['gps_final_lng'] as num).toDouble() : null,
+      accuracyM: json['accuracy_m'] != null ? (json['accuracy_m'] as num).toDouble() : null,
+      accuracyTier: json['accuracy_tier'] as String?,
+      source: json['source'] as String?,
+      wardAuto: json['ward_auto'] as String?,
+      wardFinal: json['ward_final'] as String?,
+      snapped: json['snapped'] as bool? ?? false,
+      distanceM: json['distance_m'] != null ? (json['distance_m'] as num).toDouble() : null,
       county: json['county'] as String? ?? '',
       constituency: json['constituency'] as String? ?? '',
       ward: json['ward'] as String? ?? '',
@@ -170,6 +205,17 @@ class OutletModel {
       'gps_lat': gpsLat,
       'gps_lng': gpsLng,
       'gps_accuracy_m': gpsAccuracyM,
+      'gps_raw_lat': gpsRawLat,
+      'gps_raw_lng': gpsRawLng,
+      'gps_final_lat': gpsFinalLat,
+      'gps_final_lng': gpsFinalLng,
+      'accuracy_m': accuracyM,
+      'accuracy_tier': accuracyTier,
+      'source': source,
+      'ward_auto': wardAuto,
+      'ward_final': wardFinal,
+      'snapped': snapped,
+      'distance_m': distanceM,
       'county': county,
       'constituency': constituency,
       'ward': ward,
@@ -215,6 +261,17 @@ class OutletModel {
       gpsLat: gpsLat,
       gpsLng: gpsLng,
       gpsAccuracyM: gpsAccuracyM,
+      gpsRawLat: gpsRawLat,
+      gpsRawLng: gpsRawLng,
+      gpsFinalLat: gpsFinalLat,
+      gpsFinalLng: gpsFinalLng,
+      accuracyM: accuracyM,
+      accuracyTier: accuracyTier,
+      source: source,
+      wardAuto: wardAuto,
+      wardFinal: wardFinal,
+      snapped: snapped,
+      distanceM: distanceM,
       county: county,
       constituency: constituency,
       ward: ward,

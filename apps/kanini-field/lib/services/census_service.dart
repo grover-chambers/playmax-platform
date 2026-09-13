@@ -8,6 +8,7 @@ import '../models/outlet_client_link_model.dart';
 import '../models/outlet_contact_model.dart';
 import '../models/outlet_model.dart';
 import '../models/visit_model.dart';
+import 'location_service.dart';
 import 'quality_service.dart';
 import 'sync_service.dart';
 
@@ -118,6 +119,17 @@ class CensusDraft {
         'gpsLat': gpsFix?.latitude,
         'gpsLng': gpsFix?.longitude,
         'gpsAccuracy': gpsFix?.accuracy,
+        'gpsRawLat': gpsRaw?.latitude,
+        'gpsRawLng': gpsRaw?.longitude,
+        'gpsRawAccuracy': gpsRaw?.accuracy,
+        'gpsFinalLat': gpsFinalLat,
+        'gpsFinalLng': gpsFinalLng,
+        'accuracyTier': accuracyTier,
+        'source': source,
+        'wardAuto': wardAuto,
+        'wardFinal': wardFinal,
+        'snapped': snapped,
+        'distanceM': distanceM,
         'contactName': contactName,
         'contactRole': contactRole?.code,
         'contactPhone': contactPhone,
@@ -144,6 +156,16 @@ class CensusDraft {
 
   static CensusDraft fromJson(Map<String, dynamic> j) {
     final d = CensusDraft()
+      ..gpsRaw = _positionFrom(j, 'gpsRawLat', 'gpsRawLng', 'gpsRawAccuracy')
+      ..gpsFix = _positionFrom(j, 'gpsLat', 'gpsLng', 'gpsAccuracy')
+      ..gpsFinalLat = j['gpsFinalLat'] != null ? (j['gpsFinalLat'] as num).toDouble() : null
+      ..gpsFinalLng = j['gpsFinalLng'] != null ? (j['gpsFinalLng'] as num).toDouble() : null
+      ..accuracyTier = (j['accuracyTier'] as String?) ?? 'high'
+      ..source = (j['source'] as String?) ?? 'census_gps'
+      ..wardAuto = j['wardAuto'] as String?
+      ..wardFinal = j['wardFinal'] as String?
+      ..snapped = (j['snapped'] as bool?) ?? false
+      ..distanceM = j['distanceM'] != null ? (j['distanceM'] as num).toDouble() : null
       ..businessName = (j['businessName'] as String?) ?? ''
       ..county = (j['county'] as String?) ?? ''
       ..constituency = (j['constituency'] as String?) ?? ''
@@ -193,6 +215,17 @@ class CensusDraft {
     }
     return d;
   }
+
+  static Position? _positionFrom(Map<String, dynamic> j, String latK, String lngK, String accK) {
+    final lat = j[latK];
+    final lng = j[lngK];
+    if (lat == null || lng == null) return null;
+    return locationService.positionOf(
+      (lat as num).toDouble(),
+      (lng as num).toDouble(),
+      accuracy: j[accK] != null ? (j[accK] as num).toDouble() : 0,
+    );
+  }
 }
 
 /// Result of an accepted census submission: the rows written plus any
@@ -229,12 +262,26 @@ class CensusService {
     required String batchId,
   }) async {
     final now = DateTime.now().toUtc();
-    final position = draft.gpsFix;
+    final isManual = draft.source == 'census_manual_pin';
+    final finalLat = draft.gpsFinalLat ?? draft.gpsFix?.latitude;
+    final finalLng = draft.gpsFinalLng ?? draft.gpsFix?.longitude;
+    if (finalLat == null || finalLng == null) {
+      throw const CensusRejectedException([], 'No location captured — acquire GPS or drop a pin.');
+    }
+    // gps_lat/lng are written as the FINAL location (pin if dropped), so the
+    // map and old builds stay correct; tier columns keep the provenance.
+    final position = locationService.positionOf(finalLat, finalLng,
+        accuracy: isManual ? 0 : (draft.gpsFix?.accuracy ?? 0), at: now);
+    final raw = draft.gpsRaw ?? draft.gpsFix;
 
     // --- Gates ------------------------------------------------------------
     final hardFlags = <QualityFlag>[];
-    final gpsGate = qualityService.gateGps(position?.accuracy);
-    if (gpsGate != null) hardFlags.add(gpsGate);
+    // A dropped pin is the sanctioned fallback for a weak/no GPS lock — do not
+    // reject it on accuracy; the supervisor review surfaces manual pins instead.
+    if (!isManual) {
+      final gpsGate = qualityService.gateGps(position.accuracy);
+      if (gpsGate != null) hardFlags.add(gpsGate);
+    }
     final oneVisit = qualityService.oneVisitRule(
         _draftOutletId(draft), DateTime.now());
     if (oneVisit != null) hardFlags.add(oneVisit);
@@ -254,7 +301,7 @@ class CensusService {
     final consent = ConsentRecordModel(
       id: _uuid.v4(),
       scriptVersion: draft.consentScriptVersion,
-      gpsLat: position!.latitude,
+      gpsLat: position.latitude,
       gpsLng: position.longitude,
       enumeratorId: repId,
       consentedAt: now,
@@ -270,6 +317,17 @@ class CensusService {
       gpsLat: position.latitude,
       gpsLng: position.longitude,
       gpsAccuracyM: position.accuracy,
+      gpsRawLat: raw?.latitude,
+      gpsRawLng: raw?.longitude,
+      gpsFinalLat: finalLat,
+      gpsFinalLng: finalLng,
+      accuracyM: isManual ? (draft.gpsFix?.accuracy ?? 0) : position.accuracy,
+      accuracyTier: draft.accuracyTier,
+      source: draft.source,
+      wardAuto: draft.wardAuto,
+      wardFinal: draft.wardFinal ?? draft.wardAuto ?? draft.ward,
+      snapped: draft.snapped,
+      distanceM: draft.distanceM,
       county: draft.county,
       constituency: draft.constituency,
       ward: draft.ward,
@@ -327,8 +385,9 @@ class CensusService {
     await syncService.enqueueSync('retailers', outletId, {
       'id': outletId,
       'name': draft.businessName.trim(),
-      'ward': draft.ward,
+      'ward': draft.wardFinal ?? draft.wardAuto ?? draft.ward,
       'constituency': draft.constituency,
+      'ward_auto': draft.wardAuto,
       'lat': position.latitude,
       'lng': position.longitude,
       'rep_id': repId,
@@ -364,8 +423,8 @@ class CensusService {
       gpsLng: position.longitude,
       gpsAccuracy: position.accuracy,
       gpsVerified: true,
-      verificationMethod: 'gps',
-      verificationSource: 'gps',
+      verificationMethod: isManual ? 'pin' : 'gps',
+      verificationSource: isManual ? 'manual_pin' : 'gps',
       outcome: VisitOutcome.complete.code,
       stockCaptured: draft.categoryDrafts.isNotEmpty,
       photoCount: draft.storefrontPhotoPath != null ? 1 : 0,

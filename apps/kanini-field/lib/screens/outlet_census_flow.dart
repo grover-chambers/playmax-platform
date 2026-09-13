@@ -11,7 +11,6 @@ import '../services/census_service.dart';
 import '../services/location_service.dart';
 import '../services/ward_service.dart';
 import '../services/photo_service.dart';
-import '../services/quality_service.dart';
 import '../theme/brand.dart';
 import '../ui_fx.dart';
 import '../widgets/form_controls.dart';
@@ -93,30 +92,50 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
   Color _tierColor() => _tier=='high'? Colors.green : _tier=='medium'? Colors.orange : _tier=='manual'? const Color(0xFFCA8A04) : Colors.grey;
 
   Future<void> _acquireGps() async {
-    setState(() { _busy = true; _gpsStatus = 'Acquiring GPS (10s high → 10s medium)…'; });
+    setState(() { _busy = true; _gpsStatus = 'Acquiring GPS (10s ≤5m → 10s ≤8m)…'; });
     await wardService.load();
     final pos = await _location.getBestFix(target5m:5, fallback8m:8);
     if (!mounted) return;
     setState(() {
       _busy = false;
       if (pos != null) {
-        _draft.gpsFix = pos; _draft.gpsRaw = pos; _draft.gpsFinalLat = pos.latitude; _draft.gpsFinalLng = pos.longitude;
-        if (pos.accuracy <=5) { _draft.accuracyTier='high'; _draft.source='census_gps'; }
-        else if (pos.accuracy <=8) { _draft.accuracyTier='medium'; _draft.source='census_gps'; }
-        else { _draft.accuracyTier='manual'; _draft.source='census_manual_pin'; }
+        _draft.gpsFix = pos; _draft.gpsRaw = pos;
+        if (pos.accuracy <= 5) {
+          _draft.accuracyTier = 'high'; _draft.source = 'census_gps';
+          _draft.gpsFinalLat = pos.latitude; _draft.gpsFinalLng = pos.longitude;
+          _gpsStatus = 'Locked ${pos.accuracy.toStringAsFixed(1)}m — high';
+          UiFx.confirm();
+        } else if (pos.accuracy <= 8) {
+          _draft.accuracyTier = 'medium'; _draft.source = 'census_gps';
+          _draft.gpsFinalLat = pos.latitude; _draft.gpsFinalLng = pos.longitude;
+          _gpsStatus = 'Locked ${pos.accuracy.toStringAsFixed(1)}m — medium';
+          UiFx.confirm();
+        } else {
+          _draft.accuracyTier = ''; _draft.source = 'census_gps';
+          _gpsStatus = 'Fix ${pos.accuracy.toStringAsFixed(1)}m too weak (>8m) — drop a pin.';
+          UiFx.reject();
+        }
         _draft.wardAuto = wardService.wardFor(pos.latitude,pos.longitude);
         _draft.wardFinal = _draft.wardAuto ?? _draft.ward;
         if(_draft.wardAuto!=null && _draft.ward.isEmpty) _draft.ward=_draft.wardAuto!;
-        _gpsStatus = 'Fix \${pos.accuracy.toStringAsFixed(1)}m tier=\${_draft.accuracyTier}';
-        UiFx.confirm();
-      } else { _gpsStatus='No fix — use Drop pin'; UiFx.reject(); }
+      } else { _gpsStatus='No fix — drop a pin to continue.'; UiFx.reject(); }
     });
   }
   Future<void> _dropPinSheet() async {
     final loc = _location.lastFix;
-    final initLat = _draft.gpsFinalLat ?? loc?.latitude ?? _draft.gpsFix?.latitude ?? -1.283;
-    final initLng = _draft.gpsFinalLng ?? loc?.longitude ?? _draft.gpsFix?.longitude ?? 36.821;
-    LatLng center = LatLng(initLat, initLng);
+    var initLat = _draft.gpsFinalLat ?? loc?.latitude ?? _draft.gpsFix?.latitude;
+    var initLng = _draft.gpsFinalLng ?? loc?.longitude ?? _draft.gpsFix?.longitude;
+    if (initLat == null || initLng == null) {
+      // Best-effort: grab the most recent known position before opening the map.
+      try {
+        final quick = await _location.getCurrentPosition();
+        if (quick != null) { initLat = quick.latitude; initLng = quick.longitude; }
+      } catch (_) {}
+      if (!mounted) return;
+    }
+    final startLat = initLat ?? -1.283; // Nairobi fallback
+    final startLng = initLng ?? 36.821;
+    LatLng center = LatLng(startLat, startLng);
     final result = await showModalBottomSheet<LatLng>(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
       builder: (ctx){
@@ -128,7 +147,7 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
                 const SizedBox(height: 8), Container(width:40,height:4,decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
                 Padding(padding: const EdgeInsets.all(12), child: Row(children: [const Expanded(child: Text('Drag map to position pin', style: TextStyle(fontWeight: FontWeight.w600))), FilledButton(onPressed: ()=>Navigator.pop(ctx,pin), child: const Text('Confirm pin'))])),
                 Expanded(child: FlutterMap(
-                  options: MapOptions(initialCenter: center, initialZoom: 16, onPositionChanged: (p,_){ setS(()=>pin=p.center!); }),
+                  options: MapOptions(initialCenter: center, initialZoom: 16, onPositionChanged: (p,_){ setS(()=>pin=p.center); }),
                   children: [
                     TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'kanini_field'),
                     MarkerLayer(markers: [Marker(point: pin, width:40,height:40, child: const Icon(Icons.location_on, size:40, color: Colors.red))]),
@@ -141,14 +160,15 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
       },
     );
     if(result==null) return;
+    if(!locationService.hasValidGps(result.latitude,result.longitude)){
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pin outside Kenya bounds')));
+      return;
+    }
+    _draft.gpsFix = _draft.gpsFix ?? _location.positionOf(result.latitude, result.longitude);
     _draft.gpsFinalLat=result.latitude; _draft.gpsFinalLng=result.longitude;
     _draft.accuracyTier='manual'; _draft.source='census_manual_pin'; _draft.snapped=true;
     _draft.wardAuto=wardService.wardFor(result.latitude,result.longitude);
-    if(_draft.wardAuto!=null) _draft.wardFinal=_draft.wardAuto!;
-    if(!locationService.hasValidGps(result.latitude,result.longitude)){
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pin outside Kenya bounds'))); 
-      return;
-    }
+    _draft.wardFinal=_draft.wardAuto ?? _draft.ward;
     setState((){ _gpsStatus='Manual pin ${result.latitude.toStringAsFixed(5)},${result.longitude.toStringAsFixed(5)}'; });
   }
 
@@ -429,7 +449,7 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SectionCard(title: 'GPS fix (≤5m high · 5-8m medium · >8m pin)', children: [
-          if(_draft.gpsFix!=null) Chip(label: Text(_tier), backgroundColor: _tierColor().withOpacity(0.2)),
+          if(_tier.isNotEmpty) Chip(label: Text(_tier), backgroundColor: _tierColor().withOpacity(0.2)),
           Text(_gpsStatus ?? ''),
           const SizedBox(height: 8),
           FilledButton.icon(
