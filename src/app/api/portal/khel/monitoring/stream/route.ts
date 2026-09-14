@@ -16,38 +16,44 @@ export async function GET(req: Request) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const census = await createCensusClient();
+      try {
+        const census = await createCensusClient();
 
-      const send = (table: string) => {
-        try {
-          controller.enqueue(encoder.encode(`event: change\ndata: ${JSON.stringify({ table, t: Date.now() })}\n\n`));
-        } catch {}
-      };
+        const send = (table: string) => {
+          try {
+            controller.enqueue(encoder.encode(`event: change\ndata: ${JSON.stringify({ table, t: Date.now() })}\n\n`));
+          } catch {}
+        };
 
-      channel = census
-        .channel("war-room-live-server")
-        .on("postgres_changes", { event: "*", schema: "public", table: "rep_locations" }, () => send("rep_locations"))
-        .on("postgres_changes", { event: "*", schema: "public", table: "visits" }, () => send("visits"))
-        .on("postgres_changes", { event: "*", schema: "public", table: "consumer_intercepts" }, () => send("consumer_intercepts"))
-        .on("postgres_changes", { event: "*", schema: "public", table: "census_batches" }, () => send("census_batches"))
-        .on("postgres_changes", { event: "*", schema: "public", table: "reps" }, () => send("reps"))
-        .on("postgres_changes", { event: "*", schema: "public", table: "outlets" }, () => send("outlets"))
-        .on("postgres_changes", { event: "*", schema: "public", table: "retailers" }, () => send("retailers"))
-        .subscribe();
+        channel = census
+          .channel("war-room-live-server")
+          .on("postgres_changes", { event: "*", schema: "public", table: "rep_locations" }, () => send("rep_locations"))
+          .on("postgres_changes", { event: "*", schema: "public", table: "visits" }, () => send("visits"))
+          .on("postgres_changes", { event: "*", schema: "public", table: "consumer_intercepts" }, () => send("consumer_intercepts"))
+          .on("postgres_changes", { event: "*", schema: "public", table: "census_batches" }, () => send("census_batches"))
+          .on("postgres_changes", { event: "*", schema: "public", table: "reps" }, () => send("reps"))
+          .on("postgres_changes", { event: "*", schema: "public", table: "outlets" }, () => send("outlets"))
+          .on("postgres_changes", { event: "*", schema: "public", table: "retailers" }, () => send("retailers"))
+          .subscribe();
 
-      // heartbeat + keepalive for proxies
-      interval = setInterval(() => {
-        try { controller.enqueue(encoder.encode(`: keepalive\n\n`)); } catch {}
-      }, 25000);
+        // heartbeat + keepalive for proxies
+        interval = setInterval(() => {
+          try { controller.enqueue(encoder.encode(`: keepalive\n\n`)); } catch {}
+        }, 25000);
 
-      // initial ping so client knows stream is live
-      send("init");
+        // initial ping so client knows stream is live
+        send("init");
 
-      req.signal.addEventListener("abort", () => {
-        if (interval) clearInterval(interval);
-        try { if (channel) census.removeChannel(channel); } catch {}
+        req.signal.addEventListener("abort", () => {
+          if (interval) clearInterval(interval);
+          try { if (channel) census.removeChannel(channel); } catch {}
+          try { controller.close(); } catch {}
+        });
+      } catch (err) {
+        console.error("SSE stream init failed:", err);
+        try { controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ error: String(err) })}\n\n`)); } catch {}
         try { controller.close(); } catch {}
-      });
+      }
     },
     cancel() {
       if (interval) clearInterval(interval);

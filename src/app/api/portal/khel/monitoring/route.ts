@@ -14,17 +14,19 @@ export async function GET() {
     const db = await createCensusClient();
     const today = new Date().toISOString().slice(0, 10);
 
-    const [{ data: reps }, { data: visits }, { data: liveLocs }, batchesRes, interceptsRes, outletsRes, retailersRes] = await Promise.all([
+    const [{ data: reps }, { data: visits }, { data: liveLocs }, batchesRes, interceptsRes, outletsRes, retailersRes, accessEventsRes, liveLocsTrailRes] = await Promise.all([
       db
         .from("reps")
         .select("id,name,email,zone,status,on_route,last_sync_at,device,target_visits_month,actual_visits_month,wards,color")
-        .order("name"),
+        .order("name")
+        .then(r => r, (e) => { console.warn("reps fetch failed:", (e as Error)?.message || e); return { data: [] } as never; }),
       db
         .from("visits")
         .select("id,rep_id,check_in_at,created_at,status,outcome,gps_lat,gps_lng,duration_min,order_placed,order_value")
         .is("deleted_at", null)
         .order("check_in_at", { ascending: false })
-        .limit(500),
+        .limit(500)
+        .then(r => r, (e) => { console.warn("visits fetch failed:", (e as Error)?.message || e); return { data: [] } as never; }),
       db
         .from("v_rep_latest_location")
         .select("rep_id,lat,lng,accuracy_m,captured_at")
@@ -33,11 +35,15 @@ export async function GET() {
       db.from("consumer_intercepts").select("id,rep_id,ward,ward_auto,ward_final,channel,captured_at,created_at,gps_lat,gps_lng,gps_raw_lat,gps_raw_lng,gps_final_lat,gps_final_lng,accuracy_m,accuracy_tier,source,snapped,distance_m").order("captured_at", { ascending: false }).limit(50).then(r=>r, (e)=>{ console.warn("consumer_intercepts fetch failed:", (e as Error)?.message || e); return {data:[]} as never; }),
       db.from("outlets").select("id,ward,ward_auto,ward_final,gps_lat,gps_lng,gps_raw_lat,gps_raw_lng,gps_final_lat,gps_final_lng,accuracy_m,accuracy_tier,source,snapped,distance_m,created_at").order("created_at",{ascending:false}).limit(200).then(r=>r,(e)=>{console.warn("outlets fetch failed:",(e as Error)?.message||e); return {data:[]} as never;}),
       db.from("retailers").select("id,name,zone,channel,ward,gps_lat,gps_lng,updated_at").order("updated_at",{ascending:false}).limit(200).then(r=>r,(e)=>{console.warn("retailers fetch failed:",(e as Error)?.message||e); return {data:[]} as never;}),
+      db.from("rep_access_events").select("rep_email,device_id,event_type,app_version,version_code,created_at").order("created_at",{ascending:false}).limit(500).then(r=>r,(e)=>{console.warn("rep_access_events fetch failed:",(e as Error)?.message||e); return {data:[]} as never;}),
+      db.from("rep_locations").select("rep_id,captured_at").order("captured_at",{ascending:false}).limit(50).then(r=>r,(e)=>{console.warn("rep_locations trail fetch failed:",(e as Error)?.message||e); return {data:[]} as never;}),
     ]);
     const batches = (batchesRes as {data:unknown[]})?.data as {id:string;rep_id:string;status:string;record_count:number;started_at:string;submitted_at:string|null}[] || [];
     const intercepts = (interceptsRes as {data:unknown[]})?.data as unknown[] || [];
     const outlets = (outletsRes as {data:unknown[]})?.data as unknown[] || [];
     const retailers = (retailersRes as {data:unknown[]})?.data as unknown[] || [];
+    const accessEvents = (accessEventsRes as {data:unknown[]})?.data as { rep_email: string; device_id: string | null; event_type: string; app_version: string | null; version_code: number | null; created_at: string }[] || [];
+    const liveLocTrail = (liveLocsTrailRes as {data:unknown[]})?.data as { rep_id: string; captured_at: string }[] || [];
 
     // group visits by rep
     const byRep = new Map<string, typeof visits>();
@@ -55,6 +61,21 @@ export async function GET() {
       }
     }
 
+    // latest app access per rep (login/sync/open from rep_access_events)
+    const accessByRep = new Map<string, { device_id: string | null; app_version: string | null; version_code: number | null; last_login_at: string | null; last_open_at: string | null; last_sync_event_at: string | null; event_count: number }>();
+    for (const ev of accessEvents) {
+      const email = (ev.rep_email || "").toLowerCase();
+      const cur = accessByRep.get(email) || { device_id: null, app_version: null, version_code: null, last_login_at: null, last_open_at: null, last_sync_event_at: null, event_count: 0 };
+      cur.event_count++;
+      if (!cur.device_id && ev.device_id) cur.device_id = ev.device_id;
+      if (!cur.app_version && ev.app_version) cur.app_version = ev.app_version;
+      if (cur.version_code == null && ev.version_code != null) cur.version_code = ev.version_code;
+      if (ev.event_type === "login" && !cur.last_login_at) cur.last_login_at = ev.created_at;
+      if (ev.event_type === "open" && !cur.last_open_at) cur.last_open_at = ev.created_at;
+      if (ev.event_type === "sync" && !cur.last_sync_event_at) cur.last_sync_event_at = ev.created_at;
+      accessByRep.set(email, cur);
+    }
+
     const now = Date.now();
     const SHIFT_WINDOW_MS = 4 * 3600 * 1000; // last_sync within 4h = on shift
     const items = (reps || []).map((r) => {
@@ -65,6 +86,7 @@ export async function GET() {
       const lastSyncAt = r.last_sync_at ? new Date(r.last_sync_at).getTime() : 0;
       const onShift = r.status === "active" && (r.on_route || (lastSyncAt && now - lastSyncAt < SHIFT_WINDOW_MS) || todayVisits > 0);
       const liveLoc = liveLocByRep.get(r.id);
+      const access = accessByRep.get((r.email || "").toLowerCase());
       const lastGps = liveLoc
         ? { lat: liveLoc.lat, lng: liveLoc.lng }
         : last
@@ -92,6 +114,14 @@ export async function GET() {
         lastGpsSource: liveLoc ? "live" : "visit",
         lastGpsAt: liveLoc?.captured_at || last?.check_in_at || last?.created_at || null,
         lastOutcome: last?.outcome || last?.status || null,
+        appVersion: access?.app_version || null,
+        versionCode: access?.version_code ?? null,
+        lastLoginAt: access?.last_login_at || null,
+        lastOpenAt: access?.last_open_at || null,
+        lastAppSyncAt: access?.last_sync_event_at || null,
+        accessEventCount: access?.event_count || 0,
+        accessDeviceId: access?.device_id || null,
+        lastPingAt: liveLocTrail.find((l) => l.rep_id === r.id)?.captured_at || null,
       };
     });
 

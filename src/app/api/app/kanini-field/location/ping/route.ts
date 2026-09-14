@@ -39,9 +39,19 @@ export async function POST(request: Request) {
 
     const db = await createCensusClient();
 
+    // Resolve caller's census reps.id by email — main project id ≠ census id
+    const { data: repRow, error: repErr } = await db
+      .from("reps")
+      .select("id")
+      .eq("email", currentUser.email)
+      .single();
+    if (repErr || !repRow) {
+      return NextResponse.json({ error: "Rep not found in census project" }, { status: 404 });
+    }
+
     // Insert location ping
     const { error } = await db.from("rep_locations").insert({
-      rep_id: currentUser.id,
+      rep_id: repRow.id,
       lat,
       lng,
       accuracy_m: accuracy ?? null,

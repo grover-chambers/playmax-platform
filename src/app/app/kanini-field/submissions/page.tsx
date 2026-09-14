@@ -41,12 +41,19 @@ export default function KaniniSubmissionsTabPage() {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
-        <CheckCircle size={32} className="mx-auto text-teal-600" />
-        <div className="text-[13px] font-bold text-slate-800 mt-3">All submissions synced</div>
-        <div className="text-[11px] text-slate-500 mt-1">Field reps have closed their day. No pending sync errors.</div>
-        <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-slate-400">
-          <Clock size={12} /> Last sync — just now
-        </div>
+        {(data?.submissions?.total ?? 0) > 0 ? (
+          <>
+            <CheckCircle size={32} className="mx-auto text-teal-600" />
+            <div className="text-[13px] font-bold text-slate-800 mt-3">{data.submissions.total} submissions synced</div>
+            <div className="text-[11px] text-slate-500 mt-1">Field reps have closed their day.</div>
+          </>
+        ) : (
+          <>
+            <Clock size={32} className="mx-auto text-amber-500" />
+            <div className="text-[13px] font-bold text-slate-800 mt-3">No submissions yet</div>
+            <div className="text-[11px] text-slate-500 mt-1">Submissions appear after field reps close their day in the app.</div>
+          </>
+        )}
       </div>
     </div>
   );

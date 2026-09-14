@@ -27,16 +27,17 @@ let tokenPromise: Promise<string> | null = null;
 const TOKEN_TTL_MS = 50 * 60 * 1000;
 
 async function fetchAccessToken(): Promise<string> {
+  const email = process.env.CENSUS_PORTAL_EMAIL;
+  const pw = process.env.CENSUS_PORTAL_PASSWORD;
+  if (!email) throw new Error("Missing CENSUS_PORTAL_EMAIL — set it in env (census project zsprlozgdxzxeevvetmg)");
+  if (!pw) throw new Error("Missing CENSUS_PORTAL_PASSWORD — set it in env (census project zsprlozgdxzxeevvetmg)");
   const res = await fetch(`${url()}/auth/v1/token?grant_type=password`, {
     method: "POST",
     headers: {
       apikey: anonKey(),
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      email: process.env.CENSUS_PORTAL_EMAIL!,
-      password: process.env.CENSUS_PORTAL_PASSWORD!,
-    }),
+    body: JSON.stringify({ email, password: pw }),
   });
 
   if (!res.ok) {

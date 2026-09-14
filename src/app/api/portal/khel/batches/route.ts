@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { createCensusClient } from "@/lib/supabase/census";
+import { getAuthenticatedClient, getCurrentUser, isStaff } from "@/lib/supabase/api";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const supabase = await getAuthenticatedClient();
+    const currentUser = await getCurrentUser(supabase);
+    if (!currentUser || !isStaff(currentUser.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const { searchParams } = new URL(req.url);
     const group = searchParams.get("group");
     const status = searchParams.get("status");
