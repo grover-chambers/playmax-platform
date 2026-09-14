@@ -125,6 +125,33 @@ export async function POST(request: Request) {
       }
     }
 
+    // Duplicate-upload guard: refuse to create a second record for the same
+    // file/branch while a copy is still in-flight (uploaded/parsed). Re-uploading
+    // an already-imported or failed file is allowed as a fresh attempt.
+    const { data: existingLive, error: dupCheckErr } = await db
+      .from("analytics_staging_uploads")
+      .select("id, filename, file_type, branch_id, status, created_at")
+      .eq("filename", filename)
+      .eq("file_type", file_type)
+      .eq("branch_id", resolvedBranchId)
+      .not("status", "in", "('imported','failed')")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (dupCheckErr) throw dupCheckErr;
+
+    if (existingLive) {
+      return NextResponse.json(
+        {
+          upload: existingLive,
+          duplicate: true,
+          message: `An in-flight upload for "${filename}" already exists (status: ${existingLive.status}). Reusing it instead of creating a duplicate.`,
+        },
+        { status: 200 },
+      );
+    }
+
     const { data, error } = await db
       .from("analytics_staging_uploads")
       .insert({

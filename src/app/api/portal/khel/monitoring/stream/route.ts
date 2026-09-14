@@ -32,8 +32,9 @@ export async function GET(req: Request) {
           .on("postgres_changes", { event: "*", schema: "public", table: "consumer_intercepts" }, () => send("consumer_intercepts"))
           .on("postgres_changes", { event: "*", schema: "public", table: "census_batches" }, () => send("census_batches"))
           .on("postgres_changes", { event: "*", schema: "public", table: "reps" }, () => send("reps"))
-          .on("postgres_changes", { event: "*", schema: "public", table: "outlets" }, () => send("outlets"))
-          .on("postgres_changes", { event: "*", schema: "public", table: "retailers" }, () => send("retailers"))
+.on("postgres_changes", { event: "*", schema: "public", table: "outlets" }, () => send("outlets"))
+        .on("postgres_changes", { event: "*", schema: "public", table: "retailers" }, () => send("retailers"))
+        .on("postgres_changes", { event: "*", schema: "public", table: "rep_access_events" }, () => send("rep_access_events"))
           .subscribe();
 
         // heartbeat + keepalive for proxies

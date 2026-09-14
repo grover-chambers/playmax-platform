@@ -63,6 +63,7 @@ interface MonitoringData {
   intercepts?: Intercept[];
   outlets?: Outlet[];
   retailers?: Retailer[];
+  readWarnings?: string[];
 }
 
 interface MapPinData {
@@ -256,6 +257,11 @@ export default function KaniniMonitoringPage() {
 
   return (
     <div className="page-content space-y-6">
+      {(data?.readWarnings && data.readWarnings.length > 0) && (
+        <div className="pm-dash-card p-3 border-amber-300 bg-amber-50 text-[12px] text-amber-800 flex items-center gap-2">
+          <AlertCircle size={14}/> Some census reads were blocked or failed and are shown empty: {data.readWarnings.join(" · ")}
+        </div>
+      )}
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 animate-in fade-in">
         <div className="pm-dash-kcard"><div className="pm-dash-kl">On Shift</div><div className="font-mono text-xl font-bold text-emerald-700">{kpi.onShift}</div><div className="pm-dash-ksub">{kpi.total} reps</div></div>

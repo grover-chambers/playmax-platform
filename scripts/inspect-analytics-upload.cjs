@@ -88,6 +88,26 @@ async function main() {
     out(`| ${i + 1} | ${u.file_type || "—"} | ${u.status || "—"} | ${u.total_rows ?? "—"} | ${p ? p.label : (u.period_id || "—")} | ${(u.created_at || "").slice(0, 10)} | ${u.filename || "—"} | ${u.uploaded_by || "—"} |`);
   });
 
+  // ---- duplicates --------------------------------------------------------
+  const byName = new Map();
+  for (const u of uploads.data) {
+    const key = `${u.filename || "?"} | ${u.file_type || "?"} | ${u.branch_id || ""}`;
+    if (!byName.has(key)) byName.set(key, []);
+    byName.get(key).push(u);
+  }
+  const dups = [...byName.entries()].filter(([, list]) => list.length > 1);
+  out();
+  out(`## Duplicate uploads`);
+  if (dups.length === 0) out("None — every upload is unique by (filename, file_type, branch).");
+  dups.forEach(([key, list]) => {
+    out();
+    out(`- **${key.split(" | ")[0]}** (${key.split(" | ")[1]}) — ${list.length} copies`);
+    list.forEach((u) => {
+      const p = periodMap.get(u.period_id);
+      out(`  - \`${u.id}\` status=${u.status} rows=${u.total_rows ?? "—"} period=${p ? p.label : (u.period_id || "—")} created=${(u.created_at || "").slice(0, 19)}`);
+    });
+  });
+
   // ---- locate the general sales upload -----------------------------------
   const approx = uploads.data.filter((u) => ((u.total_rows || 0) >= 500) || /general|sales/i.test(u.filename || ""));
   const target = approx[0] || uploads.data[0];

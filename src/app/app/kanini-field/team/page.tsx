@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Smartphone,
   ChevronRight,
+  AlertCircle,
 } from "lucide-react";
 import PageHeader from "@/components/layout/page-header";
 import Avatar from "@/components/ui/avatar";
@@ -226,6 +227,12 @@ export default function KaniniTeamTabPage() {
           </div>
         }
       />
+
+      {(data?.readWarnings && data.readWarnings.length > 0) && (
+        <div className="flex items-start gap-2 pm-dash-card p-3 border-amber-300 bg-amber-50 text-[12px] text-amber-800">
+          <AlertCircle size={14} className="shrink-0 mt-px"/> <span>Some census reads were blocked or failed and are shown empty: <span className="font-mono text-[11px]">{data.readWarnings.join(" · ")}</span></span>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {[
