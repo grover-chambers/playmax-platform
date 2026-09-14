@@ -14,7 +14,7 @@ export async function GET() {
     const db = await createCensusClient();
     const today = new Date().toISOString().slice(0, 10);
 
-    const [{ data: reps }, { data: visits }, { data: liveLocs }, batchesRes, interceptsRes, outletsRes] = await Promise.all([
+    const [{ data: reps }, { data: visits }, { data: liveLocs }, batchesRes, interceptsRes, outletsRes, retailersRes] = await Promise.all([
       db
         .from("reps")
         .select("id,name,email,zone,status,on_route,last_sync_at,device,target_visits_month,actual_visits_month,wards,color")
@@ -32,10 +32,12 @@ export async function GET() {
       db.from("census_batches").select("id,rep_id,status,record_count,started_at,submitted_at").order("started_at", { ascending: false }).limit(200).then(r=>r, (e)=>{ console.warn("census_batches fetch failed:", (e as Error)?.message || e); return {data:[]} as never; }),
       db.from("consumer_intercepts").select("id,rep_id,ward,ward_auto,ward_final,channel,captured_at,created_at,gps_lat,gps_lng,gps_raw_lat,gps_raw_lng,gps_final_lat,gps_final_lng,accuracy_m,accuracy_tier,source,snapped,distance_m").order("captured_at", { ascending: false }).limit(50).then(r=>r, (e)=>{ console.warn("consumer_intercepts fetch failed:", (e as Error)?.message || e); return {data:[]} as never; }),
       db.from("outlets").select("id,ward,ward_auto,ward_final,gps_lat,gps_lng,gps_raw_lat,gps_raw_lng,gps_final_lat,gps_final_lng,accuracy_m,accuracy_tier,source,snapped,distance_m,created_at").order("created_at",{ascending:false}).limit(200).then(r=>r,(e)=>{console.warn("outlets fetch failed:",(e as Error)?.message||e); return {data:[]} as never;}),
+      db.from("retailers").select("id,name,zone,channel,ward,gps_lat,gps_lng,updated_at").order("updated_at",{ascending:false}).limit(200).then(r=>r,(e)=>{console.warn("retailers fetch failed:",(e as Error)?.message||e); return {data:[]} as never;}),
     ]);
     const batches = (batchesRes as {data:unknown[]})?.data as {id:string;rep_id:string;status:string;record_count:number;started_at:string;submitted_at:string|null}[] || [];
     const intercepts = (interceptsRes as {data:unknown[]})?.data as unknown[] || [];
     const outlets = (outletsRes as {data:unknown[]})?.data as unknown[] || [];
+    const retailers = (retailersRes as {data:unknown[]})?.data as unknown[] || [];
 
     // group visits by rep
     const byRep = new Map<string, typeof visits>();
@@ -94,7 +96,7 @@ export async function GET() {
     });
 
     const onShiftCount = items.filter((i) => i.onShift).length;
-    return NextResponse.json({ today, total: items.length, onShift: onShiftCount, offShift: items.length - onShiftCount, reps: items, visits: visits || [], batches, intercepts, outlets });
+    return NextResponse.json({ today, total: items.length, onShift: onShiftCount, offShift: items.length - onShiftCount, reps: items, visits: visits || [], batches, intercepts, outlets, retailers });
   } catch (err) {
     console.error("Monitoring API error:", err);
     return NextResponse.json({ error: "Failed to load monitoring" }, { status: 500 });

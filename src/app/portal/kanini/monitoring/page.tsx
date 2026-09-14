@@ -51,6 +51,7 @@ interface Visit {
 interface Intercept { id:string; rep_id:string; ward:string|null; channel:string|null; captured_at:string; created_at:string; }
 interface Batch { id:string; rep_id:string; status:string; record_count:number; started_at:string; submitted_at:string|null; }
 interface Outlet { id: string; ward: string | null; ward_auto: string | null; ward_final: string | null; gps_lat: number | null; gps_lng: number | null; gps_final_lat: number | null; gps_final_lng: number | null; accuracy_tier: string | null; }
+interface Retailer { id:string; name:string; zone:string|null; channel:string|null; ward:string|null; gps_lat:number|null; gps_lng:number|null; updated_at:string|null; }
 interface MonitoringData {
   today: string;
   total: number;
@@ -61,6 +62,7 @@ interface MonitoringData {
   batches?: Batch[];
   intercepts?: Intercept[];
   outlets?: Outlet[];
+  retailers?: Retailer[];
 }
 
 interface MapPinData {
@@ -158,6 +160,26 @@ export default function KaniniMonitoringPage() {
       });
   }, [data, selectedZone]);
 
+  const retailerPins = useMemo(() => {
+    if (!data?.retailers?.length) return [] as (MapPinData & { color: string })[];
+    return data.retailers
+      .filter((r: Retailer) => r.gps_lat != null && r.gps_lng != null)
+      .filter((r: Retailer) => !selectedZone || (r.ward || r.zone || "") === selectedZone)
+      .map((r: Retailer) => ({
+        id: `retailer-${r.id}`,
+        name: r.name,
+        channel: "Storefront",
+        type: "retailer",
+        lat: r.gps_lat as number,
+        lng: r.gps_lng as number,
+        ward: r.ward || r.zone || "",
+        constituency: "",
+        county: "Kiambu",
+        size: r.channel || "",
+        color: "#475569",
+      }) as MapPinData & { color: string });
+  }, [data, selectedZone]);
+
   const pins = useMemo(() => {
     if (!data) return [] as (MapPinData & { color?: string })[];
     const repPins = data.reps
@@ -176,8 +198,8 @@ export default function KaniniMonitoringPage() {
         size: r.status,
         color: r.onShift ? "#0f766e" : "#94a3b8",
       })) as (MapPinData & { color: string })[];
-    return [...repPins, ...outletPins];
-  }, [data, selectedZone, outletPins]);
+    return [...repPins, ...outletPins, ...retailerPins];
+  }, [data, selectedZone, outletPins, retailerPins]);
 
   const zones = useMemo(() => {
     const s = new Set<string>();
@@ -187,13 +209,13 @@ export default function KaniniMonitoringPage() {
   }, [data]);
 
   const kpi = useMemo(() => {
-    if (!data) return { total:0, onShift:0, offShift:0, avgAcc:"—", manualPct:0 };
+    if (!data) return { total:0, onShift:0, offShift:0, outlets:0, intercepts:0, avgAcc:"—", manualPct:0 };
     const outlets = data.outlets || [];
     const manual = outlets.filter(o=>o.accuracy_tier==="manual").length;
     const manualPct = outlets.length ? Math.round(manual/outlets.length*100) : 0;
     const accScore = (t: string|null) => t==="high"? 95 : t==="medium"? 70 : t==="manual"? 30 : 50;
     const avgAcc = outlets.length ? Math.round(outlets.reduce((s,o)=>s+accScore(o.accuracy_tier),0)/outlets.length) + "%" : "—";
-    return { total: data.total, onShift: data.onShift, offShift: data.offShift, avgAcc, manualPct };
+    return { total: data.total, onShift: data.onShift, offShift: data.offShift, outlets: outlets.length, intercepts: (data?.intercepts||[]).length, avgAcc, manualPct };
   }, [data]);
 
   const tickerEvents = useMemo(() => {
@@ -235,9 +257,11 @@ export default function KaniniMonitoringPage() {
   return (
     <div className="page-content space-y-6">
       {/* KPI strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 animate-in fade-in">
         <div className="pm-dash-kcard"><div className="pm-dash-kl">On Shift</div><div className="font-mono text-xl font-bold text-emerald-700">{kpi.onShift}</div><div className="pm-dash-ksub">{kpi.total} reps</div></div>
         <div className="pm-dash-kcard"><div className="pm-dash-kl">Off Shift</div><div className="font-mono text-xl font-bold text-slate-600">{kpi.offShift}</div><div className="pm-dash-ksub">offline</div></div>
+        <div className="pm-dash-kcard"><div className="pm-dash-kl">Outlets</div><div className="font-mono text-xl font-bold text-teal-700">{kpi.outlets}</div><div className="pm-dash-ksub">census pins</div></div>
+        <div className="pm-dash-kcard"><div className="pm-dash-kl">Intercepts</div><div className="font-mono text-xl font-bold text-indigo-600">{kpi.intercepts}</div><div className="pm-dash-ksub">consumer polls</div></div>
         <div className="pm-dash-kcard"><div className="pm-dash-kl">Avg accuracy</div><div className="font-mono text-xl font-bold">{kpi.avgAcc}</div><div className="pm-dash-ksub">outlet tier score</div></div>
         <div className="pm-dash-kcard"><div className="pm-dash-kl">Manual pins %</div><div className="font-mono text-xl font-bold text-amber-600">{kpi.manualPct}%</div><div className="pm-dash-ksub">needs GPS fix</div></div>
       </div>
@@ -386,7 +410,7 @@ export default function KaniniMonitoringPage() {
               <div className="flex items-center gap-2">
                 <button onClick={()=>setTickerTier("All")} className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tickerTier==="All"?"bg-slate-900 text-white":"bg-white"}`}>All</button>
                 <button onClick={()=>setTickerTier("Manual")} className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tickerTier==="Manual"?"bg-amber-600 text-white border-amber-600":"bg-white"}`}>Manual</button>
-                <span className="text-[10px] text-slate-400 ml-2">Updates every 30s</span>
+                <span className="text-[10px] text-slate-400 ml-2">Live feed · SSE</span>
               </div>
             </div>
             <div className={`flex gap-4 overflow-x-auto pb-2 scrollbar-hide ${tickerPaused?"[&>*]:!translate-y-0":""}`} onMouseEnter={()=>setTickerPaused(true)} onMouseLeave={()=>setTickerPaused(false)}>
