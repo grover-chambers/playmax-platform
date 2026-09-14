@@ -14,9 +14,8 @@ import {
   RefreshCw,
   Smartphone,
   ChevronRight,
-  Activity,
-  Radio,
 } from "lucide-react";
+import PageHeader from "@/components/layout/page-header";
 import Avatar from "@/components/ui/avatar";
 import Button from "@/components/ui/button";
 import SlicerPanel from "@/components/ui/slicer-panel";
@@ -202,87 +201,80 @@ export default function KaniniTeamTabPage() {
   }, [reps, q, selectedZones, statusSel, versionSel]);
 
   if (loading && !data) {
-    return <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-teal-600" /></div>;
+    return (
+      <div className="page-content flex items-center justify-center py-16">
+        <Loader2 className="w-4 h-4 text-gray-5 animate-spin" />
+        <span className="ml-2 text-[11px] text-gray-5">Loading team…</span>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white border border-slate-200 rounded-xl p-4">
-        <h2 className="text-[13px] font-bold text-slate-800 flex items-center gap-2">
-          <Users size={14} /> Team — field reps
-          <span className="ml-auto flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-[10px] font-mono text-slate-500">
+    <div className="page-content space-y-5">
+      <PageHeader
+        title="Team — field reps"
+        subtitle="Live status · installed app version · device · today&apos;s output — from Kanini Field `reps`, `rep_access_events`, `visits` and live GPS pings."
+        actions={
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-[10px] font-mono text-gray-4">
               <span className={`w-2 h-2 rounded-full ${sseConnected ? "bg-green-500 animate-pulse" : "bg-amber-400"}`} />
               {sseConnected ? "SSE live" : "polling"}
             </span>
             <Button variant="secondary" size="sm" onClick={() => fetchMonitoring()} disabled={refreshing} className="px-3">
               <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} /> Refresh
             </Button>
-          </span>
-        </h2>
-        <p className="text-[11px] text-slate-500 mt-1">Live status · installed app version · device · today&apos;s output — from Kanini Field `reps`, `rep_access_events`, `visits` and live GPS pings.</p>
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        {[
+          { icon: Users, value: reps.length.toLocaleString(), label: "Total reps", sub: "Across zones", color: "text-teal" },
+          { icon: Signal, value: onShiftCount.toLocaleString(), label: "On shift", sub: "Active now", color: "text-green" },
+          { icon: WifiOff, value: offlineCount.toLocaleString(), label: "Offline", sub: laggingCount > 0 ? `${laggingCount} lagging >1h` : "No lag", color: "text-gray-5" },
+          { icon: Smartphone, value: `${hasVersionCount} / ${reps.length}`, label: "App version", sub: "Events reported", color: "text-blue" },
+        ].map((k) => {
+          const Icon = k.icon;
+          return (
+            <div key={k.label} className="ws-stat-card">
+              <div className="flex items-center gap-3">
+                <div className="ws-stat-icon"><Icon className={`w-4 h-4 ${k.color}`} /></div>
+                <div>
+                  <div className="ws-stat-value">{k.value}</div>
+                  <div className="ws-stat-label">{k.label}</div>
+                  <div className="text-[11px] text-gray-5">{k.sub}</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white border border-slate-200 border-t-2 border-t-teal-600 rounded-xl p-4 text-center">
-          <div className="text-[20px] font-bold text-slate-800">{reps.length}</div>
-          <div className="text-[11px] tracking-wider uppercase font-semibold text-slate-500">Total reps</div>
-          <div className="text-[11px] text-slate-400 mt-1">Across zones</div>
-        </div>
-        <div className="bg-white border border-slate-200 border-t-2 border-t-emerald-500 rounded-xl p-4 text-center">
-          <div className="text-[20px] font-bold text-emerald-600">{onShiftCount}</div>
-          <div className="text-[11px] tracking-wider uppercase font-semibold text-slate-500">On shift</div>
-          <div className="text-[11px] text-slate-400 mt-1">Active now</div>
-        </div>
-        <div className="bg-white border border-slate-200 border-t-2 border-t-slate-300 rounded-xl p-4 text-center">
-          <div className="text-[20px] font-bold text-slate-500">{offlineCount}</div>
-          <div className="text-[11px] tracking-wider uppercase font-semibold text-slate-500">Offline</div>
-          <div className="text-[11px] text-slate-400 mt-1">{laggingCount > 0 ? `${laggingCount} lagging >1h` : "No lag"}</div>
-        </div>
-        <div className="bg-white border border-slate-200 border-t-2 border-t-indigo-500 rounded-xl p-4 text-center">
-          <div className="text-[20px] font-bold text-indigo-600">{hasVersionCount} / {reps.length}</div>
-          <div className="text-[11px] tracking-wider uppercase font-semibold text-slate-500">App version</div>
-          <div className="text-[11px] text-slate-400 mt-1">Events reported</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)] gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)] gap-5 items-start">
         <div className="lg:sticky lg:top-4">
           <SlicerPanel
             sections={slicerSections}
             onClearAll={() => { setSelectedZones([]); setStatusSel([]); setVersionSel([]); }}
-            className="shadow-sm"
           />
         </div>
 
-        <div className="space-y-4 min-w-0">
-          <div className="bg-white border border-slate-200 rounded-xl p-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative flex-1 min-w-[180px]">
-                <Users size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
+        <div className="space-y-5 min-w-0">
+          <div className="pm-dash-card">
+            <div className="pm-dash-card-h">
+              <span className="pm-dash-card-t">Drill-through — rep cards</span>
+              <span className="text-[11px] font-mono text-gray-5">{filtered.length} of {reps.length} · click a card to open profile</span>
+            </div>
+            <div className="pm-dash-card-b">
+              <div className="mb-3 max-w-sm">
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Search rep, email, zone…"
-                  className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-[12px] placeholder:text-slate-400 focus:bg-white focus:border-teal-300 outline-none"
+                  className="w-full px-3 py-2 rounded-[var(--ws-radius-sm)] border border-[var(--ws-border)] bg-[var(--ws-surface)] text-[12px] placeholder:text-gray-4 focus:border-[var(--ws-accent)] outline-none"
                 />
               </div>
-              <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200">
-                {filtered.length} / {reps.length} reps
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/60 flex items-center gap-2">
-              <Radio size={12} className="text-teal-600" />
-              <span className="text-[10px] font-bold tracking-wider uppercase text-slate-600">Rep drill-through</span>
-              <span className="text-[10px] font-mono text-slate-400">click a card to open the rep profile</span>
-              <span className="ml-auto text-[10px] font-mono text-slate-400">{filtered.length} of {reps.length}</span>
-            </div>
-            <div className="p-3">
               {filtered.length === 0 ? (
-                <div className="p-8 text-center text-[13px] text-slate-400">No reps match this view — adjust the slicers or search.</div>
+                <div className="py-8 text-center text-[12px] text-gray-4">No reps match this view — adjust the slicers or search.</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                   {filtered.map((r) => {
@@ -291,51 +283,51 @@ export default function KaniniTeamTabPage() {
                       <Link
                         key={r.id}
                         href={`/app/kanini-field/team/${r.id}`}
-                        className="group bg-slate-50/60 border border-slate-200 rounded-xl p-3 hover:border-teal-300 hover:shadow-sm transition-all"
+                        className="group bg-[var(--ws-surface)] border border-[var(--ws-border)] rounded-xl p-3 hover:border-[var(--ws-accent)] hover:shadow-sm transition-all"
                       >
                         <div className="flex items-center gap-2.5">
                           <Avatar initials={initials(r.name)} variant={r.onShift ? "yellow" : "dark"} size="sm" />
                           <div className="min-w-0 flex-1">
-                            <div className="text-[13px] font-semibold text-slate-800 truncate flex items-center gap-1.5">
+                            <div className="text-[13px] font-semibold text-[var(--ws-text)] truncate flex items-center gap-1.5">
                               {r.name}
-                              {r.onRoute && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">ON ROUTE</span>}
+                              {r.onRoute && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber/10 text-amber border border-amber/20">ON ROUTE</span>}
                             </div>
-                            <div className="text-[10px] text-slate-500 truncate">{r.email}</div>
+                            <div className="text-[10px] text-gray-5 truncate">{r.email}</div>
                           </div>
-                          <ChevronRight size={14} className="text-slate-300 group-hover:text-teal-600 transition-colors shrink-0" />
+                          <ChevronRight size={14} className="text-gray-3 group-hover:text-[var(--ws-accent)] transition-colors shrink-0" />
                         </div>
                         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">{zoneLabel(r.zone)}</span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--ws-border)] bg-[var(--ws-bg)] text-gray-5">{zoneLabel(r.zone)}</span>
                           {r.onShift ? (
-                            <span className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-full border ${isLagging ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
-                              {isLagging ? <SignalLow size={10} className="text-amber-500" /> : <Signal size={10} className="text-emerald-600" />}
+                            <span className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-full border ${isLagging ? "bg-amber/10 text-amber border-amber/20" : "bg-green/10 text-green border-green/20"}`}>
+                              {isLagging ? <SignalLow size={10} className="text-amber" /> : <Signal size={10} className="text-green" />}
                               {isLagging ? "SYNC LAG" : "ON SHIFT"}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-full bg-[var(--ws-surface)] text-gray-5 border border-[var(--ws-border)]">
                               <WifiOff size={10} /> OFFLINE
                             </span>
                           )}
                           {r.appVersion ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-full bg-blue/10 text-blue border border-blue/20">
                               <Smartphone size={10} /> v{r.appVersion}{r.versionCode != null ? ` (${r.versionCode})` : ""}
                             </span>
                           ) : (
-                            <span className="text-[10px] font-mono text-slate-400">no version</span>
+                            <span className="text-[10px] font-mono text-gray-4">no version</span>
                           )}
                         </div>
-                        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-200/70 pt-2.5">
+                        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--ws-border)] pt-2.5">
                           <div>
-                            <div className="text-[14px] font-bold text-slate-800">{r.todayVisits}</div>
-                            <div className="text-[9px] tracking-wider uppercase font-semibold text-slate-400">Visits</div>
+                            <div className="text-[14px] font-bold text-[var(--ws-text)]">{r.todayVisits}</div>
+                            <div className="text-[9px] tracking-wider uppercase font-semibold text-gray-4">Visits</div>
                           </div>
                           <div>
                             <div className="text-[14px] font-bold text-amber-600">{r.todayOrders}</div>
-                            <div className="text-[9px] tracking-wider uppercase font-semibold text-slate-400">Orders</div>
+                            <div className="text-[9px] tracking-wider uppercase font-semibold text-gray-4">Orders</div>
                           </div>
                           <div className="text-right">
-                            <div className="text-[11px] text-slate-600">{timeAgo(r.lastSyncAt, now)}</div>
-                            <div className="text-[9px] tracking-wider uppercase font-semibold text-slate-400">Last seen</div>
+                            <div className="text-[11px] text-gray-5">{timeAgo(r.lastSyncAt, now)}</div>
+                            <div className="text-[9px] tracking-wider uppercase font-semibold text-gray-4">Last seen</div>
                           </div>
                         </div>
                       </Link>
@@ -347,12 +339,14 @@ export default function KaniniTeamTabPage() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/60 flex items-center gap-2">
-                <Activity size={12} className="text-teal-600" />
-                <span className="text-[10px] font-bold tracking-wider uppercase text-slate-600">App version coverage</span>
+            <div className="pm-dash-card">
+              <div className="pm-dash-card-h">
+                <span className="pm-dash-card-t flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue" />
+                  App version coverage
+                </span>
               </div>
-              <div className="p-3 space-y-2">
+              <div className="pm-dash-card-b space-y-1.5">
                 {(() => {
                   const byVersion = new Map<string, number>();
                   reps.forEach((r) => {
@@ -361,31 +355,33 @@ export default function KaniniTeamTabPage() {
                   });
                   const rows = [...byVersion.entries()].sort((a, b) => b[1] - a[1]);
                   return rows.length ? rows.map(([k, v]) => (
-                    <div key={k} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
-                      <span className="text-[12px] font-medium text-slate-700">{k}</span>
-                      <span className="text-[12px] font-mono font-bold">{v}</span>
+                    <div key={k} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)]">
+                      <span className="text-[12px] text-[var(--ws-text)]">{k}</span>
+                      <span className="text-[12px] font-mono font-semibold text-[var(--ws-text)]">{v}</span>
                     </div>
-                  )) : <div className="text-[12px] text-slate-400">No app events yet — reps will report on next open/sync.</div>;
+                  )) : <div className="text-[12px] text-gray-4 px-3 py-2">No app events yet — reps will report on next open/sync.</div>;
                 })()}
               </div>
             </div>
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/60 flex items-center gap-2">
-                <MapPin size={12} className="text-teal-600" />
-                <span className="text-[10px] font-bold tracking-wider uppercase text-slate-600">Live GPS pings</span>
+            <div className="pm-dash-card">
+              <div className="pm-dash-card-h">
+                <span className="pm-dash-card-t flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green" />
+                  Live GPS pings
+                </span>
               </div>
-              <div className="p-3 space-y-2">
+              <div className="pm-dash-card-b space-y-1.5">
                 {reps.filter((r) => r.lastGps).slice(0, 8).map((r) => (
-                  <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
-                    <span className="text-[12px] font-medium text-slate-700">{r.name}</span>
-                    <span className="text-[11px] font-mono text-slate-500">
+                  <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--ws-bg)] border border-[var(--ws-border)]">
+                    <span className="text-[12px] text-[var(--ws-text)]">{r.name}</span>
+                    <span className="text-[11px] font-mono text-gray-5">
                       <MapPin size={11} className="inline mr-1" />
                       {r.lastGps!.lat.toFixed(4)}, {r.lastGps!.lng.toFixed(4)}
-                      <span className="ml-2 text-slate-400">{timeAgo(r.lastGpsAt, now)}</span>
+                      <span className="ml-2 text-gray-4">{timeAgo(r.lastGpsAt, now)}</span>
                     </span>
                   </div>
                 ))}
-                {reps.filter((r) => r.lastGps).length === 0 && <div className="text-[12px] text-slate-400">No live GPS pings yet.</div>}
+                {reps.filter((r) => r.lastGps).length === 0 && <div className="text-[12px] text-gray-4 px-3 py-2">No live GPS pings yet.</div>}
               </div>
             </div>
           </div>
